@@ -1,6 +1,6 @@
 chapter_id,chapter_slug,coverage_level,coverage_label,knowledge_articles,verified_entities,verified_relationships,source_records,asset_records,last_reviewed_at,next_priority,status,notes
-CH01,01-industry-and-fundamentals,1,inventory,1,8,0,8,0,2026-11-22,CH01-T002：基础原理、坐标系、轴系与通用术语,IN_PROGRESS,MAP-001行业边界、产业链和术语初表已建立；本章原理研究未完成。
-CH02,02-machine-types-and-products,1,inventory,1,21,24,8,0,2026-11-22,补齐主要机型结构/选型及不同厂商具体型号规格,IN_PROGRESS,完成机床多维分类和首批代表性机型；非完整型号库。
+CH01,01-industry-and-fundamentals,1,inventory,1,8,0,16,0,2026-11-22,CH01-T002：基础原理、坐标系、轴系与通用术语,IN_PROGRESS,按知识文章和主归属实体/术语记录去重统计的来源ID，共16条。
+CH02,02-machine-types-and-products,1,inventory,1,21,24,10,0,2026-11-22,补齐主要机型结构/选型及不同厂商具体型号规格,IN_PROGRESS,按本章分类/机型文章、主归属实体和关系引用去重统计，共10条来源。
 CH03,03-system-architecture-and-mechanics,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH04,04-components-materials-and-manufacturing,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH05,05-tooling-fixtures-and-workholding,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
@@ -17,7 +17,7 @@ CH15,15-standards-safety-and-compliance,0,not_started,0,0,0,0,0,,按章节TaskPl
 CH16,16-manufacturing-assembly-installation,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH17,17-operation-maintenance-and-repair,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH18,18-fault-diagnosis-and-reliability,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
-CH19,19-manufacturers-products-and-supply-chain,1,inventory,1,21,20,18,0,2026-11-22,CH19-T003：机械功能部件、刀具、测量与周边供应商目录,IN_PROGRESS,首批15家组织与6项控制/运动部件产品；供应链目录仍待扩展。
+CH19,19-manufacturers-products-and-supply-chain,1,inventory,1,21,13,20,0,2026-11-22,CH19-T003：机械功能部件、刀具、测量与周边供应商目录,IN_PROGRESS,15个组织+6个产品实体；13条与本章主数据相连的制造商关系；20条文章/实体/关系引用来源去重。
 CH20,20-bom-drawings-and-technical-documents,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH21,21-digitalization-and-smart-manufacturing,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH22,22-case-studies-and-reference-machines,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
