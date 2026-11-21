@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000002",
+  "source_type": "standard_catalog",
+  "title": "International Standard Industrial Classification, Rev.4, Class 2822",
+  "publisher": "United Nations Statistics Division",
+  "author": null,
+  "url": "https://unstats.un.org/unsd/classifications/Econ/Detail/EN/27/2822",
+  "version": "ISIC Rev.4",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "2822 — Manufacture of metal-forming machinery and machine tools",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation",
+  "notes": "宏观统计行业分类，口径包括金属成形机械和机床，也覆盖部分其他材料加工设备及附件。"
+}

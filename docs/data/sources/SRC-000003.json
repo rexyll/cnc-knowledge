@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000003",
+  "source_type": "official_dataset",
+  "title": "2022 North American Industry Classification System — 333517 and 333515",
+  "publisher": "U.S. Census Bureau",
+  "author": null,
+  "url": "https://www.census.gov/naics/?chart=2022&details=31135&input=31",
+  "version": "2022 NAICS",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "333517 Machine Tool Manufacturing; 333515 Cutting Tool and Machine Tool Accessory Manufacturing",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "official_dataset",
+  "notes": "美国行业统计分类；用于解释整机制造与切削工具/机床附件制造的分类边界。"
+}

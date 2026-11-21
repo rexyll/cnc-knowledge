@@ -1,0 +1,42 @@
+{
+  "entity_id": "MTYPE-000014",
+  "entity_type": "machine_type",
+  "canonical_name": "专用/组合机床",
+  "english_name": null,
+  "aliases": [],
+  "description": "针对特定零件、工序或生产节拍设计的专用机床、组合机床及多工位设备。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH01",
+    "CH19"
+  ],
+  "classification_path": [
+    "专用制造"
+  ],
+  "tags": [
+    "机床分类",
+    "Special-purpose and unit-construction machine tools"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000001",
+    "SRC-000002",
+    "SRC-000004"
+  ],
+  "attributes": {
+    "taxonomy_level": "cross_cutting",
+    "typical_variants": [
+      "单工位专机",
+      "多工位专机",
+      "组合机床模块"
+    ],
+    "note": "FMC/FMS属于制造单元或系统层，不与单台机床类型混用。"
+  },
+  "notes": "本分类用于工程导航；具体统计归类以适用地区/版本官方分类表为准。"
+}

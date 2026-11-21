@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000004",
+  "source_type": "official_dataset",
+  "title": "Directory of Products",
+  "publisher": "Japan Machine Tool Builders Association",
+  "author": null,
+  "url": "https://www.jmtba.or.jp/english/members-directory/directory-of-products/",
+  "version": null,
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Broad Category / Model Selection / CNC Units / Related Equipment",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation",
+  "notes": "JMTBA产品目录；反映协会产品目录的分类结构，不代表国际强制分类标准。"
+}

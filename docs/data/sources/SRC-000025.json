@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000025",
+  "source_type": "manufacturer_product_page",
+  "title": "Sigma-7 Servo Products",
+  "publisher": "Yaskawa Electric Corporation",
+  "author": null,
+  "url": "https://www.yaskawa.com/products/motion/sigma-7-servo-products/",
+  "version": null,
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Sigma-7 servo products / direct-drive and linear servo options",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration",
+  "notes": "安川官方伺服产品目录；具体功率/型号选型需按规格书核验。"
+}

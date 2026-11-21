@@ -1,0 +1,53 @@
+{
+  "entity_id": "VENDOR-000011",
+  "entity_type": "organization",
+  "canonical_name": "Siemens AG",
+  "english_name": null,
+  "aliases": [],
+  "description": "工业自动化与CNC供应商；SINUMERIK产品线覆盖ONE、828D、808等控制平台及车削、铣削、钻削、磨削和多轴应用。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH02",
+    "CH04",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "供应链/产业角色"
+  ],
+  "tags": [
+    "代表性样本",
+    "cnc_controls",
+    "industrial_automation",
+    "software"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000022"
+  ],
+  "attributes": {
+    "organization_roles": [
+      "cnc_controls",
+      "industrial_automation",
+      "software"
+    ],
+    "product_segments": [
+      "SINUMERIK CNC",
+      "PLC/自动化",
+      "数字化与虚拟调试"
+    ],
+    "record_scope": "官方公开产品目录可核验的代表性产品/业务范围",
+    "supplier_status": "not_assessed",
+    "registered_country": null,
+    "official_website": "https://www.siemens.com/"
+  },
+  "notes": "仅用于行业地图和产品生态导航；不构成市场份额、供应能力、交期、价格或产品质量评级。"
+}

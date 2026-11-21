@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000001",
+  "source_type": "standard_catalog",
+  "title": "Classification of Individual Consumption According to Purpose / CPC Version 3.0, Class 4421",
+  "publisher": "United Nations Statistics Division",
+  "author": null,
+  "url": "https://unstats.un.org/unsd/classifications/Econ/Structure/Detail/EN/2100/4421",
+  "version": "CPC Version 3.0",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "4421 — Machine-tools for working metal; machine-tools for working any material by laser or similar process",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation",
+  "notes": "UNSD产品分类目录；用于机床产品分类参照，不是专门的CNC工程分类标准。"
+}

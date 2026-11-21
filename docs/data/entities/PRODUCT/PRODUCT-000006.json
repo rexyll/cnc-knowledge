@@ -1,0 +1,40 @@
+{
+  "entity_id": "PRODUCT-000006",
+  "entity_type": "product_model",
+  "canonical_name": "THK LM Guide",
+  "english_name": null,
+  "aliases": [],
+  "description": "THK官方直线运动导轨产品族；具体负载、精度和预压由具体型号确定。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "功能部件/控制产品"
+  ],
+  "tags": [
+    "直线导轨",
+    "运动部件"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000026"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000015",
+    "model_code": "LM Guide",
+    "product_family": "直线运动导向产品",
+    "product_scope": "THK官方直线运动导轨产品族；具体负载、精度和预压由具体型号确定。",
+    "exact_revision": "本行业地图未指定硬件/软件版本；集成前需按确切版本核验。"
+  },
+  "notes": null
+}

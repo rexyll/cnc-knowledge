@@ -1,0 +1,39 @@
+{
+  "entity_id": "MACHINE-000002",
+  "entity_type": "machine_model",
+  "canonical_name": "Mazak INTEGREX i NEO",
+  "english_name": null,
+  "aliases": [],
+  "description": "官方产品目录将INTEGREX i NEO列为多任务机床，可集成车削及多面/多轴加工能力。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH19",
+    "CH22"
+  ],
+  "classification_path": [
+    "机床型号/系列"
+  ],
+  "tags": [
+    "车铣复合",
+    "多任务",
+    "工艺集成"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000011"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000002",
+    "model_code": "INTEGREX i NEO",
+    "product_family": "车铣复合/多任务机床",
+    "machine_type_id": "MTYPE-000013",
+    "configuration_note": "具体配置、行程、主轴、刀库和控制系统选件应以对应地区/版本规格书为准。"
+  },
+  "notes": null
+}

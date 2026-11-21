@@ -1,0 +1,41 @@
+{
+  "entity_id": "MTYPE-000013",
+  "entity_type": "machine_type",
+  "canonical_name": "多任务/车铣复合机床",
+  "english_name": null,
+  "aliases": [],
+  "description": "在同一平台集成车削与铣削等多种工艺；属于跨工艺集成类别，不替代工艺主分类。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH01",
+    "CH19"
+  ],
+  "classification_path": [
+    "复合加工"
+  ],
+  "tags": [
+    "机床分类",
+    "Multi-tasking and mill-turn machines"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000004",
+    "SRC-000010",
+    "SRC-000011"
+  ],
+  "attributes": {
+    "taxonomy_level": "cross_cutting",
+    "typical_variants": [
+      "车铣复合中心",
+      "多主轴多刀塔机床",
+      "复合加工中心"
+    ]
+  },
+  "notes": "本分类用于工程导航；具体统计归类以适用地区/版本官方分类表为准。"
+}

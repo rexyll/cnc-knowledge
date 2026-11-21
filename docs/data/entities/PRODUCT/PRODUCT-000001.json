@@ -1,0 +1,40 @@
+{
+  "entity_id": "PRODUCT-000001",
+  "entity_type": "product_model",
+  "canonical_name": "FANUC Series 0i-F Plus",
+  "english_name": null,
+  "aliases": [],
+  "description": "面向车削、铣削及激光等应用的FANUC CNC产品系列；具体0i-MF/TF/LF分支能力按型号资料区分。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "功能部件/控制产品"
+  ],
+  "tags": [
+    "CNC",
+    "控制器"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000021"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000010",
+    "model_code": "0i-F Plus",
+    "product_family": "数控系统",
+    "product_scope": "面向车削、铣削及激光等应用的FANUC CNC产品系列；具体0i-MF/TF/LF分支能力按型号资料区分。",
+    "exact_revision": "本行业地图未指定硬件/软件版本；集成前需按确切版本核验。"
+  },
+  "notes": null
+}

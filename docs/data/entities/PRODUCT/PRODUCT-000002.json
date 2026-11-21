@@ -1,0 +1,40 @@
+{
+  "entity_id": "PRODUCT-000002",
+  "entity_type": "product_model",
+  "canonical_name": "Siemens SINUMERIK ONE",
+  "english_name": null,
+  "aliases": [],
+  "description": "西门子面向机床的数字原生CNC平台；适用功能和配置需按产品版本及机床厂集成方案核验。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "功能部件/控制产品"
+  ],
+  "tags": [
+    "CNC",
+    "数字化"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000022"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000011",
+    "model_code": "SINUMERIK ONE",
+    "product_family": "数控系统",
+    "product_scope": "西门子面向机床的数字原生CNC平台；适用功能和配置需按产品版本及机床厂集成方案核验。",
+    "exact_revision": "本行业地图未指定硬件/软件版本；集成前需按确切版本核验。"
+  },
+  "notes": null
+}

@@ -1,0 +1,21 @@
+{
+  "relation_id": "REL-000002",
+  "subject_id": "MTYPE-000005",
+  "predicate": "CLASSIFIED_AS",
+  "object_id": "MTYPE-000001",
+  "qualifiers": {
+    "taxonomy_basis": "本知识库工程分类与官方统计/协会产品目录交叉参照",
+    "classification_dimension": "process_family"
+  },
+  "source_ids": [
+    "SRC-000001",
+    "SRC-000004"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "notes": "工程导航关系，不替代国家/地区法定统计编码。"
+}

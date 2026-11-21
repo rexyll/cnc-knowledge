@@ -1,0 +1,44 @@
+{
+  "entity_id": "MTYPE-000009",
+  "entity_type": "machine_type",
+  "canonical_name": "齿轮加工与齿轮精整机床",
+  "english_name": null,
+  "aliases": [],
+  "description": "用于齿轮齿形生成、齿面精加工和相关倒角/去毛刺的专用机床。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH01",
+    "CH19"
+  ],
+  "classification_path": [
+    "切削加工/齿轮加工"
+  ],
+  "tags": [
+    "机床分类",
+    "Gear cutting and finishing machines"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000001",
+    "SRC-000004",
+    "SRC-000019"
+  ],
+  "attributes": {
+    "taxonomy_level": "level_2",
+    "typical_variants": [
+      "滚齿机",
+      "插齿机",
+      "磨齿机",
+      "剃齿机",
+      "珩齿机",
+      "车齿机"
+    ]
+  },
+  "notes": "本分类用于工程导航；具体统计归类以适用地区/版本官方分类表为准。"
+}

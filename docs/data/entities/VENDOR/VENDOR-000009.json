@@ -1,0 +1,53 @@
+{
+  "entity_id": "VENDOR-000009",
+  "entity_type": "organization",
+  "canonical_name": "Nidec Corporation",
+  "english_name": null,
+  "aliases": [],
+  "description": "集团机器工具业务官方目录包括加工中心、大型机床、铣床、齿轮加工、车床、激光加工和金属增材设备。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH02",
+    "CH04",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "供应链/产业角色"
+  ],
+  "tags": [
+    "代表性样本",
+    "machine_tool_oem"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000020"
+  ],
+  "attributes": {
+    "organization_roles": [
+      "machine_tool_oem"
+    ],
+    "product_segments": [
+      "加工中心",
+      "大型机床",
+      "铣床",
+      "齿轮加工",
+      "车床",
+      "激光加工",
+      "金属增材"
+    ],
+    "record_scope": "官方公开产品目录可核验的代表性产品/业务范围",
+    "supplier_status": "not_assessed",
+    "registered_country": null,
+    "official_website": "https://www.nidec.com/"
+  },
+  "notes": "仅用于行业地图和产品生态导航；不构成市场份额、供应能力、交期、价格或产品质量评级。"
+}

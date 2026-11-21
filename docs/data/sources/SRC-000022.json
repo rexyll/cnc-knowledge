@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000022",
+  "source_type": "manufacturer_product_page",
+  "title": "SINUMERIK",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://www.siemens.com/en-us/products/sinumerik/",
+  "version": null,
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "SINUMERIK ONE / 828D / 808 CNC platforms",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration",
+  "notes": "西门子官方CNC产品页，描述车削、铣削、钻削、磨削和多轴应用。"
+}

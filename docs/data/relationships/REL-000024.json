@@ -1,0 +1,19 @@
+{
+  "relation_id": "REL-000024",
+  "subject_id": "MACHINE-000007",
+  "predicate": "MANUFACTURED_BY",
+  "object_id": "VENDOR-000008",
+  "qualifiers": {
+    "role": "OEM / official product portfolio"
+  },
+  "source_ids": [
+    "SRC-000019"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "notes": "按厂商官方产品目录建立。"
+}

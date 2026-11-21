@@ -1,0 +1,34 @@
+{
+  "entity_id": "TERM-000016",
+  "entity_type": "term",
+  "canonical_name": "柔性制造单元",
+  "english_name": null,
+  "aliases": [],
+  "description": "Flexible Manufacturing Cell (FMC)。由一台或多台机床及工件/托盘搬运、控制和相关辅助设备组成的自动化制造单元；具体边界依系统设计定义。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH02",
+    "CH19"
+  ],
+  "classification_path": [
+    "行业基础/产业链"
+  ],
+  "tags": [
+    "术语"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000004"
+  ],
+  "attributes": {
+    "english_term": "Flexible Manufacturing Cell (FMC)",
+    "definition_scope": "本知识库工作定义，关联来源提供分类或产品语境"
+  },
+  "notes": null
+}

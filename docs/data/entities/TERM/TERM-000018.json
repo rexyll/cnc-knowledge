@@ -1,0 +1,35 @@
+{
+  "entity_id": "TERM-000018",
+  "entity_type": "term",
+  "canonical_name": "机床附件与相关装备",
+  "english_name": null,
+  "aliases": [],
+  "description": "Machine-tool accessories and related equipment。支持机床加工、装夹、刀具管理、测量、冷却、排屑、自动化和维护的附件/周边设备；统计分类中可能与机床主机分列。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH02",
+    "CH19"
+  ],
+  "classification_path": [
+    "行业基础/产业链"
+  ],
+  "tags": [
+    "术语"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000003",
+    "SRC-000004"
+  ],
+  "attributes": {
+    "english_term": "Machine-tool accessories and related equipment",
+    "definition_scope": "本知识库工作定义，关联来源提供分类或产品语境"
+  },
+  "notes": null
+}

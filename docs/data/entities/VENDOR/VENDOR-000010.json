@@ -1,0 +1,57 @@
+{
+  "entity_id": "VENDOR-000010",
+  "entity_type": "organization",
+  "canonical_name": "FANUC Corporation",
+  "english_name": null,
+  "aliases": [],
+  "description": "CNC与工厂自动化供应商；官方CNC目录包括0i-F Plus及30i/31i/32i系列，并覆盖控制器、软件、运动控制、驱动与电机等。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH02",
+    "CH04",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "供应链/产业角色"
+  ],
+  "tags": [
+    "代表性样本",
+    "cnc_controls",
+    "motion_control",
+    "servo_drives",
+    "servo_motors"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000021"
+  ],
+  "attributes": {
+    "organization_roles": [
+      "cnc_controls",
+      "motion_control",
+      "servo_drives",
+      "servo_motors"
+    ],
+    "product_segments": [
+      "CNC控制器",
+      "运动控制",
+      "伺服驱动",
+      "伺服电机",
+      "CNC软件"
+    ],
+    "record_scope": "官方公开产品目录可核验的代表性产品/业务范围",
+    "supplier_status": "not_assessed",
+    "registered_country": null,
+    "official_website": "https://www.fanuc.co.jp/"
+  },
+  "notes": "仅用于行业地图和产品生态导航；不构成市场份额、供应能力、交期、价格或产品质量评级。"
+}

@@ -1,0 +1,19 @@
+{
+  "relation_id": "REL-000030",
+  "subject_id": "PRODUCT-000006",
+  "predicate": "MANUFACTURED_BY",
+  "object_id": "VENDOR-000015",
+  "qualifiers": {
+    "role": "official product supplier"
+  },
+  "source_ids": [
+    "SRC-000026"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "notes": "按厂商官方产品目录建立。"
+}

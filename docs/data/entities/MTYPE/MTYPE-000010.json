@@ -1,0 +1,42 @@
+{
+  "entity_id": "MTYPE-000010",
+  "entity_type": "machine_type",
+  "canonical_name": "刨、插、拉、锯及其他切削机床",
+  "english_name": null,
+  "aliases": [],
+  "description": "用于刨削、插削、拉削、锯切及其他专用材料去除工序的机床类别。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH01",
+    "CH19"
+  ],
+  "classification_path": [
+    "切削加工/其他"
+  ],
+  "tags": [
+    "机床分类",
+    "Planing, shaping, broaching, sawing and other cutting machines"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000001",
+    "SRC-000004"
+  ],
+  "attributes": {
+    "taxonomy_level": "level_2",
+    "typical_variants": [
+      "刨床",
+      "插床",
+      "拉床",
+      "金属锯床",
+      "滚丝/攻丝设备"
+    ]
+  },
+  "notes": "本分类用于工程导航；具体统计归类以适用地区/版本官方分类表为准。"
+}

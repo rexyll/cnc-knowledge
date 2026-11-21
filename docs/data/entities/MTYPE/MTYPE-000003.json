@@ -1,0 +1,36 @@
+{
+  "entity_id": "MTYPE-000003",
+  "entity_type": "machine_type",
+  "canonical_name": "特种/非传统加工机床",
+  "english_name": null,
+  "aliases": [],
+  "description": "采用放电、电化学、激光、超声、电子束、离子束或水射流等方式加工材料的设备类别。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH01",
+    "CH19"
+  ],
+  "classification_path": [
+    "特种加工"
+  ],
+  "tags": [
+    "机床分类",
+    "Non-traditional process machine tools"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000001",
+    "SRC-000004"
+  ],
+  "attributes": {
+    "taxonomy_level": "level_1",
+    "classification_basis": "CPC 44211 / JMTBA physico-chemical process machines"
+  },
+  "notes": "本分类用于工程导航；具体统计归类以适用地区/版本官方分类表为准。"
+}

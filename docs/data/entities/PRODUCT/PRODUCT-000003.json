@@ -1,0 +1,41 @@
+{
+  "entity_id": "PRODUCT-000003",
+  "entity_type": "product_model",
+  "canonical_name": "HEIDENHAIN TNC7",
+  "english_name": null,
+  "aliases": [],
+  "description": "海德汉面向铣削、铣车复合和加工中心的CNC控制产品。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "功能部件/控制产品"
+  ],
+  "tags": [
+    "CNC",
+    "铣削",
+    "五轴"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000023"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000012",
+    "model_code": "TNC7",
+    "product_family": "数控系统",
+    "product_scope": "海德汉面向铣削、铣车复合和加工中心的CNC控制产品。",
+    "exact_revision": "本行业地图未指定硬件/软件版本；集成前需按确切版本核验。"
+  },
+  "notes": null
+}

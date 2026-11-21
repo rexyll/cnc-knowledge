@@ -1,0 +1,55 @@
+{
+  "entity_id": "VENDOR-000012",
+  "entity_type": "organization",
+  "canonical_name": "DR. JOHANNES HEIDENHAIN GmbH",
+  "english_name": null,
+  "aliases": [],
+  "description": "官方产品组合包括CNC控制、直线/角度/旋转编码器、长度测量、测头和数字显示设备；TNC控制器面向铣削和车削。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH02",
+    "CH04",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "供应链/产业角色"
+  ],
+  "tags": [
+    "代表性样本",
+    "cnc_controls",
+    "encoders",
+    "metrology"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000023"
+  ],
+  "attributes": {
+    "organization_roles": [
+      "cnc_controls",
+      "encoders",
+      "metrology"
+    ],
+    "product_segments": [
+      "TNC CNC",
+      "编码器",
+      "测头",
+      "长度测量",
+      "数字显示"
+    ],
+    "record_scope": "官方公开产品目录可核验的代表性产品/业务范围",
+    "supplier_status": "not_assessed",
+    "registered_country": null,
+    "official_website": "https://www.heidenhain.com/"
+  },
+  "notes": "仅用于行业地图和产品生态导航；不构成市场份额、供应能力、交期、价格或产品质量评级。"
+}

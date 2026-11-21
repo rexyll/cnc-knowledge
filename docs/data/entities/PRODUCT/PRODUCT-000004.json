@@ -1,0 +1,40 @@
+{
+  "entity_id": "PRODUCT-000004",
+  "entity_type": "product_model",
+  "canonical_name": "GSK 988MA",
+  "english_name": null,
+  "aliases": [],
+  "description": "广州数控官方列出的加工中心CNC系统产品系列。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "功能部件/控制产品"
+  ],
+  "tags": [
+    "CNC",
+    "加工中心"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000024"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000013",
+    "model_code": "GSK 988MA",
+    "product_family": "加工中心数控系统",
+    "product_scope": "广州数控官方列出的加工中心CNC系统产品系列。",
+    "exact_revision": "本行业地图未指定硬件/软件版本；集成前需按确切版本核验。"
+  },
+  "notes": null
+}

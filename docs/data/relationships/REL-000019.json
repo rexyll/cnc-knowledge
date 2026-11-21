@@ -1,0 +1,19 @@
+{
+  "relation_id": "REL-000019",
+  "subject_id": "MACHINE-000005",
+  "predicate": "MODEL_OF",
+  "object_id": "MTYPE-000006",
+  "qualifiers": {
+    "catalogue_category": "五轴立式加工中心"
+  },
+  "source_ids": [
+    "SRC-000015"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "notes": "按厂商产品目录类别归属。"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000007",
+  "source_type": "official_dataset",
+  "title": "Economic Data",
+  "publisher": "CECIMO — European Association of Manufacturing Technologies",
+  "author": null,
+  "url": "https://www.cecimo.eu/economic-data/",
+  "version": null,
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Economic Data / data collection methodology",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "official_dataset",
+  "notes": "说明CECIMO通过成员协会及非欧洲合作协会汇集行业统计数据；数字需保留口径和版本。"
+}

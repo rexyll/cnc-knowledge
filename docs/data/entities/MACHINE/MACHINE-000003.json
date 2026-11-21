@@ -1,0 +1,38 @@
+{
+  "entity_id": "MACHINE-000003",
+  "entity_type": "machine_model",
+  "canonical_name": "Mazak VARIAXIS i NEO",
+  "english_name": null,
+  "aliases": [],
+  "description": "官方产品目录将VARIAXIS i NEO列为同时五轴立式加工中心系列。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH19",
+    "CH22"
+  ],
+  "classification_path": [
+    "机床型号/系列"
+  ],
+  "tags": [
+    "五轴",
+    "立式加工中心"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000011"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000002",
+    "model_code": "VARIAXIS i NEO",
+    "product_family": "五轴加工中心",
+    "machine_type_id": "MTYPE-000006",
+    "configuration_note": "具体配置、行程、主轴、刀库和控制系统选件应以对应地区/版本规格书为准。"
+  },
+  "notes": null
+}

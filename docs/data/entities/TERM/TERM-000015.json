@@ -1,0 +1,36 @@
+{
+  "entity_id": "TERM-000015",
+  "entity_type": "term",
+  "canonical_name": "多任务/车铣复合机床",
+  "english_name": null,
+  "aliases": [],
+  "description": "Multi-tasking / mill-turn machine。在同一平台集成两种或多种加工工艺（典型如车削与铣削）的设备；它是工艺集成维度，不是互斥的单一切削类别。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH02",
+    "CH19"
+  ],
+  "classification_path": [
+    "行业基础/产业链"
+  ],
+  "tags": [
+    "术语"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000011",
+    "SRC-000012",
+    "SRC-000013"
+  ],
+  "attributes": {
+    "english_term": "Multi-tasking / mill-turn machine",
+    "definition_scope": "本知识库工作定义，关联来源提供分类或产品语境"
+  },
+  "notes": null
+}

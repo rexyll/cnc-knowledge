@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000011",
+  "source_type": "manufacturer_product_page",
+  "title": "Products",
+  "publisher": "Yamazaki Mazak Corporation",
+  "author": null,
+  "url": "https://www.mazak.com/us-en/products/",
+  "version": null,
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Multi-tasking / 5-axis / turning / Swiss-type / vertical and horizontal machining centers",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration",
+  "notes": "厂商官方产品目录，包含多任务、五轴、车削、瑞士型及立卧式加工中心。"
+}

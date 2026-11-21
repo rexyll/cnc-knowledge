@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000023",
+  "source_type": "manufacturer_product_page",
+  "title": "CNC controls",
+  "publisher": "DR. JOHANNES HEIDENHAIN GmbH",
+  "author": null,
+  "url": "https://www.heidenhain.com/products/cnc-controls-and-digital-readouts/cnc-controls",
+  "version": null,
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "TNC7 and CNC controls for milling and turning machines",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration",
+  "notes": "海德汉官方CNC控制产品页；并覆盖测量、编码器和探测产品生态。"
+}

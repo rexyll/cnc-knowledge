@@ -1,0 +1,42 @@
+{
+  "entity_id": "MTYPE-000007",
+  "entity_type": "machine_type",
+  "canonical_name": "钻削与镗削机床",
+  "english_name": null,
+  "aliases": [],
+  "description": "以钻孔、扩孔、铰孔、镗孔及相关孔加工为主要功能的机床类别。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH01",
+    "CH19"
+  ],
+  "classification_path": [
+    "切削加工/孔加工"
+  ],
+  "tags": [
+    "机床分类",
+    "Drilling and boring machines"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000001",
+    "SRC-000004"
+  ],
+  "attributes": {
+    "taxonomy_level": "level_2",
+    "typical_variants": [
+      "立式钻床",
+      "摇臂钻床",
+      "深孔钻床",
+      "卧式镗床",
+      "坐标镗床"
+    ]
+  },
+  "notes": "本分类用于工程导航；具体统计归类以适用地区/版本官方分类表为准。"
+}

@@ -1,0 +1,55 @@
+{
+  "entity_id": "VENDOR-000013",
+  "entity_type": "organization",
+  "canonical_name": "广州数控设备有限公司",
+  "english_name": null,
+  "aliases": [],
+  "description": "中国数控系统供应商；官方产品页列出GSK 988MA加工中心数控系统，并提供车削、五轴和多通道系列资料入口。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH02",
+    "CH04",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10"
+  ],
+  "classification_path": [
+    "供应链/产业角色"
+  ],
+  "tags": [
+    "代表性样本",
+    "cnc_controls",
+    "servo_drives",
+    "servo_motors"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000024"
+  ],
+  "attributes": {
+    "organization_roles": [
+      "cnc_controls",
+      "servo_drives",
+      "servo_motors"
+    ],
+    "product_segments": [
+      "加工中心CNC",
+      "车床CNC",
+      "五轴CNC",
+      "多通道CNC",
+      "驱动与电机"
+    ],
+    "record_scope": "官方公开产品目录可核验的代表性产品/业务范围",
+    "supplier_status": "not_assessed",
+    "registered_country": null,
+    "official_website": "https://www.gsk.com.cn/"
+  },
+  "notes": "仅用于行业地图和产品生态导航；不构成市场份额、供应能力、交期、价格或产品质量评级。"
+}

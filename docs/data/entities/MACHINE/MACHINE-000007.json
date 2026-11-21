@@ -1,0 +1,38 @@
+{
+  "entity_id": "MACHINE-000007",
+  "entity_type": "machine_model",
+  "canonical_name": "秦川 YKS7225A高效磨齿机",
+  "english_name": null,
+  "aliases": [],
+  "description": "秦川官方齿轮加工机床目录列出YKS7225A双工位高效磨齿机。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH19",
+    "CH22"
+  ],
+  "classification_path": [
+    "机床型号/系列"
+  ],
+  "tags": [
+    "磨齿",
+    "齿轮加工"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000019"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000008",
+    "model_code": "YKS7225A",
+    "product_family": "齿轮磨削机床",
+    "machine_type_id": "MTYPE-000009",
+    "configuration_note": "具体配置、行程、主轴、刀库和控制系统选件应以对应地区/版本规格书为准。"
+  },
+  "notes": null
+}

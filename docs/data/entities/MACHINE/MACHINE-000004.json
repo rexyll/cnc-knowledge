@@ -1,0 +1,37 @@
+{
+  "entity_id": "MACHINE-000004",
+  "entity_type": "machine_model",
+  "canonical_name": "Okuma GENOS M560-V",
+  "english_name": null,
+  "aliases": [],
+  "description": "官方产品筛选器列出GENOS M560-V，归入立式加工中心产品类别。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH19",
+    "CH22"
+  ],
+  "classification_path": [
+    "机床型号/系列"
+  ],
+  "tags": [
+    "立式加工中心"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000013"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000003",
+    "model_code": "GENOS M560-V",
+    "product_family": "立式加工中心",
+    "machine_type_id": "MTYPE-000006",
+    "configuration_note": "具体配置、行程、主轴、刀库和控制系统选件应以对应地区/版本规格书为准。"
+  },
+  "notes": null
+}

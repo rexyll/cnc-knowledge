@@ -1,0 +1,37 @@
+{
+  "entity_id": "TERM-000012",
+  "entity_type": "term",
+  "canonical_name": "机床工具行业",
+  "english_name": null,
+  "aliases": [],
+  "description": "Machine tool industry。围绕机床整机、控制与功能部件、刀具夹具、制造装配、系统集成、分销服务和终端加工应用形成的产业生态；本知识库按直接支撑数控机床的环节界定范围。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH02",
+    "CH19"
+  ],
+  "classification_path": [
+    "行业基础/产业链"
+  ],
+  "tags": [
+    "术语"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T00:02:02+08:00",
+  "verified_at": "2026-11-22T00:02:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000001",
+    "SRC-000002",
+    "SRC-000004",
+    "SRC-000006"
+  ],
+  "attributes": {
+    "english_term": "Machine tool industry",
+    "definition_scope": "本知识库工作定义，关联来源提供分类或产品语境"
+  },
+  "notes": null
+}
