@@ -9,6 +9,7 @@
 |---|---|---|---|---|---|---|
 | MAP-001 | 建立数控机床行业、机型、厂商、系统及供应链首轮全景图 | 2026-11-22T00:11:41+08:00 | main | [19de9c6](https://github.com/rexyll/cnc-knowledge/commit/19de9c62a884c297086c524390fe740703e8cfc2) | `docs/01-industry-and-fundamentals/industry-map.md`、`docs/02-machine-types-and-products/machine-tool-classification.md`、`docs/19-manufacturers-products-and-supply-chain/representative-ecosystem.md`、`docs/data/`、`docs/data-model/chapter-dictionaries/CH02.csv`、`CH19.csv`、`docs/coverage/CHAPTER-COVERAGE.csv` | 建立26条SRC来源、50个实体、30条关系；包括14种机床类型、8个术语、15家代表性组织、7个整机型号/系列、6项CNC/运动/直线运动产品；GitHub Actions Run #4通过，5项单元测试通过，质量脚本PASS（0 errors），检查22章、203条内部链接、42处来源引用和22条覆盖记录。 |
 | CH01-T002 | 整理数控机床基本原理、坐标系、轴系与运动链术语 | 2026-11-22T00:26:22+08:00 | main | [1a5c3f6](https://github.com/rexyll/cnc-knowledge/commit/1a5c3f64927db7c9e51e1cb1e79008176e8683a6) | docs/01-industry-and-fundamentals/cnc-machine-fundamentals.md、docs/GLOSSARY.md、docs/data/entities/TERM/TERM-000020～TERM-000035.json、docs/data/sources/SRC-000027～SRC-000034.json、章节README | 新增1篇基础原理文章、16条术语实体和8条来源记录；覆盖NC程序执行链、HMI/NC/PLC职责、MCS/WCS、零点/参考点、XYZ/ABC/UVW轴系、轴数与联动、运动链、插补和反馈控制。GitHub Actions Run #9通过，5项单元测试通过，严格知识质量检查PASS（0 errors），全库统计66实体、30关系、34来源、207条内部链接。 |
+| CH01-T003 | 构建行业实体与关系索引 | 2026-11-22T00:43:13+08:00 | main | [ba4cf6d](https://github.com/rexyll/cnc-knowledge/commit/ba4cf6df110246a2f0e9c995e28c8531b65b443e) | docs/01-industry-and-fundamentals/entity-relationship-index.md、docs/data/entities/KNOW/KNOW-000002.json～KNOW-000005.json、docs/data/relationships/REL-000031.json～REL-000097.json、docs/data-model/chapter-dictionaries/CH01.csv、相关README与登记规范 | 为4篇正式知识文章建立KNOW主记录；新增67条有来源的DERIVED_FROM文章索引关系，复用14种机床类型、7个整机型号、15家组织、6项产品及24个术语实体；增加CH01字段字典与索引。主提交GitHub Actions Run #11通过，5项单元测试及严格质量检查PASS（0 errors）；全库70实体、97关系、34来源。 |
 
 > 最终验收以提交 `19de9c62a884c297086c524390fe740703e8cfc2` 触发的GitHub Actions Run #4为准：  
 > https://github.com/rexyll/cnc-knowledge/actions/runs/44923203355
@@ -85,6 +86,38 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - CH19-T003：研究主轴、轴承、丝杠、导轨、转台、刀库、编码器、刀具、夹具、测量和辅助系统供应商。
 - 后续更新必须继续遵守main分支、来源证据、资源归档、质量门禁和每日历史规则。
 
+
+## CH01-T003研究与验收记录
+
+### 实体身份与关系范围
+
+- 为4篇已有正文建立正式KNOW实体主记录：KNOW-000002行业全景图、KNOW-000003机床分类体系、KNOW-000004厂商生态图、KNOW-000005基础原理。
+- KNOW-000001只存在于文章模板中，是示例ID，不作为实际知识条目登记。
+- 复用CH02/CH19已有实体，不复制记录：14个MTYPE、7个MACHINE、15个VENDOR、6个PRODUCT及24个TERM。
+- 新增67条DERIVED_FROM关系：行业地图9条、分类文章14条、厂商生态28条、基础原理16条。每条关系包含来源ID、正文路径、版本和引用角色。
+- 本任务中的DERIVED_FROM仅表示文章对实体的内容索引和溯源；不表示制造、供货、组成、适用、兼容或标准符合关系。
+- 未为尚缺少具体来源的子系统、零部件、材料、标准符合性和应用对象臆造实体；缺项由CH03～CH15等主责任章节继续研究。
+
+### 交付物与覆盖度
+
+- 正式知识条目主记录：4条KNOW JSON。
+- 关系记录：REL-000031～REL-000097，共67条；原有30条分类、型号和制造事实关系保留。
+- 新增索引正文：docs/01-industry-and-fundamentals/entity-relationship-index.md。
+- 新增字段字典：docs/data-model/chapter-dictionaries/CH01.csv。
+- 更新docs/ENTITY-REGISTRY.md、实体/关系记录说明、章节README和总目录。
+- 全库结构统计：70条实体、97条关系、34条来源。
+- 覆盖矩阵复核后：CH01为2级foundational，26个主归属实体、25条关联关系、24个去重SRC；CH02为22实体/46关系/10来源；CH19为22实体/34关系/20来源。
+
+### 验收证据
+
+- 主要内容提交：https://github.com/rexyll/cnc-knowledge/commit/ba4cf6df110246a2f0e9c995e28c8531b65b443e
+- GitHub Actions Run #11：https://github.com/rexyll/cnc-knowledge/actions/runs/44926071399 — success。
+- 覆盖矩阵更正提交：https://github.com/rexyll/cnc-knowledge/commit/ae8f28529967bb2c37c1bb5df2d67e5e95fbc83f；Run #13：https://github.com/rexyll/cnc-knowledge/actions/runs/44926221521 — success。
+- TaskHistory更正提交Run #14：https://github.com/rexyll/cnc-knowledge/actions/runs/44926318124 — success。
+- 单元测试5项全部通过；严格知识质量检查PASS（0 errors），检查22章、218条内部链接、94个Markdown文件、70条实体、97条关系、34条来源及22条覆盖记录。
+- 离线CI不验证外部URL实时可用性。
+
+> 本节于2026-11-22T00:46:06+08:00补齐，用于修复前一版TaskHistory遗漏T003完成详情的问题；保留此前任务计划、正文及数据的实际完成时间与提交SHA。
 
 ## 覆盖矩阵计数复核与更正记录
 
