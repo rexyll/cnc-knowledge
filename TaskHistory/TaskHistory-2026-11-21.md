@@ -11,6 +11,7 @@
 | INIT-002 | 建立总体规则、22章目录和分章节TaskPlan | 2026-11-21T23:13:17+08:00 | main | [6684321](https://github.com/rexyll/cnc-knowledge/commit/6684321950160ab9610c7e8a80a045ff8886de3f) | `TaskPlan.md`、`docs/`、`docs/TaskPlan/`、`resouces/`、`TaskHistory/` | 已创建并推送；树结构未截断；远端仅存在main分支 |
 | INIT-003 | 核验目录树、唯一分支和章节导航并修正链接 | 2026-11-21T23:13:52+08:00 | main | [1756861](https://github.com/rexyll/cnc-knowledge/commit/175686199d30f55e4aefa8fc1cb3f68edff8aa02) | `docs/TaskPlan/README.md`、全库结构校验 | 核验74个文件、22章正文入口、22份章节计划、22个资源目录；章节正文导航22条均有效；仅有main分支 |
 | CORE-001 | 建立统一知识实体、ID、关系与来源模型 | 2026-11-21T23:21:21+08:00 | main | [17dd27e](https://github.com/rexyll/cnc-knowledge/commit/17dd27ee73b31fb62115811cbf9e21b8605133e5) | `docs/KNOWLEDGE-MODEL.md`、`docs/RELATIONSHIP-MODEL.md`、`docs/ENTITY-REGISTRY.md`、`docs/data-model/`、`docs/GLOSSARY.md` | 完成32类实体、36类关系、实体/关系/来源3份JSON Schema、2份受控目录及模板；验证CSV与Schema枚举一致；仅main分支 |
+| CORE-002 | 建立统一知识文章模板、来源引用规则、资源索引和章节字段字典规范 | 2026-11-21T23:26:04+08:00 | main | [ea63c8a](https://github.com/rexyll/cnc-knowledge/commit/ea63c8a1d445c21b3557ef728691dc0e8e7dab25) | `docs/REFERENCE-GUIDE.md`、`docs/templates/`、`docs/data/`、`docs/data-model/source.schema.json` | 建立文章/资源/字段字典模板、A-E来源权威等级及证据性质规范、实体/关系/来源存储路径；扩展来源Schema；仅main分支 |
 
 > 完成时间取自对应GitHub提交的author/committer时间，并转换为项目统一时区Asia/Shanghai（UTC+08:00）。
 
@@ -27,6 +28,6 @@
 
 ## 未完成 / 后续任务
 
-- CORE-002：完善知识文章模板、引用/来源记录模板、资源索引模板和章节数据字段模板。\n- CORE-003：建立全库质量检查、链接检查、来源完整性和覆盖度审查机制。
+- CORE-003：建立全库质量检查、链接检查、来源完整性和覆盖度审查机制。
 - MAP-001：建立行业、机型、厂商、系统及供应链全景图。
 - 各章节知识研究任务按依赖关系推进；完成后更新对应章节TaskPlan及当日TaskHistory。
