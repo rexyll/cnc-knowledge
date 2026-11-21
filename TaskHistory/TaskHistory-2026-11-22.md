@@ -9,6 +9,7 @@
 |---|---|---|---|---|---|---|
 | MAP-001 | 建立数控机床行业、机型、厂商、系统及供应链首轮全景图 | 2026-11-22T00:11:41+08:00 | main | [19de9c6](https://github.com/rexyll/cnc-knowledge/commit/19de9c62a884c297086c524390fe740703e8cfc2) | `docs/01-industry-and-fundamentals/industry-map.md`、`docs/02-machine-types-and-products/machine-tool-classification.md`、`docs/19-manufacturers-products-and-supply-chain/representative-ecosystem.md`、`docs/data/`、`docs/data-model/chapter-dictionaries/CH02.csv`、`CH19.csv`、`docs/coverage/CHAPTER-COVERAGE.csv` | 建立26条SRC来源、50个实体、30条关系；包括14种机床类型、8个术语、15家代表性组织、7个整机型号/系列、6项CNC/运动/直线运动产品；GitHub Actions Run #4通过，5项单元测试通过，质量脚本PASS（0 errors），检查22章、203条内部链接、42处来源引用和22条覆盖记录。 |
 | CH01-T002 | 整理数控机床基本原理、坐标系、轴系与运动链术语 | 2026-11-22T00:26:22+08:00 | main | [1a5c3f6](https://github.com/rexyll/cnc-knowledge/commit/1a5c3f64927db7c9e51e1cb1e79008176e8683a6) | docs/01-industry-and-fundamentals/cnc-machine-fundamentals.md、docs/GLOSSARY.md、docs/data/entities/TERM/TERM-000020～TERM-000035.json、docs/data/sources/SRC-000027～SRC-000034.json、章节README | 新增1篇基础原理文章、16条术语实体和8条来源记录；覆盖NC程序执行链、HMI/NC/PLC职责、MCS/WCS、零点/参考点、XYZ/ABC/UVW轴系、轴数与联动、运动链、插补和反馈控制。GitHub Actions Run #9通过，5项单元测试通过，严格知识质量检查PASS（0 errors），全库统计66实体、30关系、34来源、207条内部链接。 |
+| CH01-T003 | 构建行业实体与关系索引 | 2026-11-22T00:43:13+08:00 | main | [ba4cf6d](https://github.com/rexyll/cnc-knowledge/commit/ba4cf6df110246a2f0e9c995e28c8531b65b443e) | `docs/01-industry-and-fundamentals/entity-relationship-index.md`、`docs/data/entities/KNOW/KNOW-000002.json`～`KNOW-000005.json`、`docs/data/relationships/REL-000031.json`～`REL-000097.json`、`docs/data-model/chapter-dictionaries/CH01.csv`、实体/关系登记说明 | 为4篇正式知识文章建立KNOW主记录；建立67条有来源的DERIVED_FROM文章索引关系，复用14种机床类型、7个整机型号、15家组织、6项产品及24个术语实体；更新索引、字段字典、覆盖矩阵及任务计划。GitHub Actions Run #11成功，5项单元测试通过，严格质量检查PASS（0 errors），全库70实体、97关系、34来源、218条内部链接。 |
 
 > 最终验收以提交 `19de9c62a884c297086c524390fe740703e8cfc2` 触发的GitHub Actions Run #4为准：  
 > https://github.com/rexyll/cnc-knowledge/actions/runs/44923203355
@@ -69,17 +70,47 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 严格质量检查：RESULT: PASS (0 errors)；检查22章、207条内部链接、93个Markdown文件、66条实体、30条关系、34条来源、22条覆盖记录。
 - 本轮检查不包含外部URL实时存活验证；外部链接的持续可用性仍需后续网络检查。
 
+## CH01-T003研究与验收记录
+
+### 实体身份与关系范围
+
+- 为4篇已有正文建立正式KNOW实体主记录：KNOW-000002行业全景图、KNOW-000003机床分类体系、KNOW-000004厂商生态图、KNOW-000005基础原理。
+- KNOW-000001只存在于文章模板中，是示例ID，不作为实际知识实体登记。
+- 复用现有结构化实体，不复制CH02/CH19的机床类型、整机型号、组织和产品记录：14个MTYPE、7个MACHINE、15个VENDOR、6个PRODUCT及24个TERM。
+- 新增67条DERIVED_FROM关系，按文章明确引用的实体建立导航：行业地图9条、分类文章14条、厂商生态28条、基础原理16条。每条关系包含来源ID、正文路径、版本和引用角色。
+- 本任务中的DERIVED_FROM仅表示文章对实体的内容索引和溯源；不表示制造、供货、组成、适用、兼容或标准符合关系。
+- 未为尚缺少具体来源的子系统、零部件、材料、标准符合性和应用对象臆造实体；缺项按主责任章节转交CH03～CH15等任务继续研究。
+
+### 交付物与覆盖度
+
+- 正式知识条目主记录：4条KNOW JSON。
+- 关系记录：REL-000031～REL-000097，共67条；原有30条分类、型号和制造关系保留。
+- 新增索引正文：docs/01-industry-and-fundamentals/entity-relationship-index.md。
+- 新增字段字典：docs/data-model/chapter-dictionaries/CH01.csv；覆盖知识条目和术语属性字段。
+- 更新docs/ENTITY-REGISTRY.md、数据记录说明、章节README和总目录。
+- 全库结构统计：70条实体、97条关系、34条来源；本轮不新增来源和本地媒体资产。
+- CH01覆盖保持2级foundational：2篇本章文章、26个主归属实体、25条与CH01主数据相连的关系、24条去重来源。
+- CH02覆盖实体22条、关系46条；CH19覆盖实体22条、关系34条。覆盖口径按各章主归属实体及关联关系统计，同一跨章关系可能计入两个相关章节。
+
+### 验收证据
+
+- 内容和结构化数据提交：https://github.com/rexyll/cnc-knowledge/commit/ba4cf6df110246a2f0e9c995e28c8531b65b443e
+- GitHub Actions Run #11：https://github.com/rexyll/cnc-knowledge/actions/runs/44926071399 — success。
+- 单元测试：5项全部通过。
+- 严格知识质量检查：RESULT: PASS (0 errors)；检查22章、218条内部链接、94个Markdown文件、70条实体、97条关系、34条来源和22条覆盖记录。
+- 本轮离线CI未验证外部URL实时可用性；外部网站链接仍需后续网络检查。
+
 ## 当前章节进度
 
 | 章节 | 已完成节点 | 当前覆盖等级 | 下一步 |
 |---|---|---|---|
-| CH01 | CH01-T001、CH01-T002 | 2级 foundational | CH01-T003：行业实体与关系索引 |
+| CH01 | CH01-T001、CH01-T002、CH01-T003 | 2级 foundational | CH01-T004：行业范围与缺项审查 |
 | CH02 | CH02-T001 | 1级 inventory | CH02-T002：主要机型结构与技术档案 |
 | CH19 | CH19-T001 | 1级 inventory | CH19-T002/T003：整机、系统厂商与功能部件供应链 |
 
 ## 未完成 / 后续任务
 
-- CH01-T003：构建行业实体与关系索引，避免重复登记已存在的机型/厂商实体。
+- CH01-T004：审查行业范围和跨章节缺项，确认后续章节的主归属和边界。
 - CH02-T002：按机型建立结构、工作原理、关键配置和应用技术档案。
 - CH19-T002：补充整机与数控/驱动系统厂商的具体系列和地区资料。
 - CH19-T003：研究主轴、轴承、丝杠、导轨、转台、刀库、编码器、刀具、夹具、测量和辅助系统供应商。
