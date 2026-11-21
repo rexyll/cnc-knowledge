@@ -1,0 +1,10 @@
+chapter_id,entity_type,field_name,label_zh,description,data_type,unit,required_level,allowed_values,validation_rule,applicability,source_required,example_value,notes
+CH01,knowledge_article,document_path,正文路径,知识条目的仓库内Markdown相对路径,string,,required,,必须存在且位于对应主章节docs目录,所有已发布知识条目,yes,docs/01-industry-and-fundamentals/cnc-machine-fundamentals.md,只记录仓库内正文；外部来源放入source_ids
+CH01,knowledge_article,article_version,文章版本,知识条目的内容版本标识,string,,required,,使用可排序版本号或明确版本标签,所有已发布知识条目,no,1.0,不同于来源资料的原始版本
+CH01,knowledge_article,reviewed_on,核验日期,正文事实与来源最近一次复核日期,date,,required,,YYYY-MM-DD,所有已审核知识条目,yes,2026-11-22,不表示来源网站永久有效
+CH01,knowledge_article,content_scope,内容范围,文章覆盖内容及边界说明,string,,required,,明确纳入和排除范围,所有知识条目,yes,行业边界和价值链地图,不要写成未完成的全行业覆盖声明
+CH01,knowledge_article,knowledge_kind,知识条目类别,本章知识条目的主要用途,enum,,required,industry_map|machine_taxonomy|ecosystem_map|fundamentals|entity_index|other,必须选择最接近的类别,CH01知识条目,no,industry_map,该字段用于检索导航而非实体类型
+CH01,knowledge_article,article_status,文章审查状态,正文是否经过人工核验和质量门禁,enum,,required,reviewed|draft|archived,与实体verification_status和TaskPlan状态保持一致,所有知识条目,no,reviewed,仅reviewed文章可计入knowledge_articles
+CH01,term,english_term,英文术语或缩写,术语对应的英文原词或常用缩写,string,,recommended,,保留标准或厂商原始拼写,术语实体,yes,Machine Coordinate System (MCS),同一缩写多义时应拆分术语记录
+CH01,term,definition_scope,定义边界,说明定义适用的通用语境或特定厂商/版本范围,string,,required,,必须说明通用定义和厂商特定边界,术语实体,yes,数控机床通用工程语境,防止把厂商术语泛化为行业通用定义
+CH01,term,usage_context,适用语境,该术语在哪类机床/控制器/工程活动中使用,string,,recommended,,尽量关联章节或具体控制平台,术语实体,yes,坐标变换与多轴编程,不确定的产品适用性标记待核实

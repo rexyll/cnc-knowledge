@@ -1,0 +1,67 @@
+{
+  "entity_id": "KNOW-000004",
+  "entity_type": "knowledge_article",
+  "canonical_name": "代表性机床厂商、CNC与功能部件生态图",
+  "english_name": "Representative machine tool, CNC and component ecosystem",
+  "aliases": [],
+  "description": "基于官方公开目录整理代表性组织、整机型号和CNC/运动/功能部件产品样本；非全球全集或采购评级",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH01",
+    "CH02",
+    "CH04",
+    "CH05",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10",
+    "CH14"
+  ],
+  "classification_path": [
+    "知识条目",
+    "ecosystem_map"
+  ],
+  "tags": [
+    "厂商生态",
+    "供应链",
+    "代表性样本"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:36:40+08:00",
+  "updated_at": "2026-11-22T00:36:40+08:00",
+  "verified_at": "2026-11-22T00:36:40+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000004",
+    "SRC-000005",
+    "SRC-000009",
+    "SRC-000010",
+    "SRC-000011",
+    "SRC-000012",
+    "SRC-000013",
+    "SRC-000014",
+    "SRC-000015",
+    "SRC-000016",
+    "SRC-000017",
+    "SRC-000018",
+    "SRC-000019",
+    "SRC-000020",
+    "SRC-000021",
+    "SRC-000022",
+    "SRC-000023",
+    "SRC-000024",
+    "SRC-000025",
+    "SRC-000026"
+  ],
+  "attributes": {
+    "document_path": "docs/19-manufacturers-products-and-supply-chain/representative-ecosystem.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "基于官方公开目录整理代表性组织、整机型号和CNC/运动/功能部件产品样本；非全球全集或采购评级",
+    "knowledge_kind": "ecosystem_map",
+    "article_status": "reviewed"
+  },
+  "notes": "知识条目主记录；不替代对应文档内容。关系图通过DERIVED_FROM链接本条目明确索引的结构化实体。"
+}

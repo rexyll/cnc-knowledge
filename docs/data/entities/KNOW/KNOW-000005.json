@@ -1,0 +1,54 @@
+{
+  "entity_id": "KNOW-000005",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床基本原理、坐标系与运动链",
+  "english_name": "CNC machine tool fundamentals, coordinate systems and kinematic chains",
+  "aliases": [],
+  "description": "从NC程序到加工运动的基本控制链，坐标系与零点，轴命名、运动链、插补和反馈方式",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH02",
+    "CH03",
+    "CH07",
+    "CH08",
+    "CH12",
+    "CH13",
+    "CH14"
+  ],
+  "classification_path": [
+    "知识条目",
+    "fundamentals"
+  ],
+  "tags": [
+    "基础原理",
+    "坐标系",
+    "轴系",
+    "运动学"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:36:40+08:00",
+  "updated_at": "2026-11-22T00:36:40+08:00",
+  "verified_at": "2026-11-22T00:36:40+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000027",
+    "SRC-000028",
+    "SRC-000029",
+    "SRC-000030",
+    "SRC-000031",
+    "SRC-000032",
+    "SRC-000033",
+    "SRC-000034"
+  ],
+  "attributes": {
+    "document_path": "docs/01-industry-and-fundamentals/cnc-machine-fundamentals.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "从NC程序到加工运动的基本控制链，坐标系与零点，轴命名、运动链、插补和反馈方式",
+    "knowledge_kind": "fundamentals",
+    "article_status": "reviewed"
+  },
+  "notes": "知识条目主记录；不替代对应文档内容。关系图通过DERIVED_FROM链接本条目明确索引的结构化实体。"
+}

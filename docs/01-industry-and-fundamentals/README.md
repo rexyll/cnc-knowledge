@@ -18,6 +18,12 @@
 
 [数控机床基本原理、坐标系与运动链](cnc-machine-fundamentals.md)
 
+## 实体与关系索引
+
+[行业实体与关系索引](entity-relationship-index.md)
+
+[CH01字段字典](../data-model/chapter-dictionaries/CH01.csv)
+
 ## 本章任务计划
 
 [打开本章 TaskPlan](../TaskPlan/01-industry-and-fundamentals/TaskPlan.md)

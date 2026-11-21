@@ -1,0 +1,53 @@
+{
+  "entity_id": "KNOW-000003",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床分类体系与产品型号索引",
+  "english_name": "CNC machine tool taxonomy and model index",
+  "aliases": [],
+  "description": "按加工过程、结构布局、轴配置、自动化和工艺集成构建多维机床分类，并索引代表性机型",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH01",
+    "CH03",
+    "CH04",
+    "CH05",
+    "CH07",
+    "CH08",
+    "CH13",
+    "CH19"
+  ],
+  "classification_path": [
+    "知识条目",
+    "machine_taxonomy"
+  ],
+  "tags": [
+    "机床分类",
+    "产品索引"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:36:40+08:00",
+  "updated_at": "2026-11-22T00:36:40+08:00",
+  "verified_at": "2026-11-22T00:36:40+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000001",
+    "SRC-000004",
+    "SRC-000010",
+    "SRC-000011",
+    "SRC-000013",
+    "SRC-000015",
+    "SRC-000017",
+    "SRC-000019"
+  ],
+  "attributes": {
+    "document_path": "docs/02-machine-types-and-products/machine-tool-classification.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "按加工过程、结构布局、轴配置、自动化和工艺集成构建多维机床分类，并索引代表性机型",
+    "knowledge_kind": "machine_taxonomy",
+    "article_status": "reviewed"
+  },
+  "notes": "知识条目主记录；不替代对应文档内容。关系图通过DERIVED_FROM链接本条目明确索引的结构化实体。"
+}
