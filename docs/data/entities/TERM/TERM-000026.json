@@ -1,0 +1,37 @@
+{
+  "entity_id": "TERM-000026",
+  "entity_type": "term",
+  "canonical_name": "回转轴",
+  "english_name": "Rotary axis",
+  "aliases": [],
+  "description": "绕笛卡尔坐标轴旋转的机床轴，通常以A、B、C分别表示绕X、Y、Z的回转运动。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH02",
+    "CH03",
+    "CH08"
+  ],
+  "classification_path": [
+    "基础原理/轴系"
+  ],
+  "tags": [
+    "术语",
+    "运动轴"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:19:03+08:00",
+  "updated_at": "2026-11-22T00:19:03+08:00",
+  "verified_at": "2026-11-22T00:19:03+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000027",
+    "SRC-000030"
+  ],
+  "attributes": {
+    "english_term": "Rotary axis",
+    "definition_scope": "数控机床通用工程语境；控制器特有实现须按具体机型/软件版本核验。"
+  },
+  "notes": null
+}

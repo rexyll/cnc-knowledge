@@ -36,6 +36,7 @@
 ## 行业地图与代表性厂商
 
 - [数控机床行业全景图](01-industry-and-fundamentals/industry-map.md)
+- [数控机床基本原理、坐标系与运动链](01-industry-and-fundamentals/cnc-machine-fundamentals.md)
 - [数控机床分类体系](02-machine-types-and-products/machine-tool-classification.md)
 - [代表性厂商与系统生态图](19-manufacturers-products-and-supply-chain/representative-ecosystem.md)
 

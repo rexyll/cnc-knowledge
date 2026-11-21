@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000034",
+  "source_type": "academic_paper",
+  "title": "A Reconfigurable Architecture for Industrial Control Systems: Overview and Challenges",
+  "publisher": "Machines (MDPI)",
+  "author": "Liu L.; Xu Z.; Qu X.",
+  "url": "https://www.mdpi.com/2075-1702/12/11/793",
+  "version": "2024, 12(11), 793; DOI:10.3390/machines12110793",
+  "published_on": "2024-11-09",
+  "accessed_on": "2026-11-22",
+  "locator": "§2.1, Brief Introduction to CNC Systems",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "同行评审期刊综述，用于支持HMI、NCK与PLC职责分解的概念性介绍；不同产品架构可能采用不同模块划分。",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

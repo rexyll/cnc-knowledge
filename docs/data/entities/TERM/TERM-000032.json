@@ -1,0 +1,36 @@
+{
+  "entity_id": "TERM-000032",
+  "entity_type": "term",
+  "canonical_name": "可编程逻辑控制器",
+  "english_name": "Programmable Logic Controller (PLC)",
+  "aliases": [],
+  "description": "用于执行离散逻辑、顺序控制和机床辅助动作的控制器或控制功能；其普通逻辑不等同于经过验证的安全相关控制功能。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH06",
+    "CH07"
+  ],
+  "classification_path": [
+    "基础原理/控制架构"
+  ],
+  "tags": [
+    "术语",
+    "控制架构"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:19:03+08:00",
+  "updated_at": "2026-11-22T00:19:03+08:00",
+  "verified_at": "2026-11-22T00:19:03+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000032",
+    "SRC-000034"
+  ],
+  "attributes": {
+    "english_term": "Programmable Logic Controller (PLC)",
+    "definition_scope": "数控机床通用工程语境；控制器特有实现须按具体机型/软件版本核验。"
+  },
+  "notes": null
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000029",
+  "source_type": "manufacturer_manual",
+  "title": "SINUMERIK ONE — NC Programming",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/089/109994089/att_1338998/v1/ONE_ncprogramming_progr_man_0725_en-US.pdf",
+  "version": "CNC software 6.25 SP1; 07/2025; A5E48054250B AL",
+  "published_on": "2025-07-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Fundamentals §§3.1.1–3.1.4; machine/workpiece coordinate systems, zero/reference points and coordinate transformations",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "西门子官方编程手册。仅将MCS/WCS、零点、参考点和坐标变换作为SINUMERIK ONE版本示例，不将G54/G55等具体实现无条件推广到其他CNC。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

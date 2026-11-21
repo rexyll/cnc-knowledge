@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000027",
+  "source_type": "standard_catalog",
+  "title": "Industrial automation systems and integration — Numerical control of machines — Coordinate system and motion nomenclature",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/23949.html",
+  "version": "ISO 841:2001; reviewed and confirmed current in 2023",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "ISO 841:2001; scope and public catalogue metadata",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "ISO官方目录。用于数控机床坐标系与运动命名的规范性来源；本库仅保留元数据和摘要，不复制标准全文。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

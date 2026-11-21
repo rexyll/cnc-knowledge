@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000032",
+  "source_type": "manufacturer_manual",
+  "title": "SINUMERIK 840D sl — Basic Functions",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/226/109783226/att_1036999/v1/840Dsl_basic_fct_man_1020_en-US.pdf",
+  "version": "Function Manual; version 4.94; 10/2020",
+  "published_on": "2020-10-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Axes and coordinate systems; kinematic chain; continuous-path mode/LookAhead; auxiliary functions to PLC",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "西门子SINUMERIK 840D sl特定版本功能手册。章节定位按手册目录主题描述；不表示其功能在所有型号和选件中均可用。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

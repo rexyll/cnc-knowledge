@@ -1,0 +1,36 @@
+{
+  "entity_id": "TERM-000035",
+  "entity_type": "term",
+  "canonical_name": "运动链",
+  "english_name": "Kinematic chain",
+  "aliases": [],
+  "description": "由机床基础件、运动副、驱动和传动机构等组成的运动连接关系，描述刀具侧与工件侧部件的相对运动拓扑，是建立机床运动学模型的基础。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH03",
+    "CH12"
+  ],
+  "classification_path": [
+    "基础原理/运动学"
+  ],
+  "tags": [
+    "术语",
+    "机械与运动学"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:19:03+08:00",
+  "updated_at": "2026-11-22T00:19:03+08:00",
+  "verified_at": "2026-11-22T00:19:03+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000029",
+    "SRC-000032"
+  ],
+  "attributes": {
+    "english_term": "Kinematic chain",
+    "definition_scope": "数控机床通用工程语境；控制器特有实现须按具体机型/软件版本核验。"
+  },
+  "notes": null
+}

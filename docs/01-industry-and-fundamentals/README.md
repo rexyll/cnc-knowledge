@@ -14,6 +14,10 @@
 
 [行业全景图](industry-map.md)
 
+## 基础原理
+
+[数控机床基本原理、坐标系与运动链](cnc-machine-fundamentals.md)
+
 ## 本章任务计划
 
 [打开本章 TaskPlan](../TaskPlan/01-industry-and-fundamentals/TaskPlan.md)

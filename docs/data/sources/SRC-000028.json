@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000028",
+  "source_type": "standard_catalog",
+  "title": "Industrial automation systems — Numerical control of machines — Vocabulary",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/7798.html",
+  "version": "ISO 2806:1994; reviewed and confirmed current in 2023",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "ISO 2806:1994; scope and public catalogue metadata",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "ISO官方目录。用于数控机床术语范围识别；具体术语仍需结合适用标准版本和机床语境核验。仅记录元数据，不复制标准全文。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

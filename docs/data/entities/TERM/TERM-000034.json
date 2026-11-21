@@ -1,0 +1,36 @@
+{
+  "entity_id": "TERM-000034",
+  "entity_type": "term",
+  "canonical_name": "全闭环控制",
+  "english_name": "Full closed-loop control",
+  "aliases": [],
+  "description": "以滑台直线编码器或回转轴角度编码器等负载侧测量元件作为位置反馈，使测量点到被控负载之间更多机械环节纳入位置环。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH08",
+    "CH14"
+  ],
+  "classification_path": [
+    "基础原理/反馈控制"
+  ],
+  "tags": [
+    "术语",
+    "反馈方式"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:19:03+08:00",
+  "updated_at": "2026-11-22T00:19:03+08:00",
+  "verified_at": "2026-11-22T00:19:03+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000031",
+    "SRC-000033"
+  ],
+  "attributes": {
+    "english_term": "Full closed-loop control",
+    "definition_scope": "数控机床通用工程语境；控制器特有实现须按具体机型/软件版本核验。"
+  },
+  "notes": null
+}

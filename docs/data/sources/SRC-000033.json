@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000033",
+  "source_type": "other",
+  "title": "How machine tool feedback can reveal or hide axis errors",
+  "publisher": "HEIDENHAIN Corporation",
+  "author": null,
+  "url": "https://www.heidenhain.us/resources-and-news/how-machine-tool-feedback-can-reveal-or-hide-axis-errors/",
+  "version": null,
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Position acquisition on linear axes; semi-closed-loop versus closed-loop feedback",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "HEIDENHAIN官方技术说明，用于解释电机端和负载端位置反馈点的差异；不作为所有控制架构的独立测量对比数据。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

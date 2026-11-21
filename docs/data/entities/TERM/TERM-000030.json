@@ -1,0 +1,36 @@
+{
+  "entity_id": "TERM-000030",
+  "entity_type": "term",
+  "canonical_name": "数控通道",
+  "english_name": "CNC channel",
+  "aliases": [],
+  "description": "特定CNC架构中用于组织NC程序执行、轴分配和路径控制的逻辑单元；通道数量、轴分配和并行能力因平台而异。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH07",
+    "CH11"
+  ],
+  "classification_path": [
+    "基础原理/控制架构"
+  ],
+  "tags": [
+    "术语",
+    "控制器术语"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:19:03+08:00",
+  "updated_at": "2026-11-22T00:19:03+08:00",
+  "verified_at": "2026-11-22T00:19:03+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000031",
+    "SRC-000032"
+  ],
+  "attributes": {
+    "english_term": "CNC channel",
+    "definition_scope": "数控机床通用工程语境；控制器特有实现须按具体机型/软件版本核验。"
+  },
+  "notes": null
+}

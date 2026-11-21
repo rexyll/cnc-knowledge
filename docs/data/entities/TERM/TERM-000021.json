@@ -1,0 +1,38 @@
+{
+  "entity_id": "TERM-000021",
+  "entity_type": "term",
+  "canonical_name": "工件坐标系",
+  "english_name": "Workpiece Coordinate System (WCS)",
+  "aliases": [],
+  "description": "针对特定工件或装夹建立的编程坐标系统，工件零点为该坐标系原点；通过偏置和变换映射至机床坐标系。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH07",
+    "CH08",
+    "CH13"
+  ],
+  "classification_path": [
+    "基础原理/坐标系"
+  ],
+  "tags": [
+    "术语",
+    "坐标基准"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:19:03+08:00",
+  "updated_at": "2026-11-22T00:19:03+08:00",
+  "verified_at": "2026-11-22T00:19:03+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000027",
+    "SRC-000029",
+    "SRC-000030"
+  ],
+  "attributes": {
+    "english_term": "Workpiece Coordinate System (WCS)",
+    "definition_scope": "数控机床通用工程语境；控制器特有实现须按具体机型/软件版本核验。"
+  },
+  "notes": null
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000030",
+  "source_type": "manufacturer_manual",
+  "title": "TNC7 TNCguide — User's Manual",
+  "publisher": "DR. JOHANNES HEIDENHAIN GmbH",
+  "author": null,
+  "url": "https://content.heidenhain.de/doku/tnc_guide/pdf_files/TNC7/81762x-16/tncguide/1369999-02.pdf",
+  "version": "NC Software 817620-16/817621-16/817625-16; 01/2022",
+  "published_on": "2022-01-01",
+  "accessed_on": "2026-11-22",
+  "locator": "§7.1 programmable axes; §15.1 reference systems (M-CS, B-CS, W-CS, WPL-CS, I-CS, T-CS)",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "HEIDENHAIN官方TNC7手册；用于说明具体控制器的可编程轴与多层坐标系命名，版本语境不可忽略。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

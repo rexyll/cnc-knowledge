@@ -24,6 +24,23 @@
 | TERM-0018 | 机床附件与相关装备 | Machine-tool accessories and related equipment | 支持机床加工、装夹、刀具管理、测量、冷却、排屑、自动化和维护的附件/周边设备；统计分类中可能与机床主机分列。 | 产业链 | SRC-000003、SRC-000004 | industry-map.md | 有来源支持 |
 | TERM-0019 | 数控系统 | Computerized Numerical Control (CNC) system | 将数控程序、插补/运动控制、逻辑控制、人机交互及相关接口结合起来的控制系统；具体功能边界因架构和产品等级而异。 | 控制系统 | SRC-000021、SRC-000022、SRC-000023、SRC-000024 | representative-ecosystem.md | 厂商产品语境 |
 
+| TERM-000020 | 机床坐标系 | Machine Coordinate System (MCS) | 由机床制造商定义的机床侧基准坐标系统，用于描述机床物理轴的位置；具体原点和轴配置须结合机型定义。 | 坐标基准 | SRC-000027、SRC-000029、SRC-000030 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000021 | 工件坐标系 | Workpiece Coordinate System (WCS) | 针对特定工件或装夹建立的编程坐标系统，工件零点为该坐标系原点；通过偏置和变换映射至机床坐标系。 | 坐标基准 | SRC-000027、SRC-000029、SRC-000030 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000022 | 机床零点 | Machine zero | 机床坐标系的基准原点，通常由机床设计/制造方定义；不应与参考开关或回参考点位置混淆。 | 坐标基准 | SRC-000027、SRC-000029 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000023 | 工件零点 | Workpiece zero / workpiece datum | 某一工件坐标系的原点，依据工件基准、装夹和工序要求设定；可随工件或装夹变化。 | 坐标基准 | SRC-000029、SRC-000030 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000024 | 机床参考点 | Machine reference point | 用于建立或恢复机床轴坐标基准的已知位置；检测方式以及与机床零点之间的关系取决于机型和回参考点配置。 | 坐标基准 | SRC-000027、SRC-000029、SRC-000030、SRC-000031 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000025 | 直线轴 | Linear axis | 沿笛卡尔坐标方向产生直线运动的机床轴，主要轴通常以X、Y、Z表示；实际运动部件可以是刀具侧或工件侧结构。 | 轴系 | SRC-000027、SRC-000030 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000026 | 回转轴 | Rotary axis | 绕笛卡尔坐标轴旋转的机床轴，通常以A、B、C分别表示绕X、Y、Z的回转运动。 | 轴系 | SRC-000027、SRC-000030 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000027 | 平行轴 | Parallel axis | 与X、Y、Z主要直线轴平行的附加直线轴，常以U、V、W表示；具体轴名与机床布局相关。 | 轴系 | SRC-000027、SRC-000030 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000028 | 插补 | Interpolation | 根据编程路径和运动条件计算协调的轴运动中间设定值，使机床按规定轨迹运动；支持的路径类型和周期特性依控制系统而定。 | 运动控制 | SRC-000031、SRC-000032 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000029 | 路径轴 | Path axis | 在特定数控通道的路径插补中参与协调运动的轴；其定义、数量和分配需依具体控制器手册确认。 | 轴系与通道 | SRC-000031、SRC-000032 | cnc-machine-fundamentals.md | 控制器语境 |
+| TERM-000030 | 数控通道 | CNC channel | 特定CNC架构中用于组织NC程序执行、轴分配和路径控制的逻辑单元；通道数量、轴分配和并行能力因平台而异。 | 控制架构 | SRC-000031、SRC-000032 | cnc-machine-fundamentals.md | 控制器语境 |
+| TERM-000031 | 伺服控制 | Servo control | 根据轴运动设定值控制驱动器和电机，并利用位置、速度或电流反馈降低跟踪误差的控制过程；控制环分布依系统架构而定。 | 运动控制 | SRC-000031、SRC-000033 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000032 | 可编程逻辑控制器 | Programmable Logic Controller (PLC) | 用于执行离散逻辑、顺序控制和机床辅助动作的控制器或控制功能；其普通逻辑不等同于经过验证的安全相关控制功能。 | 控制架构 | SRC-000032、SRC-000034 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000033 | 半闭环控制 | Semi-closed-loop control | 以电机端旋转编码器作为位置反馈，依据传动关系估算负载位置；编码器之后的传动误差通常不被该位置测量直接覆盖。 | 反馈方式 | SRC-000031、SRC-000033 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000034 | 全闭环控制 | Full closed-loop control | 以滑台直线编码器或回转轴角度编码器等负载侧测量元件作为位置反馈，使测量点到被控负载之间更多机械环节纳入位置环。 | 反馈方式 | SRC-000031、SRC-000033 | cnc-machine-fundamentals.md | 有来源支持 |
+| TERM-000035 | 运动链 | Kinematic chain | 由机床基础件、运动副、驱动和传动机构等组成的运动连接关系，描述刀具侧与工件侧部件的相对运动拓扑，是建立机床运动学模型的基础。 | 机械与运动学 | SRC-000029、SRC-000032 | cnc-machine-fundamentals.md | 有来源支持 |
+
 ## 维护规则
 
 - 为每个术语分配稳定ID；名称变化不复用或随意更改ID。

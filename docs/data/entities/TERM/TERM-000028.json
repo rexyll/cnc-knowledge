@@ -1,0 +1,37 @@
+{
+  "entity_id": "TERM-000028",
+  "entity_type": "term",
+  "canonical_name": "插补",
+  "english_name": "Interpolation",
+  "aliases": [],
+  "description": "根据编程路径和运动条件计算协调的轴运动中间设定值，使机床按规定轨迹运动；支持的路径类型和周期特性依控制系统而定。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH07",
+    "CH08",
+    "CH12"
+  ],
+  "classification_path": [
+    "基础原理/运动控制"
+  ],
+  "tags": [
+    "术语",
+    "运动控制"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:19:03+08:00",
+  "updated_at": "2026-11-22T00:19:03+08:00",
+  "verified_at": "2026-11-22T00:19:03+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000031",
+    "SRC-000032"
+  ],
+  "attributes": {
+    "english_term": "Interpolation",
+    "definition_scope": "数控机床通用工程语境；控制器特有实现须按具体机型/软件版本核验。"
+  },
+  "notes": null
+}

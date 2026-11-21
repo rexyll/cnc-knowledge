@@ -1,0 +1,36 @@
+{
+  "entity_id": "TERM-000022",
+  "entity_type": "term",
+  "canonical_name": "机床零点",
+  "english_name": "Machine zero",
+  "aliases": [],
+  "description": "机床坐标系的基准原点，通常由机床设计/制造方定义；不应与参考开关或回参考点位置混淆。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH07",
+    "CH08"
+  ],
+  "classification_path": [
+    "基础原理/坐标基准"
+  ],
+  "tags": [
+    "术语",
+    "坐标基准"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T00:19:03+08:00",
+  "updated_at": "2026-11-22T00:19:03+08:00",
+  "verified_at": "2026-11-22T00:19:03+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000027",
+    "SRC-000029"
+  ],
+  "attributes": {
+    "english_term": "Machine zero",
+    "definition_scope": "数控机床通用工程语境；控制器特有实现须按具体机型/软件版本核验。"
+  },
+  "notes": null
+}

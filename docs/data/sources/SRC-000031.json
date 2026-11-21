@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000031",
+  "source_type": "manufacturer_manual",
+  "title": "SINUMERIK MC — Axes and Spindles",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://support.industry.siemens.com/cs/attachments/109767475/MC_axes_fct_man_0619_en-US.pdf?download=true",
+  "version": "Function Manual; version 1.12; 06/2019",
+  "published_on": "2019-06-01",
+  "accessed_on": "2026-11-22",
+  "locator": "§2.5 closed-loop control; §6.3 motion behavior and interpolation functions",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "西门子SINUMERIK MC特定版本功能手册，用于说明位置/速度/电流控制环及路径轴、定位轴实现示例。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
