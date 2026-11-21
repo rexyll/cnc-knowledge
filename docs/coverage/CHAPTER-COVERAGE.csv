@@ -1,6 +1,6 @@
 chapter_id,chapter_slug,coverage_level,coverage_label,knowledge_articles,verified_entities,verified_relationships,source_records,asset_records,last_reviewed_at,next_priority,status,notes
 CH01,01-industry-and-fundamentals,2,foundational,2,26,25,24,0,2026-11-22,CH01-T004：行业范围与缺项审查,IN_PROGRESS,2篇CH01正文；24条TERM+2条KNOW主归属实体；25条与CH01主数据相连的已核验关系；去重SRC 24条。
-CH02,02-machine-types-and-products,1,inventory,1,21,24,10,0,2026-11-22,补齐主要机型结构/选型及不同厂商具体型号规格,IN_PROGRESS,按本章分类/机型文章、主归属实体和关系引用去重统计，共10条来源。
+CH02,02-machine-types-and-products,1,inventory,1,22,46,10,0,2026-11-22,CH02-T002：补齐主要机型结构/选型及具体型号规格,IN_PROGRESS,14个MTYPE+7个MACHINE+1个KNOW；关系含原有分类/型号事实和22条连接本章实体的文章索引边；去重SRC 10条。
 CH03,03-system-architecture-and-mechanics,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH04,04-components-materials-and-manufacturing,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH05,05-tooling-fixtures-and-workholding,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
