@@ -33,6 +33,14 @@
 - [跨章节实体关系模型](RELATIONSHIP-MODEL.md)
 - [数据模型与JSON Schema目录](data-model/README.md)
 
+## 写作、引用与资源模板
+
+- [统一知识文章模板](templates/KNOWLEDGE-ARTICLE-TEMPLATE.md)
+- [资源索引模板](templates/ASSET-INDEX-TEMPLATE.md)
+- [章节数据字段字典模板](templates/CHAPTER-DATA-DICTIONARY-TEMPLATE.csv)
+- [来源与引用规范](REFERENCE-GUIDE.md)
+- [结构化数据记录路径](data/README.md)
+
 ## 全库公共资料
 
 - [术语表](./GLOSSARY.md)
