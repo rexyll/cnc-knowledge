@@ -10,8 +10,15 @@
 | relation-types.csv | 关系谓词、主体/客体类型和语义约束 |
 | entity.schema.json | 实体记录JSON Schema，Draft 2020-12 |
 | relationship.schema.json | 有向关系记录JSON Schema |
-| source.schema.json | 来源证据记录JSON Schema |
+| source.schema.json | 来源证据记录JSON Schema，含权威等级与证据性质 |
 | templates/ | 新建实体、关系和来源记录的占位模板 |
+
+## 记录存储路径
+
+- 实体记录：docs/data/entities/<PREFIX>/<ENTITY-ID>.json。
+- 关系记录：docs/data/relationships/<REL-ID>.json。
+- 来源记录：docs/data/sources/<SRC-ID>.json。
+- Markdown正文与结构化记录分离；完整图片、动图和文档仍归档在resouces对应章节目录。
 
 ## 数据存储约定
 
