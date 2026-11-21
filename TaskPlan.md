@@ -230,5 +230,6 @@
 
 - 仓库初始化完成，默认分支为 `main`。
 - 已建立22个知识章节的正文入口、章节任务计划和资源归档目录。
-- CORE-001已完成，交付内容见docs/KNOWLEDGE-MODEL.md、docs/RELATIONSHIP-MODEL.md和docs/data-model/。\n- CORE-002、CORE-003及各章节具体研究任务仍为`TODO`；数据模型建立不代表已经填充真实厂商、机型和零部件知识。
+- CORE-001、CORE-002已完成；交付内容见docs/KNOWLEDGE-MODEL.md、docs/RELATIONSHIP-MODEL.md、docs/REFERENCE-GUIDE.md、docs/templates/和docs/data-model/。
+- CORE-003及各章节具体研究任务仍为`TODO`；规范和模板建立不代表已经填充真实厂商、机型和零部件知识。
 - 后续每次继续工作均从本文件和对应章节 TaskPlan 读取状态，完成任务后更新章节计划及当日 TaskHistory。
