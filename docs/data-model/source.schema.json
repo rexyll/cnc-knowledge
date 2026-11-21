@@ -11,7 +11,9 @@
     "title",
     "publisher",
     "accessed_on",
-    "rights_status"
+    "rights_status",
+    "authority_tier",
+    "evidence_kind"
   ],
   "properties": {
     "source_id": {
@@ -110,6 +112,34 @@
         "string",
         "null"
       ]
+    },
+    "authority_tier": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "unknown"
+      ],
+      "description": "来源权威性和可追溯等级，不直接代表单项结论已实测。"
+    },
+    "evidence_kind": {
+      "type": "string",
+      "enum": [
+        "normative_requirement",
+        "manufacturer_declaration",
+        "official_documentation",
+        "independent_test",
+        "academic_research",
+        "engineering_measurement",
+        "engineering_experience",
+        "secondary_summary",
+        "community_experience",
+        "other"
+      ],
+      "description": "来源内容的证据性质，与authority_tier分开记录。"
     }
   }
 }
