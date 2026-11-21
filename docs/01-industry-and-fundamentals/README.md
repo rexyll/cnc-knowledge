@@ -10,6 +10,10 @@
 - 关键术语、缩写、计量单位、技术分类与中英术语映射
 - 产业角色：整机厂、数控系统商、部件商、集成商、服务商和用户
 
+## 已建立的知识地图
+
+[行业全景图](industry-map.md)
+
 ## 本章任务计划
 
 [打开本章 TaskPlan](../TaskPlan/01-industry-and-fundamentals/TaskPlan.md)

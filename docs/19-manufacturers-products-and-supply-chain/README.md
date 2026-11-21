@@ -10,6 +10,10 @@
 - 机械部件、功能部件、刀具、夹具、液压/气动、润滑和冷却供应商
 - 供应商资质、产品生命周期、交期/替代风险和服务网络
 
+## 已建立的知识地图
+
+[代表性厂商与系统生态图](representative-ecosystem.md)
+
 ## 本章任务计划
 
 [打开本章 TaskPlan](../TaskPlan/19-manufacturers-products-and-supply-chain/TaskPlan.md)

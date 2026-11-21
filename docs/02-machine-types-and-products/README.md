@@ -10,6 +10,10 @@
 - 立式/卧式、龙门、五轴、车铣复合、专用及生产线机床
 - 典型型号、配置、性能范围、选型维度和适用工艺
 
+## 已建立的知识地图
+
+[机床分类体系](machine-tool-classification.md)
+
 ## 本章任务计划
 
 [打开本章 TaskPlan](../TaskPlan/02-machine-types-and-products/TaskPlan.md)

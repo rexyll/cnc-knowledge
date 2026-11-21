@@ -15,6 +15,14 @@
 | TERM-0009 | 关系限定条件 | Relationship Qualifier | 用于说明实体关系成立所需的机型、配置、版本、时间、地区或工况条件 | 全库数据模型 | 本项目内部数据模型 v1.0 | RELATIONSHIP-MODEL.md | 内部定义 |
 | TERM-0010 | 生命周期状态 | Lifecycle Status | 表示实体记录处于候选、有效、废弃、合并或归档等管理阶段的字段 | 全库数据模型 | 本项目内部数据模型 v1.0 | KNOWLEDGE-MODEL.md | 内部定义 |
 | TERM-0011 | 核验状态 | Verification Status | 表示实体或关系记录的证据核验进度与争议状态，不等同于生命周期状态 | 全库数据模型 | 本项目内部数据模型 v1.0 | KNOWLEDGE-MODEL.md | 内部定义 |
+| TERM-0012 | 机床工具行业 | Machine tool industry | 围绕机床整机、控制与功能部件、刀具夹具、制造装配、系统集成、分销服务和终端加工应用形成的产业生态；本知识库按直接支撑数控机床的环节界定范围。 | 全库行业范围 | SRC-000001、SRC-000002、SRC-000004、SRC-000006 | industry-map.md | 有来源支持 |
+| TERM-0013 | 机床整机厂/机床制造商 | Machine tool builder / OEM | 负责机床整机设计、制造、装配、集成或以自有品牌提供整机产品的组织；制造、品牌运营和经销服务角色应分别核验。 | 行业角色 | SRC-000004、SRC-000005 | industry-map.md | 有来源支持 |
+| TERM-0014 | 加工中心 | Machining center | 面向多工序数控切削的机床类别；具体自动换刀、轴配置和工艺能力以具体型号规格为准。 | 机床分类 | SRC-000001、SRC-000004 | machine-tool-classification.md | 有来源支持 |
+| TERM-0015 | 多任务/车铣复合机床 | Multi-tasking / mill-turn machine | 在同一平台集成两种或多种加工工艺（典型如车削与铣削）的设备；它是工艺集成维度，不是互斥的单一切削类别。 | 机床分类 | SRC-000011、SRC-000012、SRC-000013 | machine-tool-classification.md | 有来源支持 |
+| TERM-0016 | 柔性制造单元 | Flexible Manufacturing Cell (FMC) | 由一台或多台机床及工件/托盘搬运、控制和相关辅助设备组成的自动化制造单元；具体边界依系统设计定义。 | 自动化与生产系统 | SRC-000004 | industry-map.md | 行业目录语境 |
+| TERM-0017 | 柔性制造系统 | Flexible Manufacturing System (FMS) | 由多台可重配置加工设备、物料搬运和控制组成，能够在一定范围内适应产品或工艺变化的制造系统。 | 自动化与生产系统 | SRC-000004 | industry-map.md | 行业目录语境 |
+| TERM-0018 | 机床附件与相关装备 | Machine-tool accessories and related equipment | 支持机床加工、装夹、刀具管理、测量、冷却、排屑、自动化和维护的附件/周边设备；统计分类中可能与机床主机分列。 | 产业链 | SRC-000003、SRC-000004 | industry-map.md | 有来源支持 |
+| TERM-0019 | 数控系统 | Computerized Numerical Control (CNC) system | 将数控程序、插补/运动控制、逻辑控制、人机交互及相关接口结合起来的控制系统；具体功能边界因架构和产品等级而异。 | 控制系统 | SRC-000021、SRC-000022、SRC-000023、SRC-000024 | representative-ecosystem.md | 厂商产品语境 |
 
 ## 维护规则
 

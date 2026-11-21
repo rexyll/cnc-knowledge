@@ -1,0 +1,14 @@
+chapter_id,entity_type,field_name,label_zh,description,data_type,unit,required_level,allowed_values,validation_rule,applicability,source_required,example_value,notes
+CH19,organization,organization_roles,组织角色,制造商、CNC供应商、部件供应商、代理、集成商、服务商等,array,,required,,多个角色分别列出并提供来源,每个组织,yes,,不得把代理商推断为原厂
+CH19,organization,official_website,官方网站,组织官方域名/产品入口,string,,recommended,,应是厂商或母公司官方域名,每个厂商,yes,,区域销售站与集团官网应区分
+CH19,organization,product_segments,产品门类,官网已展示的产品类别,array,,recommended,,按官网原词/目录归并，关联SRC-ID,每个厂商,yes,,只代表公开目录，不证明当前库存或供应能力
+CH19,organization,operating_regions,经营/服务区域,官方明确的业务区域、工厂或服务网络,array,,conditional,,需要官方来源和核验日期,有地区信息时,yes,,没有证据时不推断注册国或服务覆盖
+CH19,organization,supplier_status,供应状态,当前有效、停产、待核验等采购状态,enum,,optional,active|discontinued|limited|unknown,,具体型号/区域/日期,yes,,未知保持unknown
+CH19,organization,source_verified_on,来源核验日期,最近一次核验官方资料的日期,date,,recommended,,YYYY-MM-DD,每条厂商记录,yes,,不同地区产品页需单独核验
+CH19,brand,owner_vendor_id,品牌运营/所有者实体,品牌对应组织ID,entity_ref,,conditional,,必须引用组织实体,品牌归属明确时,yes,,品牌与公司法人分开登记
+CH19,product_model,manufacturer_id,制造商实体,产品制造商VENDOR ID,entity_ref,,required,,必须引用VENDOR实体,每个产品型号,yes,,经销/供应关系另建SUPPLIED_BY/DISTRIBUTED_BY
+CH19,product_model,model_code,官方型号代码,产品型号或系列代码,string,,required,,保持官方拼写与版本标识,具体产品,yes,,产品系列和单一具体型号不混用
+CH19,product_model,product_family,产品类别/系列,CNC、驱动器、电机、导轨、主轴等类别,string,,required,,按官网产品目录分类,具体产品,yes,,需要与CH07/08/10技术定义衔接
+CH19,product_model,hardware_revision,硬件版本,硬件版本/代际,string,,conditional,,必须引用官方手册或铭牌,具体配置,yes,,未知不得猜测
+CH19,product_model,software_firmware_versions,软件/固件版本,与产品有关的版本或支持范围,array,,conditional,,注明发布/兼容范围与日期,控制产品,yes,,不得用当前下载页推断旧机型可升级
+CH19,product_model,interface_compatibility,接口与兼容性,电气、机械、通信和软件接口关系,object,,conditional,,每一项兼容结论需要版本化证据,具体型号/配置,yes,,不能用产品族相似性推断互操作

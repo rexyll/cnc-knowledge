@@ -1,0 +1,12 @@
+chapter_id,entity_type,field_name,label_zh,description,data_type,unit,required_level,allowed_values,validation_rule,applicability,source_required,example_value,notes
+CH02,machine_type,process_family,工艺主类,主要加工过程类别,enum,,required,metal_cutting|metal_forming|non_traditional|cross_cutting,必须来自受控分类词表,所有机床类型,yes,,分类主轴；结构和自动化另作为横向维度
+CH02,machine_type,typical_variants,典型子类,同类机床的典型细分类型,array,,recommended,,仅允许本分类树已定义的子类,按机床类型,yes,,不得把目录标签直接解释为强制标准分类
+CH02,machine_type,classification_basis,分类依据,引用的统计/协会分类或项目工程规则,array,,recommended,,填写SRC-ID及版本/条目,按类型,yes,,区分统计分类和工程导航分类
+CH02,machine_model,manufacturer_id,制造商实体,对应VENDOR实体ID,entity_ref,,required,,必须引用VENDOR实体记录,每个整机型号,yes,,不得将经销商误登记为制造商
+CH02,machine_model,model_code,官方型号/系列代码,厂商正式型号或系列名称,string,,required,,保留官方大小写、空格和符号,具体产品型号,yes,,不要把猜测的内部项目代号写入
+CH02,machine_model,machine_type_id,机床类型实体,对应MTYPE实体ID,entity_ref,,required,,必须引用MTYPE记录,具体产品型号,yes,,复合工艺可用主要类型并在attributes注明次要工艺
+CH02,machine_model,axis_configuration,轴配置,受控轴、同时联动轴、旋转轴布置,object,,conditional,,分别描述可控轴总数和同时联动能力,有多轴配置的型号,yes,,不以5-axis字样推断5轴同时联动
+CH02,machine_model,machine_layout,结构布局,卧式/立式/龙门/桥式/摆头/转台等,enum,,recommended,horizontal|vertical|gantry|bridge|bed|other,,适用型号,yes,,按具体型号规格书填写
+CH02,machine_model,process_capabilities,工艺能力,切削、磨削、齿轮、激光等工艺组合,array,,recommended,,能力必须有官方或测试来源,具体型号与选件,yes,,将标准配置、选配和定制项分开
+CH02,machine_model,configuration_options,配置选项,主轴、刀库、转台、控制器、工件交换等选项,array,,recommended,,必须标注选件/标准/地区限制,具体型号,yes,,无依据时不填写
+CH02,machine_model,published_specs,公开规格,官方规格字段与数值，不含推算的未知值,object,,conditional,,每个数值必须附单位、版本和SRC定位,具体型号/配置,yes,,额定/最大/典型/实测需区分

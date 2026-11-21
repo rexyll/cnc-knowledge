@@ -33,6 +33,12 @@
 - [跨章节实体关系模型](RELATIONSHIP-MODEL.md)
 - [数据模型与JSON Schema目录](data-model/README.md)
 
+## 行业地图与代表性厂商
+
+- [数控机床行业全景图](01-industry-and-fundamentals/industry-map.md)
+- [数控机床分类体系](02-machine-types-and-products/machine-tool-classification.md)
+- [代表性厂商与系统生态图](19-manufacturers-products-and-supply-chain/representative-ecosystem.md)
+
 ## 质量门禁与覆盖度
 
 - [质量门禁与章节覆盖度规范](QUALITY-GATES.md)
