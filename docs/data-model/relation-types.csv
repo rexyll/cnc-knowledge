@@ -1,5 +1,5 @@
 predicate,subject_entity_types,object_entity_types,meaning,usage_constraints
-CLASSIFIED_AS,任意实体,MTYPE或受控分类项,归入一种明确分类。,分类体系需注明版本；不得用此关系替代实体主类型。
+CLASSIFIED_AS,任意实体,KNOW或MTYPE分类节点,归入一个已登记的分类概念。,分类体系需注明版本；简单分类优先写入classification_path。
 MODEL_OF,MACHINE,MTYPE,整机型号属于某机床类型。,用于厂商机型与机床类别映射。
 INSTANCE_OF,MINST,MACHINE,某台实物机床是某产品型号的实例。,实物记录注意序列号及客户信息的隐私与保密。
 MANUFACTURED_BY,MACHINE/PRODUCT/PART,VENDOR,产品或部件由某组织制造。,制造商与经销商不能混同。
@@ -29,9 +29,9 @@ REPRESENTED_BY,DOC,ASSET,文档记录对应一个实际资源文件。,外部链
 HAS_ASSET,任意实体,ASSET,实体关联图片、动图或其他资源文件。,ASSET归档在主归属章节resouces目录。
 HAS_FAULT_MODE,MACHINE/SUBSYS/PART/PRODUCT,FAULT,对象存在某类故障模式。,注明适用条件、证据与发生范围。
 INDICATED_BY,FAULT,ALARM,故障模式可能由某报警或诊断码指示。,报警含义依赖厂商、产品系列和软件版本。
-CAUSED_BY,FAULT,PART/SUBSYS/PROCESS/SOFTWARE/CONDITION,故障可能由某部件、过程或条件导致。,必须提供证据及置信等级；一因多果/多因一果均可。
+CAUSED_BY,FAULT,PART/SUBSYS/PROCESS/SOFTWARE/APP,故障可能由某部件、过程或应用/工况实体导致。,环境或运行条件写入qualifiers；必须提供证据及置信等级。
 RESOLVED_BY,FAULT,PROC/CASE,故障可按某程序或案例处理。,注明安全前提、适用设备和验证结果。
 APPLIES_TO,PROC/TEST/STD/CASE/ALGO,MACHINE/MTYPE/PRODUCT/SUBSYS,程序、标准、测试、案例或算法适用于某对象。,限定型号、版本、配置或工况差异。
 DEPENDS_ON,SOFTWARE/ALGO/PRODUCT,SOFTWARE/PROTO/ALGO/INTERFACE,对象依赖另一软件、协议、算法或接口。,可记录最低/最高兼容版本。
 SUPERSEDES,任意实体,同类型实体,新版本/型号/标准替代旧对象。,保留旧记录及替代生效时间，不删除历史。
-DERIVED_FROM,任意实体或关系,DOC/MEAS/CASE/任意实体,当前记录由来源材料或其他实体派生。,保留推导说明和来源链。
+DERIVED_FROM,任意实体,DOC/MEAS/CASE/任意实体,当前实体记录由来源材料或其他实体派生。,关系记录的来源链写入source_ids和notes。

@@ -19,7 +19,7 @@
   "properties": {
     "entity_id": {
       "type": "string",
-      "pattern": "^(KNOW|TERM|MTYPE|MACHINE|MINST|VENDOR|BRAND|PRODUCT|SUBSYS|PART|MAT|PROCESS|TOOL|FIXTURE|SOFTWARE|ALGO|PROTO|INTERFACE|SIGNAL|PARAM|METRIC|STD|TEST|MEAS|BOM|DOC|ASSET|PROC|FAULT|ALARM|CASE|APP|SRC)-[0-9]{6}$"
+      "pattern": "^(KNOW|TERM|MTYPE|MACHINE|MINST|VENDOR|BRAND|PRODUCT|SUBSYS|PART|MAT|PROCESS|TOOL|FIXTURE|SOFTWARE|ALGO|PROTO|INTERFACE|SIGNAL|PARAM|METRIC|STD|TEST|MEAS|BOM|DOC|ASSET|PROC|FAULT|ALARM|CASE|APP)-[0-9]{6}$"
     },
     "entity_type": {
       "type": "string",
@@ -55,8 +55,7 @@
         "fault_mode",
         "alarm_code",
         "case_study",
-        "application",
-        "source_record"
+        "application"
       ]
     },
     "canonical_name": {
