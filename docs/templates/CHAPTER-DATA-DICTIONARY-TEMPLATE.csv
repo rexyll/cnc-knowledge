@@ -1,0 +1,2 @@
+chapter_id,entity_type,field_name,label_zh,description,data_type,unit,required_level,allowed_values,validation_rule,applicability,source_required,example_value,notes
+CHxx,<ENTITY_TYPE>,<field_name>,<字段中文名>,<字段含义>,<string|integer|number|boolean|date|datetime|enum|object|array|entity_ref|source_ref|asset_ref|relation_ref>,<单位或空>,<required|conditional|recommended|optional>,<枚举值或空>,<校验规则或空>,<适用机型/配置/版本>,<yes|no|conditional>,<示例或空>,<备注>
