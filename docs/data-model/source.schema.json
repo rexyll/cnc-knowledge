@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rexyll/cnc-knowledge/blob/main/docs/data-model/source.schema.json",
+  "title": "CNC Knowledge Source Record",
+  "description": "来源元数据；与ASSET文件记录区分。来源可以只是外部链接，不表示允许复制原文。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "source_type",
+    "title",
+    "publisher",
+    "accessed_on",
+    "rights_status"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "pattern": "^SRC-[0-9]{6}$"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "standard_catalog",
+        "regulation",
+        "manufacturer_manual",
+        "manufacturer_product_page",
+        "manufacturer_drawing",
+        "academic_paper",
+        "book",
+        "test_report",
+        "engineering_record",
+        "official_dataset",
+        "third_party_article",
+        "community_post",
+        "video_or_talk",
+        "other"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publisher": {
+      "type": "string",
+      "minLength": 1
+    },
+    "author": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "published_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "accessed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "locator": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rights_status": {
+      "type": "string",
+      "enum": [
+        "public_domain",
+        "open_license",
+        "permission_granted",
+        "user_supplied",
+        "link_only",
+        "restricted",
+        "unknown"
+      ]
+    },
+    "license_or_permission": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "entity_id": "<PREFIX>-000001",
+  "entity_type": "<entity_type_enum>",
+  "canonical_name": "<规范名称>",
+  "english_name": null,
+  "aliases": [],
+  "description": "<定义、边界和用途>",
+  "primary_chapter": "CHxx",
+  "related_chapters": [],
+  "classification_path": [],
+  "tags": [],
+  "lifecycle_status": "candidate",
+  "verification_status": "unverified",
+  "created_at": "YYYY-MM-DDThh:mm:ss+08:00",
+  "updated_at": "YYYY-MM-DDThh:mm:ss+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {},
+  "notes": "<未知项、差异和待核实信息>"
+}

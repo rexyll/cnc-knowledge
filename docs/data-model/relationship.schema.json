@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rexyll/cnc-knowledge/blob/main/docs/data-model/relationship.schema.json",
+  "title": "CNC Knowledge Relationship Record",
+  "description": "有方向的实体关系记录；每条关系应表达一个可核验事实或明确标记为候选关系。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "relation_id",
+    "subject_id",
+    "predicate",
+    "object_id",
+    "verification_status",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "relation_id": {
+      "type": "string",
+      "pattern": "^REL-[0-9]{6}$"
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^(KNOW|TERM|MTYPE|MACHINE|MINST|VENDOR|BRAND|PRODUCT|SUBSYS|PART|MAT|PROCESS|TOOL|FIXTURE|SOFTWARE|ALGO|PROTO|INTERFACE|SIGNAL|PARAM|METRIC|STD|TEST|MEAS|BOM|DOC|ASSET|PROC|FAULT|ALARM|CASE|APP|SRC)-[0-9]{6}$"
+    },
+    "predicate": {
+      "type": "string",
+      "enum": [
+        "CLASSIFIED_AS",
+        "MODEL_OF",
+        "INSTANCE_OF",
+        "MANUFACTURED_BY",
+        "BRANDED_AS",
+        "SUPPLIED_BY",
+        "DISTRIBUTED_BY",
+        "HAS_SUBSYSTEM",
+        "HAS_PART",
+        "PART_OF",
+        "USES_MATERIAL",
+        "PROCESSED_BY",
+        "USES_TOOL",
+        "USES_FIXTURE",
+        "EXPOSES_INTERFACE",
+        "CONNECTS_TO",
+        "USES_PROTOCOL",
+        "IMPLEMENTS",
+        "CARRIES_SIGNAL",
+        "CONTROLS",
+        "MEASURES",
+        "HAS_PARAMETER",
+        "HAS_METRIC",
+        "CONFORMS_TO",
+        "VERIFIED_BY",
+        "DOCUMENTED_BY",
+        "REPRESENTED_BY",
+        "HAS_ASSET",
+        "HAS_FAULT_MODE",
+        "INDICATED_BY",
+        "CAUSED_BY",
+        "RESOLVED_BY",
+        "APPLIES_TO",
+        "DEPENDS_ON",
+        "SUPERSEDES",
+        "DERIVED_FROM"
+      ]
+    },
+    "object_id": {
+      "type": "string",
+      "pattern": "^(KNOW|TERM|MTYPE|MACHINE|MINST|VENDOR|BRAND|PRODUCT|SUBSYS|PART|MAT|PROCESS|TOOL|FIXTURE|SOFTWARE|ALGO|PROTO|INTERFACE|SIGNAL|PARAM|METRIC|STD|TEST|MEAS|BOM|DOC|ASSET|PROC|FAULT|ALARM|CASE|APP|SRC)-[0-9]{6}$"
+    },
+    "qualifiers": {
+      "type": "object"
+    },
+    "source_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^SRC-[0-9]{6}$"
+      },
+      "uniqueItems": true
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "unverified",
+        "in_review",
+        "verified",
+        "disputed",
+        "rejected"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "unknown"
+      ]
+    },
+    "valid_from": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "valid_to": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

@@ -27,6 +27,12 @@
 - [21. 数字化、联网与智能制造](./21-digitalization-and-smart-manufacturing/README.md) — 数控机床联网、数据采集、状态监测、工业信息模型、MES/ERP集成、能耗、预测性维护、数字孪生和网络安全。
 - [22. 典型机床、工程案例与系统拆解](./22-case-studies-and-reference-machines/README.md) — 典型机床整机档案、系统拆解、配置分析、方案对比、制造/使用案例和经验证的工程实践。
 
+## 全库知识模型与公共资料
+
+- [统一知识实体模型](KNOWLEDGE-MODEL.md)
+- [跨章节实体关系模型](RELATIONSHIP-MODEL.md)
+- [数据模型与JSON Schema目录](data-model/README.md)
+
 ## 全库公共资料
 
 - [术语表](./GLOSSARY.md)

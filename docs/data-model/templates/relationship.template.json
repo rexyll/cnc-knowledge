@@ -1,0 +1,15 @@
+{
+  "relation_id": "REL-000001",
+  "subject_id": "<SUBJECT-PREFIX-000001>",
+  "predicate": "<predicate_enum>",
+  "object_id": "<OBJECT-PREFIX-000001>",
+  "qualifiers": {},
+  "source_ids": [],
+  "verification_status": "unverified",
+  "confidence": "unknown",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "YYYY-MM-DDThh:mm:ss+08:00",
+  "updated_at": "YYYY-MM-DDThh:mm:ss+08:00",
+  "notes": null
+}

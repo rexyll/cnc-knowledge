@@ -1,0 +1,16 @@
+{
+  "source_id": "SRC-000001",
+  "source_type": "other",
+  "title": "<资料标题>",
+  "publisher": "<发布机构/作者>",
+  "author": null,
+  "url": null,
+  "version": null,
+  "published_on": null,
+  "accessed_on": "YYYY-MM-DD",
+  "locator": null,
+  "language": "zh-CN",
+  "rights_status": "unknown",
+  "license_or_permission": null,
+  "notes": "<引用范围与核验说明>"
+}
