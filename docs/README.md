@@ -33,6 +33,11 @@
 - [跨章节实体关系模型](RELATIONSHIP-MODEL.md)
 - [数据模型与JSON Schema目录](data-model/README.md)
 
+## 质量门禁与覆盖度
+
+- [质量门禁与章节覆盖度规范](QUALITY-GATES.md)
+- [22章覆盖度矩阵](coverage/CHAPTER-COVERAGE.csv)
+
 ## 写作、引用与资源模板
 
 - [统一知识文章模板](templates/KNOWLEDGE-ARTICLE-TEMPLATE.md)
