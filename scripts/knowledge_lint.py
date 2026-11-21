@@ -343,8 +343,9 @@ def check_repo(root: Path, reporter: Reporter) -> None:
 
     coverage_rows = read_csv(root / "docs" / "coverage" / "CHAPTER-COVERAGE.csv", reporter)
     coverage_ids = [row.get("chapter_id", "") for row in coverage_rows]
-    if set(coverage_ids) != set(chapters) or len(coverage_ids) != len(chapters):
-        reporter.error("coverage matrix must contain exactly one row for each chapter")
+    expected_coverage_ids = {f"CH{chapter_id}" for chapter_id in chapters}
+    if set(coverage_ids) != expected_coverage_ids or len(coverage_ids) != len(expected_coverage_ids):
+        reporter.error("coverage matrix must contain exactly one CH01-CH22 row for each chapter")
     for row in coverage_rows:
         try:
             level = int(row.get("coverage_level", "-1"))
