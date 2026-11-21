@@ -9,6 +9,7 @@
 |---|---|---|---|---|---|---|
 | INIT-001 | 初始化Git仓库并建立main首个提交 | 2026-11-21T23:09:24+08:00 | main | [4c60f74](https://github.com/rexyll/cnc-knowledge/commit/4c60f74b1ef1dacac435f44c1fcd2f334e11e96f) | `README.md` | 已建立main初始提交；仓库原为空仓库 |
 | INIT-002 | 建立总体规则、22章目录和分章节TaskPlan | 2026-11-21T23:13:17+08:00 | main | [6684321](https://github.com/rexyll/cnc-knowledge/commit/6684321950160ab9610c7e8a80a045ff8886de3f) | `TaskPlan.md`、`docs/`、`docs/TaskPlan/`、`resouces/`、`TaskHistory/` | 已创建并推送；树结构未截断；远端仅存在main分支 |
+| INIT-003 | 核验目录树、唯一分支和章节导航并修正链接 | 2026-11-21T23:13:52+08:00 | main | [1756861](https://github.com/rexyll/cnc-knowledge/commit/175686199d30f55e4aefa8fc1cb3f68edff8aa02) | `docs/TaskPlan/README.md`、全库结构校验 | 核验74个文件、22章正文入口、22份章节计划、22个资源目录；章节正文导航22条均有效；仅有main分支 |
 
 > 完成时间取自对应GitHub提交的author/committer时间，并转换为项目统一时区Asia/Shanghai（UTC+08:00）。
 
