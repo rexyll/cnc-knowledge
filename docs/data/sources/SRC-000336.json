@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000336",
+  "source_type": "other",
+  "title": "compare — Compare Identified Model Output with Measured Output",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/ident/ref/compare.html",
+  "version": "MATLAB System Identification Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Compare candidate model outputs to measured validation data; NRMSE and multi-experiment/model comparison",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official documentation describes comparing measured and identified model responses, NRMSE goodness-of-fit and comparing multiple candidate models against measured data. Software-method example, not a general acceptance limit.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

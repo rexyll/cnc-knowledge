@@ -1,0 +1,7 @@
+condition,direction,estimated_B_Nm_s_rad,estimated_directional_intercept_Nm,residual_rms_Nm,design_matrix_rank,samples,notes
+nominal_cold,CW,0.075087865,0.16178506,0.0015158776,2,80,Synthetic directional sweep; intercept combines Coulomb friction and offset
+nominal_cold,CCW,0.082424923,-0.18245438,0.0013831835,2,80,Synthetic directional sweep; intercept combines Coulomb friction and offset
+heavy_load_cold,CW,0.076957428,0.17659713,0.0012114934,2,80,Synthetic directional sweep; intercept combines Coulomb friction and offset
+heavy_load_cold,CCW,0.08712919,-0.19513815,0.0013880685,2,80,Synthetic directional sweep; intercept combines Coulomb friction and offset
+heavy_load_hot,CW,0.087012896,0.18916099,0.0014857934,2,80,Synthetic directional sweep; intercept combines Coulomb friction and offset
+heavy_load_hot,CCW,0.095378646,-0.20958642,0.0014467842,2,80,Synthetic directional sweep; intercept combines Coulomb friction and offset

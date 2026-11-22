@@ -23,3 +23,14 @@
 - servo-dob-simulation-config.json：合成对象、采样、延迟、噪声、扰动和随机种子。
 - 以上资产由项目维护过程于2026-11-22生成，属原创代码/合成数据，不含真实设备或客户数据；不代表实机性能或参数推荐。
 - 新增SRC-000331～SRC-000332：DOB鲁棒稳定与未知相对阶次理论研究，数学条件依赖具体对象、因子化和控制结构。
+
+
+## 本轮多工况模型验证仿真资产
+- servo-multicondition-model-selection-simulation.py：Python 3.10+、NumPy、SciPy；生成多工况两/三惯量对象的H1 FRF、相干度、候选模型拟合、交叉验证和AICc模型选择。
+- servo-multicondition-frf-model-selection.csv：12组工况/模型阶次拟合与留出验证指标。
+- servo-multicondition-plant-configurations.csv：合成负载/冷热/多模态对象的参数配置。
+- servo-directional-friction-fit-synthetic.csv：CW/CCW合成速度扫频的方向斜率/截距拟合；截距含摩擦和负载偏置。
+- servo-multicondition-model-validation-config.json：参数、随机种子、频率划分、数据分类和限制。
+- 可选H1全频点结果：脚本加参数 --include-raw-frf 会另生成340行servo-multicondition-h1-frf-synthetic.csv。
+- 以上为项目原创仿真代码/合成数据，不含真实设备或客户数据；不生成数值闭环GM/PM/disk margin，也不代表实机性能或参数建议。
+- 新增SRC-000333～SRC-000337，来源边界和适用限制见正文及source JSON记录。

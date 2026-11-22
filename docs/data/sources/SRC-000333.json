@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000333",
+  "source_type": "academic_paper",
+  "title": "System identification and mechanical resonance frequency suppression for servo control used in single gimbal control moment gyroscope",
+  "publisher": "PLOS ONE",
+  "author": "Yue Yu; Lu Dai; Maosheng Chen; Lingbo Kong; Chaoqun Wang; Gengyao Li; Zhipeng Xue",
+  "url": "https://doi.org/10.1371/journal.pone.0267450",
+  "version": "2022, 17(8), e0267450",
+  "published_on": "2022-08-18",
+  "accessed_on": "2026-11-22",
+  "locator": "Sections 2–5: two-mass gimbal servo model, resonance identification, experimental frequency-response comparison",
+  "language": "en",
+  "rights_status": "open_license",
+  "license_or_permission": "Creative Commons Attribution License (CC BY 4.0); repository stores metadata and link only",
+  "notes": "Peer-reviewed study of a single-gimbal control-moment-gyroscope servo, modelled as a two-mass system and validated against an experimental frequency response. Flexible-servo modelling example outside the CNC machine domain; supports model-form reasoning only and must not be used as CNC axis parameter or acceptance evidence.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

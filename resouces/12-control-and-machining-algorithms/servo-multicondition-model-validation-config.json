@@ -1,0 +1,85 @@
+{
+  "classification": "synthetic_simulation_not_machine_measurement",
+  "python": "3.10+",
+  "dependencies": {
+    "numpy": "runtime",
+    "scipy": "least_squares"
+  },
+  "random_seed_base": 20261122,
+  "records_per_frequency": 24,
+  "relative_complex_output_noise_ratio": 0.015,
+  "frequency_split": "alternating frequency bins: even indices for fit, odd indices for validation",
+  "conditions": {
+    "nominal_cold": {
+      "description": "Nominal load, cold-state reference; synthetic two-mass axis",
+      "order": 2,
+      "parameters": [
+        0.01,
+        0.02,
+        0.006,
+        0.014,
+        1400,
+        0.35
+      ],
+      "frequency_max_hz": 180
+    },
+    "heavy_load_cold": {
+      "description": "Higher table/workpiece inertia, cold state; synthetic two-mass axis",
+      "order": 2,
+      "parameters": [
+        0.01,
+        0.032,
+        0.006,
+        0.018,
+        1400,
+        0.42
+      ],
+      "frequency_max_hz": 180
+    },
+    "heavy_load_hot": {
+      "description": "Same heavy load, illustrative hot-state stiffness/damping drift",
+      "order": 2,
+      "parameters": [
+        0.01,
+        0.032,
+        0.008,
+        0.025,
+        1260,
+        0.39
+      ],
+      "frequency_max_hz": 180
+    },
+    "three_mode_reference": {
+      "description": "Three-inertia/two-coupling reference for second flexible mode",
+      "order": 3,
+      "parameters": [
+        0.01,
+        0.008,
+        0.02,
+        0.005,
+        0.007,
+        0.013,
+        1200,
+        0.35,
+        850,
+        0.28
+      ],
+      "frequency_max_hz": 220
+    }
+  },
+  "candidate_models": {
+    "1": "single rigid inertia and viscous damping; motor/load outputs constrained equal",
+    "2": "two inertias coupled by one stiffness/damping element",
+    "3": "three inertias coupled by two stiffness/damping elements; motor and final-load outputs observed"
+  },
+  "frf_estimator": "H1 from independent repeated complex spectra; magnitude-squared coherence per output",
+  "model_selection": "AICc on fit bins plus held-out validation normalized complex-FRF RMSE; no universal threshold",
+  "limitations": [
+    "Synthetic linear models only; no current-loop or controller closed-loop implementation",
+    "No real torque sensor, encoder, thermal sensor or machine data",
+    "No controller gain/phase/disk margins are calculated; no controller has been designed",
+    "Directional friction intercept combines Coulomb friction and constant torque offset",
+    "Three-mass fit is an equivalent model, not proof of a physical component layout",
+    "Finite frequency grid and synthetic noise do not constitute equipment acceptance or safety evidence"
+  ]
+}

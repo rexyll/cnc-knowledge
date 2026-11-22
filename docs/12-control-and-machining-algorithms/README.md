@@ -26,6 +26,10 @@
 
 - [伺服对象不确定性、DOB鲁棒稳定性与数值仿真验证](servo-model-and-dob-robustness-simulation.md)：相对阶次、Q滤波可实现性、鲁棒稳定性审查及可复现合成仿真。
 
+## 多工况模型验证专题
+
+- [多工况对象模型、交叉验证与鲁棒稳定裕度评估](servo-model-cross-validation-and-robust-margins.md)：模型阶次、H1/相干度、独立验证、不确定性包络和GM/PM/disk margin计算边界。
+
 ## 建议正文结构
 
 - `overview.md`：章节总览、概念和分类。

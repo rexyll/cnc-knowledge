@@ -25,6 +25,10 @@
 
 - [伺服参数辨识、负载惯量估计与频率响应建模](servo-parameter-identification-and-frequency-response.md)：负载惯量折算、转矩平衡回归、可辨识性、频响测量、柔性模态与独立验证。
 
+## 多工况专题
+
+- [多工况伺服辨识与模型阶次选择](multicondition-servo-identification-and-model-order-selection.md)：负载/方向/冷热状态、1/2/多惯量模型选型、H1相干度、交叉验证与稳定裕度边界。
+
 ## 建议正文结构
 
 - `overview.md`：章节总览、概念和分类。

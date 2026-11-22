@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000334",
+  "source_type": "other",
+  "title": "Validating Models After Estimation",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/ident/ug/validating-models-after-estimation.html",
+  "version": "MATLAB System Identification Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Validation methods: measured-output comparison, residual correlation, model response, pole/zero, AIC/FPE and independent estimation/validation data",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official software documentation describes model validation methods and the risk of over-fitting when the same data are used for estimation and validation. Methodology reference, not a CNC acceptance standard.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

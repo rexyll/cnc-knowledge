@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000335",
+  "source_type": "other",
+  "title": "Troubleshooting Model Estimation",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/ident/ug/troubleshooting-models.html",
+  "version": "MATLAB System Identification Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Model order too high/low, independent validation, residual autocorrelation, noise and unstable model diagnostics",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official model-identification troubleshooting guide explains lowest adequate model order, independent validation to detect over-fitting, residual analysis and influence of noise/nonstationarity. Method reference only; no drive-specific thresholds.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

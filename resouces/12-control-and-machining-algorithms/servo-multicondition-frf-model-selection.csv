@@ -1,0 +1,13 @@
+condition,true_synthetic_order,candidate_model_order,parameter_count,train_normalized_rmse,validation_normalized_rmse,AICc,median_validation_coherence,selected_by_AICc,data_classification_and_split
+nominal_cold,2,1,2,0.19737329,0.22442362,-332.22332,0.99979249,no,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+nominal_cold,2,2,6,0.0025953533,0.0030170051,-1709.7905,0.99979249,yes,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+nominal_cold,2,3,10,0.002601238,0.0030182452,-1700.1382,0.99979249,no,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+heavy_load_cold,2,1,2,0.28956705,0.28970541,-218.18481,0.99977948,no,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+heavy_load_cold,2,2,6,0.0039828162,0.0034779134,-1581.3595,0.99977948,yes,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+heavy_load_cold,2,3,10,0.0039935541,0.0035118009,-1571.5704,0.99977948,no,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+heavy_load_hot,2,1,2,0.28663533,0.31890893,-239.26006,0.99977681,no,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+heavy_load_hot,2,2,6,0.0028971445,0.0029864834,-1701.0227,0.99977681,yes,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+heavy_load_hot,2,3,10,0.0029095072,0.0029926393,-1690.7326,0.99977681,no,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+three_mode_reference,3,1,2,0.42693312,0.40485869,-128.08752,0.99978452,no,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+three_mode_reference,3,2,6,0.063982597,0.071175969,-878.9197,0.99978452,no,Synthetic H1 FRF; alternating frequency bins used for fit/validation
+three_mode_reference,3,3,10,0.0027950806,0.0029797286,-2122.491,0.99978452,yes,Synthetic H1 FRF; alternating frequency bins used for fit/validation

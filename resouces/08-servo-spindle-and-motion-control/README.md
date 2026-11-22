@@ -19,3 +19,9 @@
 - 正文：docs/08-servo-spindle-and-motion-control/servo-parameter-identification-and-frequency-response.md。
 - 合成仿真脚本、配置和CSV结果集中存储于CH12资源目录，避免跨章节重复副本。
 - 新增SRC-000327～SRC-000330：Beckhoff TwinCAT 3 Autotuning、Siemens SINAMICS S120、MathWorks系统辨识和频域模型估计资料。厂商方法只支持对应产品/固件；软件文档仅说明一般辨识方法。
+
+
+## 本轮多工况辨识专题
+- 正文：docs/08-servo-spindle-and-motion-control/multicondition-servo-identification-and-model-order-selection.md。
+- 仿真脚本和CSV结果集中归属CH12资源目录；本章不重复存储。
+- 新增SRC-000333～SRC-000337：PLOS ONE两惯量伺服系统研究作为非CNC建模范例；MathWorks R2026b用于模型交叉验证、过拟合诊断、候选模型比较和disk margin方法。所有软件资料只作方法参考，不是机床验收标准。

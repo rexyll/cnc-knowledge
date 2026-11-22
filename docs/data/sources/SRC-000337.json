@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000337",
+  "source_type": "other",
+  "title": "Disk-Based Gain and Phase Margins",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/robust/disk-based-gain-and-phase-margins.html",
+  "version": "Robust Control Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Disk-based gain/phase uncertainty, all-frequency and loop-interaction interpretation, SISO/MIMO feedback loop analysis",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official robust-control documentation explains disk margins as simultaneous gain/phase uncertainty analysis accounting for frequency and loop interactions. A valid margin requires the exact closed-loop interconnection and loop break; no numeric CNC drive margin is supplied.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}
