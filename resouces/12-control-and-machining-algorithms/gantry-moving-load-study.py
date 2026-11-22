@@ -222,7 +222,7 @@ def main():
     if args.include_timeseries:
       cols=["model_mode","time_s","load_position_m","load_speed_m_s","payload_point_error_m","sync_skew_m",
         "beam_bending_coordinate_m","beam_torsion_rad","Mdot_matrix_2norm_numeric_under_m_rad_coordinate_units","velocity_transport_generalized_term_2norm_numeric_under_m_rad_coordinate_units",
-        "transport_acceleration_force_norm_N","min_M_eigenvalue_kg","min_augmented_q_s_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units","peak_command_force_N"]
+        "acceleration_transport_generalized_term_2norm_numeric_under_m_rad_coordinate_units","min_generalized_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units","min_augmented_q_s_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units","peak_command_force_N"]
       with (out/"gantry-moving-load-selected-timeseries.csv").open("w",newline="",encoding="utf-8") as f:
         w=csv.writer(f); w.writerow(cols); w.writerows(traces)
     if args.disk_margin: disk_margins(out)

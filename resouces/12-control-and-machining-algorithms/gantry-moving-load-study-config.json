@@ -79,12 +79,12 @@
   "verification": {
     "position_points_per_mass": 41,
     "total_points": 123,
-    "max_mdot_fd_relative_error": 2.485574900606376e-10,
-    "max_acceleration_chain_rule_relative_error": 4.341605546323933e-7,
-    "max_q_euler_lagrange_residual_relative_error": 8.885587074833216e-10,
-    "min_augmented_mass_eigenvalue_under_declared_coordinate_scaling": 2.020592304912163,
     "error_normalization": "Each reported scaled discrepancy is ||computed-reference||_2 / max(1, ||reference||_2); it is not always a strict relative error when ||reference||_2 < 1.",
-    "metric_units_caution": "The ordinary Euclidean 2-norm of Mdot and generalized transport covectors has no single physical unit with mixed m/rad generalized coordinates."
+    "metric_units_caution": "The ordinary Euclidean 2-norm of Mdot and generalized transport covectors has no single physical unit with mixed m/rad generalized coordinates.",
+    "max_scaled_Mdot_finite_difference_discrepancy_denominator_max1": 2.485574900606376e-10,
+    "max_scaled_acceleration_chain_rule_discrepancy_denominator_max1": 4.341605546323933e-7,
+    "max_scaled_q_euler_lagrange_residual_discrepancy_denominator_max1": 8.885587074833216e-10,
+    "min_augmented_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units": 2.020592304912163
   },
   "disk_margin": {
     "optional": true,

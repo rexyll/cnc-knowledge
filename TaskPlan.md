@@ -365,7 +365,7 @@
 ## CH08 / CH12 龙门移动负载时变模型与数值更正（2026-11-22）
 
 - 新增 [龙门连续移动负载时变模型与MIMO多回路disk margin](docs/12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md)，以移动负载点动能和拉格朗日方程推导规定轨迹下的 \(M(s(t))\)、\(\dot M\)、速度交叉项和路径加速度输运项；明确这是规定轨迹单向耦合模型，不是负载轴与横梁的完整双向耦合。
-- 资源脚本、配置、18组模型对比CSV、123组方程核验CSV归档在resouces/12-control-and-machining-algorithms/。数值自检：最大 \(\dot M\) 有限差分相对误差 \(2.49\times10^{-10}\)，移动点加速度链式法则 \(4.35\times10^{-7}\)，q行Euler–Lagrange残差 \(8.89\times10^{-10}\)，增广质量矩阵最小特征值2.02059（仅在声明坐标缩放下解释）。
+- 资源脚本、配置、18组模型对比CSV、123组方程核验CSV归档在resouces/12-control-and-machining-algorithms/。数值自检：最大 \(\dot M\) 有限差分归一化偏差 \(2.49\times10^{-10}\)，移动点加速度链式法则 \(4.35\times10^{-7}\)，q行Euler–Lagrange残差 \(8.89\times10^{-10}\)，增广质量矩阵最小特征值2.02059（仅在声明的混合m/rad坐标约定下解释）。
 - 重新检查上一轮阻尼模型时发现，原偏航/扭转交叉阻尼误用刚度矩阵量纲。已更正为 \(D_{\psi\theta}=0.03\sqrt{D_{\psi\psi}D_{\theta\theta}}\)，并重算/替换延迟稳定性、阶跃和小增益CSV；旧数值作废。该修正不改变未阻尼广义模态频率。
 - 双回路disk margin分别定义对象输出侧 \(PC\) 与对象输入侧 \(CP\) 端口，资源脚本提供python-control/Slycot可选接口；当前缺少依赖，未生成数值disk margin。
 - **脚本验证边界：** 本轮CSV来自完成的参考计算结果导出；提交的移动负载资源脚本尚未由CI执行，仍待独立Python回归。CI通过只验证知识库结构、来源ID、链接和schema，不表示资源脚本已运行。
