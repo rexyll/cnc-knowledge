@@ -791,3 +791,13 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 未下载/归档ISO或厂商受版权保护PDF；未录入通用热处理参数、硬度、磨削参数、粗糙度、烧伤阈值或寿命数值；未创建无证据PART/MAT/BOM/供应商关系。
 - CH04-T003状态：IN_PROGRESS；后续仍需研究丝杠、导轨、主轴、铸件等关键零件的具体制造和检验流程。
 - 所在分支：main；内容提交与CI验收待补录。
+
+
+### CH04-T003 — 滚动体制造工艺首轮整理CI验收补录（2026-11-22）
+
+- 内容提交：[`72447f664afb2ead6d3916fe65ef45737098d6c9`](https://github.com/rexyll/cnc-knowledge/commit/72447f664afb2ead6d3916fe65ef45737098d6c9)，所在分支：main。
+- 完成时间：2026-11-22T13:29:00+08:00（Asia/Shanghai）。
+- GitHub Actions [Run 44989573468](https://github.com/rexyll/cnc-knowledge/actions/runs/44989573468)：success；5/5单元测试通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、109个Markdown文件、323条内部链接、140个实体、240条关系、190条来源、378处正文来源引用。
+- 自动门禁验证结构、来源Schema、正文来源引用和内部链接；不验证外部URL长期可用性、标准全文许可、供应商工艺真实性/完整性或具体零件工艺参数。
+- CH04-T003保持IN_PROGRESS；本轮仅完成滚动体工艺首轮整理，不代表其他关键零件制造工艺已覆盖。
