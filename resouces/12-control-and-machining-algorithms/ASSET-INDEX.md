@@ -21,3 +21,20 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | `gantry-mimo-delay-robustness-envelope.csv` | CSV数据 | 4种控制器在7种整数命令延迟下的离散闭环极点统计，共756组测试 | 脚本生成 | 2026-11-22 | 合成数据 | 同上 |
 | `gantry-mimo-discrete-step-comparison.csv` | CSV数据 | 3种负载位置工况下1ms延迟阶跃与横梁变形对照 | 脚本生成 | 2026-11-22 | 合成数据 | 同上 |
 | `gantry-mimo-discrete-small-gain-margin.csv` | CSV数据 | 中心负载下采样返回差、灵敏度和输出乘性小增益指示量 | 脚本生成 | 2026-11-22 | 合成数据 | 同上 |
+
+
+## 连续移动负载与MIMO disk-margin接口（2026-11-22）
+
+| 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
+|---|---|---|---|---|---|---|
+| gantry-modal-delay-study.py | Python源码 | 更正阻尼交叉项量纲，原脚本闭环延迟/阶跃/小增益结果已重算 | 项目原创 | 2026-11-22 | 原创代码 | 横梁模态专题 |
+| gantry-modal-delay-study-config.json | JSON配置 | 记录正确的广义阻尼交叉项定义和数值更正 | 项目原创 | 2026-11-22 | 原创配置 | 同上 |
+| gantry-mimo-delay-robustness-envelope.csv | CSV数据 | 28行更正后延迟稳定性摘要 | 脚本生成 | 2026-11-22 | 合成数据 | 同上 |
+| gantry-mimo-discrete-step-comparison.csv | CSV数据 | 9行更正后阶跃/变形对照 | 脚本生成 | 2026-11-22 | 合成数据 | 同上 |
+| gantry-mimo-discrete-small-gain-margin.csv | CSV数据 | 16行更正后有限网格小增益诊断量，非disk margin | 脚本生成 | 2026-11-22 | 合成数据 | 同上 |
+| gantry-moving-load-study.py | Python源码 | 预设轨迹、时变质量矩阵、移动点链式速度/加速度项、方程核验与可选MIMO disk-margin接口 | 项目原创 | 2026-11-22 | 原创代码 | 连续移动负载专题 |
+| gantry-moving-load-study-config.json | JSON配置 | 模型坐标、几何、载荷轨迹、控制器、离散步长和数值边界 | 项目原创 | 2026-11-22 | 原创配置 | 同上 |
+| gantry-moving-load-model-comparison.csv | CSV数据 | 18组独立/同步控制器×完整移动/仅变质量/冻结位置模型比较 | 脚本生成 | 2026-11-22 | 合成数据 | 同上 |
+| gantry-moving-load-equation-checks.csv | CSV数据 | 123组质量矩阵导数、加速度链式法则、拉格朗日残差和正定性核验 | 脚本生成 | 2026-11-22 | 合成数据 | 同上 |
+
+7,500行选定工况原始时序由 --include-timeseries 可选生成；可选disk-margin结果只有在安装python-control 0.10.2和Slycot并成功计算后才会输出。

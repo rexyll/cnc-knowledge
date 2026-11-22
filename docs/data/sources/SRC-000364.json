@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000364",
+  "source_type": "other",
+  "title": "python-control margins.py — MIMO disk-margin implementation",
+  "publisher": "Python Control Systems Library project",
+  "author": null,
+  "url": "https://github.com/python-control/python-control/blob/main/control/margins.py",
+  "version": "source viewed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "MIMO disk_margins implementation and Slycot AB13MD structured-singular-value upper-bound routine",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Repository source evolves; pin exact package/revision when generating numerical results.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

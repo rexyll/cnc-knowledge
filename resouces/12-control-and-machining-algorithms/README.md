@@ -75,3 +75,10 @@
 - `gantry-mimo-discrete-small-gain-margin.csv`：中心负载下的采样返回差/灵敏度及全块输出乘性小增益指示量；并非disk margin。
 - 完整756行 `gantry-mimo-discrete-delay-sweep.csv` 由脚本在运行输出目录生成，不作为当前仓库静态基线文件。
 - 以上代码和CSV均为合成研究资产；负载位置使用冻结快照，不含连续移动质量项；没有有限元、HIL或实机验证。
+
+
+## 2026-11-22 数值更正与连续移动负载
+- 更正 gantry-modal-delay-study.py 中偏航/扭转阻尼交叉项的量纲错误，采用 D_psi_theta=0.03*sqrt(D_psi_psi*D_theta_theta)。原 delay-robustness、discrete-step 和 discrete-small-gain 三份CSV已重算覆盖，旧值作废。
+- 新增 gantry-moving-load-study.py、配置JSON、18组模型比较CSV和123组方程核验CSV，包含 M(s(t))、Mdot、速度/加速度输运项、拉格朗日方程残差与质量矩阵正定性检查。全部为假设模态合成模型。
+- 脚本默认生成汇总和方程核验记录；--include-timeseries 可生成7,500行选定工况时序；--disk-margin 可选调用 python-control 0.10.2 + Slycot AB13MD 计算两个反馈端口的采样 multiloop disk-margin 估计。缺少Slycot时不生成数值裕度；有限频率网格不构成全频率认证。
+- 所有模型/代码/CSV均为项目原创合成数据，不包含真实机床参数。输出路径应位于 resouces/12-control-and-machining-algorithms/。

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000361",
+  "source_type": "academic_paper",
+  "title": "STRING-BEAM UNDER MOVING INERTIAL LOAD",
+  "publisher": "XXIII Symposium – Vibrations in Physical Systems, Poznań-Będlewo; Institute of Fundamental Technological Research, Polish Academy of Sciences",
+  "author": "Bartłomiej Dyniewicz; Czesław Bajer",
+  "url": "https://www.ippt.pan.pl/repository/open/o1199.pdf",
+  "version": "Proceedings paper, 2008",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "pp. 118–119; Eq. (8) moving-point velocity chain rule, Eq. (17) Lagrange equation, Eq. (18) variable-coefficient dynamics",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Flexible string-beam under a moving inertial load; relevant to derivation principles but not a CNC gantry model.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

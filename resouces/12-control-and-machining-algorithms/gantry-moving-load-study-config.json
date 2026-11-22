@@ -1,0 +1,96 @@
+{
+  "created_on": "2026-11-22",
+  "evidence_kind": "synthetic_model",
+  "article_path": "docs/12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md",
+  "model": {
+    "coordinates": [
+      "x_common_m",
+      "yaw_rad",
+      "beam_bending_m",
+      "beam_torsion_rad"
+    ],
+    "span_m": 1.6,
+    "base_generalized_mass_diag": [
+      75,
+      12,
+      9,
+      2
+    ],
+    "nominal_modal_targets_hz": {
+      "yaw": 25,
+      "bending": 50,
+      "torsion": 72
+    },
+    "payload_point_offsets_m": {
+      "torsion_x": 0.12,
+      "torsion_z": 0.18
+    },
+    "payload_shape": "sin(pi*s/L)",
+    "mass_kg": [
+      5,
+      15,
+      30
+    ]
+  },
+  "equations": {
+    "position": "r(q,s)=r0(s)+Phi(s)q",
+    "velocity": "r_dot=Phi*q_dot+r_s*s_dot",
+    "acceleration": "r_ddot=Phi*q_ddot+2*Phi_s*q_dot*s_dot+r_ss*s_dot^2+r_s*s_ddot",
+    "mass_matrix": "M(s)=M0+mp*Phi(s)^T*Phi(s)",
+    "mass_derivative": "Mdot=mp*(Phi_s^T*Phi+Phi^T*Phi_s)*s_dot",
+    "transport_velocity": "2*mp*Phi^T*Phi_s*q_dot*s_dot",
+    "transport_acceleration": "mp*Phi^T*(r_ss*s_dot^2+r_s*s_ddot)",
+    "q_equation": "M*q_ddot+D0*q_dot+K0*q+transport_velocity+transport_acceleration=B*u-mp*g*Phi^T*e_z"
+  },
+  "trajectory": {
+    "type": "quintic_smoothstep",
+    "start_fraction": 0.1,
+    "end_fraction": 0.9,
+    "duration_s": 2,
+    "total_duration_s": 2.5,
+    "max_speed_m_s": 1.2,
+    "dt_s": 0.001
+  },
+  "controllers": [
+    "independent_PD",
+    "synchronization_medium_PD"
+  ],
+  "model_variants": [
+    "moving_full",
+    "moving_mass_only",
+    "frozen_initial"
+  ],
+  "cases": 18,
+  "steps_per_case": 2500,
+  "verification": {
+    "position_points_per_mass": 41,
+    "total_points": 123,
+    "max_mdot_fd_relative_error": 2.485574900606376e-10,
+    "max_acceleration_chain_rule_relative_error": 4.341605546323933e-7,
+    "max_q_euler_lagrange_residual_relative_error": 8.885587074833216e-10,
+    "min_augmented_mass_eigenvalue_under_declared_coordinate_scaling": 2.020592304912163
+  },
+  "disk_margin": {
+    "optional": true,
+    "package": "python-control==0.10.2",
+    "dependency": "Slycot AB13MD",
+    "ports": [
+      "P*C plant-output measurement feedback channels",
+      "C*P plant-input actuator channels"
+    ],
+    "skew": 0,
+    "frequency_grid_hz": [
+      0.2,
+      499
+    ],
+    "frequency_points": 1024,
+    "computed_numeric_result": false,
+    "interpretation": "Reciprocal of Slycot structured-mu upper bound at each sampled frequency; minimum over finite grid is not a global continuous-frequency certificate."
+  },
+  "notes": [
+    "Prescribed payload trajectory; no two-way motion/structure coupling.",
+    "Synthetic assumed-mode geometry and parameter values; no FEM, measured modal data, HIL or machine validation.",
+    "The full time-series CSV is optional via --include-timeseries; keep output under resouces/12-control-and-machining-algorithms/generated-moving-load.",
+    "CI does not execute this script."
+  ]
+}

@@ -64,3 +64,8 @@
 ## 横梁模态与离散延迟鲁棒性专题
 
 - [双驱龙门轴的横梁模态、变位置负载与离散延迟鲁棒性](gantry-mimo-modal-load-position-delay-robustness.md)：用假设模态和冻结负载位置模型研究横梁弯曲/扭转、ZOH离散化、整数命令延迟及同步控制权衡，所有参数和结果均为合成示例。
+
+
+## 连续移动负载与多回路disk margin专题
+
+- [龙门连续移动负载时变模型与MIMO多回路disk margin](gantry-continuous-moving-load-and-multiloop-disk-margin.md)：由移动点动能和拉格朗日方程推导 M(s(t))、Mdot 与速度/加速度输运项；比较完整时变、仅变质量与冻结位置模型，并定义 PC/CP 两种多回路disk-margin端口。当前未生成数值disk margin，所有机械参数和结果均为合成假设。

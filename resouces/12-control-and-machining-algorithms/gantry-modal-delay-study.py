@@ -51,7 +51,8 @@ D0 = np.diag([
     2.0 * 0.020 * 9.0 * (2.0 * np.pi * 50.0),
     2.0 * 0.025 * 2.0 * (2.0 * np.pi * 72.0),
 ])
-D_COUPLING = 2.0 * 0.03 * np.sqrt(K0[1, 1] * K0[3, 3])
+# Dimensionally consistent cross damping, derived from generalized damping diagonals.
+D_COUPLING = 0.03 * np.sqrt(D0[1, 1] * D0[3, 3])
 D0 = D0 + D_COUPLING * np.outer(MODE_COUPLING_VECTOR, MODE_COUPLING_VECTOR)
 
 # End forces act on common translation and yaw moment.
