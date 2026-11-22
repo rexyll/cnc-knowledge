@@ -16,6 +16,11 @@
 
 本章知识内容按任务计划逐步研究，不在初始化阶段预填未经核实的技术参数或结论。
 
+## 专题内容
+
+- [伺服级联控制：电流环、速度环与位置环](servo-cascade-control.md)：三环级联、PMSM FOC模型、前馈/反馈、带宽与稳定性、调试顺序和数据留存。
+- [伺服控制环辨识与调试记录模板](../../resouces/08-servo-spindle-and-motion-control/servo-control-loop-identification-template.csv)：参数基线、反馈点、采样/滤波、阶跃/频响和跟随误差记录。
+
 ## 建议正文结构
 
 - `overview.md`：章节总览、概念和分类。

@@ -1046,3 +1046,16 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 **直驱回转轴转矩波动诊断专题补录验收记录（2026-11-22）：** 计划/历史/根统计补录提交 `1c8a43e8350477cc87a86666f67f8f728e8d3a32` 对应GitHub Actions [Run 45012521079](https://github.com/rexyll/cnc-knowledge/actions/runs/45012521079)：success；5/5单元测试通过；`python scripts/knowledge_lint.py --strict` PASS（0 errors）。最终统计：22章、110个Markdown文件、365条内部链接、140条实体、240条关系、319条来源、571处正文来源引用。
 
 **任务计划/历史验收记录审计链核验（2026-11-22）：** 最终双录补正提交 `00d62680fabb9f37bbb1c3f274987b228f10e5aa` 对应GitHub Actions [Run 45012624545](https://github.com/rexyll/cnc-knowledge/actions/runs/45012624545)：success；5/5单元测试通过；strict lint PASS（0 errors）。本补正仅补齐CI追踪记录，未修改知识正文、来源数据和统计值。
+
+
+
+### CH08 / CH12 — 直接驱动伺服级联控制与扰动补偿专题（2026-11-22）
+
+- **分支：** main；未创建新分支。
+- **交付范围：** CH08新增 `servo-cascade-control.md`，覆盖电流/速度/位置三级联结构、PMSM FOC简化dq模型、转矩关系、速度机械模型、轨迹前馈与反馈边界、带宽/刚度/稳定性和调试证据顺序。CH12新增 `disturbance-observer-and-periodic-torque-compensation.md`，覆盖等效扰动模型、DOB/Q滤波、机械角/电角度周期表、摩擦补偿、谐波前馈、重复控制/迭代学习和补偿回归。
+- **结构化资产：** 新增SRC-000320～SRC-000326；新增CH08.csv与CH12.csv两个章节数据字典，各含8个字段；新增 `servo-control-loop-identification-template.csv`（44列）和 `periodic-disturbance-observer-validation-template.csv`（45列）；更新CH08/CH12 README、资源README和字典目录说明。
+- **来源边界：** Siemens S200/S120和SIMOTICS T-1FW3手册只支持其指定系列/固件/电机配置；PMSM DOB、Q滤波和学习控制论文只支持其研究对象/平台，不外推为CNC直接驱动轴的通用效果、参数或合格判据。未归档受限厂商PDF、论文全文或标准全文。
+- **内容CI顺序及修复：** CH08首个内容提交 `005c00e63e1ec7050d9f24a4f06e070baa87991d` 的 [Run 45013472487](https://github.com/rexyll/cnc-knowledge/actions/runs/45013472487) 中5/5单元测试通过，但strict lint因CH08正文先行引用尚未落库的CH12专题目标而报告1条broken local link。随后CH12内容提交 `38fcf23fa8dfd7a1eeeb633f5136ee263b456178` 补齐该目标文件，[Run 45013568467](https://github.com/rexyll/cnc-knowledge/actions/runs/45013568467) success；5/5单元测试通过；strict lint PASS（0 errors），同时覆盖两份专题和两份数据字典。
+- **CI统计：** 22章、112个Markdown文件、371条内部链接、140条实体、240条关系、326条来源、582处正文来源引用（补充索引的4条内部链接计入后预计375，最终以补录CI为准）。
+- **未设置/未验证：** 未设置通用电流环/速度环/位置环增益、DOB截止频率、摩擦补偿量、齿槽表系数或稳定裕度；没有真实机床电流/速度/位置数据、频响/扭矩测量、HIL或实机验证；未建立跨品牌驱动/编码器兼容或机床BOM事实。
+- **状态：** CH08-T002与CH12-T003转为IN_PROGRESS；两个任务只完成本轮定义的部分专题，CH08-T001/T003/T004及CH12其他算法工作仍待执行。
