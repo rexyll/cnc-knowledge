@@ -334,6 +334,6 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 
 ### 覆盖度与验收
 
-- CH03覆盖度提升为2级foundational：1篇知识文章、17个主归属实体（11 SUBSYS + 5 TERM + 1 KNOW）、34条关系（10 HAS_SUBSYSTEM + 8 CONTROLS + 16 DERIVED_FROM索引）、5条去重来源、0项资源文件。
-- 所在分支：main。完成时间：2026-11-22T12:30:00+08:00。提交SHA和CI结果将在提交后补齐。
+- CH03覆盖度提升为2级foundational：1篇知识文章、12个主归属实体（11 SUBSYS + 1 KNOW；5个TERM由CH01主归属并由本章引用）、34条关系（10 HAS_SUBSYSTEM + 8 CONTROLS + 16 DERIVED_FROM索引）、5条去重来源、0项资源文件。
+- 所在分支：main。完成时间：2026-11-22T12:30:00+08:00。内容提交SHA：[8e643f801d2f896a31a6e2ddd8dea9675455c525](https://github.com/rexyll/cnc-knowledge/commit/8e643f801d2f896a31a6e2ddd8dea9675455c525)。GitHub Actions Run 44983319094 success；5项单元测试通过，严格知识检查PASS（0 errors）。
 - 自动CI验证Schema、ID唯一性、来源/关系引用、Markdown内部链接和严格质量规则；离线检查不替代外部URL实时检查、具体机型拆机/BOM/接线核验或安全验证。

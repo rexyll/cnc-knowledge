@@ -5,15 +5,17 @@
   "english_name": "Energy flow",
   "aliases": [],
   "description": "能量从供给源经配电/驱动或辅助动力单元传递到执行机构及用能部件的路径。",
-  "primary_chapter": "CH03",
-  "related_chapters": [],
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH03"
+  ],
   "classification_path": [
-    "数控机床整机功能架构",
-    "term"
+    "术语",
+    "整机架构"
   ],
   "tags": [
     "整机架构",
-    "功能子系统"
+    "机床系统术语"
   ],
   "lifecycle_status": "active",
   "verification_status": "verified",

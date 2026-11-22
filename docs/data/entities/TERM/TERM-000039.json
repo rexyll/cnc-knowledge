@@ -5,15 +5,17 @@
   "english_name": "Control flow",
   "aliases": [],
   "description": "程序、操作或逻辑命令经CNC/PLC/驱动控制链传递到执行对象，并伴随状态和互锁处理的路径。",
-  "primary_chapter": "CH03",
-  "related_chapters": [],
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH03"
+  ],
   "classification_path": [
-    "数控机床整机功能架构",
-    "term"
+    "术语",
+    "整机架构"
   ],
   "tags": [
     "整机架构",
-    "功能子系统"
+    "机床系统术语"
   ],
   "lifecycle_status": "active",
   "verification_status": "verified",

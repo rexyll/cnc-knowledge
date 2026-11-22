@@ -5,15 +5,17 @@
   "english_name": "Machine tool functional architecture",
   "aliases": [],
   "description": "将机床功能职责、子系统、层级和接口组织为可追溯系统模型的方法；属于本知识库工程建模术语。",
-  "primary_chapter": "CH03",
-  "related_chapters": [],
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH03"
+  ],
   "classification_path": [
-    "数控机床整机功能架构",
-    "term"
+    "术语",
+    "整机架构"
   ],
   "tags": [
     "整机架构",
-    "功能子系统"
+    "机床系统术语"
   ],
   "lifecycle_status": "active",
   "verification_status": "verified",

@@ -5,15 +5,17 @@
   "english_name": "Machine tool functional subsystem",
   "aliases": [],
   "description": "承担相对独立功能、具有明确输入输出和接口边界的整机组成单元；不必对应独立物理箱体或单一控制器。",
-  "primary_chapter": "CH03",
-  "related_chapters": [],
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH03"
+  ],
   "classification_path": [
-    "数控机床整机功能架构",
-    "term"
+    "术语",
+    "整机架构"
   ],
   "tags": [
     "整机架构",
-    "功能子系统"
+    "机床系统术语"
   ],
   "lifecycle_status": "active",
   "verification_status": "verified",
