@@ -121,3 +121,6 @@
 
 
 **主轴专题首轮CI验收（2026-11-22）：** 主轴制造专题内容提交 `7e4206f07c1166e59bb9bf46f77ffe9a4797ef82` 对应Run [44990046215](https://github.com/rexyll/cnc-knowledge/actions/runs/44990046215) success，5/5单元测试通过，strict lint 0 errors；验收后补录SRC-000210及修正SRC-000203，补录提交需单独确认CI。CH04-T003保持IN_PROGRESS。
+
+
+**主轴专题补录验收（2026-11-22）：** 补录提交 `ac6802d97e6838c2dcb36016a1e4cd6271268c6b` 对应Run [44990089036](https://github.com/rexyll/cnc-knowledge/actions/runs/44990089036) success，5/5单元测试通过，strict lint 0 errors；最终来源总数210、正文来源引用409。CH04-T003保持IN_PROGRESS。

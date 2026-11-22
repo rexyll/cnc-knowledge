@@ -836,3 +836,11 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - Linter统计：22章、109个Markdown文件、325条内部链接、140个实体、240条关系、209条来源、407处正文来源引用。
 - 验收后补充SRC-000210（GB/T 17421.1-2023）并修正SRC-000203官方计划URL和采标说明；这些补录改动在本条历史补录提交中，需独立确认CI。
 - CI不验证外部链接长期可用性、标准全文版权、主轴真实材料/工艺批次或制造商测试规范的普遍适用性。CH04-T003保持IN_PROGRESS。
+
+
+### CH04-T003 — 主轴专题来源补录CI验收（2026-11-22）
+
+- 补录提交 [`ac6802d97e6838c2dcb36016a1e4cd6271268c6b`](https://github.com/rexyll/cnc-knowledge/commit/ac6802d97e6838c2dcb36016a1e4cd6271268c6b) 修正SRC-000203国家标准计划官方URL与采标信息，补充SRC-000210（GB/T 17421.1-2023）及主轴几何检验映射。
+- GitHub Actions [Run 44990089036](https://github.com/rexyll/cnc-knowledge/actions/runs/44990089036)：success；5/5单元测试通过；strict lint PASS（0 errors）。
+- 最终统计：22章、109个Markdown文件、325条内部链接、140条实体、240条关系、210条来源、409处正文来源引用。
+- 当前远程分支仅`main`。CI不验证标准全文版权、外部链接长期可用性、实际主轴工艺或供应商型号/BOM。CH04-T003保持IN_PROGRESS。
