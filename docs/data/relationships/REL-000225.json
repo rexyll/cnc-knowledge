@@ -1,0 +1,27 @@
+{
+  "relation_id": "REL-000225",
+  "subject_id": "KNOW-000014",
+  "predicate": "HAS_ASSET",
+  "object_id": "ASSET-000006",
+  "qualifiers": {
+    "asset_role": "key_mechanical_units_overview",
+    "article_path": "docs/03-system-architecture-and-mechanics/key-mechanical-units.md",
+    "version": "1.0",
+    "scope": "原创通用概念图，不表示具体机型接线/管路/BOM"
+  },
+  "source_ids": [
+    "SRC-000084",
+    "SRC-000085",
+    "SRC-000086",
+    "SRC-000087",
+    "SRC-000088",
+    "SRC-000089"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T12:17:00+08:00",
+  "updated_at": "2026-11-22T12:17:00+08:00",
+  "notes": "原创SVG资源，外部来源仅支持技术背景，不表示图形复制。"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000087",
+  "source_type": "manufacturer_manual",
+  "title": "Automatic Lubrication Systems FAQ and Single Line Resistance System Guide",
+  "publisher": "Bijur Delimon International",
+  "author": null,
+  "url": "https://www.bijurdelimon.com/default/automatic-lubrication-faq.html",
+  "version": "Official technical information; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Centralized lubrication definitions, system types and lubrication point identification",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "系统类别和设计原则资料；具体油量/周期须按机床和元件型号确定。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

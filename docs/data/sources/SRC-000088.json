@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000088",
+  "source_type": "manufacturer_product_page",
+  "title": "ConSep 2000 Conveyor and Coolant Filtration System",
+  "publisher": "Mayfran International",
+  "author": null,
+  "url": "https://www.mayfran.com/products/machine-tool-products/consep-2000/",
+  "version": "Official product information; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Integrated chip handling and coolant filtration product architecture; nominal filter declarations",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "仅支持对应ConSep型号的产品声明，名义过滤值不是通用整机保证。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

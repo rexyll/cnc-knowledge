@@ -1,0 +1,58 @@
+{
+  "entity_id": "KNOW-000014",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床关键机械单元：主轴、换刀、转台与辅助系统",
+  "english_name": "Key mechanical units of CNC machine tools: spindle, ATC, rotary table and auxiliary systems",
+  "aliases": [],
+  "description": "分析主轴、自动换刀、回转工作台、润滑冷却、液压气动和排屑过滤单元的组成、工作链、接口、选型参数、验证与维护边界。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床机械系统",
+    "关键机械单元",
+    "knowledge_article"
+  ],
+  "tags": [
+    "主轴",
+    "自动换刀",
+    "回转工作台",
+    "润滑",
+    "冷却",
+    "排屑"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:17:00+08:00",
+  "updated_at": "2026-11-22T12:17:00+08:00",
+  "verified_at": "2026-11-22T12:17:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000084",
+    "SRC-000085",
+    "SRC-000086",
+    "SRC-000087",
+    "SRC-000088",
+    "SRC-000089",
+    "SRC-000090"
+  ],
+  "attributes": {
+    "document_path": "docs/03-system-architecture-and-mechanics/key-mechanical-units.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "典型数控切削机床主轴、ATC、回转工作台及辅助介质/排屑系统的通用结构与工程边界",
+    "knowledge_kind": "machine_tool_key_mechanical_units",
+    "article_status": "reviewed",
+    "architecture_scope": "generic_reference_not_machine_specific",
+    "subsystems": [
+      "SUBSYS-000004",
+      "SUBSYS-000005",
+      "SUBSYS-000006",
+      "SUBSYS-000010"
+    ],
+    "assets": [
+      "ASSET-000006"
+    ]
+  },
+  "notes": "本记录描述通用功能/术语边界，不代表具体机床型号配置、BOM或实测性能。"
+}

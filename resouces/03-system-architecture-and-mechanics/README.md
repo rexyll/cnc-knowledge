@@ -15,4 +15,6 @@
 - `mechanical-structure-overview.svg`：主要机械结构层级图（KNOW-000013）。
 - `linear-feed-axis.svg`：滚珠丝杠直线进给轴概念图（KNOW-000013）。
 
+- `key-mechanical-units.svg`：主轴、ATC、回转台和辅助系统关系图（KNOW-000014）。
+
 完整清单、来源和权利状态见本目录 `ASSET-INDEX.md`。

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000089",
+  "source_type": "manufacturer_manual",
+  "title": "Chip and Coolant Service Manual",
+  "publisher": "Haas Automation",
+  "author": null,
+  "url": "https://legacy-aem.haascnc.com/service/online-manuals/chip-and-coolant---service-manual/programmable-coolant--pcool-.html",
+  "version": "Online service manual; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "P-Cool, filtration, chip auger, coolant chiller, conveyor and through-spindle coolant sections",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Haas服务资料展示模块和特定配置；机型相关维护步骤不可泛化。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

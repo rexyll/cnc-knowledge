@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000085",
+  "source_type": "manufacturer_manual",
+  "title": "Mill Tool Changer Service Manual",
+  "publisher": "Haas Automation",
+  "author": null,
+  "url": "https://haascnc.com/service/online-manuals/mill-tool-changer---service-manual/mill-tool-changer---table-of-contents",
+  "version": "Online service manual; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Umbrella and side-mount tool changer overviews, carousel, shuttle and service sections",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Haas特定机型服务资料；拆装步骤和零件配置不应直接用于其他机型。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" role="img" aria-labelledby="title desc">
+<title id="title">数控机床关键机械单元关系示意图</title>
+<desc id="desc">示意主轴、自动换刀、回转工作台、润滑冷却液压气动及排屑过滤单元与CNC PLC的关系。仅为通用功能图。</desc>
+<defs>
+ <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+ <style>
+ .box{fill:#f8fafc;stroke:#334155;stroke-width:2;rx:16}
+ .sys{fill:#e0f2fe;stroke:#0369a1;stroke-width:2;rx:16}
+ .aux{fill:#fef3c7;stroke:#a16207;stroke-width:2;rx:16}
+ .txt{font: bold 24px sans-serif;fill:#0f172a}
+ .sub{font:18px sans-serif;fill:#334155}
+ .line{stroke:#334155;stroke-width:3;fill:none;marker-end:url(#arr)}
+ .dash{stroke:#64748b;stroke-width:2.5;stroke-dasharray:8 7;fill:none;marker-end:url(#arr)}
+ </style>
+</defs>
+<rect width="1400" height="900" fill="#ffffff"/>
+<text x="700" y="55" text-anchor="middle" class="txt" font-size="32">数控机床关键机械单元关系（通用参考）</text>
+<rect x="510" y="95" width="380" height="100" class="sys"/>
+<text x="700" y="135" text-anchor="middle" class="txt">CNC / PLC 控制</text>
+<text x="700" y="168" text-anchor="middle" class="sub">顺序控制、运动请求、状态与互锁</text>
+<rect x="70" y="300" width="350" height="160" class="box"/>
+<text x="245" y="345" text-anchor="middle" class="txt">主轴单元</text>
+<text x="245" y="385" text-anchor="middle" class="sub">电机 / 主轴轴体 / 轴承</text>
+<text x="245" y="415" text-anchor="middle" class="sub">刀具夹紧 / 润滑 / 冷却 / 反馈</text>
+<rect x="525" y="300" width="350" height="160" class="box"/>
+<text x="700" y="345" text-anchor="middle" class="txt">自动换刀单元 ATC</text>
+<text x="700" y="385" text-anchor="middle" class="sub">刀库 / 刀套 / 交换机构</text>
+<text x="700" y="415" text-anchor="middle" class="sub">选刀、定向、夹紧确认</text>
+<rect x="980" y="300" width="350" height="160" class="box"/>
+<text x="1155" y="345" text-anchor="middle" class="txt">回转 / 摆动单元</text>
+<text x="1155" y="385" text-anchor="middle" class="sub">传动 / 轴承 / 夹紧或制动</text>
+<text x="1155" y="415" text-anchor="middle" class="sub">角度反馈 / 旋转接头（如有）</text>
+<rect x="80" y="625" width="370" height="155" class="aux"/>
+<text x="265" y="670" text-anchor="middle" class="txt">润滑与冷却</text>
+<text x="265" y="710" text-anchor="middle" class="sub">泵 / 过滤 / 分配 / 热交换</text>
+<text x="265" y="740" text-anchor="middle" class="sub">主轴回路与切削液回路区分</text>
+<rect x="515" y="625" width="370" height="155" class="aux"/>
+<text x="700" y="670" text-anchor="middle" class="txt">液压与气动</text>
+<text x="700" y="710" text-anchor="middle" class="sub">动力源 / 阀 / 执行器 / 监测</text>
+<text x="700" y="740" text-anchor="middle" class="sub">夹紧、松刀、吹气等（依配置）</text>
+<rect x="950" y="625" width="370" height="155" class="aux"/>
+<text x="1135" y="670" text-anchor="middle" class="txt">排屑与过滤</text>
+<text x="1135" y="710" text-anchor="middle" class="sub">螺旋 / 链板 / 刮板 / 磁性分离</text>
+<text x="1135" y="740" text-anchor="middle" class="sub">切屑收集、冷却液回收与净化</text>
+<path d="M610 195 L245 295" class="line"/><path d="M700 195 L700 295" class="line"/><path d="M790 195 L1155 295" class="line"/>
+<path d="M265 625 L245 465" class="dash"/><path d="M700 625 L700 465" class="dash"/><path d="M1135 625 L1155 465" class="dash"/>
+<path d="M450 700 L515 700" class="dash"/><path d="M885 700 L950 700" class="dash"/>
+<text x="700" y="850" text-anchor="middle" class="sub">实线：控制/状态关联示意；虚线：介质、动力或维护关联示意。具体接口、信号、回路及安全功能以机型图纸和手册为准。</text>
+</svg>

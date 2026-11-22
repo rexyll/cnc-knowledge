@@ -8,6 +8,7 @@
 | motion-chain.svg | SVG矢量图 | 刀具侧/工件侧抽象运动链 | SRC-000072、SRC-000075、SRC-000076；原创整理 | 项目原创图，按仓库LICENSE管理 | KNOW-000012 |
 | mechanical-structure-overview.svg | SVG矢量图 | 床身/底座、立柱、横梁、滑鞍、滑枕、主轴箱、工作台与回转台的抽象结构层级 | SRC-000077、SRC-000078、SRC-000083；原创整理 | 项目原创图，按仓库LICENSE管理 | KNOW-000013 |
 | linear-feed-axis.svg | SVG矢量图 | 电机、联轴器、丝杠支承、滚珠丝杠、螺母座/滑台与导轨的典型关系 | SRC-000078～SRC-000080、SRC-000082、SRC-000083；原创整理 | 项目原创图，按仓库LICENSE管理 | KNOW-000013 |
+| key-mechanical-units.svg | SVG矢量图 | 主轴、ATC、回转单元、润滑冷却、液压气动及排屑过滤单元与CNC/PLC的通用功能关系 | SRC-000084～SRC-000089；原创整理 | 项目原创图，按仓库LICENSE管理 | KNOW-000014 |
 | Block Diagram of CNC Machine.png | PNG图片 | 用户提供的数控机床概念框图，含控制器、驱动、反馈、机床及辅助元素 | 用户上传；原作者/出处待核验 | 用户提供，版权/再分发权待核验；暂不作为技术证据 | 待审查，尚未关联KNOW条目 |
 
 - 生成日期：2026-11-22

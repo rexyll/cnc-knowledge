@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000084",
+  "source_type": "manufacturer_manual",
+  "title": "Operating Instructions for Spindle Units Type 2SP1",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/841/28689841/att_73307/v1/BE_2SP1_0107_en.pdf",
+  "version": "2007; document family 2SP1",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Cooling system, tool clamping, tool operation and safety notes",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "仅支持Siemens 2SP1系列的具体说明，不泛化为所有主轴。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

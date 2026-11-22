@@ -1,0 +1,50 @@
+{
+  "entity_id": "ASSET-000006",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床关键机械单元关系示意图",
+  "english_name": "CNC machine tool key mechanical units diagram",
+  "aliases": [],
+  "description": "展示主轴、ATC、回转单元和辅助介质/排屑单元与CNC/PLC的通用功能关系；原创概念图，不表示具体接线、管路或机型BOM。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床机械系统",
+    "关键机械单元",
+    "asset_file"
+  ],
+  "tags": [
+    "原创SVG",
+    "关键机械单元",
+    "CH03"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:17:00+08:00",
+  "updated_at": "2026-11-22T12:17:00+08:00",
+  "verified_at": "2026-11-22T12:17:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000084",
+    "SRC-000085",
+    "SRC-000086",
+    "SRC-000087",
+    "SRC-000088",
+    "SRC-000089"
+  ],
+  "attributes": {
+    "file_path": "resouces/03-system-architecture-and-mechanics/key-mechanical-units.svg",
+    "file_name": "key-mechanical-units.svg",
+    "media_type": "image",
+    "mime_type": "image/svg+xml",
+    "license_status": "project_original",
+    "chapter_owner": "CH03",
+    "related_knowledge_id": "KNOW-000014",
+    "generated_on": "2026-11-22",
+    "version": "1.0",
+    "authoring_method": "Original SVG authored for this knowledge base",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "本记录描述通用功能/术语边界，不代表具体机床型号配置、BOM或实测性能。"
+}
