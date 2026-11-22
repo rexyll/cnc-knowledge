@@ -117,3 +117,6 @@
 - 资源脚本已入库，但CI只检查库结构，不执行脚本；参考计算导出的CSV已归档，精确提交版脚本仍需独立Python回归验证。不得把CI成功表述为脚本运行成功。
 - 来源增加SRC-000361～SRC-000364，KNOW-000020登记；新增资源、数据字典字段及审查边界。详情见 [本轮历史附录](../../../TaskHistory/Appendix-2026-11-22-gantry-modal-correction-moving-load.md)。
 - 内容提交 c2f624767c85202e2520932245611eea163f0da3 对应Run [45036988333](https://github.com/rexyll/cnc-knowledge/actions/runs/45036988333) success；5/5单元测试通过、strict lint PASS（0 errors）。CH12-T003继续 IN_PROGRESS。
+
+
+**计划/历史补录CI验收（2026-11-22）：** 提交 1abcbc4ae1d4400586b49fd7767f61f020ec5362 对应GitHub Actions [Run 45037385127](https://github.com/rexyll/cnc-knowledge/actions/runs/45037385127) success；5/5单元测试通过，strict lint PASS（0 errors）。该提交扫描统计22章、126个Markdown文件、406条内部链接、143条实体、240条关系、364条来源、649处正文引用。CH12-T003继续IN_PROGRESS。

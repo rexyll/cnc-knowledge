@@ -98,3 +98,6 @@
 
 
 **追加执行切片与历史更正（2026-11-22）：龙门横梁冻结模型阻尼更正及连续移动负载动态。** 上一轮CH08/CH12横梁模态专题将偏航/扭转交叉阻尼系数错误地基于刚度矩阵构造；已修正为从阻尼矩阵对角项计算，并重算延迟稳定性、阶跃与有限网格小增益结果。此前计划记录的旧稳定性数值由本次更正取代，不能继续作为有效结果引用。新增 [连续移动负载时变模型与MIMO多回路disk margin](../../12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md)，说明负载沿横梁运动时的时变质量矩阵、点速度链式项、输运项与双驱同步测量的关系。该模型为规定轨迹单向耦合的低阶合成示例，不是实际龙门参数或双向耦合实机模型。细节见 [更正与研究附录](../../../TaskHistory/Appendix-2026-11-22-gantry-modal-correction-moving-load.md)。CH08-T002/T003继续 IN_PROGRESS。
+
+
+**计划/历史补录CI验收（2026-11-22）：** 提交 1abcbc4ae1d4400586b49fd7767f61f020ec5362 对应GitHub Actions [Run 45037385127](https://github.com/rexyll/cnc-knowledge/actions/runs/45037385127) success；5/5单元测试通过，strict lint PASS（0 errors）。CH08-T002/T003继续IN_PROGRESS。
