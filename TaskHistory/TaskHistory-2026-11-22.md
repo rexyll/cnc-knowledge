@@ -844,3 +844,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - GitHub Actions [Run 44990089036](https://github.com/rexyll/cnc-knowledge/actions/runs/44990089036)：success；5/5单元测试通过；strict lint PASS（0 errors）。
 - 最终统计：22章、109个Markdown文件、325条内部链接、140条实体、240条关系、210条来源、409处正文来源引用。
 - 当前远程分支仅`main`。CI不验证标准全文版权、外部链接长期可用性、实际主轴工艺或供应商型号/BOM。CH04-T003保持IN_PROGRESS。
+
+
+### CH04-T003 — 主轴轴承安装、振动诊断与热误差专题CI验收（2026-11-22）
+
+- 内容提交 [`cd569a764cfd6b543c1715f1d3c9b55d0d4f0167`](https://github.com/rexyll/cnc-knowledge/commit/cd569a764cfd6b543c1715f1d3c9b55d0d4f0167)，所在分支：main。
+- GitHub Actions [Run 44990582497](https://github.com/rexyll/cnc-knowledge/actions/runs/44990582497)：success；5/5单元测试通过；strict lint PASS（0 errors）。
+- Linter统计：22章、109个Markdown文件、327条内部链接、140个实体、240条关系、212条来源、416处正文来源引用。
+- 新增SRC-000211～SRC-000212并更新制造工艺正文、主轴标准映射和章节/根计划。CI验证结构、来源Schema、正文引用和内部链接；不验证标准全文版权、外部链接长期可用性、实际主轴型号装配工艺或试验验收限值。
+- 本轮未下载/归档ISO标准全文或草案；未录入通用轴承安装温度、压装力、配合过盈量、预紧力、振动限值、热稳态时间、热漂移限值或平衡等级。CH04-T003保持IN_PROGRESS。
