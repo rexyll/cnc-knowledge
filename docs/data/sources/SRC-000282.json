@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000282",
+  "source_type": "manufacturer_product_page",
+  "title": "NBK — What are Couplings? Explanation of Coupling Types and Characteristics",
+  "publisher": "Nabeya Bi-tech Kaisha (NBK)",
+  "author": null,
+  "url": "https://www.nbk1560.com/en/resources/coupling/article/couplicon-about/?SelectedLanguage=en",
+  "version": "Online technical article; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Manufacturer explanation of disc, jaw, beam, Oldham, bellows, rigid and other coupling types and their characteristic trade-offs",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Manufacturer-authored taxonomy and product explanation, not a neutral universal selection rule. Design trade-offs must be checked against the actual coupling order code, operating conditions and engineering calculation. No page images or full documents are archived.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}
