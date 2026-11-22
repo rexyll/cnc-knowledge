@@ -8,6 +8,7 @@
 - [02. 数控机床分类与产品](./02-machine-types-and-products/README.md) — 数控车床、铣床、加工中心、磨床、齿轮加工、特种加工、复合加工及专用机床的分类、结构和产品特征。
 - [03. 整机架构与机械结构](./03-system-architecture-and-mechanics/README.md) — 整机功能架构、床身与基础件、运动部件、导轨丝杠、主轴、传动、润滑、冷却、防护和排屑等机械系统。
 - [整机功能架构与子系统接口](03-system-architecture-and-mechanics/architecture.md)
+- [数控机床主要机械结构、导向与进给传动](03-system-architecture-and-mechanics/major-mechanical-structures.md)
 - [04. 零部件、材料与制造工艺](./04-components-materials-and-manufacturing/README.md) — 机床零部件目录、零件规格、材料牌号与性能、热处理、表面处理、加工制造工艺及部件可替代关系。
 - [05. 刀具、工装与工件装夹系统](./05-tooling-fixtures-and-workholding/README.md) — 刀具、刀柄、接口、刀库、自动换刀、夹具、卡盘、工作台、工件定位夹紧、测头和刀具/工件测量。
 - [06. 电气与电子系统](./06-electrical-electronic-systems/README.md) — 电气柜、供配电、保护、电机与执行器接线、传感器、继电器、接触器、I/O、电路板、电气原理图和电气安全接口。

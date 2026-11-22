@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+<defs>
+  <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+  <style>
+    .h{font:700 30px sans-serif;fill:#0f172a}.sub{font:18px sans-serif;fill:#475569}
+    .node{fill:#eff6ff;stroke:#2563eb;stroke-width:2;rx:14}.moving{fill:#ecfdf5;stroke:#059669;stroke-width:2;rx:14}
+    .rot{fill:#fff7ed;stroke:#ea580c;stroke-width:2;rx:14}.txt{font:600 20px sans-serif;fill:#0f172a}
+    .small{font:16px sans-serif;fill:#334155}.edge{stroke:#334155;stroke-width:3;fill:none;marker-end:url(#arr)}
+    .dash{stroke:#64748b;stroke-width:2;stroke-dasharray:8 7;fill:none}
+  </style>
+</defs>
+<rect width="1400" height="900" fill="#ffffff"/>
+<text x="70" y="70" class="h">数控机床主要机械结构（抽象参考）</text>
+<text x="70" y="105" class="sub">结构名称与运动分配随机床类型和具体配置变化；此图不是特定机型装配图或BOM</text>
+<rect x="100" y="690" width="1200" height="95" class="node"/>
+<text x="700" y="745" text-anchor="middle" class="txt">床身 / 底座 / 基础承载结构（Bed / Base）</text>
+<rect x="180" y="250" width="180" height="390" class="node"/>
+<text x="270" y="430" text-anchor="middle" class="txt">立柱</text><text x="270" y="462" text-anchor="middle" class="small">Column</text>
+<rect x="1040" y="250" width="180" height="390" class="node"/>
+<text x="1130" y="430" text-anchor="middle" class="txt">立柱（可选）</text><text x="1130" y="462" text-anchor="middle" class="small">Column</text>
+<rect x="250" y="185" width="900" height="80" class="node"/>
+<text x="700" y="235" text-anchor="middle" class="txt">横梁 / 横轨（固定、升降或移动，依机型）</text>
+<rect x="570" y="285" width="260" height="85" class="moving"/>
+<text x="700" y="337" text-anchor="middle" class="txt">滑座 / 滑鞍（Saddle）</text>
+<rect x="620" y="390" width="160" height="80" class="moving"/>
+<text x="700" y="440" text-anchor="middle" class="txt">滑枕 / 主轴箱</text>
+<rect x="650" y="490" width="100" height="85" class="rot"/>
+<text x="700" y="540" text-anchor="middle" class="txt">主轴</text>
+<rect x="420" y="590" width="260" height="70" class="moving"/>
+<text x="550" y="635" text-anchor="middle" class="txt">工作台 / 托盘</text>
+<rect x="760" y="590" width="260" height="70" class="rot"/>
+<text x="890" y="635" text-anchor="middle" class="txt">回转工作台（可选）</text>
+<path d="M270 640 L270 690 M1130 640 L1130 690 M700 370 L700 390 M700 470 L700 490 M550 660 L550 690 M890 660 L890 690" class="edge"/>
+<path d="M700 575 L700 590" class="edge"/>
+<path d="M365 220 L570 315 M1035 220 L830 315" class="dash"/>
+<text x="80" y="155" class="small">刀具侧结构支路</text>
+<text x="80" y="610" class="small">工件侧结构支路</text>
+<text x="80" y="840" class="small">图例：蓝色＝承载/基础结构；绿色＝典型移动部件；橙色＝回转/旋转单元。部件可能合并、拆分或位于不同运动支路。</text>
+</svg>

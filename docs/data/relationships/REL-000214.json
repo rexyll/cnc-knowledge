@@ -1,0 +1,24 @@
+{
+  "relation_id": "REL-000214",
+  "subject_id": "KNOW-000013",
+  "predicate": "HAS_ASSET",
+  "object_id": "ASSET-000003",
+  "qualifiers": {
+    "asset_role": "mechanical_structure_overview",
+    "article_path": "docs/03-system-architecture-and-mechanics/major-mechanical-structures.md",
+    "version": "1.0",
+    "scope": "原创通用参考图，不对应具体机床BOM或装配图。"
+  },
+  "source_ids": [
+    "SRC-000077",
+    "SRC-000078",
+    "SRC-000083"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T12:12:51+08:00",
+  "updated_at": "2026-11-22T12:12:51+08:00",
+  "notes": "原创SVG资源，来源仅支持概念背景，不表示图形复制自外部资料。"
+}

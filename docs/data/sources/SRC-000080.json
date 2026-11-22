@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000080",
+  "source_type": "manufacturer_product_page",
+  "title": "Conditions of the Ball Screw — Selection Criteria",
+  "publisher": "THK CO., LTD.",
+  "author": null,
+  "url": "https://www.thk.com/us/en/products/ball_screw/selection/0002/",
+  "version": "Official selection information page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Lead accuracy, accuracy grades, preload, preload torque and thermal considerations",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于定义参数和选型关注点；具体等级、允许值和预压需按型号、标准和工况核验。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

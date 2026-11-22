@@ -8,3 +8,11 @@
 - 优先保留原始文件；整理版、裁剪版、翻译版必须单独命名并注明与原件的关系。
 - 对版权或保密状态不明、无权再分发的资料，不保存副本，仅记录可合法保留的元数据和官方链接。
 - 不重复复制同一原始文件；跨章节使用时引用主归属章节的资源路径。
+
+## 当前归档
+
+- `functional-architecture.svg`、`motion-chain.svg`：整机功能架构与抽象运动链图（KNOW-000012）。
+- `mechanical-structure-overview.svg`：主要机械结构层级图（KNOW-000013）。
+- `linear-feed-axis.svg`：滚珠丝杠直线进给轴概念图（KNOW-000013）。
+
+完整清单、来源和权利状态见本目录 `ASSET-INDEX.md`。

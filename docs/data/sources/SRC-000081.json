@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000081",
+  "source_type": "manufacturer_manual",
+  "title": "Precision Bearings for Machine Tool Spindles",
+  "publisher": "SKF",
+  "author": null,
+  "url": "https://cdn.skfmediahub.skf.com/api/public/0901d1968020898d/pdf_preview_medium/0901d1968020898d_pdf_preview_medium.pdf",
+  "version": "SKF technical publication; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Spindle bearing arrangements and comparison of speed capability, running accuracy, stiffness and dynamic load capacity",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于说明主轴轴承组合存在速度、刚度和承载权衡；具体布置依主轴设计、转速、载荷和热伸长要求确定。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

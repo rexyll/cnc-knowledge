@@ -48,6 +48,16 @@
 | TERM-000039 | 控制流 | Control flow | 程序、操作或逻辑命令经CNC/PLC/驱动控制链传递到执行对象，并伴随状态和互锁处理的路径。 | 整机架构 | SRC-000073、SRC-000074 | architecture.md | 内部工程定义 |
 | TERM-000040 | 信息流 | Information flow | NC程序、工艺数据、设备状态、测量结果和生产信息在CAM、CNC、HMI及上层系统之间交换的路径。 | 整机架构 | SRC-000074、SRC-000076 | architecture.md | 内部工程定义 |
 
+| TERM-000041 | 床身/底座 | Bed / Base | 机床主要基础承载结构，为导向、驱动、立柱、工作台等部件提供安装基准并传递载荷；具体结构取决于机型布局。 | 机械结构 | SRC-000073、SRC-000077 | major-mechanical-structures.md | 有来源支持，通用定义 |
+| TERM-000042 | 立柱 | Column | 支承主轴箱、横梁或其他运动部件，并将加工载荷传递至床身/底座的主要结构件。 | 机械结构 | SRC-000077 | major-mechanical-structures.md | 有来源支持，机型适用范围需区分 |
+| TERM-000043 | 横梁/横轨 | Crossbeam / Cross-rail | 桥式或龙门式机床中连接立柱并承载滑座/滑枕等部件的横向结构；可固定、升降或移动。 | 机械结构 | SRC-000077 | major-mechanical-structures.md | 有来源支持，非所有机型均有 |
+| TERM-000044 | 滑鞍/滑座 | Saddle / Slide | 通过导向副承载运动部件并相对基础结构移动的机械组件；具体名称和层级依机型而定。 | 机械结构 | SRC-000077、SRC-000078 | major-mechanical-structures.md | 工程通用定义 |
+| TERM-000045 | 滚动直线导轨 | Rolling linear guide | 通过滚珠或滚柱在导轨与滑块滚道间滚动循环，引导运动部件沿规定直线方向移动的导向副。 | 机械导向 | SRC-000078、SRC-000083 | major-mechanical-structures.md | 原厂资料支持产品原理 |
+| TERM-000046 | 滚珠丝杠 | Ball screw | 利用丝杠轴与螺母滚道间循环滚动的滚珠传递轴向力，实现旋转运动与直线运动转换的传动机构。 | 进给传动 | SRC-000079 | major-mechanical-structures.md | 原厂资料支持工作原理 |
+| TERM-000047 | 丝杠导程 | Ball screw lead | 丝杠相对螺母旋转一周时的理论轴向位移；需与螺距、头数及实际导程误差区分。 | 进给传动参数 | SRC-000079、SRC-000080 | major-mechanical-structures.md | 有来源支持 |
+| TERM-000048 | 预压/预紧 | Preload / Preload force | 为减小内部游隙或提高指定结构刚度而施加的初始内部载荷或装配约束；导轨、丝杠和轴承的定义及数值不可混用。 | 机械结构参数 | SRC-000078、SRC-000080、SRC-000081 | major-mechanical-structures.md | 有来源支持 |
+| TERM-000049 | 回转工作台 | Rotary table | 支承并驱动工件或夹具绕指定回转轴运动的机床单元；承载、倾覆力矩、夹紧和角度反馈依具体产品配置。 | 工件支承与回转轴 | SRC-000077 | major-mechanical-structures.md | 通用术语，具体性能待型号核验 |
+
 ## 维护规则
 
 - 为每个术语分配稳定ID；名称变化不复用或随意更改ID。

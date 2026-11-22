@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="850" viewBox="0 0 1500 850">
+<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+<style>
+.h{font:700 30px sans-serif;fill:#0f172a}.sub{font:18px sans-serif;fill:#475569}.part{fill:#eff6ff;stroke:#2563eb;stroke-width:2;rx:12}
+.move{fill:#ecfdf5;stroke:#059669;stroke-width:2;rx:12}.support{fill:#fff7ed;stroke:#ea580c;stroke-width:2;rx:12}
+.txt{font:600 19px sans-serif;fill:#0f172a}.small{font:16px sans-serif;fill:#334155}.line{stroke:#334155;stroke-width:3;fill:none;marker-end:url(#arr)}
+.guide{stroke:#64748b;stroke-width:12;stroke-linecap:round}.screw{stroke:#b45309;stroke-width:10;stroke-linecap:round}
+</style></defs>
+<rect width="1500" height="850" fill="#fff"/>
+<text x="70" y="65" class="h">典型滚珠丝杠直线进给轴（概念剖示）</text>
+<text x="70" y="100" class="sub">展示电机—联轴器—丝杠支承—螺母座/滑台—导轨的典型关系；固定/支承端布置以具体设计为准</text>
+<rect x="120" y="170" width="170" height="100" class="part"/><text x="205" y="212" text-anchor="middle" class="txt">伺服电机</text><text x="205" y="242" text-anchor="middle" class="small">Motor</text>
+<rect x="340" y="185" width="130" height="70" class="support"/><text x="405" y="227" text-anchor="middle" class="txt">联轴器</text>
+<rect x="520" y="160" width="170" height="120" class="support"/><text x="605" y="205" text-anchor="middle" class="txt">固定端支承</text><text x="605" y="238" text-anchor="middle" class="small">定位/轴向承载</text>
+<rect x="1170" y="160" width="170" height="120" class="support"/><text x="1255" y="205" text-anchor="middle" class="txt">支承端</text><text x="1255" y="238" text-anchor="middle" class="small">允许设计所需热位移</text>
+<path d="M290 220 L340 220 M470 220 L520 220 M690 220 L1170 220" class="line"/>
+<path d="M690 340 L1170 340" class="screw"/>
+<path d="M720 330 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20 m18 -20 l18 20" stroke="#fff" stroke-width="3" fill="none"/>
+<rect x="820" y="285" width="220" height="110" class="move"/><text x="930" y="330" text-anchor="middle" class="txt">滚珠螺母</text><text x="930" y="360" text-anchor="middle" class="small">Nut + ball circulation</text>
+<rect x="780" y="430" width="300" height="100" class="move"/><text x="930" y="472" text-anchor="middle" class="txt">螺母座 / 滑台</text><text x="930" y="500" text-anchor="middle" class="small">移动部件</text>
+<path d="M930 395 L930 430" class="line"/>
+<path d="M180 610 L1320 610" class="guide"/><path d="M180 680 L1320 680" class="guide"/>
+<rect x="780" y="560" width="110" height="100" class="part"/><rect x="970" y="560" width="110" height="100" class="part"/>
+<text x="835" y="620" text-anchor="middle" class="small">滑块</text><text x="1025" y="620" text-anchor="middle" class="small">滑块</text>
+<text x="750" y="730" text-anchor="middle" class="small">导轨 / 滑块承担导向和外载荷；丝杠主要提供轴向驱动力。二者功能不可混为一体。</text>
+<rect x="120" y="760" width="1260" height="55" class="part"/><text x="750" y="795" text-anchor="middle" class="small">注意：图中未表达实际轴承型号、预紧量、安装公差、润滑管路、编码器测点和安全限位；须以具体机型图纸/手册为准。</text>
+<path d="M1100 475 L1300 475" class="line"/><text x="1200" y="455" text-anchor="middle" class="small">轴向进给方向</text>
+</svg>

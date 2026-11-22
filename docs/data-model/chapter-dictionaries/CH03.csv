@@ -14,3 +14,8 @@ CH03,architecture,motion_chain,运动链拓扑,刀具侧和工件侧的结构运
 CH03,architecture,energy_information_flows,能量与信息流,能量/介质/运动/控制/反馈/信息/安全流定义,object,,required,,明确起点终点方向和数据/介质语义,整机架构,yes,,不同流类型不得混用
 CH03,architecture,interface_matrix,子系统接口矩阵,子系统间物理和逻辑接口清单,array,,required,,记录接口双方/类别/方向/内容/验证点,整机架构,yes,,功能接口表不等同接线图
 CH03,architecture,architecture_variant,架构变体,机型布局/轴配置/选配功能差异,array,,recommended,,注明机床类型和适用条件,整机架构,yes,,不得将选配模块视为标配
+CH03,knowledge_article,structure_groups,机械结构分组,承载结构/运动部件/导向副/进给传动/旋转连接等专题分组,array,,required,,只登记通用分类并说明机型差异,机械结构专题,yes,,不代表具体机型配置
+CH03,knowledge_article,parameter_definitions,参数定义与测量口径,参数符号/单位/测量对象/基准/环境/标准版本,string,,required,,关键参数必须说明测量条件和适用边界,机械结构专题,yes,,不得记录脱离工况的孤立精度值
+CH03,knowledge_article,mechanical_interface,机械接口,安装基准/连接件/载荷方向/润滑冷却/防护等接口定义,array,,recommended,,区分概念接口和具体装配图,机械结构专题,yes,,具体图号与公差归CH04/CH16
+CH03,knowledge_article,verification_method,验证方法,几何精度/轴定位/热稳定性/动态与加工验证的适用标准及方法,string,,recommended,,注明标准版本/范围/测试条件,机械结构专题,yes,,单项部件参数不替代整机验收
+CH03,asset_file,license_status,许可/权利状态,资源保存与分发权利状态,string,,required,,原创图注明项目原创并关联LICENSE,本章资源,yes,,外部受版权限制资料仅保留链接

@@ -1,0 +1,44 @@
+{
+  "entity_id": "ASSET-000003",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床主要机械结构示意图",
+  "english_name": "CNC machine tool major mechanical structure diagram",
+  "aliases": [],
+  "description": "原创SVG通用结构示意图，标注床身/底座、立柱、横梁、滑鞍、滑枕/主轴箱、工作台和可选回转工作台的典型层级。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床机械结构",
+    "asset_file"
+  ],
+  "tags": [
+    "SVG",
+    "机械结构",
+    "CH03"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:12:51+08:00",
+  "updated_at": "2026-11-22T12:12:51+08:00",
+  "verified_at": "2026-11-22T12:12:51+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000077",
+    "SRC-000078",
+    "SRC-000083"
+  ],
+  "attributes": {
+    "file_path": "resouces/03-system-architecture-and-mechanics/mechanical-structure-overview.svg",
+    "file_name": "mechanical-structure-overview.svg",
+    "media_type": "image",
+    "mime_type": "image/svg+xml",
+    "license_status": "project_original_artwork",
+    "chapter_owner": "CH03",
+    "related_knowledge_id": "KNOW-000013",
+    "generated_on": "2026-11-22",
+    "version": "1.0",
+    "authoring_method": "original SVG diagram authored for this knowledge base"
+  },
+  "notes": "原创通用参考条目；不代表任何具体机床型号、OEM配置或实际BOM。"
+}
