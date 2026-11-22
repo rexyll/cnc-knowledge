@@ -86,3 +86,6 @@
 
 
 **追加执行切片（2026-11-22）：多工况伺服级联控制器设计与验证。** 新增 multicondition-cascade-controller-design.md，以多工况辨识模型为对象基础，明确转矩/电流内环的一阶近似、速度PI、位置P、速度/位置反馈测点、候选增益计算与两惯量/三惯量模型边界。对象集合包含名义冷态、重载冷态、参数化热态变体和三惯量柔性参考；对两组候选控制器扫描0/0.5/1.0 ms反馈延迟，展示同一控制器跨负载/柔性工况的裕度变化。新增SRC-000338～SRC-000340；CH08字典新增级联控制器设计和多工况闭环验证2项字段。仿真脚本/配置/CSV统一归档在CH12资源目录。内容提交 b095839e3c2114c82c60dd978d2e864bbc000cdc，GitHub Actions [Run 45021742754](https://github.com/rexyll/cnc-knowledge/actions/runs/45021742754) success；5/5单元测试通过，strict lint PASS（0 errors）。本切片只完成CH08-T002的一部分，所有增益均为合成候选值、不能复制到实际驱动器，CH08-T002保持 IN_PROGRESS。
+
+
+**追加执行切片（2026-11-22）：伺服速度/加速度前馈与陷波、低通联合设计。** 新增 servo-feedforward-and-filter-co-design.md，明确速度前馈与加速度/转矩前馈的信号路径、规划器导数来源、刚体总惯量与两惯量相对扭转约化惯量的区别，并梳理陷波中心/宽度/深度、数字化方法、反馈低通的相位滞后和滤波放置点。此轮还发现前一切片把Jm*Jl/(Jm+Jl)误作刚体总惯量，已更正为直接耦合轴的Jrigid=Jm+Jl、B_rigid=Bm+Bl，更新两套候选PI增益，并在原专题中留下更正说明。新增SRC-000341～SRC-000345；CH08字典新增刚体惯量前馈、速度/加速度前馈验证、陷波/低通配置3项字段。内容提交 4fa9406b3476b6b3d4acda2b81c2eea190e82e99；GitHub Actions [Run 45024433308](https://github.com/rexyll/cnc-knowledge/actions/runs/45024433308) success，5/5单元测试通过、strict lint PASS（0 errors）。本切片只完成CH08-T002的一部分，所有参数仍是合成候选，CH08-T002保持 IN_PROGRESS。

@@ -1113,3 +1113,19 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - **内容CI：** [GitHub Actions Run 45021742754](https://github.com/rexyll/cnc-knowledge/actions/runs/45021742754) success；5/5单元测试通过；strict lint PASS（0 errors）。
 - **内容CI统计：** 22章、118个Markdown文件、386条内部链接、140条实体、240条关系、340条来源记录、609处正文来源引用。
 - **状态：** CH08-T002和CH12-T003继续 IN_PROGRESS；本切片只完成控制器设计方法与合成闭环验证，不宣称相关章节任务全部完成。
+
+
+### CH08-T002 / CH12-T003 — 伺服速度/加速度前馈、陷波与低通滤波器联合设计（2026-11-22）
+
+- **完成时间：** 2026-11-22T20:51:19.000+08:00
+- **分支：** main；提交前确认仓库仅有main分支。
+- **CH08交付：** 新增 docs/08-servo-spindle-and-motion-control/servo-feedforward-and-filter-co-design.md，解释速度前馈、加速度/转矩前馈、刚体总惯量和扭转模态约化惯量、陷波参数及数字化、低通反馈相位延迟和滤波放置点。
+- **CH12交付：** 新增 docs/12-control-and-machining-algorithms/servo-feedforward-notch-lowpass-co-design.md，比较轨迹跟随、参考模态纹波、外部负载扰动及多交越SISO GM/PM。
+- **上一切片更正：** 更正两惯量轴刚体运动惯量定义：共模同角加速度使用折算到同轴侧后的惯量和，Jm*Jl/(Jm+Jl)只用于相对扭转模态；修正两套速度PI候选增益；将前一阶跃仿真的反馈缓存由3个初始样本修正为2个样本，对应0.5 ms采样下1 ms延迟。旧增益及相关CSV数值已更新/替代。
+- **结构化资产：** 新增SRC-000341～SRC-000345；CH08/CH12字典分别新增3项前馈/滤波/验证字段；更新两章README、CH08级联控制基础正文、CH08多工况控制器专题和CH12稳定裕度专题。
+- **仿真资源：** 更新 servo-cascade-control-robustness-simulation.py、servo-cascade-control-simulation-config.json、servo-cascade-loop-margin-envelope.csv（32种控制器/对象/滤波组合交越结果）、servo-cascade-step-response-envelope.csv（8组修正阶跃结果）；新增 servo-feedforward-filter-co-design.csv（32行联合对照摘要）。算法脚本采用0.5 ms采样、四种合成对象、两套修正控制器、42/70/94 Hz陷波、150 Hz速度反馈低通、速度/加速度前馈和外部负载扰动。
+- **合成结果：** 直接耦合名义对象Jrigid=0.030 kg·m²、B_rigid=0.020 N·m·s/rad；修正保守候选Kp/Ki约2.26195/56.84892。1 Hz、0.04 rad参考轨迹下，无前馈RMS跟随误差约0.0156～0.0157 rad；速度前馈降至约0.00050～0.00067 rad；速度+加速度前馈降至约0.00030～0.00047 rad。固定陷波能降低名义和重载冷态参考模态纹波，但热态模态偏移至约64.72 Hz后效果弱；对负载端外部扰动，速度PI转矩命令路径的陷波在部分工况反而放大模态带输出。低通可降低部分反馈扰动/噪声，但增加相位滞后。
+- **内容/CI：** 提交 4fa9406b3476b6b3d4acda2b81c2eea190e82e99；[Run 45024433308](https://github.com/rexyll/cnc-knowledge/actions/runs/45024433308) success，5/5单元测试通过，strict lint PASS（0 errors）。
+- **最终内容CI统计：** 22章、120个Markdown文件、391条内部链接、140条实体、240条关系、345条来源记录、621处正文来源引用。
+- **限制：** 控制器、模型、噪声、陷波/低通中心和截止频率、扰动及数据均为合成假设；未验证真实电机/逆变器电气动态、准确驱动器离散控制、多轴MIMO、HIL/台架/实机。经典SISO GM/PM序列不等于MIMO disk margin或鲁棒稳定证明。不能将合成参数用于生产机床。
+- **状态：** CH08-T002与CH12-T003继续 IN_PROGRESS；本切片只完成前馈/滤波联合方法与离线合成验证，不宣称章节任务全部完成。
