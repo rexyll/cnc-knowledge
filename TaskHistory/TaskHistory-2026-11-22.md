@@ -653,3 +653,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 未下载或归档标准全文/修订草案；未录入轴承钢或工具钢的具体牌号成分、硬度、组织、淬透性或性能值；未创建MAT牌号实体或推断机床实际用料。
 - 官方来源：GB/T 18254-2016（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D8111ED3A7E05397BE0A0AB82A）；修订计划20251190-T-605（https://std.samr.gov.cn/gb/search/gbDetailed?id=3495E6C27C6B32A0E06397BE0A0AFC9E）；GB/T 1299-2025（https://std.samr.gov.cn/gb/search/gbDetailedCNF?id=42BA7D06A37FE936E06397BE0A0ACDC9）；GB/T 9943-2025（https://std.samr.gov.cn/gb/search/gbDetailed?id=3B46A026CC24469CE06397BE0A0AEEB8）。
 - 所在分支：main；CH04-T002保持IN_PROGRESS，待标准全文合法取得和牌号级数据逐表核验。
+
+
+### CH04-T002 — 轴承钢与工具钢标准版本核验CI验收补录（2026-11-22）
+
+- 内容提交：[8d84ad7a6cb512ec8339ea01efc833795490cd06](https://github.com/rexyll/cnc-knowledge/commit/8d84ad7a6cb512ec8339ea01efc833795490cd06)，所在分支：main。
+- GitHub Actions Run [44987770706](https://github.com/rexyll/cnc-knowledge/actions/runs/44987770706)：success；5项单元测试全部通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、130条来源、288处正文来源引用。
+- 自动门禁验证仓库结构、数据记录、来源引用和内部链接；不验证外部URL实时可访问性、标准全文许可、修订草案的技术内容或材料批次符合性。
+- CH04-T002保持IN_PROGRESS；本轮仅完成标准元数据、版本替代关系及修订计划状态核验，尚未完成牌号/性能数据核录。
