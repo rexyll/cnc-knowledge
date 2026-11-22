@@ -1044,3 +1044,5 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 
 
 **直驱回转轴转矩波动诊断专题补录验收记录（2026-11-22）：** 计划/历史/根统计补录提交 `1c8a43e8350477cc87a86666f67f8f728e8d3a32` 对应GitHub Actions [Run 45012521079](https://github.com/rexyll/cnc-knowledge/actions/runs/45012521079)：success；5/5单元测试通过；`python scripts/knowledge_lint.py --strict` PASS（0 errors）。最终统计：22章、110个Markdown文件、365条内部链接、140条实体、240条关系、319条来源、571处正文来源引用。
+
+**任务计划/历史验收记录审计链核验（2026-11-22）：** 最终双录补正提交 `00d62680fabb9f37bbb1c3f274987b228f10e5aa` 对应GitHub Actions [Run 45012624545](https://github.com/rexyll/cnc-knowledge/actions/runs/45012624545)：success；5/5单元测试通过；strict lint PASS（0 errors）。本补正仅补齐CI追踪记录，未修改知识正文、来源数据和统计值。
