@@ -1062,3 +1062,19 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 
 
 **CH08/CH12伺服控制与扰动补偿专题最终索引/计划补录CI验收（2026-11-22）：** 补充提交 `65f2ec178a443652272d5f76f9b6a821df531eeb` 的GitHub Actions [Run 45013716276](https://github.com/rexyll/cnc-knowledge/actions/runs/45013716276) success；5/5单元测试通过；`python scripts/knowledge_lint.py --strict` PASS（0 errors）。最终统计：22章、112个Markdown文件、375条内部链接、140条实体、240条关系、326条来源、582处正文来源引用。该CI仅验证仓库结构、Schema、来源/关系引用和内部链接，不验证真实驱动器的闭环稳定性、具体电机转矩波动、DOB补偿收益或机床实机安全。
+
+
+### CH08-T002 / CH12-T003 — 伺服辨识、频响建模与DOB鲁棒性仿真（2026-11-22）
+
+- **完成时间：** 2026-11-22T19:16:23+08:00
+- **分支：** main；未创建其他分支。
+- **CH08交付：** 新增 docs/08-servo-spindle-and-motion-control/servo-parameter-identification-and-frequency-response.md。覆盖总惯量/负载惯量折算、转矩平衡回归、J/B/Tc/T0辨识、激励和参数可辨识性、H1频响估计、相干度、刚体/柔性模型、FRF记录和独立数据验证。
+- **CH12交付：** 新增 docs/12-control-and-machining-algorithms/servo-model-and-dob-robustness-simulation.md。覆盖DOB等效扰动、Q滤波可实现性、相对阶次、模型不确定性和按实际互连结构进行鲁棒稳定性审查。
+- **结构化资产：** 新增SRC-000327～SRC-000332六条来源记录；CH08、CH12数据字典分别新增5项字段；更新两章README及对应resouces README。CH12资源目录新增合成Python仿真脚本、配置JSON、J/B/Tc/T0辨识摘要CSV、刚体解析FRF CSV和DOB Q截止频率扫描CSV。
+- **仿真结果边界：** 合成参数辨识恢复J=0.025 kg·m²、B=0.080 N·m·s/rad、Tc=0.150 N·m、T0=0.030 N·m的设定真值；该数据来自脚本合成轨迹。DOB场景含名义/实际惯量与阻尼差异、4 ms实际转矩执行器滞后和2 ms未建模命令延迟。2～40 Hz的Q扫描在本模型中降低扰动误差；80/100 Hz出现命令饱和、噪声与扰动后误差恶化。上述只是有限时域模型敏感性结果，不证明理论不稳定，不代表任何真实机床或驱动参数。
+- **来源和版权：** Beckhoff / Siemens手册只作为相应产品与固件范围内的工具实例；MathWorks文档用于一般系统辨识与频域方法；DOB论文用于理论假设与稳定性边界。未归档厂商PDF、标准或论文全文。
+- **内容提交：** f39c40297d543823c766d312bc02e791a8c2f179。
+- **内容CI：** [GitHub Actions Run 45016439988](https://github.com/rexyll/cnc-knowledge/actions/runs/45016439988) success；5/5单元测试通过；strict lint PASS（0 errors）。
+- **内容CI统计：** 22章、114个Markdown文件、377条内部链接、140条实体、240条关系、332条来源、591处正文来源引用。
+- **未验证事项：** 未取得真实机床转矩/电流/速度/位置波形、驱动器参数备份、实测频响、HIL或实机试验；未给出生产设备通用增益、Q带宽、稳定裕度或性能限值。CI不验证真实驱动器动态、鲁棒稳定性、机床性能和实机安全。
+- **状态：** CH08-T002和CH12-T003继续IN_PROGRESS；本次是两任务中的局部深化，不宣称任务全部完成。
