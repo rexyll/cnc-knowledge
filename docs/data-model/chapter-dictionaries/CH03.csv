@@ -1,0 +1,16 @@
+chapter_id,entity_type,field_name,label_zh,description,data_type,unit,required_level,allowed_values,validation_rule,applicability,source_required,example_value,notes
+CH03,subsystem,subsystem_type,子系统类别,整机功能子系统或抽象架构节点的分类,string,,required,,采用受控分类并说明抽象/实例层级,所有SUBSYS,yes,,不得将抽象功能节点误认为具体产品
+CH03,subsystem,function,功能职责,子系统承担的主要功能和边界,string,,required,,使用职责描述并明确不包含的功能,所有SUBSYS,yes,,功能边界应可追踪至接口
+CH03,subsystem,parent_subsystem_id,父级子系统ID,上级架构节点或物理子系统,string,,conditional,,引用已登记SUBSYS实体,分层架构,yes,,抽象根节点不表示实际整机
+CH03,subsystem,typical_components,典型组成,常见部件/功能模块清单,array,,recommended,,注明可选/按配置存在的组成,所有SUBSYS,yes,,典型组成不等于实际BOM
+CH03,subsystem,interfaces,接口类别,子系统输入输出和接口类型,array,,required,,机械/电气/能量/控制/反馈/介质/安全/信息,所有SUBSYS,yes,,具体接口需另建INTERFACE记录
+CH03,subsystem,configuration_scope,配置适用范围,机型/结构/选件及适用条件,string,,conditional,,明确通用模型或具体型号配置,具体机型实例,yes,,未知保持N/V
+CH03,subsystem,motion_chain_role,运动链职责,在刀具侧/工件侧运动链中的角色,string,,conditional,,注明固定件/移动件/回转件/执行件/支承件,运动相关子系统,yes,,不得只由轴名称推断实际运动部件
+CH03,subsystem,energy_interface,能量接口,供电/驱动/液压/气动等能量接口定义,object,,conditional,,记录介质/电压/功率/压力/流量和版本,用能子系统,yes,,数值必须有型号级来源
+CH03,subsystem,control_interface,控制接口,设定值/命令/状态/故障接口定义,object,,conditional,,记录方向/单位/周期/状态机/故障响应,控制相关子系统,yes,,逻辑关系不代表直接接线
+CH03,subsystem,feedback_interface,反馈接口,位置/速度/到位/工艺/设备状态反馈定义,object,,conditional,,记录测量点/单位/更新周期/有效状态,测量与被控子系统,yes,,区分电机端与负载端反馈
+CH03,subsystem,safety_boundary,安全边界,危险源/防护/安全功能和验证边界,string,,conditional,,引用机型风险评估和适用标准,安全相关子系统,yes,,普通PLC不自动构成安全功能
+CH03,architecture,motion_chain,运动链拓扑,刀具侧和工件侧的结构运动拓扑,object,,required,,描述机型配置/坐标系/运动副/回转轴,每个机型架构,yes,,通用示意不得当作实际机型模型
+CH03,architecture,energy_information_flows,能量与信息流,能量/介质/运动/控制/反馈/信息/安全流定义,object,,required,,明确起点终点方向和数据/介质语义,整机架构,yes,,不同流类型不得混用
+CH03,architecture,interface_matrix,子系统接口矩阵,子系统间物理和逻辑接口清单,array,,required,,记录接口双方/类别/方向/内容/验证点,整机架构,yes,,功能接口表不等同接线图
+CH03,architecture,architecture_variant,架构变体,机型布局/轴配置/选配功能差异,array,,recommended,,注明机床类型和适用条件,整机架构,yes,,不得将选配模块视为标配

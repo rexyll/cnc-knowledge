@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000074",
+  "source_type": "academic_paper",
+  "title": "The State of Integrated CAM/CNC Control Systems: Prior Developments and the Path Towards a Smarter CNC",
+  "publisher": "National Institute of Standards and Technology (NIST) publication record; ASTM Journal of Smart and Sustainable Manufacturing",
+  "author": "Roby Lynn; Moneer Helu; Mukul Sati; Tommy Tucker; Thomas Kurfess",
+  "url": "https://www.nist.gov/publications/state-integrated-camcnc-control-systems-prior-developments-and-path-towards-smarter-cnc",
+  "version": "Published 2020-04-01; DOI 10.1520/SSMS20190046",
+  "published_on": "2020-04-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract and publication metadata: CAM/CNC data exchange, NC program pathway and process feedback integration",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Research publication metadata and abstract only; full paper is not copied. Conclusions are research context, not a claim that every current CNC has identical interface limitations.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

@@ -1,0 +1,34 @@
+{
+  "entity_id": "TERM-000039",
+  "entity_type": "term",
+  "canonical_name": "控制流",
+  "english_name": "Control flow",
+  "aliases": [],
+  "description": "程序、操作或逻辑命令经CNC/PLC/驱动控制链传递到执行对象，并伴随状态和互锁处理的路径。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床整机功能架构",
+    "term"
+  ],
+  "tags": [
+    "整机架构",
+    "功能子系统"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:30:00+08:00",
+  "updated_at": "2026-11-22T12:30:00+08:00",
+  "verified_at": "2026-11-22T12:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000073",
+    "SRC-000074"
+  ],
+  "attributes": {
+    "term_category": "machine_tool_system_architecture",
+    "definition_scope": "knowledge_base_engineering_definition",
+    "related_article": "KNOW-000012"
+  }
+}

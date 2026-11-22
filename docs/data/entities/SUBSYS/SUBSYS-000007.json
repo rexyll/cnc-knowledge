@@ -1,0 +1,48 @@
+{
+  "entity_id": "SUBSYS-000007",
+  "entity_type": "subsystem",
+  "canonical_name": "CNC与机床逻辑控制系统",
+  "english_name": "CNC and machine logic control system",
+  "aliases": [],
+  "description": "解释NC程序、生成运动指令、管理机床顺序动作和运行状态。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床整机功能架构",
+    "subsystem"
+  ],
+  "tags": [
+    "整机架构",
+    "功能子系统"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:30:00+08:00",
+  "updated_at": "2026-11-22T12:30:00+08:00",
+  "verified_at": "2026-11-22T12:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000073",
+    "SRC-000074",
+    "SRC-000075",
+    "SRC-000076"
+  ],
+  "attributes": {
+    "subsystem_type": "machine_control",
+    "function": "interpret_program_and_coordinate_machine_actions",
+    "typical_components": [
+      "CNC",
+      "interpolation_and_trajectory_planning",
+      "PLC_or_machine_logic",
+      "I_O",
+      "HMI_functions"
+    ],
+    "interfaces": [
+      "NC_program",
+      "motion_setpoints",
+      "sequence_commands",
+      "status_and_alarm"
+    ]
+  }
+}

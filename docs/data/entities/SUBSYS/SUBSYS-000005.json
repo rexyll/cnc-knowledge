@@ -1,0 +1,47 @@
+{
+  "entity_id": "SUBSYS-000005",
+  "entity_type": "subsystem",
+  "canonical_name": "刀具与换刀系统",
+  "english_name": "Tooling and tool-change system",
+  "aliases": [],
+  "description": "完成刀具安装、定位、识别和按配置实施换刀。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床整机功能架构",
+    "subsystem"
+  ],
+  "tags": [
+    "整机架构",
+    "功能子系统"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:30:00+08:00",
+  "updated_at": "2026-11-22T12:30:00+08:00",
+  "verified_at": "2026-11-22T12:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000073",
+    "SRC-000074",
+    "SRC-000075",
+    "SRC-000076"
+  ],
+  "attributes": {
+    "subsystem_type": "tool_system",
+    "function": "hold_manage_and_change_tools",
+    "typical_components": [
+      "tool_holder",
+      "tool_clamping",
+      "tool_magazine_optional",
+      "tool_changer_optional",
+      "tool_identification_optional"
+    ],
+    "interfaces": [
+      "spindle_taper_and_face",
+      "sequence_control",
+      "tool_status"
+    ]
+  }
+}

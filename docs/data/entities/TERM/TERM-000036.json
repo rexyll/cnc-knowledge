@@ -1,0 +1,34 @@
+{
+  "entity_id": "TERM-000036",
+  "entity_type": "term",
+  "canonical_name": "整机功能架构",
+  "english_name": "Machine tool functional architecture",
+  "aliases": [],
+  "description": "将机床功能职责、子系统、层级和接口组织为可追溯系统模型的方法；属于本知识库工程建模术语。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床整机功能架构",
+    "term"
+  ],
+  "tags": [
+    "整机架构",
+    "功能子系统"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:30:00+08:00",
+  "updated_at": "2026-11-22T12:30:00+08:00",
+  "verified_at": "2026-11-22T12:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000073",
+    "SRC-000076"
+  ],
+  "attributes": {
+    "term_category": "machine_tool_system_architecture",
+    "definition_scope": "knowledge_base_engineering_definition",
+    "related_article": "KNOW-000012"
+  }
+}

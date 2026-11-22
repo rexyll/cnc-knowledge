@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000072",
+  "source_type": "standard_catalog",
+  "title": "ISO 841:2001 — Industrial automation systems and integration — Numerical control of machines — Coordinate system and motion nomenclature",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/23949.html",
+  "version": "Edition 2; 2001-10; last reviewed and confirmed 2023",
+  "published_on": "2001-10-04",
+  "accessed_on": "2026-11-22",
+  "locator": "Official standard catalogue record and abstract; machine coordinate system and motion nomenclature scope",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official catalogue metadata only. The full standard is copyrighted and is not copied into this repository. Use the applicable licensed edition for normative engineering work.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

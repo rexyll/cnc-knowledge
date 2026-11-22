@@ -41,6 +41,13 @@
 | TERM-000034 | 全闭环控制 | Full closed-loop control | 以滑台直线编码器或回转轴角度编码器等负载侧测量元件作为位置反馈，使测量点到被控负载之间更多机械环节纳入位置环。 | 反馈方式 | SRC-000031、SRC-000033 | cnc-machine-fundamentals.md | 有来源支持 |
 | TERM-000035 | 运动链 | Kinematic chain | 由机床基础件、运动副、驱动和传动机构等组成的运动连接关系，描述刀具侧与工件侧部件的相对运动拓扑，是建立机床运动学模型的基础。 | 机械与运动学 | SRC-000029、SRC-000032 | cnc-machine-fundamentals.md | 有来源支持 |
 
+
+| TERM-000036 | 整机功能架构 | Machine tool functional architecture | 将机床功能职责、子系统、层级和接口组织为可追溯系统模型的方法；属于本知识库工程建模术语。 | 整机系统建模 | SRC-000073、SRC-000076 | architecture.md | 内部工程定义，有来源参考 |
+| TERM-000037 | 机床功能子系统 | Machine tool functional subsystem | 承担相对独立功能、具有明确输入输出和接口边界的整机组成单元；不必对应独立物理箱体或单一控制器。 | 整机系统建模 | SRC-000073、SRC-000076 | architecture.md | 内部工程定义，有来源参考 |
+| TERM-000038 | 能量流 | Energy flow | 能量从供给源经配电/驱动或辅助动力单元传递到执行机构及用能部件的路径。 | 整机架构 | SRC-000073 | architecture.md | 内部工程定义 |
+| TERM-000039 | 控制流 | Control flow | 程序、操作或逻辑命令经CNC/PLC/驱动控制链传递到执行对象，并伴随状态和互锁处理的路径。 | 整机架构 | SRC-000073、SRC-000074 | architecture.md | 内部工程定义 |
+| TERM-000040 | 信息流 | Information flow | NC程序、工艺数据、设备状态、测量结果和生产信息在CAM、CNC、HMI及上层系统之间交换的路径。 | 整机架构 | SRC-000074、SRC-000076 | architecture.md | 内部工程定义 |
+
 ## 维护规则
 
 - 为每个术语分配稳定ID；名称变化不复用或随意更改ID。

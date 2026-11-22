@@ -1,0 +1,33 @@
+{
+  "entity_id": "TERM-000038",
+  "entity_type": "term",
+  "canonical_name": "能量流",
+  "english_name": "Energy flow",
+  "aliases": [],
+  "description": "能量从供给源经配电/驱动或辅助动力单元传递到执行机构及用能部件的路径。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床整机功能架构",
+    "term"
+  ],
+  "tags": [
+    "整机架构",
+    "功能子系统"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:30:00+08:00",
+  "updated_at": "2026-11-22T12:30:00+08:00",
+  "verified_at": "2026-11-22T12:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000073"
+  ],
+  "attributes": {
+    "term_category": "machine_tool_system_architecture",
+    "definition_scope": "knowledge_base_engineering_definition",
+    "related_article": "KNOW-000012"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000076",
+  "source_type": "academic_paper",
+  "title": "A Case Study for Modeling Machine Tool Systems Using Standard Representations",
+  "publisher": "National Institute of Standards and Technology (NIST) publication record; ITU Kaleidoscope 2020",
+  "author": "Maja V. Baerring; Guodong Shao; Moneer Helu; Bjorn Johansson",
+  "url": "https://www.nist.gov/publications/case-study-modeling-machine-tool-systems-using-standard-representations",
+  "version": "Published 2020-12-09; NIST report number 8301",
+  "published_on": "2020-12-09",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract and publication metadata: assembled machine system representation including component geometry and kinematics",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Research publication record and abstract only; full paper is not copied. Used as a modeling/interoperability reference, not a mandatory representation prescription.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

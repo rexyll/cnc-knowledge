@@ -1,0 +1,21 @@
+{
+  "relation_id": "REL-000210",
+  "subject_id": "SUBSYS-000011",
+  "predicate": "CONTROLS",
+  "object_id": "SUBSYS-000004",
+  "qualifiers": {
+    "architecture_scope": "generic_reference_architecture",
+    "control_scope": "安全相关系统可对主运动危险状态施加停止或禁止约束，具体实现和安全等级必须由机型设计确认。",
+    "implementation_note": "逻辑控制职责关系，不代表直接接线、特定通信协议、具体安全等级或所有机型相同实现。"
+  },
+  "source_ids": [
+    "SRC-000073"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T12:30:00+08:00",
+  "updated_at": "2026-11-22T12:30:00+08:00",
+  "notes": "抽象功能控制关系；具体机型需按电气图、CNC/PLC程序、驱动手册和安全验证资料核验。"
+}

@@ -1,0 +1,49 @@
+{
+  "entity_id": "SUBSYS-000008",
+  "entity_type": "subsystem",
+  "canonical_name": "电气供电与驱动系统",
+  "english_name": "Electrical power and drive system",
+  "aliases": [],
+  "description": "为控制/执行设备供能并完成电机功率变换和驱动执行。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "数控机床整机功能架构",
+    "subsystem"
+  ],
+  "tags": [
+    "整机架构",
+    "功能子系统"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:30:00+08:00",
+  "updated_at": "2026-11-22T12:30:00+08:00",
+  "verified_at": "2026-11-22T12:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000073",
+    "SRC-000074",
+    "SRC-000075",
+    "SRC-000076"
+  ],
+  "attributes": {
+    "subsystem_type": "power_and_drives",
+    "function": "supply_and_convert_energy_for_actuation",
+    "typical_components": [
+      "electrical_cabinet",
+      "power_distribution",
+      "servo_drives",
+      "spindle_drive",
+      "motors",
+      "braking_or_regeneration"
+    ],
+    "interfaces": [
+      "electrical_power",
+      "drive_command",
+      "motor_output",
+      "protective_earth"
+    ]
+  }
+}

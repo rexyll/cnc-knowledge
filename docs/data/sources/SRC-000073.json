@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000073",
+  "source_type": "other",
+  "title": "Enhanced Machine Controller Architecture Overview (NISTIR 5331)",
+  "publisher": "National Institute of Standards and Technology (NIST)",
+  "author": "Frederick M. Proctor; John L. Michaloski",
+  "url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=820482",
+  "version": "NISTIR 5331; December 1993",
+  "published_on": "1993-12-31",
+  "accessed_on": "2026-11-22",
+  "locator": "Sections 2, 4, 5 and 10: machine tool hardware/software systems, controller requirements, module architecture, interfaces and safety",
+  "language": "en",
+  "rights_status": "public_domain",
+  "license_or_permission": "US Government work; report states work performed by US Government employees as part of official duties",
+  "notes": "Historical NIST reference architecture. Its example machine/controller implementation is not a current product specification or universal architecture.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

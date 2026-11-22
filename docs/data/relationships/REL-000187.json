@@ -1,0 +1,23 @@
+{
+  "relation_id": "REL-000187",
+  "subject_id": "KNOW-000012",
+  "predicate": "DERIVED_FROM",
+  "object_id": "SUBSYS-000001",
+  "qualifiers": {
+    "article_path": "docs/03-system-architecture-and-mechanics/architecture.md",
+    "article_version": "1.0",
+    "reference_role": "article_subsystem_index",
+    "relationship_scope": "文章索引和架构语义关联，不表示具体型号配置或实际安装关系。"
+  },
+  "source_ids": [
+    "SRC-000073",
+    "SRC-000076"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T12:30:00+08:00",
+  "updated_at": "2026-11-22T12:30:00+08:00",
+  "notes": "DERIVED_FROM仅用于文章索引/溯源，不表达具体机床BOM、制造、采购或型号适用事实。"
+}
