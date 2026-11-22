@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000252",
+  "source_type": "manufacturer_manual",
+  "title": "Danfoss — Cartridge Valves Technical Information, Introduction (BC332373683099en-000101)",
+  "publisher": "Danfoss",
+  "author": null,
+  "url": "https://assets.danfoss.com/documents/latest/149375/BC332373683099en-000101.pdf",
+  "version": "BC332373683099en-000101, February 2020",
+  "published_on": "2020-02-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Hydraulic integrated circuit/manifold production capabilities: material examples, CNC machining, deburring, cleaning, optional surface treatment and computerized testing.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Specific Danfoss ICS/HIC manufacturer capability statement. The listed material options and production/test practices must not be generalized to every manifold supplier or treated as a normative acceptance specification. PDF not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

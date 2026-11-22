@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000243",
+  "source_type": "standard_catalog",
+  "title": "ISO 4413:2010 — Hydraulic fluid power — General rules and safety requirements for systems and their components",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/44781.html",
+  "version": "ISO 4413:2010, Edition 3",
+  "published_on": "2010-11-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Scope and abstract: general rules and safety requirements for hydraulic fluid power systems and components used on machinery; includes design, construction/modification, assembly, installation, adjustment, operation and maintenance.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official ISO page states this edition was last reviewed and confirmed in 2021. It is a system/component safety and engineering requirements standard, not a component manufacturing process specification and does not establish universal machine-tool pressure, flow or cleanliness targets.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

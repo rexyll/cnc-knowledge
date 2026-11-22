@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000254",
+  "source_type": "manufacturer_manual",
+  "title": "Haas Automation — Chip and Coolant Service Manual, Introduction and system overview",
+  "publisher": "Haas Automation",
+  "author": null,
+  "url": "https://haascnc.com/service/online-manuals/chip-and-coolant---service-manual/chip-removal-and-coolant---introduction.html",
+  "version": "Online service manual; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Manual contents and overview of coolant and chip-removal subsystems including augers, conveyors, filtration, chillers, oil skimmers and related options.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Haas-specific service information used only as a product/system taxonomy and service-document example. Does not establish that all machine tools have these components or share the same procedures. No manual copy archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

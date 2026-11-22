@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000258",
+  "source_type": "standard_catalog",
+  "title": "ISO 4407:2025 — Hydraulic fluid power — Fluid contamination — Determination of particulate contamination by the counting method using an optical microscope",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/86030.html",
+  "version": "ISO 4407:2025, Edition 3",
+  "published_on": "2025-12-16",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract and lifecycle: membrane-filter microscopy particle-counting methods, including manual or image-analysis-assisted methods; published 2025-12 and replaces ISO 4407:2002.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Method standard for particle determination in fluids that can be vacuum-filtered through an appropriate membrane. It does not set a machine-tool hydraulic cleanliness target or validate coolant filtration system performance by itself.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

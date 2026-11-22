@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000246",
+  "source_type": "standard_catalog",
+  "title": "ISO 16889:2022 — Hydraulic fluid power — Filters — Multi-pass method for evaluating filtration performance of a filter element",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/77245.html",
+  "version": "ISO 16889:2022, Edition 3",
+  "published_on": "2022-01-25",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract: multi-pass filtration test with continuous contaminant injection for hydraulic fluid power filter elements; determines contaminant capacity, particulate removal and differential pressure characteristics.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The published scope specifies application conditions for the filter element test, including a defined filtration ratio/particle size and reservoir gravimetric level. It is not a test method for machine-tool coolant filters or proof of total-system cleanliness. Use the exact standard text and agreed test conditions for contract work.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000247",
+  "source_type": "standard_catalog",
+  "title": "ISO 1219-1:2012 — Fluid power systems and components — Graphical symbols and circuit diagrams — Part 1: Graphical symbols for conventional use and data-processing applications",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/60184.html",
+  "version": "ISO 1219-1:2012 + Amd 1:2016",
+  "published_on": "2012-06-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract: establishes basic elements/rules for devising fluid-power symbols used on components and in circuit diagrams.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official catalogue indicates the 2012 edition was reviewed and confirmed in 2026 and has Amendment 1:2016. This part concerns symbols; it should not be described as the complete set of circuit diagram construction rules or a component performance standard.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

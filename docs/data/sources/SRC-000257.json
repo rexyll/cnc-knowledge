@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000257",
+  "source_type": "standard_catalog",
+  "title": "ISO 4405:2022 — Hydraulic fluid power — Fluid contamination — Determination of particulate contamination by the gravimetric method",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/79715.html",
+  "version": "ISO 4405:2022, Edition 2",
+  "published_on": "2022-07-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract: gravimetric method for determining contamination level of fluids used in hydraulic fluid power systems; scope describes mineral-oil pressure fluids with additives in hydrostatic drives.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Method standard, not a fluid cleanliness target. Do not assume applicability to all coolant emulsions or non-mineral fluids without checking the complete scope and method conditions.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

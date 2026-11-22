@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000248",
+  "source_type": "standard_catalog",
+  "title": "ISO 9906:2012 — Rotodynamic pumps — Hydraulic performance acceptance tests — Grades 1, 2 and 3",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/41202.html",
+  "version": "ISO 9906:2012, Edition 2; official lifecycle page shows review stage 90.60",
+  "published_on": "2012-04-26",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract and scope: hydraulic performance acceptance tests for rotodynamic pumps (centrifugal, mixed flow and axial); test fluids are required to behave as clean, cold water.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The ISO lifecycle page displays review-stage information. Do not assume this standard is directly applicable to contaminated coolant, emulsions or slurry without checking pump type, fluid behaviour, test arrangement and the contract. It is a pump acceptance test method, not a machine-tool coolant system specification.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

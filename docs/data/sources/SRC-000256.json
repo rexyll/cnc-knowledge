@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000256",
+  "source_type": "manufacturer_product_page",
+  "title": "Mayfran — ConSep Pro Conveyor",
+  "publisher": "Mayfran International",
+  "author": null,
+  "url": "https://www.mayfran.com/products/machine-tool-products/consep-pro-conveyor/",
+  "version": "Current product page accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Product page describes integrated chip handling, fines separation and coolant filtration/backwash system.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Specific Mayfran product declaration only. Any nominal filtration performance stated on the page applies to the identified product configuration and cannot be treated as a universal coolant-filter rating or machine-tool acceptance criterion.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

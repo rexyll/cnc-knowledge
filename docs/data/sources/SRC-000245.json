@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000245",
+  "source_type": "standard_catalog",
+  "title": "ISO 4406:2021 — Hydraulic fluid power — Fluids — Method for coding the level of contamination by solid particles",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/79716.html",
+  "version": "ISO 4406:2021, Edition 4",
+  "published_on": "2021-01-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract and lifecycle: code used to define the quantity of solid particles in fluid used in a hydraulic fluid power system.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official page reports the 2021 edition was reviewed and confirmed in 2026. It defines a contamination coding method; it does not set a universal cleanliness target for all hydraulic components or machine tools.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

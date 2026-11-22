@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000255",
+  "source_type": "manufacturer_manual",
+  "title": "Haas Automation — CDF Chip Conveyor Maintenance",
+  "publisher": "Haas Automation",
+  "author": null,
+  "url": "https://haascnc.com/service/online-manuals/chip-and-coolant---service-manual/cdf-chip-conveyor.html",
+  "version": "CDF Chip Conveyor Maintenance, Revision A, 2026-05",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Manufacturer service section on coolant level, filter screen blockage, backwash spray and Y-strainer inspection for the Haas CDF conveyor.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Applies only to the Haas CDF product/system described by the manual. The observations are useful for structuring inspection fields but do not define universal machine-tool coolant/conveyor maintenance limits. No manual copy archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

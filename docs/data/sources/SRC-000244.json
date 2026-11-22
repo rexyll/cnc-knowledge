@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000244",
+  "source_type": "standard_catalog",
+  "title": "ISO 4414:2010 — Pneumatic fluid power — General rules and safety requirements for systems and their components",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/44790.html",
+  "version": "ISO 4414:2010, Edition 3",
+  "published_on": "2010-11-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Scope and abstract: general rules and safety requirements for pneumatic fluid power systems and components used on machinery.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official ISO page states this edition was last reviewed and confirmed in 2021. It does not apply to air compressors and their associated factory air-distribution systems. It is not a model-specific FRL, cylinder or valve manufacturing specification.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

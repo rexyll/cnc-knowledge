@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000253",
+  "source_type": "manufacturer_product_page",
+  "title": "SMC — Modular F.R.L. Units AC10-A product catalogue page",
+  "publisher": "SMC Corporation",
+  "author": null,
+  "url": "https://www.smcworld.com/webcatalog/en-jp/modular-frl-units-pressure-control-equipment/modular-frl-units/AC-A-E",
+  "version": "AC10-A family; page accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Product page identifies modular filter/regulator/lubricator and filter-regulator combination variants in the AC10-A family.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Specific SMC product-family example only. It does not imply that every machine-tool pneumatic circuit requires a lubricator or uses this product family. Model-level settings and compatibility require the exact SMC product documentation.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}
