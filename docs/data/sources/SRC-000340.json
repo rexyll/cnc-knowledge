@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000340",
+  "source_type": "other",
+  "title": "Gain margin, phase margin, and crossover frequencies",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/control/ref/dynamicsystem.margin.html",
+  "version": "Control System Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Definitions of classical gain/phase margins and crossover-frequency handling, including multiple crossings",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official documentation describes gain margin, phase margin and crossover frequencies. Multiple gain/phase crossovers require explicit interpretation; the summary uses the crossing closest to zero while the full CSV retains detected crossings.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

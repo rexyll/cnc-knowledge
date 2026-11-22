@@ -17,3 +17,5 @@ chapter_id,entity_type,field_name,label_zh,description,data_type,unit,required_l
 "CH08","test","servo_model_order_selection_record","伺服模型阶次选择记录","比较单惯量、两惯量和多惯量候选对象模型","object","","conditional","","记录候选阶次、参数可辨识性、训练/验证误差、AICc/BIC、残差、相干度和模型物理解释","机械柔性及共振建模","yes","","不得只按训练拟合误差选择最高阶模型"
 "CH08","test","servo_directional_friction_record","伺服方向摩擦辨识记录","记录CW/CCW方向相关速度斜率和等效截距","object","","conditional","","记录各方向速度区间、负载、温度、夹紧、回归秩、残差和零点/负载转矩测量","低速伺服轴摩擦辨识","yes","","单方向截距不能独立分解库仑摩擦与恒定负载/零点偏置"
 "CH08","test","servo_model_parameter_drift_record","伺服模型参数漂移记录","比较负载、方向和冷热状态下惯量/阻尼/刚度变化","object","","conditional","","记录同一测量链、工况指纹、J/B/K/C估计、置信区间、重复性和参数相关性","多工况模型/参数调度分析","yes","","参数漂移须与测量重复性及配置变化比较，不自动表示故障或热效应"
+"CH08","parameter","servo_cascade_controller_design_record","伺服级联控制器设计记录","保存电流/转矩近似、速度PI、位置P结构及控制器候选参数","object","","conditional","","记录环路部署位置、反馈测点、PI/P增益/单位、带宽设定、采样、执行器、限幅与抗积分饱和","单轴SISO伺服轴控制研究","yes","","候选合成增益不是可直接写入实际驱动器的整定建议"
+"CH08","test","servo_multicondition_controller_validation_record","多工况伺服控制验证记录","比较同一控制器在负载/热态/柔性模态/反馈延迟变化下的闭环结果","object","","conditional","","记录对象模型版本、控制器版本、工况指纹、反馈延迟、GM/PM全部交越、阶跃误差、饱和状态和验证层级","级联控制设计与回归","yes","","仿真、SIL、HIL、台架和实机证据必须分开"

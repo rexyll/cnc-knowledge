@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000338",
+  "source_type": "other",
+  "title": "PID Controller",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/simulink/slref/pidcontroller.html",
+  "version": "Simulink documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Output saturation, back-calculation and clamping anti-windup strategies and tracking mode",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official PID Controller documentation describes output limits and anti-windup methods including back-calculation and clamping. Used only for the generic control concept; not a configuration claim for any CNC drive.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

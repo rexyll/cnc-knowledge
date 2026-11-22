@@ -1,0 +1,9 @@
+controller,plant,feedback_delay_ms,sample_time_ms,speed_phase_margin_deg,speed_gain_margin_db,speed_gain_crossover_count,position_phase_margin_deg,position_gain_margin_db,position_gain_crossover_count,classification
+aggressive_reference,nominal_cold,1.0,0.5,38.35496176,20.36080390,1,41.94289509,7.47172996,1,synthetic_SISO_equivalent_delay
+aggressive_reference,heavy_load_cold,1.0,0.5,33.38334563,20.58173598,1,14.97029093,2.98473372,1,synthetic_SISO_equivalent_delay
+aggressive_reference,heavy_load_hot,1.0,0.5,33.82545241,20.77888007,1,15.75869425,3.12685322,1,synthetic_SISO_equivalent_delay
+aggressive_reference,three_mode_reference,1.0,0.5,34.79431691,20.92454953,3,20.02007312,3.84159749,1,synthetic_SISO_equivalent_delay
+conservative_candidate,nominal_cold,1.0,0.5,42.26063424,23.06127609,1,73.06215906,11.72292332,1,synthetic_SISO_equivalent_delay
+conservative_candidate,heavy_load_cold,1.0,0.5,36.89771124,23.27434883,1,36.80516123,6.53648717,1,synthetic_SISO_equivalent_delay
+conservative_candidate,heavy_load_hot,1.0,0.5,37.51961037,23.46827350,1,38.37836233,6.77605040,1,synthetic_SISO_equivalent_delay
+conservative_candidate,three_mode_reference,1.0,0.5,38.53555718,23.59063642,3,46.00718896,7.75897332,1,synthetic_SISO_equivalent_delay

@@ -46,3 +46,8 @@
 ## 来源与审查
 
 事实性内容需记录来源、版本、适用机型/系统、核验日期和证据等级；未知项显式标记待核实。安全、版权和保密要求遵循根目录 `TaskPlan.md`。
+
+
+## 级联控制器鲁棒性专题
+
+- [多工况伺服级联控制的稳定裕度与限幅仿真](multicondition-cascade-robust-stability-and-saturation-simulation.md)：SISO嵌套环路GM/PM、延迟扫描、柔性模态、限幅和反算抗积分饱和的合成联合仿真。

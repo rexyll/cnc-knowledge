@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000339",
+  "source_type": "other",
+  "title": "Analyze Control Systems with Delays",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/control/ug/analyzing-control-systems-with-delays.html",
+  "version": "Control System Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Delay-induced phase shift; internal delay state-space; Padé model comparison; ZOH discretization limitations with internal delay",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official documentation describes delay effects on phase/stability and approaches to systems with delays, including limitations of approximations. The half-sample equivalent delay in this repository is approximate and not a design sign-off model.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

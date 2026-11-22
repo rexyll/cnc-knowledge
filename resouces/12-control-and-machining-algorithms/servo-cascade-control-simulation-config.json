@@ -1,0 +1,155 @@
+{
+  "classification": "synthetic_simulation_not_machine_measurement",
+  "python": "3.10+",
+  "dependencies": {
+    "numpy": "runtime"
+  },
+  "simulation": {
+    "sample_time_s": 0.0005,
+    "current_actuator_time_constant_s": 0.001,
+    "feedback_delay_samples": [
+      0,
+      1,
+      2
+    ],
+    "total_simulation_s": 1.5,
+    "rk4_substeps_per_sample": 4,
+    "torque_limit_nm": 1,
+    "velocity_reference_limit_rad_s": 1.5,
+    "load_disturbance_nm": 0.25,
+    "disturbance_interval_s": [
+      0.4,
+      0.7
+    ],
+    "step_time_s": 0.05,
+    "step_amplitudes_rad": [
+      0.12,
+      0.25
+    ],
+    "anti_windup": "discrete back-calculation; tracking time constant 30 ms"
+  },
+  "current_actuator": "first-order torque/current closed-loop approximation; no inverter/PMSM electrical switching model",
+  "feedback": "load-side position feedback and motor-side speed feedback; delayed by integer controller samples",
+  "controller_designs": [
+    {
+      "name": "aggressive_reference",
+      "speed_bandwidth_setting_hz": 16,
+      "speed_integral_zero_hz": 6,
+      "position_bandwidth_setting_hz": 2.5,
+      "kp_speed_nm_s_rad": 0.6702064328,
+      "ki_speed_nm_rad": 25.2661872668,
+      "kp_position_per_s": 15.7079632679
+    },
+    {
+      "name": "conservative_candidate",
+      "speed_bandwidth_setting_hz": 12,
+      "speed_integral_zero_hz": 4,
+      "position_bandwidth_setting_hz": 1.5,
+      "kp_speed_nm_s_rad": 0.5026548246,
+      "ki_speed_nm_rad": 12.6330936334,
+      "kp_position_per_s": 9.424777961
+    }
+  ],
+  "plant_conditions": [
+    {
+      "name": "nominal_cold",
+      "inertia_kg_m2": [
+        0.01,
+        0.02
+      ],
+      "viscous_nm_s_rad": [
+        0.006,
+        0.014
+      ],
+      "shaft_stiffness_nm_rad": [
+        1400
+      ],
+      "shaft_damping_nm_s_rad": [
+        0.35
+      ],
+      "coulomb_nm": [
+        0.012,
+        0.018
+      ]
+    },
+    {
+      "name": "heavy_load_cold",
+      "inertia_kg_m2": [
+        0.01,
+        0.032
+      ],
+      "viscous_nm_s_rad": [
+        0.006,
+        0.018
+      ],
+      "shaft_stiffness_nm_rad": [
+        1400
+      ],
+      "shaft_damping_nm_s_rad": [
+        0.42
+      ],
+      "coulomb_nm": [
+        0.012,
+        0.02
+      ]
+    },
+    {
+      "name": "heavy_load_hot",
+      "inertia_kg_m2": [
+        0.01,
+        0.032
+      ],
+      "viscous_nm_s_rad": [
+        0.008,
+        0.025
+      ],
+      "shaft_stiffness_nm_rad": [
+        1260
+      ],
+      "shaft_damping_nm_s_rad": [
+        0.39
+      ],
+      "coulomb_nm": [
+        0.014,
+        0.022
+      ]
+    },
+    {
+      "name": "three_mode_reference",
+      "inertia_kg_m2": [
+        0.01,
+        0.008,
+        0.02
+      ],
+      "viscous_nm_s_rad": [
+        0.005,
+        0.007,
+        0.013
+      ],
+      "shaft_stiffness_nm_rad": [
+        1200,
+        850
+      ],
+      "shaft_damping_nm_s_rad": [
+        0.35,
+        0.28
+      ],
+      "coulomb_nm": [
+        0.01,
+        0.012,
+        0.018
+      ]
+    }
+  ],
+  "linear_margin_method": "SISO motor-speed inner loop and nested load-position outer loop; exact flexible plant FRF; first-order actuator lag; pure-delay equivalent (feedback delay + half sample); all detected gain/phase crossovers retained; Coulomb friction and saturation excluded from linear margins",
+  "closed_loop_poles": "continuous augmented linearization around zero speed, no sample/compute delay, no Coulomb friction and no saturation; only a local linear check",
+  "nonlinear_simulation": "sampled controller with integer feedback delay, torque saturation, back-calculation anti-windup, Coulomb friction, flexible coupling, and a load torque disturbance",
+  "limitations": [
+    "All inertias, damping, stiffness, friction, torque/velocity limits and disturbances are synthetic assumptions, not OEM or machine data",
+    "Two-mass and three-mass systems are lumped SISO examples; no multiaxis/MIMO coupling, encoder quantization, current ripple, bus jitter or thermal dynamics model",
+    "The hot-state change is a prescribed parameter variant, not a measured thermal law",
+    "Equivalent delay frequency response is approximate; use exact discrete-time/internal-delay models for design sign-off",
+    "GM/PM values are classical SISO loop margins, not disk margins or robust-stability proof",
+    "Time-domain saturation response does not prove stability for all inputs or machine safety"
+  ]
+}
