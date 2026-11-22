@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000038",
+  "source_type": "standard_catalog",
+  "title": "ISO 13041-2:2020 — Test conditions for numerically controlled turning machines and turning centres — Part 2: Geometric tests for machines with a vertical workholding spindle",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/73489.html",
+  "version": "Edition 2, 2020-03; reviewed and confirmed 2025",
+  "published_on": "2020-03-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract; terminology, controlled axes and geometric tests",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于说明立式工件主轴车削机床几何测试的对象和边界。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

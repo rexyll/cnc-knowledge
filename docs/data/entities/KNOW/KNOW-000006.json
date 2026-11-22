@@ -1,0 +1,62 @@
+{
+  "entity_id": "KNOW-000006",
+  "entity_type": "knowledge_article",
+  "canonical_name": "主要数控机床类型技术档案",
+  "english_name": "Technical profiles of major CNC machine tool types",
+  "aliases": [],
+  "description": "按加工原理、典型结构、运动轴系、应用范围和选型约束整理主要数控机床类型的技术档案",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH01",
+    "CH03",
+    "CH04",
+    "CH05",
+    "CH07",
+    "CH08",
+    "CH10",
+    "CH12",
+    "CH13",
+    "CH14",
+    "CH15",
+    "CH19",
+    "CH22"
+  ],
+  "classification_path": [
+    "知识条目",
+    "machine_type_technical_profiles"
+  ],
+  "tags": [
+    "机床类型",
+    "工作原理",
+    "结构",
+    "轴系",
+    "选型边界"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T11:20:00+08:00",
+  "updated_at": "2026-11-22T11:20:00+08:00",
+  "verified_at": "2026-11-22T11:20:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000035",
+    "SRC-000036",
+    "SRC-000037",
+    "SRC-000038",
+    "SRC-000039",
+    "SRC-000040",
+    "SRC-000041",
+    "SRC-000042",
+    "SRC-000043"
+  ],
+  "attributes": {
+    "document_path": "docs/02-machine-types-and-products/machine-type-technical-archives.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "车削、铣削/加工中心、钻镗、磨削、齿轮加工、EDM/特种加工、金属成形、多任务和专用机床的原理、结构、轴系、应用和选型边界",
+    "knowledge_kind": "machine_type_technical_profiles",
+    "article_status": "reviewed"
+  },
+  "notes": "类型级知识档案；不代替具体型号规格、配置、性能测试或现场工艺验证。关系图通过DERIVED_FROM链接本条目明确索引的机床类型实体。"
+}

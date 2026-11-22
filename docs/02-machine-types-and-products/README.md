@@ -12,13 +12,14 @@
 
 ## 已建立的知识地图
 
-[机床分类体系](machine-tool-classification.md)
+[机床分类体系](machine-tool-classification.md)  
+[主要机型技术档案](machine-type-technical-archives.md)
 
 ## 本章任务计划
 
 [打开本章 TaskPlan](../TaskPlan/02-machine-types-and-products/TaskPlan.md)
 
-本章知识内容按任务计划逐步研究，不在初始化阶段预填未经核实的技术参数或结论。
+本章已完成分类体系和主要机型技术档案；具体型号规格、选型矩阵和案例仍按任务计划逐步研究。
 
 ## 建议正文结构
 

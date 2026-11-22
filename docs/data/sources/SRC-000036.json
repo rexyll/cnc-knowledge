@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000036",
+  "source_type": "standard_catalog",
+  "title": "ISO 10791-7:2020 — Test conditions for machining centres — Part 7: Accuracy of finished test pieces",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/73814.html",
+  "version": "Edition 3, 2020-01; reviewed and confirmed 2025",
+  "published_on": "2020-01-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract; applicability to 3–5 simultaneous machining axes",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于说明加工中心试件加工精度测试及适用配置边界；不是所有机床的通用验收证明。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

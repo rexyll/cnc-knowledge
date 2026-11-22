@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000042",
+  "source_type": "manufacturer_product_page",
+  "title": "INTEGREX e-H Multi-Tasking Machines",
+  "publisher": "Yamazaki Mazak Corporation",
+  "author": null,
+  "url": "https://www.mazak.com/us-en/products/integrex-e-h/",
+  "version": "Online product page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Product description and process-integration features",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "官方产品页声明该系列集成车削至铣削能力并提供选配；仅用于具体系列示例，不代表所有多任务机床配置。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

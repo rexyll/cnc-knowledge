@@ -1,6 +1,6 @@
 chapter_id,chapter_slug,coverage_level,coverage_label,knowledge_articles,verified_entities,verified_relationships,source_records,asset_records,last_reviewed_at,next_priority,status,notes
 CH01,01-industry-and-fundamentals,2,foundational,2,26,25,24,0,2026-11-22,CH02-T002：主要机型结构与技术档案,IN_PROGRESS,2篇CH01技术正文；24条TERM+2条KNOW主归属实体；25条与CH01主数据相连的已核验关系；去重SRC 24条。CH01-T004范围审查报告已完成，不计为技术文章或新增覆盖实体。
-CH02,02-machine-types-and-products,1,inventory,1,22,46,10,0,2026-11-22,CH02-T002：补齐主要机型结构/选型及具体型号规格,IN_PROGRESS,14个MTYPE+7个MACHINE+1个KNOW；关系含原有分类/型号事实和22条连接本章实体的文章索引边；去重SRC 10条。
+CH02,02-machine-types-and-products,2,foundational,2,23,60,19,0,2026-11-22,CH02-T003：建立典型产品与型号库,IN_PROGRESS,14个MTYPE+7个MACHINE+2个KNOW；46条既有关系+14条本章文章索引边；SRC去重19条。类型档案覆盖车削、铣削/加工中心、钻镗、磨削、齿轮、EDM/特种、金属成形、多任务和专用机床；型号级参数待CH02-T003逐一核验。
 CH03,03-system-architecture-and-mechanics,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH04,04-components-materials-and-manufacturing,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH05,05-tooling-fixtures-and-workholding,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。

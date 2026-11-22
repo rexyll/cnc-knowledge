@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000037",
+  "source_type": "standard_catalog",
+  "title": "ISO 13041-5:2015 — Test conditions for numerically controlled turning machines and turning centres — Part 5: Accuracy of speeds and interpolations",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/56623.html",
+  "version": "Edition 2, 2015-03; reviewed and confirmed 2023",
+  "published_on": "2015-03-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract; speed, feed and interpolation tests",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于说明数控车床和车削中心速度、进给和多轴路径精度测试。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

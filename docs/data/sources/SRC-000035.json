@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000035",
+  "source_type": "standard_catalog",
+  "title": "ISO 10791-6:2014 — Test conditions for machining centres — Part 6: Accuracy of speeds and interpolations",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/46440.html",
+  "version": "Edition 2, 2014-12; confirmed 2026",
+  "published_on": "2014-12-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract; scope and kinematic tests",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于说明加工中心速度、进给和多轴插补精度测试范围；标准全文未复制。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

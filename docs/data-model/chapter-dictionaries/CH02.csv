@@ -10,3 +10,8 @@ CH02,machine_model,machine_layout,结构布局,卧式/立式/龙门/桥式/摆�
 CH02,machine_model,process_capabilities,工艺能力,切削、磨削、齿轮、激光等工艺组合,array,,recommended,,能力必须有官方或测试来源,具体型号与选件,yes,,将标准配置、选配和定制项分开
 CH02,machine_model,configuration_options,配置选项,主轴、刀库、转台、控制器、工件交换等选项,array,,recommended,,必须标注选件/标准/地区限制,具体型号,yes,,无依据时不填写
 CH02,machine_model,published_specs,公开规格,官方规格字段与数值，不含推算的未知值,object,,conditional,,每个数值必须附单位、版本和SRC定位,具体型号/配置,yes,,额定/最大/典型/实测需区分
+CH02,machine_type,working_principle,工作原理,主要切削或成形机理及主运动/进给运动,string,,recommended,,必须与机床加工过程类别一致,所有机床类型,yes,,类型级原理不填入具体型号参数
+CH02,machine_type,typical_structure,典型结构,主要承载结构/主轴/工作台/刀具或工件夹持部件,array,,recommended,,按结构职责描述并注明变体,所有机床类型,yes,,不同型号结构可能存在差异
+CH02,machine_type,typical_axis_configuration,典型轴系,常见直线轴/旋转轴及其运动对象,object,,recommended,,区分可控轴和同时联动轴且不推定型号能力,数控机床类型,yes,,具体轴数和联动能力须回到型号规格
+CH02,machine_type,typical_workpieces,典型工件与工序,代表性工件几何/加工特征,array,,recommended,,只记录一般适用场景不作性能保证,所有机床类型,yes,,工艺参数由CH13维护
+CH02,machine_type,selection_constraints,选型约束,类型层面的关键适用边界和风险,array,,recommended,,应说明约束来源或标注为工程评估项,所有机床类型,yes,,不替代具体设备风险评估
