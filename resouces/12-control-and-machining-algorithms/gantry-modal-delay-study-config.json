@@ -137,6 +137,7 @@
     "gantry-mimo-discrete-small-gain-margin.csv"
   ],
   "notes": "Reduced-order synthetic 4-coordinate crossbeam model with assumed bending/torsion modes. Frozen load-position snapshots are not a continuously moving-mass time-varying model. No FE/modal measurement, HIL or hardware evidence. Not a tuning recommendation.",
-  "damping_coupling_definition": "D_psi_theta = 0.03 * sqrt(D_psi_psi * D_theta_theta); construct cross-damping from generalized damping diagonal terms, never from stiffness terms.",
-  "correction_2026_11_22": "Corrected the dimensionally inconsistent yaw/torsion cross-damping coefficient and regenerated the delay-stability, transient-step and sampled small-gain CSV outputs. Earlier versions of these three result tables are superseded."
+  "damping_coupling_definition": "D_psi_theta = -c, c=0.03*sqrt(D_psi_psi*D_theta_theta); the negative off-diagonal sign follows from the chosen coupling vector [0,1,0,-1]. The scalar c is a synthetic assumed coupling magnitude.",
+  "correction_2026_11_22": "Corrected the dimensionally inconsistent yaw/torsion cross-damping coefficient and regenerated the delay-stability, transient-step and sampled small-gain CSV outputs. Earlier versions of these three result tables are superseded.",
+  "coordinate_metric_interpretation": "M and D matrix norms/eigenvalues depend on mixed generalized-coordinate units (m/rad); report these as numeric diagnostics under the declared coordinate convention, not as single SI-unit measurements."
 }

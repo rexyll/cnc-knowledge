@@ -15,7 +15,7 @@
 
 旧脚本的偏航/扭转交叉阻尼系数误使用刚度矩阵对角项，形式为 D_psi_theta=0.03*sqrt(K_psi_psi*K_theta_theta)。该式把刚度量纲带入阻尼矩阵，导致阻尼交叉项量纲不一致。现已替换为：
 
-D_psi_theta=0.03*sqrt(D_psi_psi*D_theta_theta)
+D_psi_theta=-0.03*sqrt(D_psi_psi*D_theta_theta) under the selected [0,1,0,-1] coupling vector
 
 脚本与配置均已修正。该错误不改变无阻尼广义特征值 K v=omega^2 Mv 的结果，但会改变阻尼矩阵、闭环极点、时域阶跃和频域小增益诊断。因此旧版本的延迟稳定性表、阶跃数值和小增益数值已被新结果覆盖，不再作为有效结果引用。
 
@@ -134,3 +134,12 @@ Mdot=mp*(Phi_s.T*Phi+Phi.T*Phi_s)*s_dot
 - 校准提交：054ec259953010f0eb93cf08bee20d5eab7a3c54。
 - GitHub Actions [Run 45037565820](https://github.com/rexyll/cnc-knowledge/actions/runs/45037565820) success；5/5单元测试通过；strict lint PASS（0 errors）。
 - 最终统计：22章、126个Markdown文件、407条内部链接、143条实体、240条关系、364条来源、649处正文来源引用。
+
+
+## 5. 后续静态代码审查补充（2026-11-22）
+
+- 对已提交的 `gantry-moving-load-study.py` 进行了不执行脚本的静态方程/数据语义审查；没有将其表述为独立Python回归通过。
+- 发现普通广义矩阵/向量2-范数用在混合m/rad坐标下没有单一SI单位：原 `peak_Mdot_norm_kg_per_s`、广义输运项的N标签、以及广义质量矩阵特征值字段容易引起误读。现改为“给定m/rad坐标约定下的数值范数/数值特征值”，相关CSV仅改字段名、数值不变。
+- 方程核验代码的误差分母为 `max(1, reference_2_norm)`，当参考量范数小于1时不是严格相对误差；已将CSV/脚本字段改为“归一化偏差”，并在配置与正文公开分母定义。现有数值保持不变。
+- 进一步明确阻尼交叉项符号：耦合向量为 `[0,1,0,-1]`，秩一更新的偏航—扭转非对角元为负值；标量幅值为正。脚本本身不变更其计算，只更正文档和配置中的符号说明。
+- 以上属于字段语义和文档更正，不会让既有CSV被误认为本轮重新计算，也没有代替精确提交脚本的Python回归。资源脚本执行、PC/CP disk-margin数值、双向负载动力学仍是后续事项。

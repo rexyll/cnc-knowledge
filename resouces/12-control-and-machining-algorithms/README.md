@@ -85,3 +85,8 @@
 
 
 **代码验证边界（2026-11-22）：** 本目录中的移动负载比较CSV和方程核验CSV是参考计算结果；gantry-moving-load-study.py已入库，但本轮CI不执行资源脚本，精确提交版本尚待独立Python回归核验。请不要将CI通过误解为该脚本已执行。
+
+
+## 移动负载数据指标口径补充（2026-11-22）
+- `gantry-moving-load-model-comparison.csv` 中矩阵/广义项2-范数和广义质量矩阵特征值是按 q=[x(m), yaw(rad), bend(m), torsion(rad)] 计算的数值诊断，不应标注为单一kg、kg/s或N单位。
+- `gantry-moving-load-equation-checks.csv` 的误差指标定义为 ||计算值-参考值||2 / max(1, ||参考值||2)，称为归一化偏差；当参考量范数小于1时不应称为严格相对误差。此次只修订字段名/语义，CSV数值不变。

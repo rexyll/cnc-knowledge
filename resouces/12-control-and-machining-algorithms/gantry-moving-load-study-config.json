@@ -30,7 +30,21 @@
       5,
       15,
       30
-    ]
+    ],
+    "coordinate_unit_convention": {
+      "x_common": "m",
+      "yaw": "rad",
+      "beam_bending": "m",
+      "beam_torsion": "rad"
+    },
+    "metric_interpretation": "Generalized mass/Mdot matrix eigenvalues and 2-norms are numerical diagnostics under the declared mixed m/rad coordinate units; they do not have a single SI unit and change under coordinate rescaling.",
+    "generalized_force_units": [
+      "N",
+      "N*m",
+      "N",
+      "N*m"
+    ],
+    "damping_coupling_definition": "D_psi_theta=-c, c=0.03*sqrt(D_psi_psi*D_theta_theta); the negative off-diagonal sign follows from coupling vector [0,1,0,-1]."
   },
   "equations": {
     "position": "r(q,s)=r0(s)+Phi(s)q",
@@ -68,7 +82,9 @@
     "max_mdot_fd_relative_error": 2.485574900606376e-10,
     "max_acceleration_chain_rule_relative_error": 4.341605546323933e-7,
     "max_q_euler_lagrange_residual_relative_error": 8.885587074833216e-10,
-    "min_augmented_mass_eigenvalue_under_declared_coordinate_scaling": 2.020592304912163
+    "min_augmented_mass_eigenvalue_under_declared_coordinate_scaling": 2.020592304912163,
+    "error_normalization": "Each reported scaled discrepancy is ||computed-reference||_2 / max(1, ||reference||_2); it is not always a strict relative error when ||reference||_2 < 1.",
+    "metric_units_caution": "The ordinary Euclidean 2-norm of Mdot and generalized transport covectors has no single physical unit with mixed m/rad generalized coordinates."
   },
   "disk_margin": {
     "optional": true,
@@ -85,7 +101,8 @@
     ],
     "frequency_points": 1024,
     "computed_numeric_result": false,
-    "interpretation": "Reciprocal of Slycot structured-mu upper bound at each sampled frequency; minimum over finite grid is not a global continuous-frequency certificate."
+    "interpretation": "Reciprocal of Slycot structured-mu upper bound at each sampled frequency; minimum over finite grid is not a global continuous-frequency certificate.",
+    "coordinate_system": "q=[x_common_m,yaw_rad,beam_bending_m,beam_torsion_rad]; the numeric plant matrices use this declared coordinate convention."
   },
   "notes": [
     "Prescribed payload trajectory; no two-way motion/structure coupling.",

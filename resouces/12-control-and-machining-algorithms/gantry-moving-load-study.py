@@ -111,11 +111,11 @@ def simulate(m,name,skp,skd,mode,keep_trace):
       "rms_sync_skew_um_during_move":float(np.sqrt(np.mean(a[moving,4]**2))*1e6),
       "peak_bending_coordinate_um_during_move":float(np.max(np.abs(a[moving,5]))*1e6),
       "peak_torsion_mrad_during_move":float(np.max(np.abs(a[moving,6]))*1e3),
-      "peak_Mdot_norm_kg_per_s":float(np.max(a[:,7])),
-      "peak_transport_velocity_force_norm_N":float(np.max(a[:,8])),
-      "peak_transport_acceleration_force_norm_N":float(np.max(a[:,9])),
-      "min_generalized_mass_eigenvalue":float(np.min(a[:,10])),
-      "min_full_q_s_mass_eigenvalue":float(np.min(a[:,11])),
+      "peak_Mdot_matrix_2norm_numeric_under_m_rad_coordinate_units":float(np.max(a[:,7])),
+      "peak_velocity_transport_generalized_term_2norm_numeric_under_m_rad_coordinate_units":float(np.max(a[:,8])),
+      "peak_acceleration_transport_generalized_term_2norm_numeric_under_m_rad_coordinate_units":float(np.max(a[:,9])),
+      "min_generalized_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units":float(np.min(a[:,10])),
+      "min_augmented_q_s_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units":float(np.min(a[:,11])),
       "peak_command_force_N":float(np.max(a[:,12])),"trajectory_samples":len(a)}
     trace=a if keep_trace else None
     return summary,trace
@@ -142,10 +142,10 @@ def verify_equations():
         el=m*P.T@aa; erre=np.linalg.norm(pd-el)/max(1,np.linalg.norm(el))
         mineig=np.min(eigvalsh(terms(q,s,sd,0,m)[5]))
         out.append({"payload_mass_kg":m,"load_position_m":s,"test_speed_m_s":sd,
-          "relative_Mdot_finite_difference_error":errM,
-          "relative_payload_acceleration_chain_rule_error":erra,
-          "relative_q_euler_lagrange_residual_error":erre,
-          "min_full_q_s_mass_eigenvalue":mineig})
+          "scaled_Mdot_finite_difference_discrepancy_denominator_max1":errM,
+          "scaled_payload_acceleration_chain_rule_discrepancy_denominator_max1":erra,
+          "scaled_q_euler_lagrange_residual_denominator_max1":erre,
+          "min_augmented_q_s_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units":mineig})
     return out
 
 def controller_ss(skp,skd):
@@ -209,10 +209,10 @@ def main():
     write_csv(out/"gantry-moving-load-model-comparison.csv",summaries)
     checks=verify_equations(); write_csv(out/"gantry-moving-load-equation-checks.csv",checks)
     print("cases",len(summaries),"equation_checks",len(checks))
-    print("max_Mdot_FD_error",max(r["relative_Mdot_finite_difference_error"] for r in checks))
-    print("max_acceleration_chain_rule_error",max(r["relative_payload_acceleration_chain_rule_error"] for r in checks))
-    print("max_q_Euler_Lagrange_residual",max(r["relative_q_euler_lagrange_residual_error"] for r in checks))
-    print("min_full_q_s_mass_eigenvalue",min(r["min_full_q_s_mass_eigenvalue"] for r in checks))
+    print("max_Mdot_FD_error",max(r["scaled_Mdot_finite_difference_discrepancy_denominator_max1"] for r in checks))
+    print("max_acceleration_chain_rule_error",max(r["scaled_payload_acceleration_chain_rule_discrepancy_denominator_max1"] for r in checks))
+    print("max_q_Euler_Lagrange_residual",max(r["scaled_q_euler_lagrange_residual_denominator_max1"] for r in checks))
+    print("min_augmented_q_s_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units",min(r["min_augmented_q_s_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units"] for r in checks))
     for r in summaries:
       print(r["payload_mass_kg"],r["controller"],r["model_mode"],
         "payload_RMS_um",round(r["rms_payload_point_error_um_during_move"],3),
@@ -221,8 +221,8 @@ def main():
         "torsion_peak_mrad",round(r["peak_torsion_mrad_during_move"],5))
     if args.include_timeseries:
       cols=["model_mode","time_s","load_position_m","load_speed_m_s","payload_point_error_m","sync_skew_m",
-        "beam_bending_coordinate_m","beam_torsion_rad","Mdot_2norm_kg_per_s","transport_velocity_force_norm_N",
-        "transport_acceleration_force_norm_N","min_M_eigenvalue_kg","min_full_q_s_mass_eigenvalue","peak_command_force_N"]
+        "beam_bending_coordinate_m","beam_torsion_rad","Mdot_matrix_2norm_numeric_under_m_rad_coordinate_units","velocity_transport_generalized_term_2norm_numeric_under_m_rad_coordinate_units",
+        "transport_acceleration_force_norm_N","min_M_eigenvalue_kg","min_augmented_q_s_mass_matrix_eigenvalue_numeric_under_m_rad_coordinate_units","peak_command_force_N"]
       with (out/"gantry-moving-load-selected-timeseries.csv").open("w",newline="",encoding="utf-8") as f:
         w=csv.writer(f); w.writerow(cols); w.writerows(traces)
     if args.disk_margin: disk_margins(out)

@@ -40,3 +40,6 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 7,500行选定工况原始时序由 --include-timeseries 可选生成；可选disk-margin结果只有在安装python-control 0.10.2和Slycot并成功计算后才会输出。
 
 > **复现状态：** gantry-moving-load-study.py已归档，CSV来自已完成的参考计算导出；该精确提交版脚本尚未在本轮CI执行，需单独Python回归。disk-margin可选分支因依赖未安装未产生数值文件。
+
+
+> **指标单位约定：** gantry-moving-load-study 的矩阵/广义力数值范数和特征值按混合m/rad广义坐标直接计算，只能视为声明坐标单位下的数值诊断；不具有单一kg、kg/s或N单位。方程残差字段为 max(1,参考量2-范数) 分母下的归一化偏差，不保证是严格相对误差。
