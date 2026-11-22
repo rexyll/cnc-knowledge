@@ -755,3 +755,10 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 首次内容提交 `ad927646444a4f701dca5301b6466f0f41289ab5` 的CI Run [44989186733](https://github.com/rexyll/cnc-knowledge/actions/runs/44989186733) 中5/5单元测试通过，但strict lint报错：材料数据库引用了尚未登记的SRC-000179（1 error）。
 - 已补录SRC-000179：ISO 14104:2017官方标准页面，确认其范围为齿轮磨削后化学蚀刻检查，2022年复审继续有效；同步修正正文引用和章节计划。该标准不被推广为滚动体/滚道通用方法。
 - 修复提交和后续CI验收待补录。此前提交内容其余来源记录及结构检查均被linter识别，来源记录数178、正文引用346、内部链接321。
+
+### CH04-T002 — 滚动体产品标准与残余应力测量CI验收补录（2026-11-22）
+
+- 首次内容提交 `ad927646444a4f701dca5301b6466f0f41289ab5` 的Run [44989186733](https://github.com/rexyll/cnc-knowledge/actions/runs/44989186733) 因正文引用SRC-000179但来源文件尚未登记而失败；5/5单元测试通过，strict lint 1 error。
+- 修复提交 `eb6d0c77c494be7545b6e2b3c84c17efd1199d93` 补录SRC-000179（ISO 14104:2017官方范围页面）并修复引用；Run [44989218260](https://github.com/rexyll/cnc-knowledge/actions/runs/44989218260) success。
+- 修复后CI：5/5单元测试通过；strict lint PASS，0 errors；22章、108个Markdown文件、321条内部链接、140个实体、240条关系、179条来源、346处正文来源引用。
+- 本轮只增加滚动体标准元数据和方法边界，不录入具体材料性能/验收数值、残余应力阈值或磨削参数；未归档标准全文；CH04-T002保持IN_PROGRESS。
