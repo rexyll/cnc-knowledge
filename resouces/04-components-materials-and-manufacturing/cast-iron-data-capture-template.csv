@@ -1,0 +1,3 @@
+material_family,standard_number,standard_edition,designation_original,designation_suffix,product_scope,material_subclass_or_matrix,casting_main_wall_thickness_mm,casting_specimen_category,casting_specimen_geometry,property_code,minimum,maximum,unit,test_method_standard,test_method_edition,test_temperature_c,material_condition,heat_treatment_condition,acceptance_criterion,table_or_clause,source_id,source_locator,data_kind,verification_status,batch_or_lot_reference,notes
+灰铸铁,GB/T 9439,2023,,,,,,,,,,,,,,,,,,,,,unknown,unverified,,仅为字段模板；须按正式标准条款逐行填充
+球墨铸铁,GB/T 1348,2019,,,,,,,,,,,,,,,,,,,,,unknown,unverified,,仅为字段模板；须按正式标准条款逐行填充

@@ -62,3 +62,10 @@ CH04,material_property,orientation,试样方向,纵向横向短横向或纤维�
 CH04,material_property,test_temperature,测试温度,试验温度,number,°C,conditional,,记录温度及公差/测量条件,每项性能观测,yes,,""
 CH04,material_property,sample_count,样本数量,参与统计的试样数量,integer,件,conditional,,明确单值/均值/中位数/最小值等,批次或试验数据,yes,,""
 CH04,material_property,source_locator,来源定位,标准表号条款/报告页码/证书编号,string,,required,,定位必须回到来源SRC,每项性能观测,yes,,""
+
+CH04,material_property,casting_main_wall_thickness,铸件主要壁厚,用于铸铁性能分类/取样条件的铸件代表性壁厚,number,mm,conditional,,必须定位标准表号/条款并说明测量/约定定义,铸铁铸件性能记录,yes,,"不得以试棒直径替代铸件主要壁厚"
+CH04,material_property,casting_specimen_category,铸件试样类别,单铸试样/并排试样/附铸试样/铸件本体试样等,string,,conditional,"separately_cast;side_by_side;cast_on;casting_body;other;unknown",按适用产品标准原文记录；不得跨标准自行映射,铸铁铸件性能记录,yes,,"试样类别影响性能适用性"
+CH04,material_property,casting_specimen_geometry,铸造试样几何,铸造试棒/试块的直径形状尺寸及加工后试样规格,object,,conditional,,保存标准图号/表号/尺寸单位和加工后试样信息,铸铁铸件性能记录,yes,,"与拉伸试样尺寸分开记录"
+CH04,material_property,casting_sampling_agreement,铸件取样约定,供需双方约定的铸件本体取样位置/验收项目/代表壁厚等,string,,conditional,,需有订单/技术协议或正式标准条款定位,铸件本体取样/特殊验收,yes,,"不得把协议约定误作通用默认值"
+CH04,material_property,acceptance_criterion,验收指标,该材料批次/订单实际采用的验收指标与判定依据,string,,conditional,,关联订单技术协议/标准条款/检验记录,铸件验收记录,yes,,"抗拉强度/硬度/冲击等指标须明确"
+CH04,material_property,casting_batch_traceability,铸件批次追溯,铸件炉次/浇注批次/热处理批次/检验批次标识,string,,conditional,,与质保书和检验报告建立受控关联,铸件批次记录,yes,,"敏感编号按保密要求处理"

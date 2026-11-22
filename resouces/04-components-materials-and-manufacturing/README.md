@@ -11,3 +11,5 @@
 
 
 - `materials-standard-map.csv` — CH04首轮材料标准入口、范围摘要、版本状态和数据缺口；属于项目整理的数据文件，来源记录见正文SRC-000098～SRC-000116。
+
+- `cast-iron-data-capture-template.csv` — 灰铸铁/球墨铸铁牌号与性能记录采集空模板；不包含标准牌号或性能数值。

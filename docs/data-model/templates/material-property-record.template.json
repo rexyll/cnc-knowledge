@@ -32,5 +32,11 @@
   "source_id": "<SRC-xxxxxx>",
   "source_locator": "<page/table/figure/clause>",
   "measured_on": null,
-  "notes": "每条性能记录必须保存标准版本、状态、试样和测试条件；不得把典型值当成保证值。"
+  "notes": "每条性能记录必须保存标准版本、状态、试样和测试条件；铸铁另须记录主要壁厚、试样类别和验收约定。不得把典型值当成保证值。",
+  "casting_main_wall_thickness": null,
+  "casting_specimen_category": "unknown",
+  "casting_specimen_geometry": null,
+  "casting_sampling_agreement": null,
+  "acceptance_criterion": "unknown",
+  "casting_batch_traceability": null
 }
