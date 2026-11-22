@@ -772,3 +772,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - NSK技术综述用于说明夹杂物诱发剥落的机制，作为厂商技术证据，不外推寿命增益或其他厂商内部判据；AKS流程仅作为钢球制造商工艺示例，不推断机床OEM实际工艺。
 - 更新材料数据库2.13节、标准映射CSV、CH04章节TaskPlan、章节README、资源README和根TaskPlan；新增来源JSON。未下载/归档标准全文、厂商网页图片或其他受版权限制资料；未录入夹杂物等级、硬度、磨削烧伤阈值、热处理/磨削参数或实际BOM。CH04-T002保持IN_PROGRESS。
 - 所在分支：main；提交与CI验收待补录。
+
+
+### CH04-T002 — 轴承钢洁净度、夹杂物评价与滚动体表面完整性CI验收补录（2026-11-22）
+
+- 内容提交：[`9fd0c3bfb4d3887aa636cb0991a3192ead2dc794`](https://github.com/rexyll/cnc-knowledge/commit/9fd0c3bfb4d3887aa636cb0991a3192ead2dc794)，所在分支：main。
+- GitHub Actions Run [44989417545](https://github.com/rexyll/cnc-knowledge/actions/runs/44989417545)：success；5/5单元测试通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、108个Markdown文件、322条内部链接、140个实体、240条关系、185条来源、358处正文来源引用。
+- 自动门禁验证仓库结构、来源记录Schema、实体/关系命名空间、正文来源引用及内部链接；不验证外部URL长期可用性、标准全文许可、材料批次符合性或检测方法在具体零件几何上的适用性。
+- CH04-T002保持IN_PROGRESS；本轮仅完成洁净度/夹杂物方法目录、磨削烧伤检测方法边界和制造商工艺示例，不代表牌号性能数据库或零件工艺数据库完成。
