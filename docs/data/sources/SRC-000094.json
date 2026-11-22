@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000094",
+  "source_type": "academic_paper",
+  "title": "Geometric error measuring, modeling, and compensation for CNC machine tools: A review",
+  "publisher": "Chinese Journal of Aeronautics / Elsevier",
+  "author": "Zhao Zhang; Feng Jiang; Ming Luo; Baohai Wu; Dinghua Zhang; Kai Tang",
+  "url": "https://doi.org/10.1016/j.cja.2023.02.035",
+  "version": "2024; 37(2):163–198",
+  "published_on": "2024-02-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Review of geometric error sources, measurement, identification, volumetric modeling, sensitivity analysis and compensation",
+  "language": "en",
+  "rights_status": "open_license",
+  "license_or_permission": "CC BY-NC-ND 4.0; metadata/link only, no copy or adaptation",
+  "notes": "学术综述，支持一般研究背景；不替代标准、OEM手册或特定机床测量证据。",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

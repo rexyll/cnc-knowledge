@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="850" viewBox="0 0 1400 850" role="img" aria-labelledby="title desc">
+<title id="title">CNC machine tool structural loop and mechanical interfaces</title>
+<desc id="desc">Conceptual structural loop showing the tool-side and workpiece-side load paths connected through the machine base, with interfaces and measurement reference points.</desc>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+  <marker id="blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/></marker>
+  <style>
+    .box{fill:#f8fafc;stroke:#334155;stroke-width:2.2;rx:14}
+    .tool{fill:#eff6ff;stroke:#2563eb;stroke-width:2.5;rx:14}
+    .work{fill:#f0fdf4;stroke:#15803d;stroke-width:2.5;rx:14}
+    .base{fill:#f1f5f9;stroke:#475569;stroke-width:3;rx:16}
+    .line{stroke:#334155;stroke-width:3;fill:none;marker-end:url(#arrow)}
+    .tline{stroke:#2563eb;stroke-width:3;fill:none;marker-end:url(#blue)}
+    .dash{stroke:#64748b;stroke-width:2;stroke-dasharray:8 7;fill:none}
+    text{font-family:Arial,"Microsoft YaHei",sans-serif;fill:#0f172a}
+    .h{font-size:25px;font-weight:700}
+    .s{font-size:19px}
+    .small{font-size:16px;fill:#475569}
+  </style>
+</defs>
+<rect width="1400" height="850" fill="#ffffff"/>
+<text x="700" y="48" text-anchor="middle" class="h">数控机床刀具—工件结构环与机械接口（概念图）</text>
+<text x="700" y="80" text-anchor="middle" class="small">通用关系示意，不代表具体机型、装配图、BOM或尺寸</text>
+
+<rect x="80" y="145" width="520" height="525" rx="22" fill="#f8fafc" stroke="#93c5fd" stroke-width="2" stroke-dasharray="10 7"/>
+<text x="340" y="180" text-anchor="middle" class="h" fill="#1d4ed8">刀具侧结构路径</text>
+<rect class="tool" x="180" y="215" width="320" height="70"/>
+<text x="340" y="257" text-anchor="middle" class="s">立柱 / 横梁 / 滑枕</text>
+<path class="tline" d="M340 285 V325"/>
+<text x="360" y="311" class="small">定位与承载接口</text>
+<rect class="tool" x="180" y="325" width="320" height="70"/>
+<text x="340" y="367" text-anchor="middle" class="s">主轴箱与主轴轴承</text>
+<path class="tline" d="M340 395 V435"/>
+<rect class="tool" x="180" y="435" width="320" height="70"/>
+<text x="340" y="477" text-anchor="middle" class="s">主轴锥孔 / 刀柄 / 刀具</text>
+<path class="tline" d="M340 505 V545"/>
+<rect class="tool" x="210" y="545" width="260" height="62"/>
+<text x="340" y="583" text-anchor="middle" class="s">刀尖 / 功能点</text>
+
+<rect x="800" y="145" width="520" height="525" rx="22" fill="#f0fdf4" stroke="#86efac" stroke-width="2" stroke-dasharray="10 7"/>
+<text x="1060" y="180" text-anchor="middle" class="h" fill="#15803d">工件侧结构路径</text>
+<rect class="work" x="900" y="545" width="320" height="62"/>
+<text x="1060" y="583" text-anchor="middle" class="s">工件 / 加工功能点</text>
+<path class="line" d="M1060 545 V505"/>
+<rect class="work" x="900" y="435" width="320" height="70"/>
+<text x="1060" y="477" text-anchor="middle" class="s">夹具 / 托盘 / 工作台</text>
+<path class="line" d="M1060 435 V395"/>
+<rect class="work" x="900" y="325" width="320" height="70"/>
+<text x="1060" y="367" text-anchor="middle" class="s">滑台 / 导轨 / 回转支承</text>
+<path class="line" d="M1060 325 V285"/>
+<rect class="work" x="900" y="215" width="320" height="70"/>
+<text x="1060" y="257" text-anchor="middle" class="s">床身 / 底座 / 承载结构</text>
+
+<path d="M500 576 C610 630 790 630 900 576" stroke="#7c3aed" stroke-width="3" fill="none" stroke-dasharray="9 7"/>
+<text x="700" y="660" text-anchor="middle" class="small">刀具与工件功能点的相对位置 / 姿态构成加工精度关注对象</text>
+
+<rect class="base" x="250" y="710" width="900" height="75"/>
+<text x="700" y="755" text-anchor="middle" class="h">共同基础与闭合承载路径（床身 / 底座 / 支承 / 地基）</text>
+<path class="line" d="M340 670 V710"/>
+<path class="line" d="M1060 670 V710"/>
+
+<rect x="620" y="215" width="160" height="120" rx="12" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+<text x="700" y="248" text-anchor="middle" class="s">误差来源</text>
+<text x="700" y="278" text-anchor="middle" class="small">几何 / 热</text>
+<text x="700" y="302" text-anchor="middle" class="small">载荷 / 运动</text>
+<path class="dash" d="M620 280 H500"/>
+<path class="dash" d="M780 280 H900"/>
+
+<text x="700" y="820" text-anchor="middle" class="small">接口核验：基准、定位、承载、运动、传动、介质、工艺与测量；误差链须结合机型拓扑建模</text>
+</svg>

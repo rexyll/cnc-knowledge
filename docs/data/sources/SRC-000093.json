@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000093",
+  "source_type": "standard_catalog",
+  "title": "ISO 230-7:2015 — Test code for machine tools — Part 7: Geometric accuracy of axes of rotation",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/56624.html",
+  "version": "Edition 2; corrected version 2015-07; confirmed 2026-03-09 (status checked 2026-11-22)",
+  "published_on": "2015-05-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract and lifecycle; rotary-axis error motion and speed-induced axis shifts",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "回转轴几何测试范围；热效应、表面跳动、角定位、平衡等属性需结合其他适用标准。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -24,3 +24,9 @@ CH03,knowledge_article,unit_architecture,单元组成与工作链,各单元功�
 CH03,knowledge_article,unit_selection_matrix,单元选型参数矩阵,需求输入/结构方案/参数/接口/验证点的对照表,object,,recommended,,参数须带型号/配置/单位/条件和来源,关键机械单元专题,yes,,不记录脱离工况的通用阈值
 CH03,knowledge_article,maintenance_failure_signs,维护与失效征兆,单元级异常征兆和建议检查方向,array,,recommended,,区分现象与根因并标注安全前提,关键机械单元专题,yes,,不将检查方向表述为故障诊断结论
 CH03,knowledge_article,safety_energy_isolation,安全与能量隔离边界,旋转/夹挤/重力/压力/弹簧/电能等危险源和隔离要求,string,,required,,引用具体机床手册及现场LOTO程序,关键机械单元专题,yes,,不提供旁路联锁或带能拆装指导
+CH03,knowledge_article,mechanical_interface_matrix,机械接口清单,接口双方/接口类型/定位承载运动传动介质工艺职责/记录字段,array,,required,,接口编号仅为本项目内部检索标签，按机型配置裁剪,机械接口与精度链专题,yes,,通用接口表不等于具体机型接口图
+CH03,knowledge_article,structural_loop,结构环,刀具侧与工件侧维持相对位置姿态的结构路径,object,,required,,必须按机床拓扑定义功能点和结构路径,机械接口与精度链专题,yes,,不能把单一三轴模型套用所有机床
+CH03,knowledge_article,accuracy_chain,精度链,几何装配运动热载荷反馈及工件装夹误差的传递关系,object,,required,,说明误差方向基准相关性及统计合成前提,机械接口与精度链专题,yes,,不得不加区分地直接RSS合成
+CH03,knowledge_article,assembly_datum_record,装配基准记录,设计制造装配整机检测和工件基准及转换关系,object,,required,,关联图纸版本测点环境仪器原始数据和不确定度,机械接口与精度链专题,yes,,无具体图纸时不填写数值公差
+CH03,knowledge_article,fault_association_matrix,故障关联矩阵,现象到接口部位证据及可能影响因素的排查假设,array,,required,,未核实前不建立确定根因或CAUSES关系,机械接口与精度链专题,yes,,排查假设不等于已确认故障模式
+CH03,knowledge_article,diagnostic_evidence_path,诊断证据路径,配置识别/现象工况/原始证据/接口链/复测验证步骤,array,,recommended,,涉及危险能量必须先执行风险评估与LOTO,机械接口与精度链专题,yes,,不构成现场维修作业指导书

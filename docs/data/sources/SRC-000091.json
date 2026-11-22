@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000091",
+  "source_type": "standard_catalog",
+  "title": "ISO 230-1:2012 — Test code for machine tools — Part 1: Geometric accuracy of machines operating under no-load or quasi-static conditions",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/46449.html",
+  "version": "Edition 3; published 2012-03; confirmed 2023-05-25 (status checked 2026-11-22)",
+  "published_on": "2012-03-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract and lifecycle; geometric accuracy tests under no-load or quasi-static conditions",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "仅登记官方目录元数据和范围；ISO标准受版权保护，不复制全文。其范围不等于动态性能、振动或速度/进给验收。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

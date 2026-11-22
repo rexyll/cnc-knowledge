@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000092",
+  "source_type": "standard_catalog",
+  "title": "ISO/TR 16907:2015 — Machine tools — Numerical compensation of geometric errors",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/57912.html",
+  "version": "Edition 1; published 2015-04",
+  "published_on": "2015-04-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract and scope; geometric error representation, compensation methods and limits",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于几何误差建模/补偿的术语和方法背景；不替代ISO 230系列具体测量方法，也不覆盖全部动态和热误差。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

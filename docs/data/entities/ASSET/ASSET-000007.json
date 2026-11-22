@@ -1,0 +1,54 @@
+{
+  "entity_id": "ASSET-000007",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床刀具—工件结构环与机械接口示意图",
+  "english_name": "CNC machine tool structural loop and mechanical interfaces diagram",
+  "aliases": [],
+  "description": "原创概念SVG，展示刀具侧与工件侧结构路径、共同基础及误差来源；非具体机型装配图。",
+  "primary_chapter": "CH03",
+  "related_chapters": [
+    "CH04",
+    "CH14",
+    "CH16",
+    "CH18"
+  ],
+  "classification_path": [
+    "数控机床机械系统",
+    "机械接口与精度链",
+    "asset_file"
+  ],
+  "tags": [
+    "CH03",
+    "机械接口",
+    "精度链",
+    "故障关联"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:48:00+08:00",
+  "updated_at": "2026-11-22T12:48:00+08:00",
+  "verified_at": "2026-11-22T12:48:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000091",
+    "SRC-000092",
+    "SRC-000093",
+    "SRC-000094"
+  ],
+  "attributes": {
+    "file_path": "resouces/03-system-architecture-and-mechanics/structural-loop-interface.svg",
+    "file_name": "structural-loop-interface.svg",
+    "media_type": "image",
+    "mime_type": "image/svg+xml",
+    "license_status": "project_original",
+    "chapter_owner": "CH03",
+    "related_knowledge_id": "KNOW-000015",
+    "generated_on": "2026-11-22",
+    "version": "1.0",
+    "authoring_method": "Original SVG authored for this knowledge base",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "通用工程参考模型；不代表具体机型配置、BOM、装配公差或实机故障结论。"
+}

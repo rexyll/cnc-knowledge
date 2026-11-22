@@ -1,0 +1,24 @@
+{
+  "relation_id": "REL-000231",
+  "subject_id": "KNOW-000015",
+  "predicate": "DERIVED_FROM",
+  "object_id": "SUBSYS-000003",
+  "qualifiers": {
+    "article_path": "docs/03-system-architecture-and-mechanics/mechanical-interfaces-accuracy-and-faults.md",
+    "article_version": "1.0",
+    "reference_role": "mechanical_interface_and_diagnostic_context",
+    "relationship_scope": "article_navigation_only"
+  },
+  "source_ids": [
+    "SRC-000091",
+    "SRC-000092",
+    "SRC-000093"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T12:48:00+08:00",
+  "updated_at": "2026-11-22T12:48:00+08:00",
+  "notes": "仅表示本专题涉及该功能子系统的接口/精度/排查上下文，不代表其在某一机型中的实际安装配置或故障因果。"
+}
