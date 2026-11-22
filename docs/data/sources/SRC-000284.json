@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000284",
+  "source_type": "manufacturer_manual",
+  "title": "mayr Download Center — Remarks and Recommendations for the Static Brake Test",
+  "publisher": "Chr. Mayr GmbH + Co. KG",
+  "author": null,
+  "url": "https://www.mayr.com/en/service/media-downloads/download-center?document-types%5B9%5D=functional_safety&filter=false&q=",
+  "version": "Download listing includes an English static-brake-test recommendation dated 2022-04-26; accessed 2026-11-22",
+  "published_on": "2022-04-26",
+  "accessed_on": "2026-11-22",
+  "locator": "Functional-safety document listing: 'Remarks and recommendations for the static brake test'",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Only the manufacturer's document listing and title/date are recorded as a guidance entry; the PDF is not downloaded or archived. Any test setup and criteria must follow the exact brake type's current manufacturer documentation and the application's risk assessment; no universal holding torque or acceptance value is inferred.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}
