@@ -86,6 +86,8 @@ flowchart TB
   AUXSYS -.->|"冷却/润滑/介质"| SPINDLE
 ~~~
 
+![整机功能架构图](../../resouces/03-system-architecture-and-mechanics/functional-architecture.svg)
+
 图中实线表示典型功能/命令/能量或机械作用路径；虚线表示辅助或安全约束路径。CAM/MES接口、刀库/换刀、转台、自动托盘等均为按设备配置存在的功能，不是所有机床的标配。图示是功能关系，不代表实际接线、总线拓扑或安全回路图。
 
 ### 2.3 从加工任务到工件成形的主链
@@ -143,6 +145,8 @@ flowchart LR
   SLIDE --> FIX --> PART
   TOOL <-->|"刀具-工件相对运动"| PART
 ~~~
+
+![抽象运动链示意图](../../resouces/03-system-architecture-and-mechanics/motion-chain.svg)
 
 此图只展示抽象运动拓扑，不代表固定装配顺序。车床通常由主轴/卡盘驱动工件旋转，刀架沿轴向/径向进给；加工中心通常由主轴带动刀具旋转，工件由工作台/夹具支承；五轴或车铣复合设备还可能在刀具侧和工件侧配置回转轴。应以机床运动学模型和轴配置表描述实际链路。
 

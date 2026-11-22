@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="680" viewBox="0 0 1600 680" role="img" aria-labelledby="title desc">
+<title id="title">数控机床抽象运动链与力流示意</title><desc id="desc">床身基准连接直线或回转运动副，分别支承刀具侧主轴和工件侧工作台/夹具，刀具和工件形成相对运动。</desc>
+<defs><marker id="a" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12z" fill="#334155"/></marker><style>
+.h{font:700 30px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#172b4d}.t{font:700 24px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#102a43;text-anchor:middle}.s{font:19px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#334155;text-anchor:middle}.b{fill:#f8fafc;stroke:#486581;stroke-width:3;rx:16}.ar{stroke:#334155;stroke-width:4;fill:none;marker-end:url(#a)}.dash{stroke:#b45309;stroke-width:4;stroke-dasharray:12 8;fill:none;marker-end:url(#a)}
+</style></defs>
+<rect width="1600" height="680" fill="#fff"/>
+<text x="800" y="55" class="h" text-anchor="middle">数控机床抽象运动链与力流示意</text>
+<rect x="75" y="270" width="250" height="125" class="b"/><text x="200" y="320" class="t">床身 / 底座</text><text x="200" y="355" class="s">结构基准与承载</text>
+<rect x="420" y="270" width="260" height="125" class="b"/><text x="550" y="320" class="t">运动副与传动</text><text x="550" y="355" class="s">直线轴 / 回转轴</text>
+<rect x="790" y="105" width="260" height="125" class="b"/><text x="920" y="155" class="t">主轴 / 刀柄</text><text x="920" y="190" class="s">刀具侧运动支路</text>
+<rect x="1160" y="105" width="260" height="125" class="b"/><text x="1290" y="155" class="t">刀具</text><text x="1290" y="190" class="s">刀尖 / 切削刃</text>
+<rect x="790" y="445" width="260" height="125" class="b"/><text x="920" y="495" class="t">工作台 / 转台</text><text x="920" y="530" class="s">工件侧运动支路</text>
+<rect x="1160" y="445" width="260" height="125" class="b"/><text x="1290" y="495" class="t">夹具 / 工件</text><text x="1290" y="530" class="s">定位、支承、夹紧</text>
+<path d="M325 332 H420" class="ar"/><path d="M680 300 L790 168" class="ar"/><path d="M1050 168 H1160" class="ar"/><path d="M680 365 L790 507" class="ar"/><path d="M1050 507 H1160" class="ar"/>
+<path d="M1290 230 V365 H1290 V445" class="dash"/>
+<text x="1325" y="345" class="s">刀具-工件</text><text x="1325" y="373" class="s">相对运动</text>
+<path d="M1290 445 V365 H1290 V230" class="dash"/>
+<text x="800" y="625" class="s">结构布局决定实际运动链：车床通常由工件侧主轴旋转；加工中心通常由刀具侧主轴旋转；五轴/复合机床可在两侧配置回转轴。</text>
+<text x="800" y="655" class="s">本图为功能拓扑，不代表具体机型装配图、轴配置或实际力流尺寸。</text>
+</svg>

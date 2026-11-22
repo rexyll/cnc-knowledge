@@ -1,7 +1,7 @@
 chapter_id,chapter_slug,coverage_level,coverage_label,knowledge_articles,verified_entities,verified_relationships,source_records,asset_records,last_reviewed_at,next_priority,status,notes
 CH01,01-industry-and-fundamentals,2,foundational,2,26,25,24,0,2026-11-22,CH02-T002：主要机型结构与技术档案,IN_PROGRESS,2篇CH01技术正文；24条TERM+2条KNOW主归属实体；25条与CH01主数据相连的已核验关系；去重SRC 24条。CH01-T004范围审查报告已完成，不计为技术文章或新增覆盖实体。
 CH02,02-machine-types-and-products,2,foundational,4,28,90,28,0,2026-11-22,CH19-T002：整理整机与系统厂商,IN_PROGRESS,14个MTYPE+10个MACHINE+4个KNOW；含既有分类/型号/制造关系、10条型号目录索引边和14条选型方法索引边；SRC去重28条。选型方法含硬门槛、加权矩阵、精度测试证据、产能/TCO模型和案例；权重为可调整工程模板。
-CH03,03-system-architecture-and-mechanics,2,foundational,1,12,34,5,0,2026-11-22,CH03-T002：整理主要机械结构,IN_PROGRESS,1篇整机功能架构文章；11个SUBSYS+1个KNOW主归属实体；另有5个跨章主归属CH01的术语供本章引用；10条HAS_SUBSYSTEM、8条CONTROLS和16条文章/术语索引关系；5条去重来源。架构为通用参考模型，不代表具体机型BOM、接线图或安全设计。
+CH03,03-system-architecture-and-mechanics,2,foundational,1,14,36,5,2,2026-11-22,CH03-T002：整理主要机械结构,IN_PROGRESS,1篇整机功能架构文章；11个SUBSYS+1个KNOW+2个ASSET主归属实体；另有5个跨章主归属CH01的术语供本章引用；10条HAS_SUBSYSTEM、8条CONTROLS、16条DERIVED_FROM和2条HAS_ASSET关系；5条去重来源。通用参考架构不代表具体机型BOM、接线图或安全设计。
 CH04,04-components-materials-and-manufacturing,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH05,05-tooling-fixtures-and-workholding,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH06,06-electrical-electronic-systems,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。

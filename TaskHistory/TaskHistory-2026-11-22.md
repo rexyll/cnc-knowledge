@@ -174,7 +174,7 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 
 ### 覆盖度与验收
 
-- CH02覆盖度调整为2级foundational：2篇文章、23个主归属实体（14 MTYPE + 7 MACHINE + 2 KNOW）、60条关系（含14条新文章索引边）、19条去重来源、0项资源文件。
+- CH02覆盖度调整为2级foundational：2篇文章、23个主归属实体（14 MTYPE + 7 MACHINE + 2 KNOW）、60条关系（含14条新文章索引边）、19条去重来源、2项SVG资源文件。
 - 覆盖统计按实体主归属、关系关联及文章/实体引用的去重SRC计算；未把型号未核验参数填入实体。
 - 所在分支：main。完成时间：2026-11-22T11:20:00+08:00。主要内容提交SHA：a80017ec5b17c57d534e5907fe7ff5229bae4088；GitHub Actions Run #18（44978860961）success，5项单元测试通过，严格知识检查PASS（0 errors）。最终目录索引与来源权利状态校正由后续提交补充。
 
@@ -320,7 +320,7 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 新增10条HAS_SUBSYSTEM关系、8条CONTROLS关系和16条文章/术语DERIVED_FROM索引关系（REL-000177～REL-000210）；所有关系带来源和范围限定。抽象架构关系不代表具体机型BOM、接线或安全设计。
 - 新增来源SRC-000072～SRC-000076：ISO 841:2001标准目录、NISTIR 5331、NIST CAM/CNC集成研究、机床机械接口研究及机床系统标准化建模案例。
 - 新建CH03字段字典；更新CH03 README、docs总目录、GLOSSARY、章节TaskPlan、根TaskPlan、覆盖矩阵和本日历史。
-- 未创建具体机型BOM、实际接线关系、产品参数或安全等级；未下载/复制版权受限的ISO/学术论文全文，未生成独立图片或完整文档资源，资源计数保持0。
+- 未创建具体机型BOM、实际接线关系、产品参数或安全等级；未下载/复制版权受限的ISO/学术论文全文，新增两幅原创SVG图，归档至resouces/03-system-architecture-and-mechanics/并建立ASSET-INDEX.md；未复制外部受版权保护图片或标准/论文全文。
 
 ### 证据与边界
 
@@ -334,6 +334,6 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 
 ### 覆盖度与验收
 
-- CH03覆盖度提升为2级foundational：1篇知识文章、12个主归属实体（11 SUBSYS + 1 KNOW；5个TERM由CH01主归属并由本章引用）、34条关系（10 HAS_SUBSYSTEM + 8 CONTROLS + 16 DERIVED_FROM索引）、5条去重来源、0项资源文件。
+- CH03覆盖度提升为2级foundational：1篇知识文章、14个主归属实体（11 SUBSYS + 1 KNOW + 2 ASSET；5个TERM由CH01主归属并由本章引用）、36条关系（10 HAS_SUBSYSTEM + 8 CONTROLS + 16 DERIVED_FROM索引 + 2 HAS_ASSET）、5条去重来源、2项SVG资源文件。
 - 所在分支：main。完成时间：2026-11-22T12:30:00+08:00。内容提交SHA：[8e643f801d2f896a31a6e2ddd8dea9675455c525](https://github.com/rexyll/cnc-knowledge/commit/8e643f801d2f896a31a6e2ddd8dea9675455c525)。GitHub Actions Run 44983319094 success；5项单元测试通过，严格知识检查PASS（0 errors）。
 - 自动CI验证Schema、ID唯一性、来源/关系引用、Markdown内部链接和严格质量规则；离线检查不替代外部URL实时检查、具体机型拆机/BOM/接线核验或安全验证。

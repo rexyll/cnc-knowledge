@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1180" viewBox="0 0 1800 1180" role="img" aria-labelledby="title desc">
+<title id="title">数控机床整机功能架构图</title><desc id="desc">数控机床通用分层功能架构，展示工艺信息、CNC与PLC、驱动、机械执行、反馈以及辅助和安全横向系统。</desc>
+<defs>
+ <marker id="arr" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#34495e"/></marker>
+ <marker id="dasharr" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#b45309"/></marker>
+ <style>
+ .h{font:700 30px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#172b4d}
+ .sub{font:20px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#334155}
+ .layer{fill:#f8fafc;stroke:#94a3b8;stroke-width:2;rx:18}
+ .node{fill:#fff;stroke:#486581;stroke-width:2.5;rx:14}
+ .aux{fill:#fff7ed;stroke:#c2410c;stroke-width:2.5;rx:14}
+ .safe{fill:#fff1f2;stroke:#be123c;stroke-width:2.5;rx:14}
+ .txt{font:700 23px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#102a43;text-anchor:middle}
+ .small{font:18px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#334155;text-anchor:middle}
+ .flow{stroke:#34495e;stroke-width:3.5;fill:none;marker-end:url(#arr)}
+ .sflow{stroke:#b45309;stroke-width:3.5;stroke-dasharray:10 8;fill:none;marker-end:url(#dasharr)}
+ </style>
+</defs>
+<rect width="1800" height="1180" fill="#ffffff"/>
+<text x="900" y="55" class="h" text-anchor="middle">数控机床整机功能架构（通用参考模型）</text>
+<text x="900" y="88" class="sub" text-anchor="middle">按功能职责分层；不是具体机型BOM、接线图或安全回路图</text>
+<rect x="55" y="120" width="1390" height="150" class="layer"/>
+<text x="85" y="155" class="h">L5 人机交互与制造信息层</text>
+<rect x="105" y="175" width="350" height="72" class="node"/><text x="280" y="205" class="txt">CAD/CAM / 后处理</text><text x="280" y="231" class="small">工艺、刀路、NC程序</text>
+<rect x="565" y="175" width="350" height="72" class="node"/><text x="740" y="205" class="txt">HMI / 操作面板</text><text x="740" y="231" class="small">模式、命令、状态、报警</text>
+<rect x="1025" y="175" width="350" height="72" class="node"/><text x="1200" y="205" class="txt">MES / 质量 / 数据接口</text><text x="1200" y="231" class="small">可选：生产任务与追溯</text>
+<rect x="55" y="300" width="1390" height="145" class="layer"/>
+<text x="85" y="337" class="h">L3 数控与机床逻辑控制层</text>
+<rect x="270" y="355" width="470" height="70" class="node"/><text x="505" y="384" class="txt">CNC</text><text x="505" y="410" class="small">程序解释、坐标变换、轨迹与插补</text>
+<rect x="830" y="355" width="470" height="70" class="node"/><text x="1065" y="384" class="txt">PLC / 机床顺序逻辑</text><text x="1065" y="410" class="small">换刀、夹持、辅助动作与状态机</text>
+<rect x="55" y="475" width="1390" height="125" class="layer"/>
+<text x="85" y="512" class="h">L2 驱动与能源层</text>
+<rect x="270" y="530" width="470" height="55" class="node"/><text x="505" y="566" class="txt">进给 / 主轴驱动与电机</text>
+<rect x="830" y="530" width="470" height="55" class="node"/><text x="1065" y="566" class="txt">配电、制动与辅助动力</text>
+<rect x="55" y="630" width="1390" height="205" class="layer"/>
+<text x="85" y="667" class="h">L1 机械结构与运动执行层</text>
+<rect x="95" y="695" width="245" height="105" class="node"/><text x="217" y="735" class="txt">床身 / 底座</text><text x="217" y="766" class="small">结构基准与承载</text>
+<rect x="380" y="695" width="245" height="105" class="node"/><text x="502" y="735" class="txt">进给轴</text><text x="502" y="766" class="small">导轨、丝杠、滑台</text>
+<rect x="665" y="695" width="245" height="105" class="node"/><text x="787" y="735" class="txt">主轴单元</text><text x="787" y="766" class="small">主运动与刀具接口</text>
+<rect x="950" y="695" width="205" height="105" class="node"/><text x="1052" y="735" class="txt">刀具系统</text><text x="1052" y="766" class="small">刀柄 / 换刀（可选）</text>
+<rect x="1195" y="695" width="205" height="105" class="node"/><text x="1297" y="735" class="txt">工件夹持</text><text x="1297" y="766" class="small">工作台 / 卡盘 / 夹具</text>
+<rect x="55" y="865" width="1390" height="115" class="layer"/>
+<text x="85" y="902" class="h">L4 测量与反馈层</text>
+<rect x="270" y="915" width="1030" height="48" class="node"/><text x="785" y="947" class="txt">编码器、光栅、测头、限位及温度 / 压力 / 流量传感器</text>
+<rect x="1490" y="120" width="255" height="380" class="aux"/>
+<text x="1617" y="165" class="txt">辅助介质</text><text x="1617" y="198" class="small">润滑 / 冷却</text><text x="1617" y="228" class="small">液压 / 气动</text><text x="1617" y="258" class="small">排屑 / 油雾</text><path d="M1490 300 H1460" class="sflow"/>
+<rect x="1490" y="550" width="255" height="330" class="safe"/>
+<text x="1617" y="600" class="txt">安全与防护</text><text x="1617" y="640" class="small">防护罩 / 门锁</text><text x="1617" y="672" class="small">急停 / 安全控制</text><text x="1617" y="704" class="small">停止 / 禁止路径</text><text x="1617" y="760" class="small">需按具体机型</text><text x="1617" y="790" class="small">风险评估和验证</text>
+<path d="M455 247 V355" class="flow"/><path d="M740 247 V355" class="flow"/><path d="M915 390 H1025" class="flow"/>
+<path d="M505 425 V530" class="flow"/><path d="M1065 425 V530" class="flow"/>
+<path d="M505 585 V695" class="flow"/><path d="M740 585 V695" class="flow"/>
+<path d="M785 800 V915" class="flow"/><path d="M785 915 V430 H740" class="flow"/>
+<path d="M1065 425 H1400 V300 H1490" class="sflow"/>
+<path d="M1490 700 H1400 V560 H1300" class="sflow"/>
+<path d="M1400 700 H1360 V695" class="sflow"/>
+<text x="900" y="1030" class="sub" text-anchor="middle">实线：典型命令、能量或机械作用路径　　虚线：辅助介质或安全约束路径</text>
+<text x="900" y="1070" class="sub" text-anchor="middle">刀库、转台、MES、自动托盘等按具体机型配置；子系统可集成或分布实现</text>
+<text x="900" y="1120" class="small">来源参考：SRC-000072 ～ SRC-000076　|　原创整理图　|　2026-11-22</text>
+</svg>

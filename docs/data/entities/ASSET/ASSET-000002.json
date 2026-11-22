@@ -1,0 +1,46 @@
+{
+  "entity_id": "ASSET-000002",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床抽象运动链图",
+  "english_name": "CNC machine tool abstract kinematic chain diagram",
+  "aliases": [],
+  "description": "原创SVG抽象运动链示意图，展示床身基准、运动副、刀具侧与工件侧运动支路及相对运动。",
+  "primary_chapter": "CH03",
+  "related_chapters": [],
+  "classification_path": [
+    "资源文件",
+    "矢量图",
+    "运动链"
+  ],
+  "tags": [
+    "SVG",
+    "架构图",
+    "CH03"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:42:00+08:00",
+  "updated_at": "2026-11-22T12:42:00+08:00",
+  "verified_at": "2026-11-22T12:42:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000072",
+    "SRC-000073",
+    "SRC-000074",
+    "SRC-000075",
+    "SRC-000076"
+  ],
+  "attributes": {
+    "file_path": "resouces/03-system-architecture-and-mechanics/motion-chain.svg",
+    "file_name": "motion-chain.svg",
+    "media_type": "image",
+    "mime_type": "image/svg+xml",
+    "license_status": "project_original_artwork",
+    "chapter_owner": "CH03",
+    "related_knowledge_id": "KNOW-000012",
+    "generated_on": "2026-11-22",
+    "version": "1.0",
+    "authoring_method": "original SVG diagram authored for this knowledge base"
+  }
+}
