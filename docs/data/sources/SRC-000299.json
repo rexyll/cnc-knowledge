@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000299",
+  "source_type": "manufacturer_product_page",
+  "title": "NIKKEN CNC Rotary Table — General Catalogue No. 816J",
+  "publisher": "NIKKEN KOSAKUSHO WORKS, LTD.",
+  "author": null,
+  "url": "https://www.nikken-kosakusho.co.jp/en/download/",
+  "version": "CNC Rotary Table catalogue No.816J; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Manufacturer download catalogue listing and rotary-table accuracy data pages for specified product models; includes measurement item definitions such as table-face runout, center-bore concentricity, indexing accuracy and repeatability",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The catalogue's values and configurations are model-specific manufacturer declarations and must not be copied as generic machine-tool tolerance values. The manufacturer warns that product specifications may change; verify the exact model/revision. PDF is not downloaded or archived.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

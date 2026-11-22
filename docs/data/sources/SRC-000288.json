@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000288",
+  "source_type": "standard_catalog",
+  "title": "ISO 1328-2:2020 — Cylindrical gears — ISO system of flank tolerance classification — Part 2",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/70386.html",
+  "version": "ISO 1328-2:2020, Edition 2",
+  "published_on": "2020-02-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract: definitions and allowable values of double flank radial composite deviations for individual cylindrical involute gears and sector gears; reviewed and confirmed 2025",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "This is a gear component measurement/classification source, not a rotary table axis acceptance standard. It does not provide gear design guidance or recommend tolerances; scope limits include three or more teeth and reference diameter up to 600 mm. Do not treat double-flank composite results as interchangeable with all single-flank or assembled-system backlash tests. Full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

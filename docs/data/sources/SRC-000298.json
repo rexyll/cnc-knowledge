@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000298",
+  "source_type": "manufacturer_product_page",
+  "title": "TSUDAKOMA Machine Tool Attachments — BallDrive and Worm-Drive NC Rotary Tables",
+  "publisher": "TSUDAKOMA Corporation",
+  "author": null,
+  "url": "https://www.tsudakoma.co.jp/english/business/mta/technology/index.html",
+  "version": "Online technical product information; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Manufacturer product-family description distinguishing its BallDrive mechanism from worm-drive NC rotary tables",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports only the existence and public product description of the manufacturer's named drive families. Performance statements such as no-backlash or maintenance-free are manufacturer claims for the corresponding product family, not a universal technology comparison or evidence of machine-tool OEM adoption.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000292",
+  "source_type": "standard_catalog",
+  "title": "ISO 230-7:2015 — Test code for machine tools — Part 7: Geometric accuracy of axes of rotation",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/56624.html",
+  "version": "ISO 230-7:2015, Edition 2, corrected 2015-07 version",
+  "published_on": "2015-05-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract: rotary-axis error motion and speed-induced axis shifts; includes rotary and swivelling machine tables; confirmed in 2026",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Covers geometric error motion and speed-induced axis shifts. Angular positioning accuracy is treated separately under ISO 230-2; thermal effects are treated under ISO 230-3. It is not a table-face runout or gear backlash standard. Full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

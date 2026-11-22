@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000300",
+  "source_type": "manufacturer_manual",
+  "title": "Haas Rotary Operators Manual 96-0315 Rev K — HRT/TRT Routine Inspection",
+  "publisher": "Haas Automation, Inc.",
+  "author": null,
+  "url": "https://service.haascnc.com/sites/default/files/Locked/Manuals/Operator/2010/Rotary/English/Rotary_Operators_Manual_96-0315_Rev_K_English_November_2010.pdf",
+  "version": "96-0315 Rev K, November 2010",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Routine inspection section for specific HRT/TRT rotary units: platter face/ID runout, worm play, worm-to-gear backlash, system backlash and face-gear popout",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Older product-family-specific operator/service instructions. It is useful as an example that component worm play, gear-pair backlash, system-level backlash and face-gear popout are separate checks, but its numerical settings and procedures must not be applied to other models or current equipment. PDF is linked only and not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

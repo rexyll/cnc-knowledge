@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000287",
+  "source_type": "standard_catalog",
+  "title": "ISO 1328-1:2013 — Cylindrical gears — ISO system of flank tolerance classification — Part 1",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/45309.html",
+  "version": "ISO 1328-1:2013, Edition 2",
+  "published_on": "2013-09-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract: definitions and allowable values for flank deviations of individual cylindrical involute gears; reviewed and confirmed 2024",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Applies to individual cylindrical involute gear tooth flanks. It must not be applied automatically to cylindrical worm flank deviations or the assembled rotary table. Worm-specific ISO/DIS 1328-4 remains a draft at the access date. Full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

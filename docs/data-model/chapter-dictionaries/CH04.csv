@@ -94,3 +94,14 @@ CH04,part,coupling_torsional_characteristic_record,联轴器扭转特性记录,�
 CH04,part,brake_configuration,制动器配置,制动原理、安装位置、摩擦副、弹簧/线圈、释放接口和型号身份,object,,conditional,,记录制动器类型、订货代码、施加/释放原理、安装端、摩擦材料/弹簧/线圈批次、释放间隙和图纸版本,电机内置制动器/独立制动器/垂直轴制动模块,yes,,不从“抱闸”名称推断失电安全、动态制动或安全认证属性
 CH04,part,brake_static_holding_test_record,制动器静态保持试验记录,指定安装和工况下制动器静态保持能力的原始试验信息,object,,conditional,,记录载荷/转矩方法、方向、力臂/夹具、温度、电源状态、保持时间、位移、仪器校准和判据,保持制动器及垂直轴保持模块,yes,,静态保持合格不代表允许动态制动或整机安全功能通过
 CH04,part,brake_dynamic_and_release_test_record,制动器动态与释放试验记录,线圈释放、拖曳、动作时间、循环温升及获准的动态制动试验记录,object,,conditional,,区分释放/拖曳/电气试验与动态制动，记录转速、惯量、能量、频次、温度和原厂批准程序,有对应型号动态制动许可或释放性能要求的制动器,yes,,动态制动试验必须由具体型号文件、设施防护和批准程序授权
+CH04,part,rotary_table_drive_architecture,回转工作台驱动架构,回转工作台电机、减速/传动机构、输出支承和反馈位置组成的架构身份,object,,conditional,,记录完整产品代码、驱动原理、减速器/齿轮副、输出轴承、反馈元件位置和配置版本,回转工作台/分度轴/摆动转台,yes,,蜗杆驱动、滚动体传动、直接驱动及其他结构不得混用同一工艺/验收假设
+CH04,part,worm_gear_pair_configuration,蜗杆副配置,蜗杆/蜗轮型面、几何参数、材料配对和制造版本,object,,conditional,,记录ISO 10828型面类别（如适用）、齿数、旋向、导程/齿形依据、中心距、材料/热处理和配对编号,采用蜗杆—蜗轮传动的转台/减速机构,yes,,不得默认蜗轮材料、热处理路线或蜗杆型面
+CH04,part,worm_gear_pair_inspection_record,蜗杆副检验记录,蜗杆/蜗轮单件几何、啮合接触、侧隙和配对试验结果,object,,conditional,,分开记录齿形/导程/齿厚/跳动、接触斑、侧隙角度分布、转矩波动、润滑和温度,蜗杆副制造与总成装配,yes,,齿面检验、双面综合测量和系统输出回差不可混记
+CH04,part,rotary_axis_backlash_record,回转轴回差与失动记录,转台传动链机械游隙/回差及系统失动测试,object,,conditional,,区分蜗杆轴端游隙、齿轮副侧隙、减速器输出、联轴器/支承弹性与系统控制死区，记录施力/力臂/方向,回转工作台/分度轴传动链,yes,,单一系统回差读数不能直接定位到蜗杆副
+CH04,part,rotary_axis_indexing_accuracy_record,回转轴分度精度记录,指定角度序列和测量口径下的分度误差/重复性原始数据,object,,conditional,,记录CW/CCW、起始角、分度序列、测量装置/基准、误差曲线和统计定义,回转工作台/分度轴,yes,,厂商indexing accuracy定义需与ISO 230-2参数口径分开保存
+CH04,part,rotary_axis_positioning_test_record,回转轴位置精度试验记录,数控旋转轴角位置精度和重复定位试验,object,,conditional,,关联ISO 230-2版本、单/双向循环、位置点、暖机、补偿状态、测量装置和不确定度,NC旋转轴整机/转台验收,yes,,不代替传动副单件齿轮精度或回转轴线误差运动
+CH04,part,rotary_axis_error_motion_test_record,回转轴线误差运动记录,回转轴线几何误差运动、速度诱发位移等测试信息,object,,conditional,,关联ISO 230-7版本、速度/角度、径向/轴向/倾斜方向、测量装置、安装和环境状态,回转工作台/摆动轴/回转头,yes,,与角位置精度和台面静态跳动分开验收
+CH04,part,rotary_table_geometric_accuracy_record,回转台几何精度记录,台面、中心孔、基准面和输出支承相关几何检验,object,,conditional,,记录台面端面/径向跳动、中心孔同轴度、台面与基准平行/垂直、测量半径和基准,回转台本体和输出接口,yes,,公差须来自具体型号图纸/原厂检验标准，不使用其他型号目录数值
+CH04,part,rotary_table_clamping_configuration,回转台夹紧/锁止配置,液压/气动/机械制动或端面齿式锁紧结构及接口身份,object,,conditional,,记录夹紧原理、执行器、额定介质/压力依据、摩擦副/齿圈配置、失压/失电状态和图纸修订,回转工作台/摆动轴/分度轴,yes,,夹紧能力、传动自锁贡献和动态制动能力分开建档
+CH04,part,rotary_table_clamping_test_record,回转台夹紧保持试验记录,夹紧机构保持、松夹、压力衰减和锁紧后位移试验,object,,conditional,,记录夹紧状态、介质/压力、加载方向/力臂/转矩、输出滑移、锁紧后轴向位移、释放拖曳和循环,具有夹紧/锁止功能的转台,yes,,不从厂商夹紧转矩定义推断其他型号自锁或动态制动能力
+CH04,part,rotary_axis_thermal_test_record,回转轴热误差试验记录,回转台连续运行和热稳态过程中的几何/角位置变化,object,,conditional,,记录ISO 230-3方法、运行周期/方向/速度/负载、环境/油温/壳温、测点、角度/轴线变化和冷却配置,回转工作台/摆动轴/转台总成,yes,,不设置跨型号的暖机时间和热漂移通用限值

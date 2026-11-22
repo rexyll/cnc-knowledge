@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000291",
+  "source_type": "standard_catalog",
+  "title": "ISO 230-2:2014 — Test code for machine tools — Part 2: Determination of accuracy and repeatability of positioning of numerically controlled axes",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/55295.html",
+  "version": "ISO 230-2:2014 with Amendment 1:2016",
+  "published_on": "2014-05-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract and scope: direct measurement of individual NC linear and rotary axes, positioning accuracy and repeatability; current version confirmed in 2025",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "This is a machine-axis positioning test method and applies equally to linear and rotary axes. It is not a substitute for gear component inspection, rotary-axis error-motion testing under ISO 230-7, thermal testing under ISO 230-3 or multi-axis interpolation testing. Full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

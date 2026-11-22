@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000294",
+  "source_type": "standard_catalog",
+  "title": "ISO 10791-6:2014 — Test conditions for machining centres — Part 6: Accuracy of speeds and interpolations",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/46440.html",
+  "version": "ISO 10791-6:2014, Edition 2",
+  "published_on": "2014-12-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract and Annex C: kinematic tests for machining centres with three linear axes and one or two rotary axes, including configurations with rotary tables; confirmed in 2026",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Concerns kinematic accuracy of speeds and simultaneous NC-axis interpolation on specified machining-centre configurations. It is not an isolated rotary table component test and excludes machine operating-condition checks such as vibration and abnormal noise. Full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000297",
+  "source_type": "manufacturer_product_page",
+  "title": "TSUDAKOMA NC Rotary Tables — Explanation of Indexing Accuracy and Clamp Torque",
+  "publisher": "TSUDAKOMA Corporation",
+  "author": null,
+  "url": "https://www.tsudakoma.co.jp/english/business/mta/technology/faq/nc/nc_02.html",
+  "version": "Online technical Q&A; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Manufacturer explanation of indexing accuracy derived from equal indexing around one table revolution and distinction between clamp torque and worm-gear self-locking contribution",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Product-family-specific manufacturer terminology and measurement explanation. Its indexing accuracy definition should not be silently equated with ISO 230-2 parameter definitions. The page explicitly distinguishes the clamping mechanism's torque from worm-gear self-locking contribution; do not generalize its rated pressures or torque values to other products.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

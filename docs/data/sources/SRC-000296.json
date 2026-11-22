@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000296",
+  "source_type": "standard_catalog",
+  "title": "ISO 18653:2003 — Gears — Evaluation of instruments for the measurement of individual gears",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/31828.html",
+  "version": "ISO 18653:2003, Edition 1",
+  "published_on": "2003-12-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract: evaluation of involute, helix, pitch, runout and tooth-thickness measurement instruments, including uncertainty using calibrated gear artefacts",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "This standard evaluates gear measuring instruments and is not a product-gear acceptance specification. The ISO catalogue indicates it is to be revised and a replacement work item has been started; verify current status before contractual use. Full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000293",
+  "source_type": "standard_catalog",
+  "title": "ISO 230-3:2020 — Test code for machine tools — Part 3: Determination of thermal effects",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/73291.html",
+  "version": "ISO 230-3:2020, Edition 3",
+  "published_on": "2020-11-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract: ETVE, rotating spindle, moving linear-axis and rotary-motion thermal distortion tests; confirmed in 2026",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Provides test methods for specified machine-tool thermal effects, including thermal distortion caused by rotary motion of components. It does not provide universal allowable drift or warm-up time values. Full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

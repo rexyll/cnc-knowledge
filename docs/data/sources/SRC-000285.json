@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000285",
+  "source_type": "standard_catalog",
+  "title": "ISO 10828:2024 — Worm gears — Worm profiles and gear mesh geometry",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/82651.html",
+  "version": "ISO 10828:2024, Edition 1",
+  "published_on": "2024-04-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract and scope: five common worm profile types A, C, I, K and N; formulae for axial profiles, path of contact, conjugate worm-wheel profile and gear mesh geometry",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The 2024 International Standard cancels and replaces ISO/TR 10828:2015. It is a geometry source, not a machine-tool rotary table acceptance standard or a load-rating guarantee. Standard full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000289",
+  "source_type": "standard_catalog",
+  "title": "ISO 21771-2:2025 — Cylindrical involute gears and gear pairs — Part 2: Calculation and measurement of tooth thickness and backlash",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/78378.html",
+  "version": "ISO 21771-2:2025, Edition 1",
+  "published_on": "2025-12-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue abstract and scope: calculation procedures for tooth thickness and backlash; scope includes external/internal spur and helical gears, involute worms, crossed-axis gears and racks",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The document provides calculation and measurement relationships but explicitly does not select tooth thickness or tolerance values. It does not replace application-specific design, paired-gear inspection or machine-axis positioning tests. Full text is not archived.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}
