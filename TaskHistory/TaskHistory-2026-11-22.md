@@ -673,3 +673,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 更新标准映射CSV、CH04 TaskPlan、章节README、资源README和根TaskPlan。官方来源包括：GB/T 29913-2025（https://std.samr.gov.cn/gb/search/gbDetailed?id=3DBA213285570D16E06397BE0A0A8119）；GB/T 32959-2025（https://std.samr.gov.cn/gb/search/gbDetailed?id=mZeF8VfZ7yI%3D&mode=p）；GB/T 28417-2023（https://std.samr.gov.cn/gb/search/gbDetailed?id=wCe3c21CrKU%3D&mode=p）；GB/T 3086-2019（https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=9E1558EA8CE059994AB353664BC331B2）；GB/T 42785-2023（https://std.samr.gov.cn/gb/search/gbDetailed?id=027A6096B05F643EE06397BE0A0A0867）；GB/T 18579-2019（https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=E62D1EC609871B95FE7C52D0041FF2B8）；GB/T 33522-2017（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D816CDD3A7E05397BE0A0AB82A）；高温轴承钢修订项目（https://std.samr.gov.cn/gb/search/gbDetailed?id=23033A607868B961E06397BE0A0ADCC4）；渗碳轴承钢修订项目（https://std.samr.gov.cn/gb/search/gbDetailed?id=23124F8A31FDA2F5E06397BE0A0A652B）。
 - 未下载或归档标准全文/修订草案；未录入具体轴承钢牌号成分、洁净度、夹杂物、碳化物、淬透性、硬度或疲劳性能值；未创建MAT牌号实体或推断机床实际用料。CH04-T002保持IN_PROGRESS。
 - 所在分支：main；本轮待提交和CI验收。
+
+
+### CH04-T002 — 轴承钢材料族与产品形态标准扩展CI验收补录（2026-11-22）
+
+- 内容提交：[fe04c6e7eadcd5037a6fc9f5e5b9600e8357f346](https://github.com/rexyll/cnc-knowledge/commit/fe04c6e7eadcd5037a6fc9f5e5b9600e8357f346)，所在分支：main。
+- GitHub Actions Run [44987962532](https://github.com/rexyll/cnc-knowledge/actions/runs/44987962532)：success；5项单元测试全部通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、139条来源；正文来源引用数量以本次workflow日志为准。
+- 自动门禁验证仓库结构、数据记录、来源引用和内部链接；不验证外部URL实时可访问性、标准全文许可、修订计划后续进度或材料批次符合性。
+- CH04-T002保持IN_PROGRESS；本轮仅完成轴承钢材料族/产品形态标准入口与版本关系核验，未完成牌号/性能数据库。
