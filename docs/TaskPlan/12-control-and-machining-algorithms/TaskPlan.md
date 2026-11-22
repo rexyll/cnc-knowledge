@@ -106,3 +106,14 @@
 - 本地运行参考实现脚本完成 `py_compile` 和模型计算，生成上述结果；仓库中的资源脚本采用相同状态方程/延迟队列结构。GitHub Actions仅执行知识库单元测试和lint，不执行资源仿真脚本。
 - 内容提交 `c51f68ed9003e168e2cda47d66986f81e2d5a784`；GitHub Actions [Run 45033980670](https://github.com/rexyll/cnc-knowledge/actions/runs/45033980670) success，5/5单元测试通过，strict lint PASS（0 errors）。
 - 结构统计：22章、123个Markdown文件、399条内部链接、142条实体、240条关系、360条来源、642处正文来源引用。CH12-T003继续IN_PROGRESS，本轮不完成速度规划/几何或热误差补偿的其他任务。
+
+
+**更正与新增执行切片（2026-11-22）：冻结位置模型阻尼更正、连续移动负载与MIMO多回路disk margin端口。**
+
+- 更正原 gantry-modal-delay-study.py 偏航/扭转交叉阻尼：旧式使用刚度矩阵K量纲，改为 \(D_{\psi\theta}=0.03\sqrt{D_{\psi\psi}D_{\theta\theta}}\)。已替换冻结模型正文和三份受影响CSV。修正后，0/1/2/3ms稳定工况数（27个冻结工况）为：独立PD 27/27、27/27、27/27、3/27；同步低P-D 27/27、27/27、27/27、0/27；同步中P-D 27/27、27/27、10/27、0/27；同步P-only 27/27、27/27、27/27、0/27。原旧数值作废；未阻尼模态频率不变。
+- 新增 [连续移动负载时变模型专题](../../12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md)，用动能与拉格朗日方程推导移动点速度/加速度链式项、\(M(s(t))\)、\(\dot M\)、速度交叉项与路径输运项；明确 \(s(t)\) 是规定轨迹，当前没有负载轴自由度和双向耦合。
+- 新增18组模型/控制器/负载比较、123组方程检查。方程最大相对误差：Mdot 2.49e-10、移动点加速度链式法则4.35e-7、q行Euler–Lagrange残差8.89e-10。模型比较显示冻结起点快照明显低估移动过程负载点误差；本例运输项数值贡献较小，不对其他速度/结构做普遍外推。
+- 定义MIMO两通道disk-margin的对象输出端口 \(PC\) 与对象输入端口 \(CP\)，脚本提供python-control/Slycot AB13MD可选接口。当前未安装依赖，**没有数值disk margin结果**；有限频率网格估计不能当作全频率认证。
+- 资源脚本已入库，但CI只检查库结构，不执行脚本；参考计算导出的CSV已归档，精确提交版脚本仍需独立Python回归验证。不得把CI成功表述为脚本运行成功。
+- 来源增加SRC-000361～SRC-000364，KNOW-000020登记；新增资源、数据字典字段及审查边界。详情见 [本轮历史附录](../../../TaskHistory/Appendix-2026-11-22-gantry-modal-correction-moving-load.md)。
+- 内容提交 c2f624767c85202e2520932245611eea163f0da3 对应Run [45036988333](https://github.com/rexyll/cnc-knowledge/actions/runs/45036988333) success；5/5单元测试通过、strict lint PASS（0 errors）。CH12-T003继续 IN_PROGRESS。

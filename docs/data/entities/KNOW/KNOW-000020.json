@@ -52,7 +52,9 @@
     "moving_load_model": "prescribed_trajectory_one_way_coupled_time_varying_reduced_order",
     "multiloop_disk_margin_software_interface_implemented": true,
     "multiloop_disk_margin_numeric_result_computed": false,
-    "hardware_validation": false
+    "hardware_validation": false,
+    "resource_script_verified": false,
+    "csv_origin": "reference_calculation_export"
   },
   "notes": "移动负载轨迹是规定输入，不含负载执行轴和横梁结构双向动力学；disk-margin接口未因缺少Slycot而生成数值裕度。合成数据不代表机床性能、精度或安全证据。"
 }
