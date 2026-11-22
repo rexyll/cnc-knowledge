@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000177",
+  "source_type": "standard_catalog",
+  "title": "GB/T 45597-2025 — 金属材料 残余应力测定 短波长X射线衍射法",
+  "publisher": "国家市场监督管理总局、国家标准化管理委员会",
+  "author": null,
+  "url": "https://std.samr.gov.cn/gb/search/gbDetailed?id=33D40F1161945D92E06397BE0A0A5B93",
+  "version": "GB/T 45597-2025",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "国家标准现行；2025-04-25发布，2025-11-01实施；标准类别为方法，适用于金属材料残余应力短波长X射线衍射测定。",
+  "language": "zh-CN",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "方法标准不是零件残余应力验收限值；需确认材料、曲率、表面状态、测量方向、深度与不确定度是否适配滚动体/滚道几何。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
