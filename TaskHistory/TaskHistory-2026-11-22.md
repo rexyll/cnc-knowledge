@@ -511,7 +511,7 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 
 ### 交付内容
 - 新增正文：docs/04-components-materials-and-manufacturing/materials-database.md，知识实体KNOW-000017。
-- 新增标准入口表：docs/04-components-materials-and-manufacturing/materials-standard-map.csv。
+- 新增标准入口表：resouces/04-components-materials-and-manufacturing/materials-standard-map.csv。
 - 新增模板：docs/data-model/templates/material-master.template.json、docs/data-model/templates/material-property-record.template.json。
 - 扩展CH04字段字典，增加MAT材料身份、标准状态、交货/热处理状态、性能观测、试样方向/尺寸/取样位置和数据性质等字段。
 - 新增SRC-000098～SRC-000109共12条标准目录/标准状态来源，涵盖ISO灰铸铁、球墨铸铁、金属拉伸/硬度/冲击测试、塑料/复合材料拉伸和聚合物指定、ASTM灰铸铁及EN结构钢。

@@ -104,7 +104,7 @@
 
 ### 6.1 文件与数据表
 
-- [材料标准与牌号体系映射表](materials-standard-map.csv)：首轮标准入口、范围摘要、状态与缺口。
+- [材料标准与牌号体系映射表](../../resouces/04-components-materials-and-manufacturing/materials-standard-map.csv)：首轮标准入口、范围摘要、状态与缺口。
 - [CH04字段字典](../data-model/chapter-dictionaries/CH04.csv)：材料主数据与性能观测字段。
 - [材料主记录模板](../data-model/templates/material-master.template.json)：用于后续创建具体MAT实体。
 - [材料性能观测模板](../data-model/templates/material-property-record.template.json)：用于登记标准保证值、厂商声明或批次实测数据。
