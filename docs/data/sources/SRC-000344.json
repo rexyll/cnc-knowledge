@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000344",
+  "source_type": "other",
+  "title": "Filtering Input Signals and Providing Time Derivatives",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/simscape/ug/filtering-input-signals-and-providing-time-derivatives.html",
+  "version": "Simscape documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Low-pass filtering smooths input; filtered input follows original with lag on the order of selected time constant; direct derivative signals are an alternative",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official modelling documentation illustrating that low-pass smoothing introduces time-constant-scale lag. It supports a general caution, not a specific servo cutoff choice.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

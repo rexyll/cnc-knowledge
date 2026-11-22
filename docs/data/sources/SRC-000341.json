@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000341",
+  "source_type": "other",
+  "title": "Suppress Resonances Using Adaptive Notch Filter",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/slcontrol/ug/suppress-resonance-using-anf.html",
+  "version": "Simulink Control Design documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Two-inertia coupled mass-spring-damper example; resonance frequency formula; load-inertia change shifts resonance; fixed notch can worsen response when detuned",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official software example supporting general notch/resonance and load-inertia sensitivity concepts. Its numeric model values are not CNC equipment data, and adaptive notch implementation is product/tool-specific.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

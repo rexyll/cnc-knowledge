@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000342",
+  "source_type": "other",
+  "title": "Discretizing a Notch Filter",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/control/ug/discretizing-a-notch-filter.html",
+  "version": "Control System Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "ZOH, Tustin and other notch discretization methods; prewarping and digital frequency response near target notch frequency",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official example compares discretization methods for notch filters. The repository uses its own prewarped bilinear/SOS synthetic implementation; no vendor drive implementation is inferred.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

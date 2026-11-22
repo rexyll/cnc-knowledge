@@ -2,74 +2,52 @@
   "classification": "synthetic_simulation_not_machine_measurement",
   "python": "3.10+",
   "dependencies": {
-    "numpy": "runtime"
+    "numpy": "runtime",
+    "scipy": "runtime"
   },
-  "simulation": {
-    "sample_time_s": 0.0005,
-    "current_actuator_time_constant_s": 0.001,
-    "feedback_delay_samples": [
-      0,
-      1,
-      2
-    ],
-    "total_simulation_s": 1.5,
-    "rk4_substeps_per_sample": 4,
-    "torque_limit_nm": 1,
-    "velocity_reference_limit_rad_s": 1.5,
-    "load_disturbance_nm": 0.25,
-    "disturbance_interval_s": [
-      0.4,
-      0.7
-    ],
-    "step_time_s": 0.05,
-    "step_amplitudes_rad": [
-      0.12,
-      0.25
-    ],
-    "anti_windup": "discrete back-calculation; tracking time constant 30 ms"
+  "inertia_definition_correction": {
+    "rigid_body": "sum of inertias reflected to same axis side for common angular acceleration",
+    "relative_torsional_mode": "Jm*Jl/(Jm+Jl), used only in two-mass relative torsion coordinate",
+    "nominal_J_rigid_kg_m2": 0.03,
+    "nominal_B_rigid_Nm_s_rad": 0.02,
+    "nominal_J_reduced_kg_m2": 0.0066666666667
   },
-  "current_actuator": "first-order torque/current closed-loop approximation; no inverter/PMSM electrical switching model",
-  "feedback": "load-side position feedback and motor-side speed feedback; delayed by integer controller samples",
   "controller_designs": [
     {
-      "name": "aggressive_reference",
+      "name": "aggressive_corrected",
       "speed_bandwidth_setting_hz": 16,
-      "speed_integral_zero_hz": 6,
+      "integral_zero_hz": 6,
       "position_bandwidth_setting_hz": 2.5,
-      "kp_speed_nm_s_rad": 0.6702064328,
-      "ki_speed_nm_rad": 25.2661872668,
+      "kp_speed_nm_s_rad": 3.0159289474,
+      "ki_speed_nm_rad": 113.6978427005,
       "kp_position_per_s": 15.7079632679
     },
     {
-      "name": "conservative_candidate",
+      "name": "conservative_corrected",
       "speed_bandwidth_setting_hz": 12,
-      "speed_integral_zero_hz": 4,
+      "integral_zero_hz": 4,
       "position_bandwidth_setting_hz": 1.5,
-      "kp_speed_nm_s_rad": 0.5026548246,
-      "ki_speed_nm_rad": 12.6330936334,
+      "kp_speed_nm_s_rad": 2.2619467106,
+      "ki_speed_nm_rad": 56.8489213503,
       "kp_position_per_s": 9.424777961
     }
   ],
-  "plant_conditions": [
+  "plants": [
     {
       "name": "nominal_cold",
       "inertia_kg_m2": [
         0.01,
         0.02
       ],
-      "viscous_nm_s_rad": [
+      "viscous_Nm_s_rad": [
         0.006,
         0.014
       ],
-      "shaft_stiffness_nm_rad": [
+      "shaft_stiffness_Nm_rad": [
         1400
       ],
-      "shaft_damping_nm_s_rad": [
+      "shaft_damping_Nm_s_rad": [
         0.35
-      ],
-      "coulomb_nm": [
-        0.012,
-        0.018
       ]
     },
     {
@@ -78,19 +56,15 @@
         0.01,
         0.032
       ],
-      "viscous_nm_s_rad": [
+      "viscous_Nm_s_rad": [
         0.006,
         0.018
       ],
-      "shaft_stiffness_nm_rad": [
+      "shaft_stiffness_Nm_rad": [
         1400
       ],
-      "shaft_damping_nm_s_rad": [
+      "shaft_damping_Nm_s_rad": [
         0.42
-      ],
-      "coulomb_nm": [
-        0.012,
-        0.02
       ]
     },
     {
@@ -99,19 +73,15 @@
         0.01,
         0.032
       ],
-      "viscous_nm_s_rad": [
+      "viscous_Nm_s_rad": [
         0.008,
         0.025
       ],
-      "shaft_stiffness_nm_rad": [
+      "shaft_stiffness_Nm_rad": [
         1260
       ],
-      "shaft_damping_nm_s_rad": [
+      "shaft_damping_Nm_s_rad": [
         0.39
-      ],
-      "coulomb_nm": [
-        0.014,
-        0.022
       ]
     },
     {
@@ -121,35 +91,75 @@
         0.008,
         0.02
       ],
-      "viscous_nm_s_rad": [
+      "viscous_Nm_s_rad": [
         0.005,
         0.007,
         0.013
       ],
-      "shaft_stiffness_nm_rad": [
+      "shaft_stiffness_Nm_rad": [
         1200,
         850
       ],
-      "shaft_damping_nm_s_rad": [
+      "shaft_damping_Nm_s_rad": [
         0.35,
         0.28
-      ],
-      "coulomb_nm": [
-        0.01,
-        0.012,
-        0.018
       ]
     }
   ],
-  "linear_margin_method": "SISO motor-speed inner loop and nested load-position outer loop; exact flexible plant FRF; first-order actuator lag; pure-delay equivalent (feedback delay + half sample); all detected gain/phase crossovers retained; Coulomb friction and saturation excluded from linear margins",
-  "closed_loop_poles": "continuous augmented linearization around zero speed, no sample/compute delay, no Coulomb friction and no saturation; only a local linear check",
-  "nonlinear_simulation": "sampled controller with integer feedback delay, torque saturation, back-calculation anti-windup, Coulomb friction, flexible coupling, and a load torque disturbance",
+  "simulation": {
+    "sample_time_s": 0.0005,
+    "current_actuator_tau_s": 0.001,
+    "feedback_delay_samples_for_step": [
+      2
+    ],
+    "frequency_margin_equivalent_delay_ms": 1.25,
+    "step_time_s": 0.05,
+    "step_rad": [
+      0.12,
+      0.25
+    ],
+    "torque_limit_Nm": 1,
+    "velocity_reference_limit_rad_s": 1.5,
+    "anti_windup": "back calculation, tracking time constant 30 ms",
+    "trajectory": {
+      "frequency_hz": 1,
+      "amplitude_rad": 0.04,
+      "reference_ripple_rad": 0.0002,
+      "measurement_speed_noise_std_rad_s": 0.0005
+    },
+    "external_disturbance": {
+      "amplitude_Nm_per_mode": 0.015,
+      "start_s": 1,
+      "end_s": 1.3
+    },
+    "integration": "RK4; 2 substeps/sample for tracking tests and 4 substeps/sample for step tests"
+  },
+  "notch_bank": {
+    "centers_hz": [
+      42,
+      70,
+      94
+    ],
+    "pole_damping_ratio": 0.12,
+    "zero_damping_ratio": 0.006,
+    "center_gain": 0.05,
+    "center_attenuation_db": -26.0205999133,
+    "approximate_Q": 4.1666666667,
+    "implementation": "second-order SOS, prewarped bilinear/Tustin; applied in speed-PI torque-command path"
+  },
+  "speed_feedback_lowpass": {
+    "type": "first-order Butterworth IIR",
+    "cutoff_hz": 150,
+    "implementation": "bilinear transform; applied to motor-speed feedback measurement path"
+  },
+  "margin_method": "nested SISO motor-speed and load-position loops; continuous flexible plant FRF; digital SOS responses; 1 ms feedback delay plus half-sample/ZOH approximation; all gain/phase crossover values retained",
   "limitations": [
-    "All inertias, damping, stiffness, friction, torque/velocity limits and disturbances are synthetic assumptions, not OEM or machine data",
-    "Two-mass and three-mass systems are lumped SISO examples; no multiaxis/MIMO coupling, encoder quantization, current ripple, bus jitter or thermal dynamics model",
-    "The hot-state change is a prescribed parameter variant, not a measured thermal law",
-    "Equivalent delay frequency response is approximate; use exact discrete-time/internal-delay models for design sign-off",
-    "GM/PM values are classical SISO loop margins, not disk margins or robust-stability proof",
-    "Time-domain saturation response does not prove stability for all inputs or machine safety"
+    "All inertias, stiffness, damping, controller settings, noise, torque limits, filter settings and disturbances are synthetic",
+    "Rigid-body inertia is distinct from relative-mode reduced inertia; previous erroneous gain values are superseded",
+    "No PMSM electrical dynamics, inverter switching, bus jitter, encoder quantization, multi-axis MIMO coupling or measured thermal law",
+    "A torque-command notch can reduce feedback correction against external disturbance at the notch frequency",
+    "Low-pass filter adds feedback phase/group delay; magnitude attenuation alone is not an acceptance criterion",
+    "Multiple crossovers require Nyquist/closed-loop checks; classical SISO GM/PM is not MIMO disk margin",
+    "No real device data, HIL, bench or machine validation"
   ]
 }

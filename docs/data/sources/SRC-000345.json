@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000345",
+  "source_type": "other",
+  "title": "Adaptive Notch Filter",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/slcontrol/ug/adaptivenotchfilter.html",
+  "version": "Simulink Control Design documentation, R2026b; introduced R2026a",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Adaptive notch filter adjusts frequency, depth and width based on resonance identification or user-defined target",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official block documentation for one software tool's adaptive notch implementation. It is used only to frame the possibility of adaptive notch strategies; it does not imply this block exists in a CNC drive.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

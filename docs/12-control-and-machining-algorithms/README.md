@@ -51,3 +51,8 @@
 ## 级联控制器鲁棒性专题
 
 - [多工况伺服级联控制的稳定裕度与限幅仿真](multicondition-cascade-robust-stability-and-saturation-simulation.md)：SISO嵌套环路GM/PM、延迟扫描、柔性模态、限幅和反算抗积分饱和的合成联合仿真。
+
+
+## 前馈与滤波联合验证
+
+- [伺服速度/加速度前馈、陷波与低通滤波器联合验证](servo-feedforward-notch-lowpass-co-design.md)：对比前馈跟随收益、模态失谐、外部负载扰动、滤波相位与多交越环路裕度。

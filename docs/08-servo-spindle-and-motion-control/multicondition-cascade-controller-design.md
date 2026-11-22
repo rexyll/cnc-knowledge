@@ -39,24 +39,12 @@ J_l\ddot\theta_l &= K_s(\theta_m-\theta_l)+C_s(\dot\theta_m-\dot\theta_l)-B_l\do
 
 ## 3. 控制器候选设计口径
 
-以名义冷态模型的低频等效惯量：
-
-\[
-J_{eq}=\frac{J_mJ_l}{J_m+J_l}=0.006667\ {\rm kg\cdot m^2}
-\]
-
-构造两组候选。速度PI增益按本示例简化设定式计算：
-
-\[
-K_{p\omega}=J_{eq}\,2\pi f_\omega,\qquad K_{i\omega}=K_{p\omega}\,2\pi f_I
-\]
-
-位置比例增益设为 \(K_{p\theta}=2\pi f_\theta\)。这些公式仅用于定义可复现的合成候选，不是通用控制器综合方法，也未完整考虑采样、滤波、前馈和驱动器限制。
+**模型定义更正（2026-11-22）：** 旧版把两惯量相对扭转坐标的约化惯量 \(J_mJ_l/(J_m+J_l)\) 当成刚体低频总惯量使用。对直接耦合且两侧同角加速度的刚体运动，正确惯量是 \(J_{rigid}=J_m+J_l\)；约化惯量只用于相对扭转模态。本节候选PI增益已按刚体总惯量修正。详见[前馈与滤波联合设计专题](servo-feedforward-and-filter-co-design.md)。\n\n以名义冷态对象的刚体总惯量及总粘性阻尼：\n\n\\[\nJ_{rigid}=J_m+J_l=0.030\\ {\\rm kg\\cdot m^2},\\quad B_{rigid}=B_m+B_l=0.020\\ {\\rm N\\cdot m\\cdot s/rad}\n\\]\n\n速度PI增益按本示例简化设定式计算：\n\n\\[\nK_{p\\omega}=J_{rigid}\\,2\\pi f_\\omega,\\qquad K_{i\\omega}=K_{p\\omega}\\,2\\pi f_I\n\\]\n\n位置比例增益设为 \\(K_{p\\theta}=2\\pi f_\\theta\\)。这些公式只定义可复现的合成候选，不是通用控制器综合方法，也未完整考虑电机电气动态、采样、滤波、前馈和驱动器限制。
 
 | 候选 | 速度带宽设置 | PI积分零点 | 位置带宽设置 | \(K_{p\omega}\) N·m·s/rad | \(K_{i\omega}\) N·m/rad | \(K_{p\theta}\) s⁻¹ |
 |---|---:|---:|---:|---:|---:|---:|
-| aggressive_reference | 16 Hz | 6 Hz | 2.5 Hz | 0.67021 | 25.26619 | 15.70796 |
-| conservative_candidate | 12 Hz | 4 Hz | 1.5 Hz | 0.50265 | 12.63309 | 9.42478 |
+| aggressive_corrected | 16 Hz | 6 Hz | 2.5 Hz | 3.01593 | 113.69784 | 15.70796 |
+| conservative_corrected | 12 Hz | 4 Hz | 1.5 Hz | 2.26195 | 56.84892 | 9.42478 |
 
 本轮重点不是证明哪组参数“适合机床”，而是用统一模型集合展示设计取舍：名义对象上看似合理的外环增益，在负载惯量和柔性模态变化时可能成为裕度薄弱环节。实际控制器还需按真实环路带宽层级、内外环解耦、噪声、反馈位置、执行器约束和设备文档重新设计。
 

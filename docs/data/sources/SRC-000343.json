@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000343",
+  "source_type": "other",
+  "title": "Tuning of a Digital Motion Control System",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/control/ug/tuning-of-a-digital-motion-control-system.html",
+  "version": "Control System Toolbox / Simulink Control Design documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Flexible-shaft motion-control example; discrete notch implementation comparison and prewarped Tustin validation",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official software example demonstrates that discrete notch implementation and sampled model validation can affect residual oscillations. It is not a CNC drive tuning procedure.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}
