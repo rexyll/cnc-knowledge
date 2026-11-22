@@ -44,8 +44,21 @@
 
 - **目标：** 收录材料标准牌号、标准体系、化学成分、性能指标及适用条件。
 - **工作范围：** 金属、铸铁、钢、铝合金、复合材料、工程塑料和功能材料；材料状态、热处理、试样方向/尺寸、化学成分、力学/物理/热学/疲劳/耐磨指标和标准版本。
-- **交付物：**\n  - `docs/04-components-materials-and-manufacturing/materials-database.md`\n  - `docs/04-components-materials-and-manufacturing/materials-standard-map.csv`\n  - `docs/data-model/chapter-dictionaries/CH04.csv`（MAT与性能字段）\n  - `docs/data-model/templates/material-master.template.json`\n  - `docs/data-model/templates/material-property-record.template.json`\n  - KNOW实体及标准来源记录。
-- **验收标准：**\n  - 建立材料族、标准牌号、材料状态和性能观测四层数据结构；\n  - 材料主记录与单项性能观测分离，支持化学成分、力学、物理、热学、疲劳和耐磨指标；\n  - 每组指标可追溯标准版本、交货/热处理状态、试样方向/尺寸/取样位置、测试条件、单位和来源；\n  - 标准分类、产品交付规范和试验方法的职责边界清晰；\n  - 跨标准牌号映射有独立证据状态，不以相近数值或网络对照表认定等同；\n  - 未取得标准全文/质保书时不录入臆测牌号表和性能数值；\n  - 严格质量检查通过。
+- **交付物：**
+  - `docs/04-components-materials-and-manufacturing/materials-database.md`
+  - `docs/04-components-materials-and-manufacturing/materials-standard-map.csv`
+  - `docs/data-model/chapter-dictionaries/CH04.csv`（MAT与性能字段）
+  - `docs/data-model/templates/material-master.template.json`
+  - `docs/data-model/templates/material-property-record.template.json`
+  - KNOW实体及标准来源记录。
+- **验收标准：**
+  - 建立材料族、标准牌号、材料状态和性能观测四层数据结构；
+  - 材料主记录与单项性能观测分离，支持化学成分、力学、物理、热学、疲劳和耐磨指标；
+  - 每组指标可追溯标准版本、交货/热处理状态、试样方向/尺寸/取样位置、测试条件、单位和来源；
+  - 标准分类、产品交付规范和试验方法的职责边界清晰；
+  - 跨标准牌号映射有独立证据状态，不以相近数值或网络对照表认定等同；
+  - 未取得标准全文/质保书时不录入臆测牌号表和性能数值；
+  - 严格质量检查通过。
 - **依赖：** CH04-T001、CH15
 - **状态：** `IN_PROGRESS`
 

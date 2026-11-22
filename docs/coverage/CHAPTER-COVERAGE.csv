@@ -2,7 +2,7 @@ chapter_id,chapter_slug,coverage_level,coverage_label,knowledge_articles,verifie
 CH01,01-industry-and-fundamentals,2,foundational,2,35,25,32,0,2026-11-22,CH02-T002：主要机型结构与技术档案,IN_PROGRESS,2篇CH01技术正文；33条TERM+2条KNOW主归属实体；25条与CH01主数据相连的已核验关系；去重SRC 32条（新增9条CH03机械结构共用术语及其来源）；CH01-T004范围审查报告不计为技术文章或新增覆盖实体。
 CH02,02-machine-types-and-products,2,foundational,4,28,90,28,0,2026-11-22,CH19-T002：整理整机与系统厂商,IN_PROGRESS,14个MTYPE+10个MACHINE+4个KNOW；含既有分类/型号/制造关系、10条型号目录索引边和14条选型方法索引边；SRC去重28条。选型方法含硬门槛、加权矩阵、精度测试证据、产能/TCO模型和案例；权重为可调整工程模板。
 CH03,03-system-architecture-and-mechanics,2,foundational,4,21,64,25,7,2026-11-22,CH03后续：型号级接口/BOM/装配证据并衔接CH16/CH18,IN_PROGRESS,4篇技术文章；11个SUBSYS+4个KNOW+6个ASSET主归属实体（另含1个待审查用户提供PNG）；另有19个跨章主归属CH01术语供本章引用；64条关系；25条去重来源；7条资源记录。通用接口/精度链/异常矩阵不等于具体机型图纸、装配工艺、故障根因或实机验证。
-CH04,04-components-materials-and-manufacturing,1,structured_foundation,1,1,0,3,0,2026-11-22,CH04-T002：建立材料数据库,IN_PROGRESS,1篇知识文章KNOW-000016；1个主归属实体；3条去重标准来源；已建立项目级零件分类、PART主数据字段字典和空白模板；无实际PART/BOM记录，等待授权型号级图纸/物料清单。
+CH04,04-components-materials-and-manufacturing,1,structured_foundation,2,2,0,15,0,2026-11-22,CH04-T002：补齐材料族牌号与性能数据,IN_PROGRESS,2篇知识文章KNOW-000016/000017；2个主归属实体；15条去重标准来源；已建立PART主数据、材料标准入口、材料/性能字段及空白模板；当前无具体MAT牌号性能值和PART/BOM用料关系，待合法标准全文、材料质保书及授权机型资料。
 CH05,05-tooling-fixtures-and-workholding,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH06,06-electrical-electronic-systems,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH07,07-cnc-controller-and-plc,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
