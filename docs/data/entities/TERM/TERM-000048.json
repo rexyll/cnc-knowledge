@@ -1,0 +1,40 @@
+{
+  "entity_id": "TERM-000048",
+  "entity_type": "term",
+  "canonical_name": "预压/预紧",
+  "english_name": "Preload / Preload force",
+  "aliases": [],
+  "description": "为减小内部游隙或提高指定结构刚度而施加的初始内部载荷或装配约束；导轨、丝杠和轴承的定义及数值不可混用。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH03"
+  ],
+  "classification_path": [
+    "数控机床工程术语",
+    "机械结构参数",
+    "term"
+  ],
+  "tags": [
+    "CH01",
+    "CH03",
+    "机械结构参数"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:13:48+08:00",
+  "updated_at": "2026-11-22T12:13:48+08:00",
+  "verified_at": "2026-11-22T12:13:48+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000078",
+    "SRC-000080",
+    "SRC-000081"
+  ],
+  "attributes": {
+    "usage_context": "数控机床机械结构",
+    "related_article": "docs/03-system-architecture-and-mechanics/major-mechanical-structures.md",
+    "term_category": "机械结构参数"
+  },
+  "notes": "术语主定义归属CH01；CH03机械结构专题引用。具体机型结构或参数须另据型号级资料核验。"
+}

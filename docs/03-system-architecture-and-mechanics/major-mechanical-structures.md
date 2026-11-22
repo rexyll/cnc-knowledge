@@ -20,6 +20,8 @@
 
 ## 2. 整机承载结构与运动部件
 
+本专题涉及的跨章节术语由CH01统一维护：床身/底座（TERM-000041）、立柱（TERM-000042）、横梁/横轨（TERM-000043）、滑鞍/滑座（TERM-000044）、滚动直线导轨（TERM-000045）、滚珠丝杠（TERM-000046）、丝杠导程（TERM-000047）、预压/预紧（TERM-000048）和回转工作台（TERM-000049）。完整定义见[全库术语表](../GLOSSARY.md)。
+
 ![数控机床主要机械结构示意图](../../resouces/03-system-architecture-and-mechanics/mechanical-structure-overview.svg)
 
 ### 2.1 床身与底座（Bed / Base）

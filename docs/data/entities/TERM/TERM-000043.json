@@ -1,0 +1,38 @@
+{
+  "entity_id": "TERM-000043",
+  "entity_type": "term",
+  "canonical_name": "横梁/横轨",
+  "english_name": "Crossbeam / Cross-rail",
+  "aliases": [],
+  "description": "桥式或龙门式机床中连接立柱并承载滑座/滑枕等部件的横向结构；可固定、升降或移动。",
+  "primary_chapter": "CH01",
+  "related_chapters": [
+    "CH03"
+  ],
+  "classification_path": [
+    "数控机床工程术语",
+    "承载结构",
+    "term"
+  ],
+  "tags": [
+    "CH01",
+    "CH03",
+    "承载结构"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:13:48+08:00",
+  "updated_at": "2026-11-22T12:13:48+08:00",
+  "verified_at": "2026-11-22T12:13:48+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000077"
+  ],
+  "attributes": {
+    "usage_context": "数控机床机械结构",
+    "related_article": "docs/03-system-architecture-and-mechanics/major-mechanical-structures.md",
+    "term_category": "承载结构"
+  },
+  "notes": "术语主定义归属CH01；CH03机械结构专题引用。具体机型结构或参数须另据型号级资料核验。"
+}
