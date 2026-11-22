@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000060",
+  "source_type": "manufacturer_product_page",
+  "title": "CNC Controls",
+  "publisher": "DR. JOHANNES HEIDENHAIN GmbH",
+  "author": null,
+  "url": "https://www.heidenhain.com/products/cnc-controls-and-digital-readouts/cnc-controls",
+  "version": "Official website page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official company/product portfolio overview",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "官方CNC产品页列出TNC7、TNC7 select、TNC7 basic等控制产品及应用方向；轴数/控制回路等为产品页面声明，需按具体型号和选项确认。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

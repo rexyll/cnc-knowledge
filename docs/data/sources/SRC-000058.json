@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000058",
+  "source_type": "manufacturer_product_page",
+  "title": "FANUC Product Overview",
+  "publisher": "FANUC Europe",
+  "author": null,
+  "url": "https://www.fanuc.eu/eu-en/product-overview",
+  "version": "Official website page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official company/product portfolio overview",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "官方产品总览将CNC与驱动、机器人、紧凑型加工中心、线切割EDM和工业物联网等分列；区域站点产品组合可能因地区而异。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

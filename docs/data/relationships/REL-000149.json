@@ -1,0 +1,23 @@
+{
+  "relation_id": "REL-000149",
+  "subject_id": "KNOW-000009",
+  "predicate": "DERIVED_FROM",
+  "object_id": "VENDOR-000008",
+  "qualifiers": {
+    "article_path": "docs/19-manufacturers-products-and-supply-chain/machine-tool-oem-and-system-vendor-profiles.md",
+    "article_version": "1.0",
+    "reference_role": "vendor_profile_navigation",
+    "relationship_scope": "Article navigation and source traceability for 秦川机床 (整机与产业链产品供应商); does not assert manufacturing, supply, distribution, compatibility, quality, current availability or regional service."
+  },
+  "source_ids": [
+    "SRC-000018",
+    "SRC-000019"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T10:00:00+08:00",
+  "updated_at": "2026-11-22T10:00:00+08:00",
+  "notes": "DERIVED_FROM仅表示知识文章对厂商实体的内容索引与溯源；不代表制造、供货、分销、兼容、质量评价或当前供应状态。"
+}

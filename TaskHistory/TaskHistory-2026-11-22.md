@@ -234,3 +234,23 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - CH02覆盖度：2级foundational，4篇知识文章、28个主归属实体（14 MTYPE+10 MACHINE+4 KNOW）、90条关系、28条去重来源、0项资源。
 - 所在分支：main。完成时间：2026-11-22T13:00:00+08:00。内容提交SHA：0746f0785d15ae0b329783d07519c66a4f45de45；GitHub Actions Run #21（44980892285）success，单元测试和严格知识质量检查均通过。覆盖矩阵计数校准提交：b616aec7a42353ab4e5353f91b0080b9f0262487；该提交仅修正CH02覆盖统计行。
 - 离线CI只验证仓库结构、Schema、内部链接和质量规则，不代表已对某具体设备完成试切、产能测定或采购验收。
+
+
+## CH19-T002研究与验收记录
+
+### 研究范围与交付
+
+- 新增正文：`docs/19-manufacturers-products-and-supply-chain/machine-tool-oem-and-system-vendor-profiles.md`，知识实体KNOW-000009，版本1.0。
+- 复用现有15家VENDOR实体：DMG MORI、Yamazaki Mazak、Okuma、Makino、DN Solutions、TRUMPF、沈阳机床、秦川机床、Nidec、FANUC、Siemens、HEIDENHAIN、广州数控GSK、Yaskawa和THK；没有重复创建组织实体。
+- 新增官方来源SRC-000053～SRC-000061，共9条，覆盖DMG MORI、Mazak、Okuma、Makino、TRUMPF、FANUC、Siemens、HEIDENHAIN和THK。全部标记manufacturer_product_page、authority_tier=A、evidence_kind=manufacturer_declaration、rights_status=link_only。
+- 新增15条文章索引关系REL-000142～REL-000156，subject均为KNOW-000009，predicate为DERIVED_FROM，object为既有15家VENDOR实体。每条关系均带来源、核验状态、置信度、文章路径/版本和明确的非事实关系边界。
+- 档案区分整机OEM、钣金/激光加工设备OEM、CNC/运动控制平台和机械功能部件供应商；对Mazak集团/世界总部/美国法人/工厂/支持据点、DMG MORI服务网络等信息注明组织和证据边界。
+- 明确控制器、驱动、整机OEM的职责边界；禁止从供应商产品目录推断具体机床BOM、控制器配置、互操作性、当前库存、交期或中国本地服务能力。
+- 更新CH19 README、docs总目录、CH19 TaskPlan、根TaskPlan和覆盖矩阵。CH19-T002标记DONE，CH19-T003标记IN_PROGRESS。
+
+### 覆盖度与验收
+
+- CH19覆盖等级提升为2级foundational：2篇文章、23个主归属实体（15 VENDOR + 6 PRODUCT + 2 KNOW）、52条关联关系（16条制造事实关系 + 36条文章索引边）、34条去重来源、0项资源文件。
+- 没有下载或复制受版权限制的厂商手册/目录；只保存官方链接元数据。未新增图片、动图或完整文档资源。
+- 所在分支：main。完成时间：2026-11-22T10:00:00+08:00。主要提交SHA：待提交后补录。
+- 研究结论均限定为原厂公开声明；本任务不包含第三方产品测试、采购价格、库存、交期或供应商质量评级。

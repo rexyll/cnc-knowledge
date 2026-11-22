@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000056",
+  "source_type": "manufacturer_product_page",
+  "title": "About Us",
+  "publisher": "Makino",
+  "author": null,
+  "url": "https://www.makino.com/en-us/about-us",
+  "version": "Official website page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official company/product portfolio overview",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "官方企业介绍列出卧式/立式加工中心、3/4/5轴加工中心、石墨加工和线切割/成形EDM，以及自动化和服务入口；性能描述属于厂商声明。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

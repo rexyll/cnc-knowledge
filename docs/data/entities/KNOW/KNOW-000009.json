@@ -1,0 +1,57 @@
+{
+  "entity_id": "KNOW-000009",
+  "entity_type": "knowledge_article",
+  "canonical_name": "整机与数控系统厂商档案",
+  "english_name": "Machine tool OEM and CNC system vendor profiles",
+  "aliases": [],
+  "description": "按整机OEM、CNC/运动控制平台和机械功能部件供应商分层，整理15家代表性组织的官方业务与产品系列、组织边界、地区服务证据限制和后续核验字段。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH02",
+    "CH04",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10",
+    "CH14",
+    "CH20"
+  ],
+  "classification_path": [
+    "知识条目",
+    "manufacturer_and_system_vendor_profiles"
+  ],
+  "tags": [
+    "整机OEM",
+    "CNC厂商",
+    "运动控制",
+    "供应链",
+    "官方产品目录"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T10:00:00+08:00",
+  "updated_at": "2026-11-22T10:00:00+08:00",
+  "verified_at": "2026-11-22T10:00:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000053",
+    "SRC-000054",
+    "SRC-000055",
+    "SRC-000056",
+    "SRC-000057",
+    "SRC-000058",
+    "SRC-000059",
+    "SRC-000060",
+    "SRC-000061"
+  ],
+  "attributes": {
+    "document_path": "docs/19-manufacturers-products-and-supply-chain/machine-tool-oem-and-system-vendor-profiles.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "15家既有VENDOR实体；整机OEM、钣金/激光设备OEM、CNC/驱动平台、直线运动部件供应商；官方资料与证据边界",
+    "knowledge_kind": "manufacturer_and_system_vendor_profiles",
+    "article_status": "reviewed"
+  },
+  "notes": "代表性官方目录样本，不是全球供应商全集、市场排名、质量评级、实时供货/库存/交期或地区服务能力证明。"
+}

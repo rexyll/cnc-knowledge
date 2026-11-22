@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000059",
+  "source_type": "manufacturer_product_page",
+  "title": "SINUMERIK Products",
+  "publisher": "Siemens",
+  "author": null,
+  "url": "https://www.siemens.com/en-us/products/sinumerik/",
+  "version": "Official website page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official company/product portfolio overview",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "官方产品页列出SINUMERIK ONE、828D、828D Smart、808等CNC平台及应用范围；具体功能取决于产品型号、软件版本、选件和机床制造商集成。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

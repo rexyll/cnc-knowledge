@@ -43,6 +43,7 @@
 - [典型数控机床产品与型号规格目录](02-machine-types-and-products/representative-model-catalog.md)
 - [数控机床选型方法与工程比较矩阵](02-machine-types-and-products/machine-tool-selection-methodology.md)
 - [代表性厂商与系统生态图](19-manufacturers-products-and-supply-chain/representative-ecosystem.md)
+- [整机与数控系统厂商档案](19-manufacturers-products-and-supply-chain/machine-tool-oem-and-system-vendor-profiles.md)
 
 ## 质量门禁与覆盖度
 
