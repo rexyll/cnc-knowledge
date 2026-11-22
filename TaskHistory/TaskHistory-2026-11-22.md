@@ -557,3 +557,11 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 在材料数据库中分别建立灰铸铁和球墨铸铁的数据采集边界；明确主要壁厚、试样类别、试样几何、取样约定、验收指标和批次追溯字段。不得将试棒数据等同于铸件任意截面性能。
 - 扩展CH04字段字典和material-property-record模板；新增资源空白采集CSV模板。未录入具体HT/QT性能值、未创建MAT牌号实体、未宣称牌号等同或机床实际用料关系。
 - 任务保持IN_PROGRESS；待合法取得正式标准文本后逐表核对牌号、壁厚分档、试样类型和性能保证值。
+
+
+### CH04-T002 — 铸铁数据采集模型CI验收补录（2026-11-22T15:28:00+08:00）
+
+- 内容提交：4a9d7ce6afac3aefece938533e7faa04b4cb20a2。首次CI Run [44986392266](https://github.com/rexyll/cnc-knowledge/actions/runs/44986392266)失败，原因是新增来源SRC-000117的source_type不属于仓库允许枚举；已修正为standard_catalog，未改变来源事实内容。
+- 修正提交：072a0bd0dde959139da99f2f26a0c5a146e301be（main）。GitHub Actions Run [44986422182](https://github.com/rexyll/cnc-knowledge/actions/runs/44986422182)：success；5项单元测试通过；严格知识质量检查PASS（0 errors）。
+- CI统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、117条来源、262处正文来源引用。
+- 本次验收对应修正提交072a0bd；后续TaskHistory补录提交另行运行CI确认。
