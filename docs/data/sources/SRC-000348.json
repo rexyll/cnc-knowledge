@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000348",
+  "source_type": "academic_paper",
+  "title": "Modeling Dual-Drive Gantry Stages with Heavy-Load and Optimal Synchronous Controls with Force-Feed-Forward Decoupling",
+  "publisher": "Entropy (MDPI), 24(8), 1153",
+  "author": "Hanjun Xie; Qinruo Wang",
+  "url": "https://www.mdpi.com/1099-4300/24/8/1153",
+  "version": "2022; DOI: 10.3390/e24081153",
+  "published_on": "2022-08-19",
+  "accessed_on": "2026-11-22",
+  "locator": "Dual-drive gantry rigid/flexible modeling, heavy-load behavior and synchronous control with force-feed-forward decoupling",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Open-access article; repository stores citation metadata and link only, not the paper. Its stage is not a universal CNC reference.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

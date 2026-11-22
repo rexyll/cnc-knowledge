@@ -55,3 +55,7 @@
 ## 前馈与滤波联合设计
 
 - [伺服速度/加速度前馈与陷波、低通滤波器联合设计](servo-feedforward-and-filter-co-design.md)：说明轨迹导数前馈、刚体总惯量/扭转约化惯量区别、陷波/低通设计及多工况验证边界。
+
+## 双驱龙门多轴同步专题
+
+- [双驱龙门轴的 MIMO 耦合同步控制与鲁棒性评估](../12-control-and-machining-algorithms/gantry-dual-drive-mimo-synchronization-and-robustness.md)：以合成双自由度对象说明左右驱动机械耦合、交叉通道和差动同步控制；不是某台机床实测参数或调参建议。

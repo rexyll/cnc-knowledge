@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000347",
+  "source_type": "other",
+  "title": "Stability Analysis Using Disk Margins",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/robust/ug/stability-analysis-using-disk-margins.html",
+  "version": "MATLAB Robust Control Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Interpretation of disk margins for SISO/MIMO feedback systems and multiloop gain/phase perturbations",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official software documentation; this source does not establish a disk margin for the repository's synthetic model.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

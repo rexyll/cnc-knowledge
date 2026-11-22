@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000349",
+  "source_type": "academic_paper",
+  "title": "Multivariable System Identification, Enhanced Disturbance Rejection, and Precision Motion Control for CNC Machine Tool Feed Drives",
+  "publisher": "University of Waterloo",
+  "author": "Hessam Kalbasi Shirvani",
+  "url": "https://uwspace.uwaterloo.ca/items/55368a55-b614-469c-a609-b27d704f5b8c",
+  "version": "Doctoral thesis, 2021",
+  "published_on": "2021-08-27",
+  "accessed_on": "2026-11-22",
+  "locator": "Multivariable identification and motion control for ball-screw CNC feed-drive systems",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Academic reference for CNC feed-drive MIMO identification; specific plant and results must not be transferred to a different machine without validation.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

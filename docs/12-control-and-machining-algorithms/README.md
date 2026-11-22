@@ -56,3 +56,7 @@
 ## 前馈与滤波联合验证
 
 - [伺服速度/加速度前馈、陷波与低通滤波器联合验证](servo-feedforward-notch-lowpass-co-design.md)：对比前馈跟随收益、模态失谐、外部负载扰动、滤波相位与多交越环路裕度。
+
+## 双驱龙门 MIMO 同步控制专题
+
+- [双驱龙门轴的 MIMO 耦合同步控制与鲁棒性评估](gantry-dual-drive-mimo-synchronization-and-robustness.md)：比较独立双轴PD与交叉耦合同步P-D，展示MIMO返回差/灵敏度诊断的用途和disk margin计算边界；全部数据为合成示例。

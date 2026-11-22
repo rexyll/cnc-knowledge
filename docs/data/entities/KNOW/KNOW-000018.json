@@ -1,0 +1,57 @@
+{
+  "entity_id": "KNOW-000018",
+  "entity_type": "knowledge_article",
+  "canonical_name": "双驱龙门轴的 MIMO 耦合同步控制与鲁棒性评估",
+  "english_name": "MIMO coupled synchronization control and robustness assessment for dual-drive gantry axes",
+  "aliases": [
+    "双驱龙门同步控制",
+    "双驱龙门MIMO"
+  ],
+  "description": "以合成双自由度双驱龙门模型说明机械耦合、差动同步控制、MIMO返回差/灵敏度诊断和严格multiloop disk margin的区别。",
+  "primary_chapter": "CH12",
+  "related_chapters": [
+    "CH08",
+    "CH14"
+  ],
+  "classification_path": [
+    "数控机床运动控制",
+    "多轴与同步控制",
+    "MIMO龙门双驱同步"
+  ],
+  "tags": [
+    "CH12",
+    "CH08",
+    "双驱龙门",
+    "MIMO",
+    "交叉耦合",
+    "同步误差",
+    "disk margin",
+    "合成仿真"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-22T21:27:57.435+08:00",
+  "updated_at": "2026-11-22T21:27:57.435+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000346",
+    "SRC-000347",
+    "SRC-000348",
+    "SRC-000349",
+    "SRC-000350",
+    "SRC-000351"
+  ],
+  "attributes": {
+    "document_path": "docs/12-control-and-machining-algorithms/gantry-dual-drive-mimo-synchronization-and-robustness.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "双驱龙门2自由度等效MIMO模型、差动耦合、同步控制、频域返回差/灵敏度诊断、合成仿真",
+    "article_status": "synthetic_method_study",
+    "model_data_status": "synthetic_only",
+    "exact_multiloop_disk_margin_computed": false,
+    "hardware_validation": false
+  },
+  "notes": "方法性研究与合成数值示例；非具体机床参数、非严格disk margin结果、非实机稳定性或安全验证。"
+}

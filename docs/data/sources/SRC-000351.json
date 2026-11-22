@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000351",
+  "source_type": "academic_paper",
+  "title": "Optimal Cross-Coupled Synchronizing Control of Dual-Drive Gantry System for a SMD Assembly Machine",
+  "publisher": "JSME International Journal Series C, 47(3), pp. 939–945",
+  "author": "Baeksuk Chu; Sungsoo Kim; Daehie Hong; Heung-Keun Park; Jinmoo Park",
+  "url": "https://www.jstage.jst.go.jp/article/jsmec/47/3/47_3_939/_article/-char/en",
+  "version": "2004; DOI: 10.1299/jsmec.47.939",
+  "published_on": "2004-09-15",
+  "accessed_on": "2026-11-22",
+  "locator": "Dual-drive gantry synchronization and cross-coupled control study for an SMD assembly machine",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "One academic experimental application; not a universal CNC controller specification.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

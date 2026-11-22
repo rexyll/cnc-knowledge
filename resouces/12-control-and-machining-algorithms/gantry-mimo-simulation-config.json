@@ -1,0 +1,88 @@
+{
+  "created_on": "2026-11-22",
+  "created_at": "2026-11-22T21:16:14.729+08:00",
+  "evidence_kind": "synthetic_model_output",
+  "rights_status": "original_code_and_generated_synthetic_data",
+  "source_data": "No real machine, customer, vendor or measured plant data",
+  "chapter": "CH12",
+  "related_chapter": "CH08",
+  "article_path": "docs/12-control-and-machining-algorithms/gantry-dual-drive-mimo-synchronization-and-robustness.md",
+  "script": "gantry-mimo-simulation.py",
+  "dependencies": {
+    "python": "3.10+",
+    "numpy": "required",
+    "scipy": "required"
+  },
+  "model": {
+    "coordinates": [
+      "x_left",
+      "x_right"
+    ],
+    "mass_kg": {
+      "nominal": [
+        20,
+        25
+      ],
+      "asymmetric_load": [
+        30,
+        22
+      ]
+    },
+    "viscous_damping_N_s_m": {
+      "nominal": [
+        600,
+        680
+      ],
+      "asymmetric_load": [
+        720,
+        650
+      ]
+    },
+    "coupling_stiffness_N_m": [
+      0,
+      200000,
+      500000,
+      800000,
+      1200000
+    ],
+    "coupling_damping_ratio": 0.08,
+    "controller_nominal_natural_frequency_Hz": 20,
+    "controller_nominal_damping_ratio": 0.9,
+    "derivative_filter_Hz": 250
+  },
+  "evaluation": {
+    "common_step_m": 0.001,
+    "frequency_samples_Hz": [
+      1,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      40,
+      50,
+      75,
+      100,
+      150,
+      200,
+      300
+    ],
+    "return_difference_grid_Hz": "logspace 0.2..500 Hz, 1400 samples",
+    "metrics": [
+      "peak_abs_position_difference_um",
+      "cross_axis_transfer_ratio",
+      "minimum_sigma_min_I_plus_L",
+      "peak_sigma_max_sensitivity",
+      "closed_loop_pole_stability",
+      "minimum_complex_pole_damping_ratio"
+    ],
+    "caution": "These are sampled MIMO diagnostics, not exact multiloop disk margin or structured singular value analysis."
+  },
+  "outputs": [
+    "gantry-mimo-coupling-envelope.csv",
+    "gantry-mimo-frequency-response-samples.csv",
+    "gantry-mimo-sync-controller-comparison.csv"
+  ],
+  "notes": "Continuous synthetic two-DOF model; not an actual CNC plant, not HIL/hardware evidence or tuning guidance. Coupling spring/damper acts only on differential motion."
+}

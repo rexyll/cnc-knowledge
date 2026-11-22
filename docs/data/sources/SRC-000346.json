@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000346",
+  "source_type": "other",
+  "title": "diskmargin — Disk-based stability margins of feedback loops",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/robust/ref/dynamicsystem.diskmargin.html",
+  "version": "MATLAB Robust Control Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "SISO/MIMO disk margin; loop-at-a-time and multiloop analysis; input/output locations for gain/phase variations",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official software documentation; conceptual method reference only; does not imply a specific CNC controller implements it or the user owns the toolbox.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000350",
+  "source_type": "academic_paper",
+  "title": "A novel five-axis cross-coupling control system that considers the motion and dynamic constraints of feed drive systems",
+  "publisher": "Manufacturing Letters, Vol. 44, Supplement, pp. 36–47",
+  "author": null,
+  "url": "https://www.sciencedirect.com/science/article/pii/S221384632500029X",
+  "version": "2025; DOI: 10.1016/j.mfglet.2025.06.008",
+  "published_on": "2025-08-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Five-axis contour/cross-coupling control with feed-drive motion/dynamic constraints; distinguish from dual-drive gantry differential synchronization",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to distinguish problem scope; five-axis contour coupling is not the same controller topology as two-drive gantry synchronization.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

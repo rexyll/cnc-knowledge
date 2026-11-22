@@ -1,0 +1,22 @@
+{
+  "relation_id": "REL-000245",
+  "subject_id": "KNOW-000018",
+  "predicate": "DERIVED_FROM",
+  "object_id": "SRC-000350",
+  "qualifiers": {
+    "article_path": "docs/12-control-and-machining-algorithms/gantry-dual-drive-mimo-synchronization-and-robustness.md",
+    "article_version": "0.1",
+    "reference_role": "scope distinction: five-axis contour coupling",
+    "relationship_scope": "content sourcing and navigation only; does not imply hardware compatibility, adoption, supply, conformity or proof"
+  },
+  "source_ids": [
+    "SRC-000350"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T21:27:57.435+08:00",
+  "updated_at": "2026-11-22T21:27:57.435+08:00",
+  "notes": "记录知识文章的引用/索引来源链；不代表该研究方法、软件工具或模型已在某一具体CNC设备上实现、采用或验证。"
+}
