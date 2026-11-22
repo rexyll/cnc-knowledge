@@ -147,5 +147,5 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 更新：根目录TaskPlan.md，下一优先任务调整为CH02-T002及CH19-T002/T003。
 - 更新：docs/coverage/CHAPTER-COVERAGE.csv，仅调整CH01下一优先任务和审查说明；CH01仍为2级foundational、2篇文章、26个实体、25条关系、24条来源、0项资源。
 - 审查依据：仓库当前22份章节任务计划、根目录范围/Guide/Limit及现有目录和数据登记；没有将外部链接实时可用性作为本任务验收内容。
-- 所在分支：main。完成时间：2026-11-22T10:51:00+08:00。最终提交SHA及CI结果在提交后补记。
+- 所在分支：main。完成时间：2026-11-22T10:51:00+08:00。最终提交SHA：ee29ce4f755544f00f6e0c557724e46ba451fd57；GitHub Actions Run #16（44978323889）success，5项单元测试全部通过，严格知识检查PASS（0 errors）。
 
