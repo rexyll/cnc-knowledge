@@ -194,3 +194,6 @@
 - **CH19抽查：** 检查关键部件供应商与产品、供应链比较与风险管理两篇专题，未发现与CH04的直接职责冲突；未完成全章逐篇复核。
 - **交付：** manufacturing-cross-chapter-review.md、manufacturing-processes.md第34节及CH03三篇机械专题的边界修正。
 - **状态：** IN_PROGRESS；后续待CH14/CH16/CH20形成正文后继续验证具体测量、装配与BOM数据接口。
+
+
+**第二轮跨章节审查CI验收（2026-11-22）：** 内容提交 `12170be54a6db655b8ac0168fabe114bdc7cd7df` 对应GitHub Actions [Run 45007566010](https://github.com/rexyll/cnc-knowledge/actions/runs/45007566010) success；5/5单元测试通过，strict lint PASS（0 errors）。CI统计：22章、110个Markdown文件、352条内部链接、140条实体、240条关系、242条来源、458处正文来源引用。该验收不代表实机验证或关联章节知识内容完成；CH04-T003保持IN_PROGRESS。
