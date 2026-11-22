@@ -17,7 +17,7 @@ CH15,15-standards-safety-and-compliance,0,not_started,0,0,0,0,0,,按章节TaskPl
 CH16,16-manufacturing-assembly-installation,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH17,17-operation-maintenance-and-repair,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH18,18-fault-diagnosis-and-reliability,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
-CH19,19-manufacturers-products-and-supply-chain,1,inventory,1,22,37,23,0,2026-11-22,CH19-T003：机械功能部件、刀具、测量与周边供应商目录,IN_PROGRESS,15个组织+6个产品+1个KNOW；含16条制造事实关系（含本轮新增3个整机OEM关联）和21条文章索引边；去重SRC 23条。
+CH19,19-manufacturers-products-and-supply-chain,1,inventory,1,22,37,25,0,2026-11-22,CH19-T003：机械功能部件、刀具、测量与周边供应商目录,IN_PROGRESS,15个组织+6个产品+1个KNOW；含16条制造事实关系（含本轮新增3个整机OEM关联）和21条文章索引边；去重SRC 23条。
 CH20,20-bom-drawings-and-technical-documents,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH21,21-digitalization-and-smart-manufacturing,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH22,22-case-studies-and-reference-machines,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
