@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000355",
+  "source_type": "academic_paper",
+  "title": "Data-Driven Dynamics Decomposition of Dual-Drive Gantry Stage and Robust Decoupling Control",
+  "publisher": "IEEE/ASME Transactions on Mechatronics, Vol. 31, No. 2, pp. 1786–1797",
+  "author": "Hanul Jung; Wonsik Kim; Sehoon Oh",
+  "url": "https://doi.org/10.1109/TMECH.2025.3614046",
+  "version": "2026-04; DOI: 10.1109/TMECH.2025.3614046",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Data-driven decomposition of physically meaningful translational/rotational dynamics and robust decoupling control",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Recent experimental research reference. The paper's stage, sensors and identification procedures are not assumed equivalent to the synthetic model here.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

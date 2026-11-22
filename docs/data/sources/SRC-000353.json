@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000353",
+  "source_type": "academic_paper",
+  "title": "Decoupling and Synchronization Control of Asymmetric Flexure-Linked Dual-Drive Gantry Stage",
+  "publisher": "Journal of Shanghai Jiao Tong University, 57(5), 593–600",
+  "author": null,
+  "url": "https://doi.org/10.16183/j.cnki.jsjtu.2021.456",
+  "version": "2023; DOI: 10.16183/j.cnki.jsjtu.2021.456",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Asymmetric flexure-linked dual-drive gantry dynamics, decoupling and synchronization",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Academic study of one gantry-stage architecture; not a generic CNC machine parameter source.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

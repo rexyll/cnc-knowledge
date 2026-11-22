@@ -59,3 +59,7 @@
 ## 双驱龙门多轴同步专题
 
 - [双驱龙门轴的 MIMO 耦合同步控制与鲁棒性评估](../12-control-and-machining-algorithms/gantry-dual-drive-mimo-synchronization-and-robustness.md)：以合成双自由度对象说明左右驱动机械耦合、交叉通道和差动同步控制；不是某台机床实测参数或调参建议。
+
+## 横梁模态与离散延迟专题
+
+- [双驱龙门轴的横梁模态、变位置负载与离散延迟鲁棒性](../12-control-and-machining-algorithms/gantry-mimo-modal-load-position-delay-robustness.md)：以合成四广义坐标模型说明负载位置对柔性模态的影响，以及采样/命令延迟与同步控制增益的联合验证；不能作为真实设备延迟预算或整定建议。

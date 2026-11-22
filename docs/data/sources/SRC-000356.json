@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000356",
+  "source_type": "other",
+  "title": "Time Delays in Linear Systems",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/control/ug/time-delays-in-linear-systems.html",
+  "version": "MATLAB Control System Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Discrete delays and delay representation; discrete delay specified as integer multiples of sample time; fractional-delay approximation methods",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official software documentation used for delay-modeling concepts only.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

@@ -60,3 +60,7 @@
 ## 双驱龙门 MIMO 同步控制专题
 
 - [双驱龙门轴的 MIMO 耦合同步控制与鲁棒性评估](gantry-dual-drive-mimo-synchronization-and-robustness.md)：比较独立双轴PD与交叉耦合同步P-D，展示MIMO返回差/灵敏度诊断的用途和disk margin计算边界；全部数据为合成示例。
+
+## 横梁模态与离散延迟鲁棒性专题
+
+- [双驱龙门轴的横梁模态、变位置负载与离散延迟鲁棒性](gantry-mimo-modal-load-position-delay-robustness.md)：用假设模态和冻结负载位置模型研究横梁弯曲/扭转、ZOH离散化、整数命令延迟及同步控制权衡，所有参数和结果均为合成示例。

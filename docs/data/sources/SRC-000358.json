@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000358",
+  "source_type": "other",
+  "title": "Model Computational Delay and Sampling Effects",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/slcontrol/ug/modeling-computational-delays-and-sampling-effects.html",
+  "version": "Simulink Control Design documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Modeling computation delay and sample/hold effects in discrete motion-control loops",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official software documentation; the sample delays in this repository are synthetic integer transport delays.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

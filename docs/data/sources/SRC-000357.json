@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000357",
+  "source_type": "other",
+  "title": "Analyze Control Systems with Delays",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/control/ug/analyzing-control-systems-with-delays.html",
+  "version": "MATLAB Control System Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Analysis of control loops with time delays and the effect of delay on closed-loop dynamics",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official method documentation. It does not validate any particular CNC machine's delay budget.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000352",
+  "source_type": "academic_paper",
+  "title": "Dynamic modeling and analysis of flexible H-type gantry stage",
+  "publisher": "Journal of Sound and Vibration, Vol. 439, pp. 144–155",
+  "author": null,
+  "url": "https://doi.org/10.1016/j.jsv.2018.09.047",
+  "version": "2019; DOI: 10.1016/j.jsv.2018.09.047",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Flexible H-type gantry stage dynamic modeling, crossbeam flexibility, and two moving ends",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Academic model reference. This article does not validate the synthetic modal shapes or numerical parameters used in this repository.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

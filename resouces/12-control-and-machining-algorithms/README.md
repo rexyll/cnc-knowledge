@@ -64,3 +64,14 @@
 - `gantry-mimo-sync-controller-comparison.csv`：4种同步控制器方案对照。
 - 运行脚本还会生成140行频率响应明细CSV；如需长期归档，将输出路径指定到本目录内的 `generated/` 子目录。
 - 以上为原创代码和合成数据，不含真实机床、客户或厂商实测参数。最小返回差奇异值与灵敏度峰值是有限频率网格诊断，不是严格multiloop disk margin、mu分析或实机稳定性证明。
+
+
+## 本轮新增：双驱龙门横梁模态、负载位置与采样延迟（2026-11-22）
+- `gantry-modal-delay-study.py`：四广义坐标低阶假设模态、位置相关质量矩阵、ZOH离散对象、整数命令延迟闭环极点扫描、阶跃响应和采样小增益诊断。运行需要Python 3.10+、NumPy、SciPy。
+- `gantry-modal-delay-study-config.json`：模型、负载工况、采样/延迟、同步控制候选和适用边界。
+- `gantry-mimo-modal-position-envelope.csv`：27组冻结负载位置/质量下的广义模态摘要。
+- `gantry-mimo-delay-robustness-envelope.csv`：4类控制器在0～6ms下的27工况离散极点稳定统计。
+- `gantry-mimo-discrete-step-comparison.csv`：3组负载位置工况和3种控制器的1ms延迟阶跃比较。
+- `gantry-mimo-discrete-small-gain-margin.csv`：中心负载下的采样返回差/灵敏度及全块输出乘性小增益指示量；并非disk margin。
+- 完整756行 `gantry-mimo-discrete-delay-sweep.csv` 由脚本在运行输出目录生成，不作为当前仓库静态基线文件。
+- 以上代码和CSV均为合成研究资产；负载位置使用冻结快照，不含连续移动质量项；没有有限元、HIL或实机验证。

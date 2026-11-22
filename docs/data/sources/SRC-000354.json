@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000354",
+  "source_type": "academic_paper",
+  "title": "Composite Adaptive Synchronous Control of Dual-Drive Gantry Stage With Load Movement",
+  "publisher": "IEEE Open Journal of the Industrial Electronics Society, Vol. 4, pp. 63–74",
+  "author": "Pengwei Shi; Xinghu Yu; Xuebo Yang; Juan J. Rodríguez-Andina; Weichao Sun; Huijun Gao",
+  "url": "https://doi.org/10.1109/OJIES.2022.3233848",
+  "version": "2023; DOI: 10.1109/OJIES.2022.3233848",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Moving load effects on the centroid/inertia and adaptive synchronization of a dual-drive gantry stage",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Research evidence that load movement can affect the studied gantry dynamics. Its plant and experiments do not transfer directly to a different CNC machine.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000360",
+  "source_type": "academic_paper",
+  "title": "Motion of a Moving Elastic Beam Carrying a Moving Mass—Analysis and Experimental Verification",
+  "publisher": "Journal of Sound and Vibration, Vol. 240, No. 1, pp. 131–157",
+  "author": "S. Park; Y. Youm",
+  "url": "https://doi.org/10.1006/jsvi.2000.3198",
+  "version": "2001; DOI: 10.1006/jsvi.2000.3198",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Moving mass and elastic beam dynamic interaction; mode shapes/eigenfrequencies vary with load position",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "General moving-mass flexible-beam research, not a direct model of a CNC crossbeam.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}
