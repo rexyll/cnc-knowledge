@@ -127,3 +127,25 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 覆盖矩阵更正提交：[ae8f28529967bb2c37c1bb5df2d67e5e95fbc83f](https://github.com/rexyll/cnc-knowledge/commit/ae8f28529967bb2c37c1bb5df2d67e5e95fbc83f)。
 - GitHub Actions Run #13：[44926221521](https://github.com/rexyll/cnc-knowledge/actions/runs/44926221521) — success；5项单元测试通过，严格知识质量检查PASS（0 errors）。最终统计仍为70实体、97关系、34来源、218条内部链接、94个Markdown文件和22条覆盖记录。
 - 更正日期：2026-11-22T00:45:20+08:00。更正只校准覆盖计数和下一优先任务，不更改实体/关系事实。
+
+
+## CH01-T004研究与验收记录
+
+### 审查范围与结论
+
+- 对根目录总体范围、22章目录映射和22份章节TaskPlan进行交叉审查，形成22章唯一主归属矩阵。
+- 明确CH01行业导航与基础概念、CH02机型分类与产品家族、CH19厂商/产品主数据的边界；明确CH02产品家族与CH22具体参考整机实例的分工。
+- 梳理CH03～CH08物理系统与控制职责、CH07～CH12控制器/平台/通信/软件/算法、CH12～CH15算法/工艺/检测/规范、CH16～CH18生命周期阶段、CH19～CH22供应链/工程文档/数字化/案例的交叉边界。
+- 识别SUBSYS、PART、MAT、刀具/夹具、电气元件与SIGNAL、PARAM、INTERFACE/PROTO、STD、性能参数、APP、BOM配置和真实工程案例等结构化数据缺项，并指定主责任章节和建议任务。
+- 结论：现有22章足以覆盖项目范围，当前不需要新增第23章；优先治理章节边界和实体主归属，避免重复建档。未把尚未研究的主题写成已验证技术事实。
+- 本报告是项目治理文件，不是新增技术知识文章；不创建KNOW、TERM或其他实体，不新增关系/来源/资源记录，不调整覆盖度等级和计数。
+
+### 交付物与验收
+
+- 新增：docs/01-industry-and-fundamentals/industry-scope-gap-audit.md。
+- 更新：docs/TaskPlan/01-industry-and-fundamentals/TaskPlan.md，CH01-T004状态改为DONE。
+- 更新：根目录TaskPlan.md，下一优先任务调整为CH02-T002及CH19-T002/T003。
+- 更新：docs/coverage/CHAPTER-COVERAGE.csv，仅调整CH01下一优先任务和审查说明；CH01仍为2级foundational、2篇文章、26个实体、25条关系、24条来源、0项资源。
+- 审查依据：仓库当前22份章节任务计划、根目录范围/Guide/Limit及现有目录和数据登记；没有将外部链接实时可用性作为本任务验收内容。
+- 所在分支：main。完成时间：2026-11-22T10:51:00+08:00。最终提交SHA及CI结果在提交后补记。
+
