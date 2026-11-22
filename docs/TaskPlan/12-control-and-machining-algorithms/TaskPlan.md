@@ -90,3 +90,6 @@
 
 
 **追加执行切片（2026-11-22）：伺服前馈、陷波与低通联合仿真。** 新增 servo-feedforward-notch-lowpass-co-design.md，对前馈轨迹跟踪、参考模态纹波、外部负载转矩扰动和多交越SISO稳定裕度进行区分验证。修正既有两惯量刚体惯量定义及阶跃反馈缓存长度；速度PI候选按名义Jrigid=0.030 kg·m²计算，保守候选Kp=2.26195、Ki=56.84892，激进候选Kp=3.01593、Ki=113.69784。新增SRC-000341～SRC-000345；CH12字典新增前馈跟踪、陷波失谐敏感性、低通相位/噪声权衡3项字段。仿真对象模态约为名义冷态72.934 Hz、重载冷态68.223 Hz、热态参数变体64.722 Hz、三惯量参考41.906/94.079 Hz。固定42/70/94 Hz陷波可降低部分对象参考模态纹波，但热态失谐后效果弱；控制器转矩通道陷波可能削弱外部扰动抑制。150 Hz速度反馈低通带来与频率相关的相位滞后，必须同时评估全交越裕度。新增修正后的环路裕度CSV、阶跃响应CSV和前馈/滤波联合摘要CSV；脚本扩展为生成完整组合结果。内容提交 4fa9406b3476b6b3d4acda2b81c2eea190e82e99；GitHub Actions [Run 45024433308](https://github.com/rexyll/cnc-knowledge/actions/runs/45024433308) success；5/5单元测试通过；strict lint PASS（0 errors）。本轮所有数据仍是合成模型，不是实机稳定性证明或整定建议；CH12-T003保持 IN_PROGRESS。
+
+
+**更正补录（2026-11-22）：替换上一版级联控制裕度/阶跃表中的过期数值。** 前序补录虽已声明旧惯量定义和阶跃缓存错误，但原CH12稳定裕度专题仍残留旧表格。本次已把旧表实际替换为刚体惯量修正后的多交越PM/GM序列及1 ms反馈延迟、两样本缓存下的阶跃结果；详细滤波组合见 servo-feedforward-notch-lowpass-co-design.md 和资源CSV。更正提交 e95ed502e940105adf6b2ebfb45fc3233a6fddf3；GitHub Actions [Run 45024670605](https://github.com/rexyll/cnc-knowledge/actions/runs/45024670605) success，5/5单元测试通过，strict lint PASS（0 errors）。CH12-T003继续 IN_PROGRESS；这些数据仍是合成SISO模型，不能作为真实机床稳定性证据。
