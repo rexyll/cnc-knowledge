@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000305",
+  "source_type": "manufacturer_manual",
+  "title": "Product Information RCN 2001/5001/8001 FS — Angle Encoders for Direct-Drive Axes",
+  "publisher": "DR. JOHANNES HEIDENHAIN GmbH",
+  "author": null,
+  "url": "https://news.heidenhain.com/fileadmin/pdf/en/01_Products/Produktinformationen/PI_RCN2001_5001_8001_FS_ID1294716_en.pdf",
+  "version": "03/2021",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Direct-drive position-control loop signal quality, motor-current noise and thermal consequence explanation",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Manufacturer's product information explains how encoder signal quality can disturb the position and current control loops, increase current noise and power dissipation, and contribute to axis thermal deformation. It is product/application guidance, not a universal quantitative threshold. PDF is linked only and not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

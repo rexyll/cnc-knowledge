@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000307",
+  "source_type": "manufacturer_manual",
+  "title": "RESOLUTE RESA/REXA Absolute Angle Encoder Installation Guide",
+  "publisher": "Renishaw plc",
+  "author": null,
+  "url": "https://www.renishaw.com/resourcecentre/en/details/RESOLUTE-RESA-and-REXA-absolute-angle-encoders--126434?lang=en",
+  "version": "Part number M-9553-9735; online resource listing accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Installation guide resource entry for RESOLUTE readhead and RESA/REXA absolute angle ring scales",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Records the official installation-guide entry only. Actual readhead gap, mounting torque, ring runout and electrical setup must be taken from the current guide for the exact encoder and scale variant. PDF is linked only and not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

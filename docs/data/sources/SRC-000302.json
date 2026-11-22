@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000302",
+  "source_type": "manufacturer_manual",
+  "title": "1FW6 Built-in Torque Motors — Configuration Manual",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/320/103909320/att_1164463/v1/1FW6_config_man_0922_en-US.pdf",
+  "version": "09/2022, A5E52220645B AA",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Mechanical properties/cooling circuits; mounting and centering instructions; rotor/stator installation forces; cooling connections",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Siemens-specific installation and cooling requirements for the 1FW6 family. The manual describes centering fixtures, avoiding stator/rotor contact, strong magnetic attraction during insertion, and cooling circuit requirements. Values and procedures must not be copied to other motor families. PDF is linked only and not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

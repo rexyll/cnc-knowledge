@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000304",
+  "source_type": "manufacturer_product_page",
+  "title": "RCN 8001 Series — Absolute Angle Encoders for Direct-Drive Rotary Axes",
+  "publisher": "DR. JOHANNES HEIDENHAIN GmbH",
+  "author": null,
+  "url": "https://www.heidenhain.com/products/encoders/angle-encoders/integral-bearing/rcn-8001",
+  "version": "Online product information; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "RCN 8001 system accuracy, line count, temperature sensing, interfaces, direct-drive motor temperature evaluation and motor-current noise statements",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Manufacturer-specific RCN 8001 product data and application statements. Listed system accuracy/resolution/interface/speed are model-family data, not universal encoder or machine-axis accuracy. The page discusses signal quality and smooth direct-drive operation, and an optional temperature sensor arrangement. No product drawings or brochures are archived.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

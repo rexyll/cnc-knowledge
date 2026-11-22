@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000308",
+  "source_type": "manufacturer_product_page",
+  "title": "KBM Series Frameless Direct-Drive Motors",
+  "publisher": "Kollmorgen Corporation",
+  "author": null,
+  "url": "https://www.kollmorgen.com/en-us/products/motors/direct-drive/kbm-series-frameless",
+  "version": "Online product information; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Frameless direct-drive motor product description; machine-supported rotor and integrated stator winding features",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Manufacturer-specific KBM frameless motor product-family information. The product description notes that the machine supplies rotor support bearings; integration and winding/temperature limits must be checked against the exact motor datasheet and design. No product drawings or manuals are archived.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

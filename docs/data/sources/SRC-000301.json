@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000301",
+  "source_type": "manufacturer_product_page",
+  "title": "SIMOTICS T Torque Motors — Direct-Drive Motor Families",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://www.siemens.com/en-us/products/simotics/torquemotors/",
+  "version": "Online product information; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "SIMOTICS T-1FW3 complete torque motor and T-1FW6 built-in torque motor integration distinctions",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The manufacturer distinguishes the complete 1FW3 motor with its mounting set from 1FW6 built-in stator/rotor components that require the machine bearing and encoder system for a complete drive unit. These statements apply to the listed Siemens families only; they do not define universal direct-drive construction. No product images or manuals are archived.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

@@ -105,3 +105,12 @@ CH04,part,rotary_table_geometric_accuracy_record,回转台几何精度记录,台
 CH04,part,rotary_table_clamping_configuration,回转台夹紧/锁止配置,液压/气动/机械制动或端面齿式锁紧结构及接口身份,object,,conditional,,记录夹紧原理、执行器、额定介质/压力依据、摩擦副/齿圈配置、失压/失电状态和图纸修订,回转工作台/摆动轴/分度轴,yes,,夹紧能力、传动自锁贡献和动态制动能力分开建档
 CH04,part,rotary_table_clamping_test_record,回转台夹紧保持试验记录,夹紧机构保持、松夹、压力衰减和锁紧后位移试验,object,,conditional,,记录夹紧状态、介质/压力、加载方向/力臂/转矩、输出滑移、锁紧后轴向位移、释放拖曳和循环,具有夹紧/锁止功能的转台,yes,,不从厂商夹紧转矩定义推断其他型号自锁或动态制动能力
 CH04,part,rotary_axis_thermal_test_record,回转轴热误差试验记录,回转台连续运行和热稳态过程中的几何/角位置变化,object,,conditional,,记录ISO 230-3方法、运行周期/方向/速度/负载、环境/油温/壳温、测点、角度/轴线变化和冷却配置,回转工作台/摆动轴/转台总成,yes,,不设置跨型号的暖机时间和热漂移通用限值
+CH04,part,direct_drive_motor_configuration,直接驱动电机配置,直接驱动力矩电机类型、完整产品身份、定子/转子和支承/反馈配置,object,,conditional,,记录完整订货代码、完整式/内置式/无框结构、定子/转子序列号、支承轴承归属、反馈位置、冷却形式和图纸修订,回转工作台/分度轴/直驱主轴/摆动轴,yes,,完整式电机和内置式定子/转子组件的结构不能混为一类
+CH04,part,direct_drive_motor_installation_record,直驱电机安装记录,定子/转子同轴定位、气隙、紧固和安装工装的过程证据,object,,conditional,,记录基准、同轴度/气隙周向分布、径向/端面跳动、安装工装、螺钉批次/紧固顺序、转子自由旋转和擦碰检查,内置式/无框/分体式力矩电机集成,yes,,气隙、偏心及紧固限值依准确型号图纸，不设通用参数
+CH04,part,direct_drive_motor_cooling_record,直驱电机冷却记录,电机自然/液冷/其他冷却架构、回路身份和运行记录,object,,conditional,,记录冷却介质/型号/批次、回路拓扑、进出口温度、流量/压力/压降、泄漏/清洁、并联均流和传感器位置,具有电机冷却回路的直驱轴,yes,,冷却方式和流量/压力限值必须来自目标电机和冷却系统文件
+CH04,part,direct_drive_commutation_alignment_record,直驱电机换相对齐记录,机械安装角、编码器零位、电气相位/EMF相位及方向对应关系,object,,conditional,,记录相序、极对数/电角度定义、编码器零位、转子磁极基准、驱动参数版本和原厂校准程序,永磁同步力矩电机及其驱动集成,yes,,相位偏差限值和对齐方法按电机/驱动型号，不跨品牌移植
+CH04,part,direct_drive_dynamic_characteristic_record,直驱电机动态特性记录,指定速度/负载/温度下的电流、转矩波动、速度纹波和运行平顺性,object,,conditional,,记录转速、负载/惯量、方向、驱动参数、带宽/采样率、电流/速度波形、转矩波动定义和测量不确定度,直驱回转轴电机及总成,yes,,齿槽转矩、总转矩波动、速度纹波和系统回差须分别定义
+CH04,part,rotary_output_encoder_configuration,回转输出端编码器配置,测量对象/安装位置、角度编码器与刻度环/读数头配置,object,,conditional,,记录电机端/输出端位置、编码器完整型号、刻度环直径/材料/分段、读数头数量和角度布置、协议及图纸版本,直接驱动或其他NC回转轴,yes,,分辨率、系统精度和安装后精度不可混用
+CH04,part,rotary_encoder_installation_record,回转角度编码器安装记录,刻度环偏心/端面摆差/变形、读数头安装与零位建立记录,object,,conditional,,记录安装基准、环形刻度径向偏心、swash/端面摆差、紧固件/扭矩依据、读数头间隙/方向、参考标记和全周扫描,输出端环形角度编码器/圆光栅,yes,,具体间隙与公差必须按准确型号安装指南
+CH04,part,rotary_encoder_signal_quality_record,回转编码器信号质量记录,读数头信号幅值/质量、数据稳定性、误码和诊断状态,object,,conditional,,记录接口/协议、诊断工具/软件版本、全周信号质量、异常计数/丢帧、采样时间戳、电缆/接地/屏蔽状态,角度编码器及反馈系统制造验收,yes,,信号质量要求由编码器与驱动接口规格定义，不用位数替代
+CH04,part,direct_drive_motor_thermal_state_record,直驱电机热状态记录,绕组/定子/壳体/轴承/冷却介质等多个测点的热状态和工况,object,,conditional,,记录传感器位置/型号/校准、采样周期、环境/绕组/壳体/轴承/冷却进出口温度、速度/转矩/运行时长,直驱电机和回转轴热试验,yes,,单个“电机温度”字段不能替代空间测点和热路径追溯

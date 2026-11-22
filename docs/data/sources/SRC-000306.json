@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000306",
+  "source_type": "manufacturer_product_page",
+  "title": "The Accuracy of Rotary Encoders — Installation-Induced Error Sources",
+  "publisher": "Renishaw plc",
+  "author": null,
+  "url": "https://www.renishaw.com/en/the-accuracy-of-rotary-encoders--47130",
+  "version": "Online technical article; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Rotary encoder ring eccentricity, swash, geometric distortion, harmonic error, installed accuracy and multiple-readhead compensation discussion",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Renishaw technical explanation of installation-induced rotary scale errors. The article's test examples and multiple-readhead compensation discussion are specific to the described ring systems and geometries; do not assume two readheads cancel all errors or apply its numerical examples to other designs.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

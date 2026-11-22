@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000303",
+  "source_type": "manufacturer_manual",
+  "title": "1FW6 Built-in Torque Motors — Operating Instructions",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/851/65222851/att_1164281/v1/1FW6_op_instr_0922_en-US.pdf",
+  "version": "09/2022, A5E52220812B AA",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Mechanical installation, rotor free-rotation check, spacer-film removal, coolant and power/signal wiring, mechanical adjustment angle and EMF phase position",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Model-family-specific commissioning and installation instructions. Mechanical commutation angle, spacer-film removal and rotor free-rotation checks are Siemens 1FW6 requirements, not generic torque-motor acceptance limits. PDF is linked only and not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}
