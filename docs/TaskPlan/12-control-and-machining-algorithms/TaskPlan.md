@@ -56,6 +56,10 @@
 
 **追加执行切片（2026-11-22）：DOB鲁棒稳定性与伺服对象数值仿真。** 新增 servo-model-and-dob-robustness-simulation.md，研究实际/名义对象相对阶次、Q滤波可实现性、乘性不确定性建模和按真实互连结构进行Nyquist/小增益/极点审查；明确不能把未经推导的单一范数不等式当作通用DOB判据。新增SRC-000331～SRC-000332；CH12数据字典新增5项DOB稳定性审查、Q敏感性扫描、伺服对象不确定性及仿真配置/结果字段。新增可复现Python合成仿真脚本、配置JSON、惯量辨识摘要、刚体解析FRF和DOB截止频率扫描CSV。仿真含4 ms转矩执行器滞后和2 ms未建模命令延迟；结果仅说明这组模型的有限时域敏感性，不是稳定性证明、机床实测或参数推荐。内容提交 f39c40297d543823c766d312bc02e791a8c2f179 的GitHub Actions [Run 45016439988](https://github.com/rexyll/cnc-knowledge/actions/runs/45016439988) success；5/5单元测试通过；strict lint PASS（0 errors）。该切片只完成CH12-T003的一部分，CH12-T003保持IN_PROGRESS。
 
+
+
+**追加执行切片（2026-11-22）：多工况模型交叉验证与闭环稳定裕度边界。** 新增 servo-model-cross-validation-and-robust-margins.md，覆盖H1/幅值平方相干度、留出验证、残差诊断、AICc/BIC模型复杂度、多工况模型集合/不确定性包络，以及GM/PM/disk margin的闭环互连计算边界。新增SRC-000333～SRC-000337；CH12数据字典新增5项交叉验证、FRF质量、模型阶次、不确定性包络和闭环裕度字段。新增多工况两/三惯量合成仿真脚本、配置JSON、模型选择CSV、模型参数配置CSV和CW/CCW方向斜率/截距CSV。结果选择三种两惯量工况的2惯量模型和三模态参考对象的3惯量模型；仿真未设计控制器，因此不生成GM/PM/disk margin数值。内容提交 f84386e3e2885fa6f19339a66a7d810298eb0426 的GitHub Actions [Run 45018271186](https://github.com/rexyll/cnc-knowledge/actions/runs/45018271186) success；5/5单元测试通过；strict lint PASS（0 errors）。CH12-T003保持IN_PROGRESS。
+
 ### CH12-T004 — 建立算法验证基准
 
 - **目标：** 设计数值测试、轨迹仿真、极限工况和实机验证的分级测试集。

@@ -46,6 +46,10 @@
 
 **追加执行切片（2026-11-22）：伺服参数辨识、负载惯量估计与频率响应建模。** 新增 servo-parameter-identification-and-frequency-response.md，覆盖电机侧总惯量与负载惯量折算、转矩平衡最小二乘、摩擦/阻尼和恒定负载偏置辨识、激励可辨识性、FRF/H1/相干度、刚体与柔性模态、独立数据验证及调试安全边界。新增SRC-000327～SRC-000330；CH08数据字典新增5项惯量/摩擦/FRF/模态/独立验证字段。合成仿真脚本和CSV统一归档在CH12资源目录，CH08不重复存储。内容提交 f39c40297d543823c766d312bc02e791a8c2f179 的GitHub Actions [Run 45016439988](https://github.com/rexyll/cnc-knowledge/actions/runs/45016439988) success；5/5单元测试通过；strict lint PASS（0 errors）。该切片只完成CH08-T002的一部分；辨识/调参仍须按具体驱动器版本、经批准的试验与真实测量链实施，CH08-T002保持IN_PROGRESS。
 
+
+
+**追加执行切片（2026-11-22）：多工况伺服辨识与模型阶次选择。** 新增 multicondition-servo-identification-and-model-order-selection.md，覆盖轴/负载/夹具/位置/方向/温度的试验身份指纹、CW/CCW方向摩擦分离边界、单惯量/两惯量/多惯量模型适用条件、H1相干度、独立验证、AICc复杂度惩罚和参数漂移记录。新增SRC-000333～SRC-000337；CH08数据字典新增5项多工况指纹、FRF、模型阶次、方向摩擦和参数漂移字段。内容提交 f84386e3e2885fa6f19339a66a7d810298eb0426 的GitHub Actions [Run 45018271186](https://github.com/rexyll/cnc-knowledge/actions/runs/45018271186) success；5/5单元测试通过；strict lint PASS（0 errors）。合成结果仅用于解释模型选择流程，不是实机参数或验收限值；CH08-T002保持IN_PROGRESS。
+
 ### CH08-T003 — 整理主轴控制与同步功能
 
 - **目标：** 分析主轴调速、定向、齿轮档、刚性攻丝、C轴及多轴协调。
