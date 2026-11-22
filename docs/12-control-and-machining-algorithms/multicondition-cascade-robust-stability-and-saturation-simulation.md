@@ -32,39 +32,35 @@
 
 表中数值取实际反馈延迟1.0 ms时的结果。PM和GM按速度环、位置外环各自断点计算；有多个交越点时，摘要列出最接近零的裕度，完整检测交越频率保存在脚本生成的全量CSV中。多个0 dB或−180°交越需逐一检查，不宜只抄一个默认结果。[SRC-000340]
 
-| 控制器 | 对象 | 速度环 PM (°) | 速度环 GM (dB) | 位置环 PM (°) | 位置环 GM (dB) | 速度环增益交越数 |
-|---|---|---:|---:|---:|---:|---:|
-| aggressive_reference | nominal_cold | 38.35 | 20.36 | 41.94 | 7.47 | 1 |
-| aggressive_reference | heavy_load_cold | 33.38 | 20.58 | 14.97 | 2.98 | 1 |
-| aggressive_reference | heavy_load_hot | 33.83 | 20.78 | 15.76 | 3.13 | 1 |
-| aggressive_reference | three_mode_reference | 34.79 | 20.92 | 20.02 | 3.84 | 3 |
-| conservative_candidate | nominal_cold | 42.26 | 23.06 | 73.06 | 11.72 | 1 |
-| conservative_candidate | heavy_load_cold | 36.90 | 23.27 | 36.81 | 6.54 | 1 |
-| conservative_candidate | heavy_load_hot | 37.52 | 23.47 | 38.38 | 6.78 | 1 |
-| conservative_candidate | three_mode_reference | 38.54 | 23.59 | 46.01 | 7.76 | 3 |
+| 对象（保守修正候选，无滤波） | 速度环PM序列 (°) | 对应增益交越 (Hz) | 速度环GM序列 (dB) | 对应相位交越 (Hz) | 位置环PM (°) |
+|---|---|---|---|---|---:|
+| nominal_cold | 62.41 / −175.13 / 39.13 | 11.93 / 64.77 / 84.99 | 10.05 / 44.18 | 122.55 / 824.54 | 88.82 |
+| heavy_load_cold | 59.22 / −166.25 / 40.71 | 8.87 / 58.48 / 81.97 | 10.26 / 44.19 | 122.98 / 824.71 | 88.26 |
+| heavy_load_hot | 59.40 / −162.24 / 41.35 | 8.83 / 54.94 / 78.88 | 10.46 / 44.19 | 122.22 / 824.64 | 88.17 |
+| three_mode_reference | 59.96 / −142.84 / 54.84 | 9.23 / 35.55 / 52.12 | 10.58 / 44.19 | 126.32 / 824.55 | 88.41 |
 
-在这组人工定义对象和延迟下，重载模型是位置外环相对薄弱的工况；aggressive_reference在重载冷态的PM约14.97°、GM约2.98 dB，而conservative_candidate分别约36.81°和6.54 dB。三惯量对象的速度环检测到3个增益交越，说明只报告单一交越会丢失频率特征。跨0、0.5、1 ms和四种对象扫描时，两候选的最小位置环PM/GM分别约14.97°/2.98 dB和36.81°/6.54 dB。该结果只说明合成对象集合中的候选比较，不构成真实鲁棒稳定保证。
+此表使用修正刚体惯量后的conservative_corrected候选、1 ms反馈延迟等效模型，且未启用滤波器。速度环存在多个增益交越，故PM序列必须与对应交越频率配对阅读；出现负的次级PM值不能脱离Nyquist绕数、开环右半平面极点和完整闭环极点直接判定内部稳定性。完整两套控制器×四对象×四种滤波组合的交越记录见[32行环路裕度CSV](../../resouces/12-control-and-machining-algorithms/servo-cascade-loop-margin-envelope.csv)。滤波器启用后的影响及外部扰动差异见[前馈/滤波联合专题](servo-feedforward-notch-lowpass-co-design.md)。这些频域数值仍是连续机械对象、数字滤波响应与等效延迟组合的SISO近似，不构成实机鲁棒稳定保证。
 
 ## 4. 极点和非线性时域结果
 
 连续时间增广模型在零速工作点做局部极点检查；所列模型下主导极点实部为负。但该检查排除采样/计算延迟、摩擦非线性和饱和，不能证明含延迟、限幅系统的全局稳定。
 
-下表为conservative_candidate的非线性时域结果，实际反馈延迟1.0 ms；位置阶跃在0.05 s施加，负载扰动在0.40～0.70 s加入。稳定时间用阶跃后±2%误差带定义，饱和比例按阶跃后的样本统计。
+下表为conservative_corrected的非线性时域结果，使用修正刚体总惯量、两个0.5 ms反馈缓存样本（1 ms延迟）；位置阶跃在0.05 s施加，负载扰动在0.40～0.70 s加入。稳定时间用阶跃后±2%误差带定义，饱和比例按阶跃后的样本统计。
 
 | 对象 | 位置阶跃 (rad) | 超调 (%) | 稳定时间 (s) | 阶跃后转矩饱和占比 (%) | 最大耦合扭转角 (rad) |
 |---|---:|---:|---:|---:|---:|
-| nominal_cold | 0.12 | 12.33 | 0.8815 | 0.00 | 0.000487 |
-| nominal_cold | 0.25 | 6.02 | 0.8610 | 0.00 | 0.000646 |
-| heavy_load_cold | 0.12 | 14.78 | 0.9125 | 0.00 | 0.000551 |
-| heavy_load_cold | 0.25 | 8.51 | 0.9195 | 1.83 | 0.000733 |
-| heavy_load_hot | 0.12 | 14.41 | 0.9175 | 0.00 | 0.000613 |
-| heavy_load_hot | 0.25 | 8.16 | 0.9205 | 0.93 | 0.000815 |
-| three_mode_reference | 0.12 | 11.51 | 0.9060 | 0.00 | 0.000769 |
-| three_mode_reference | 0.25 | 5.24 | 0.8955 | 0.00 | 0.001023 |
+| nominal_cold | 0.12 | 2.16 | 0.7525 | 1.90 | 0.000832 |
+| nominal_cold | 0.25 | 0.94 | 0.4995 | 2.93 | 0.000832 |
+| heavy_load_cold | 0.12 | 2.31 | 0.7645 | 2.31 | 0.000943 |
+| heavy_load_cold | 0.25 | 1.00 | 0.5070 | 4.14 | 0.000943 |
+| heavy_load_hot | 0.12 | 2.31 | 0.7680 | 2.38 | 0.001051 |
+| heavy_load_hot | 0.25 | 1.01 | 0.5070 | 4.28 | 0.001051 |
+| three_mode_reference | 0.12 | 2.46 | 0.7785 | 2.00 | 0.001322 |
+| three_mode_reference | 0.25 | 1.08 | 0.5060 | 3.55 | 0.001322 |
 
-0.25 rad较大阶跃与负载扰动同时存在时，重载冷态/热态分别出现约1.83%/0.93%的转矩饱和样本；0.12 rad阶跃案例没有转矩饱和。反算抗积分饱和可以限制积分器持续累积，但不意味着任意限幅、限位或长时间负载下仍稳定。有限仿真时间也不能证明任意输入稳定。
+修正模型下所有对象/阶跃案例均出现短时转矩限幅；0.25 rad阶跃的重载冷态/热态饱和比例约4.14%/4.28%，0.12 rad阶跃约2.31%/2.38%。反算抗积分饱和可限制积分状态持续累积，但不意味着任意限幅、限位或长时间负载下仍稳定。有限时域仿真也不能证明任意输入稳定。
 
-完整的24条环路裕度扫描和24条时域结果由[仿真脚本](../../resouces/12-control-and-machining-algorithms/servo-cascade-control-robustness-simulation.py)生成；仓库同时保存1 ms延迟下摘要CSV：[环路裕度](../../resouces/12-control-and-machining-algorithms/servo-cascade-loop-margin-envelope.csv)与[阶跃响应](../../resouces/12-control-and-machining-algorithms/servo-cascade-step-response-envelope.csv)。
+完整的32条环路裕度扫描、8条修正阶跃结果和前馈/滤波联合对照由[仿真脚本](../../resouces/12-control-and-machining-algorithms/servo-cascade-control-robustness-simulation.py)生成；仓库同时保存1 ms延迟下摘要CSV：[环路裕度](../../resouces/12-control-and-machining-algorithms/servo-cascade-loop-margin-envelope.csv)与[阶跃响应](../../resouces/12-control-and-machining-algorithms/servo-cascade-step-response-envelope.csv)。
 
 ## 5. 工程闭环建议
 
