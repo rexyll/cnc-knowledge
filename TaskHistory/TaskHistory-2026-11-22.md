@@ -695,3 +695,11 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 官方来源：GB/T 37786-2019（https://std.samr.gov.cn/gb/search/gbDetailed?id=YPRlHxPZwQs%3D&mode=p）；GB/T 33160-2016（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D81749D3A7E05397BE0A0AB82A）；20260141-T-605（https://std.samr.gov.cn/gb/search/gbDetailed?id=49FD1852C812C31FE06397BE0A0A1304）；20262037-T-605（https://std.samr.gov.cn/gb/search/gbDetailed?id=511EEE661D8D9F8CE06397BE0A0A6C96）；GB/T 5216-2014（https://std.samr.gov.cn/gb/search/gbDetailed?id=P8OJDirzlQg%3D&mode=p）；20260929-T-605（https://std.samr.gov.cn/gb/search/gbDetailed?id=4C30F07BDC59BF1CE06397BE0A0A1DC6）；GB/T 3203-2016（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D8156ED3A7E05397BE0A0AB82A）；GB/T 33161-2016（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D816D0D3A7E05397BE0A0AB82A）；GB/T 34889-2017（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D822B1D3A7E05397BE0A0AB82A）；GB/T 34882-2017（https://std.samr.gov.cn/gb/search/gbDetailed?id=xMl4lHY0Ogs%3D&mode=p）；GB/T 16924-2008（https://std.samr.gov.cn/gb/search/gbDetailed?id=q1Hv1bJztgk%3D&mode=p）；20251401-T-469（https://std.samr.gov.cn/gb/search/gbDetailed?id=3495F17D86B33675E06397BE0A0A0E61）。
 - 未下载或归档标准全文/修订草案；未录入齿轮钢牌号成分、洁净度、淬透性带数值、渗碳层深度、硬度、金相组织或疲劳寿命保证值；未录入任何热处理温度/时间/介质/工艺窗口；未创建MAT实体或具体机床齿轮BOM关系。
 - CH04-T002保持IN_PROGRESS；本轮仅完成标准目录入口、版本状态和对象边界核验。所在分支：main；待提交及CI验收。
+
+
+### CH04-T002 — 齿轮钢、淬透性结构钢与热处理标准扩展CI验收补录（2026-11-22）
+
+- 内容提交：[1d57d3e50efb0ddb1061fd2a366813a4ffe5d634](https://github.com/rexyll/cnc-knowledge/commit/1d57d3e50efb0ddb1061fd2a366813a4ffe5d634)，所在分支：main。
+- GitHub Actions Run [44988157612](https://github.com/rexyll/cnc-knowledge/actions/runs/44988157612)：success；5项单元测试通过；知识质量严格检查通过。
+- 本次CI日志中的统计以workflow实际输出为准；自动门禁不验证外部标准链接实时可用性、标准全文许可、计划后续进度或具体零件批次符合性。
+- CH04-T002保持IN_PROGRESS：本轮只完成齿轮钢、淬透性结构钢、渗碳/感应/淬火回火标准目录及版本状态核验，没有取得标准全文，也未录入牌号性能值和热处理工艺参数。
