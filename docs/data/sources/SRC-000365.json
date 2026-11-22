@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000365",
+  "source_type": "academic_paper",
+  "title": "Dynamic analysis of geometrically non-linear three-dimensional beams under moving mass",
+  "publisher": "Elsevier, Journal of Sound and Vibration, Volume 413 (2018), pp. 354–367",
+  "author": "Dejan Zupan; Eva Zupan",
+  "url": "https://doi.org/10.1016/j.jsv.2017.10.013",
+  "version": "Volume 413, 2018; DOI 10.1016/j.jsv.2017.10.013",
+  "published_on": "2018-01-20",
+  "accessed_on": "2026-11-23",
+  "locator": "Abstract and introduction: coupled structural and moving-particle equations; path coordinate introduced as an additional unknown and adapted to structural deformation",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports the methodological distinction between prescribed-path moving load and a coupled moving-particle/structure model. Its geometrically nonlinear beam/FEM formulation is not a parameter source or direct validation for the reduced CNC gantry model.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

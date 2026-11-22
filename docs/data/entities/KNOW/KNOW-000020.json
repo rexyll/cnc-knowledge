@@ -1,13 +1,13 @@
 {
   "entity_id": "KNOW-000020",
   "entity_type": "knowledge_article",
-  "canonical_name": "龙门连续移动负载时变模型与MIMO多回路disk margin",
-  "english_name": "Time-varying moving-payload model and MIMO multiloop disk margin for a gantry",
+  "canonical_name": "龙门移动负载时变动力学与MIMO多回路disk margin",
+  "english_name": "Time-varying moving-payload dynamics and MIMO multiloop disk margin for a gantry",
   "aliases": [
     "龙门移动质量时变模型",
     "移动负载拉格朗日模型与多回路裕度"
   ],
-  "description": "从移动点动能和拉格朗日方程推导规定轨迹下的时变广义质量矩阵与速度/加速度运输项，并定义双驱两通道MIMO multiloop disk-margin端口及软件计算边界。",
+  "description": "建立规定轨迹移动负载的时变广义质量矩阵、移动点输运项与模型比较，并解析推导将路径坐标提升为自由度后的横梁—移动轴双向耦合质量矩阵、轴向方程、驱动接口和能量平衡；同时定义双驱MIMO多回路disk-margin端口和软件计算边界。",
   "primary_chapter": "CH12",
   "related_chapters": [
     "CH08",
@@ -31,7 +31,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-22T23:00:00+08:00",
-  "updated_at": "2026-11-22T23:00:00+08:00",
+  "updated_at": "2026-11-23T00:35:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -40,21 +40,28 @@
     "SRC-000361",
     "SRC-000362",
     "SRC-000363",
-    "SRC-000364"
+    "SRC-000364",
+    "SRC-000365",
+    "SRC-000366",
+    "SRC-000367"
   ],
   "attributes": {
     "document_path": "docs/12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md",
-    "article_version": "0.1",
-    "reviewed_on": "2026-11-22",
-    "content_scope": "规定轨迹移动负载的时变质量矩阵、移动点速度/加速度链式项、拉格朗日输运项、方程数值核验，以及PC/CP端口的MIMO multiloop disk-margin软件接口",
+    "article_version": "0.2",
+    "reviewed_on": "2026-11-23",
+    "content_scope": "规定轨迹移动负载的时变质量矩阵、速度/加速度链式项和18组数值比较；自由路径坐标q/s双向耦合质量矩阵与拉格朗日方程的解析推导、移动轴驱动接口和能量平衡；PC/CP端口的MIMO multiloop disk-margin软件接口",
     "article_status": "synthetic_method_study",
     "model_data_status": "synthetic_only",
-    "moving_load_model": "prescribed_trajectory_one_way_coupled_time_varying_reduced_order",
+    "moving_load_model": "prescribed_trajectory_numerical_model_plus_free_path_analytical_extension_not_numerically_implemented",
     "multiloop_disk_margin_software_interface_implemented": true,
     "multiloop_disk_margin_numeric_result_computed": false,
     "hardware_validation": false,
     "resource_script_verified": false,
-    "csv_origin": "reference_calculation_export"
+    "csv_origin": "reference_calculation_export",
+    "free_path_coordinate_equations_derived": true,
+    "free_path_coordinate_numerically_implemented": false,
+    "actuator_electrical_dynamics_included": false,
+    "bidirectional_motion_structure_validation": false
   },
-  "notes": "移动负载轨迹是规定输入，不含负载执行轴和横梁结构双向动力学；disk-margin接口未因缺少Slycot而生成数值裕度。合成数据不代表机床性能、精度或安全证据。"
+  "notes": "现有18组数值仿真仍使用预设s(t)，不含负载执行轴自由度；第7节只完成q/s联立方程的解析推导，未实现数值积分、驱动器电气动态或双向耦合验证。disk-margin接口尚未生成数值裕度。合成数据不代表机床性能、精度或安全证据。"
 }

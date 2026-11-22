@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000366",
+  "source_type": "academic_paper",
+  "title": "Planar nonlinear dynamics of a hanging geometrically exact beam with a moving mass",
+  "publisher": "Elsevier, International Journal of Solids and Structures, Volume 325 (2026)",
+  "author": "Kush Kumar; Shakti S. Gupta",
+  "url": "https://doi.org/10.1016/j.ijsolstr.2025.113704",
+  "version": "Volume 325, 2026; Article 113704; DOI 10.1016/j.ijsolstr.2025.113704",
+  "published_on": null,
+  "accessed_on": "2026-11-23",
+  "locator": "Abstract and conclusions: Lagrangian formulation for a geometrically exact beam with a moving mass; moving coordinate and nonlinear finite-element solution",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "A recent geometrically exact beam study; its prescribed motion and hanging-beam configuration differ from the present gantry carriage model. Used as a methodological reference only.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

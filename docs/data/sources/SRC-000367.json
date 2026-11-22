@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000367",
+  "source_type": "academic_paper",
+  "title": "Dynamic response of a non-classically damped beam with general boundary conditions subjected to a moving mass-spring-damper system",
+  "publisher": "Elsevier, International Journal of Mechanical Sciences, Volume 185 (2020), Article 105877",
+  "author": "Benjamin Hirzinger; Christoph Adam; Patrick Salcher",
+  "url": "https://doi.org/10.1016/j.ijmecsci.2020.105877",
+  "version": "Volume 185, 2020; Article 105877; DOI 10.1016/j.ijmecsci.2020.105877",
+  "published_on": "2020-11-01",
+  "accessed_on": "2026-11-23",
+  "locator": "Abstract and conclusions: dynamic substructuring and generalized corresponding assumption for beam/moving MSD-system coupling; arrival/departure/contact-transition handling",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": "Publisher page identifies the article as open access under a Creative Commons licence; verify the exact licence terms at the publisher before redistribution.",
+  "notes": "A moving mass-spring-damper/contact coupling reference. It does not supply CNC rail, roller or gantry parameter values.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}
