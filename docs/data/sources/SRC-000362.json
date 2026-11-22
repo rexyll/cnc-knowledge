@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000362",
+  "source_type": "academic_paper",
+  "title": "Vibrations of beams and rods carrying a moving mass",
+  "publisher": "IOP Publishing, Journal of Physics: Conference Series 721 (2016), 012016",
+  "author": "X. W. Zhao; G. H. M. van der Heijden; Z. D. Hu",
+  "url": "https://doi.org/10.1088/1742-6596/721/1/012016",
+  "version": "2016; DOI: 10.1088/1742-6596/721/1/012016",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "pp. 1–2; Eq. (1) moving-point displacement velocity/acceleration total derivatives; Eq. (3) reduced variable-coefficient equations",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": "Paper states a Creative Commons Attribution 3.0 licence; consult publisher licence text before redistribution.",
+  "notes": "Moving-mass beam/rod theory; authors distinguish prescribed mass motion from eventual two-way mass/rod coupling.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}

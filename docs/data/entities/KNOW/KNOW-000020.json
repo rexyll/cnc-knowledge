@@ -1,0 +1,60 @@
+{
+  "entity_id": "KNOW-000020",
+  "entity_type": "knowledge_article",
+  "canonical_name": "龙门连续移动负载时变模型与MIMO多回路disk margin",
+  "english_name": "Time-varying moving-payload model and MIMO multiloop disk margin for a gantry",
+  "aliases": [
+    "龙门移动质量时变模型",
+    "移动负载拉格朗日模型与多回路裕度"
+  ],
+  "description": "从移动点动能和拉格朗日方程推导规定轨迹下的时变广义质量矩阵与速度/加速度运输项，并定义双驱两通道MIMO multiloop disk-margin端口及软件计算边界。",
+  "primary_chapter": "CH12",
+  "related_chapters": [
+    "CH08",
+    "CH14"
+  ],
+  "classification_path": [
+    "数控机床运动控制",
+    "多轴与同步控制",
+    "龙门移动负载时变动力学与鲁棒性"
+  ],
+  "tags": [
+    "CH12",
+    "CH08",
+    "双驱龙门",
+    "移动质量",
+    "时变系统",
+    "Lagrange",
+    "MIMO",
+    "multiloop disk margin"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-22T23:00:00+08:00",
+  "updated_at": "2026-11-22T23:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000359",
+    "SRC-000361",
+    "SRC-000362",
+    "SRC-000363",
+    "SRC-000364"
+  ],
+  "attributes": {
+    "document_path": "docs/12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "规定轨迹移动负载的时变质量矩阵、移动点速度/加速度链式项、拉格朗日输运项、方程数值核验，以及PC/CP端口的MIMO multiloop disk-margin软件接口",
+    "article_status": "synthetic_method_study",
+    "model_data_status": "synthetic_only",
+    "moving_load_model": "prescribed_trajectory_one_way_coupled_time_varying_reduced_order",
+    "multiloop_disk_margin_software_interface_implemented": true,
+    "multiloop_disk_margin_numeric_result_computed": false,
+    "hardware_validation": false,
+    "resource_script_verified": false,
+    "csv_origin": "reference_calculation_export"
+  },
+  "notes": "移动负载轨迹是规定输入，不含负载执行轴和横梁结构双向动力学；disk-margin接口未因缺少Slycot而生成数值裕度。合成数据不代表机床性能、精度或安全证据。"
+}
