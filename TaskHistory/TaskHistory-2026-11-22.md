@@ -337,3 +337,53 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - CH03覆盖度提升为2级foundational：1篇知识文章、14个主归属实体（11 SUBSYS + 1 KNOW + 2 ASSET；5个TERM由CH01主归属并由本章引用）、36条关系（10 HAS_SUBSYSTEM + 8 CONTROLS + 16 DERIVED_FROM索引 + 2 HAS_ASSET）、5条去重来源、2项SVG资源文件。
 - 所在分支：main。完成时间：2026-11-22T12:42:00+08:00。架构正文与实体关系提交SHA：[8e643f801d2f896a31a6e2ddd8dea9675455c525](https://github.com/rexyll/cnc-knowledge/commit/8e643f801d2f896a31a6e2ddd8dea9675455c525)；术语主归属/覆盖矩阵校准提交SHA：[8963ac033c0192d10d92e6d3501a976571bd5f72](https://github.com/rexyll/cnc-knowledge/commit/8963ac033c0192d10d92e6d3501a976571bd5f72)；SVG资源归档提交SHA：[1e8304fa2ec7726ba408c4224fbc2b6646debcda](https://github.com/rexyll/cnc-knowledge/commit/1e8304fa2ec7726ba408c4224fbc2b6646debcda)。GitHub Actions Run 44983319094、44983367599、44983452904均success；5项单元测试通过，严格知识检查PASS（0 errors）。最终结构统计：116实体、212关系、76来源、103个Markdown文件、2项SVG资源、280条内部链接。
 - 自动CI验证Schema、ID唯一性、来源/关系引用、Markdown内部链接和严格质量规则；离线检查不替代外部URL实时检查、具体机型拆机/BOM/接线核验或安全验证。
+
+
+## CH03-T002 — 主要机械结构研究与验收记录
+
+### 任务完成信息
+
+| 项目 | 记录 |
+|---|---|
+| 任务ID | CH03-T002 |
+| 任务名称 | 整理主要机械结构 |
+| 完成时间（UTC+08:00） | 2026-11-22T12:15:36+08:00 |
+| 分支 | `main` |
+| 任务状态 | DONE |
+| 主要内容提交 | [f749fa0](https://github.com/rexyll/cnc-knowledge/commit/f749fa075cc58cf4332d9d69533c8977d3e685ac) |
+| 术语/覆盖度校准 | [aa1d7b3](https://github.com/rexyll/cnc-knowledge/commit/aa1d7b3d6f4a740b67e97f186d1746f74bf6fa0b) |
+| 用户提供PNG资源入库审查 | [1249982](https://github.com/rexyll/cnc-knowledge/commit/124998227e2be4945b69dd5b4e35b849d00c4a59) |
+| CI验收 | [GitHub Actions Run 44984206408](https://github.com/rexyll/cnc-knowledge/actions/runs/44984206408) — success |
+
+### 研究范围与主要交付
+
+- 新增正文 `docs/03-system-architecture-and-mechanics/major-mechanical-structures.md`（KNOW-000013），覆盖床身/底座、立柱/横梁、滑鞍/滑枕/主轴箱、工作台/托盘/回转工作台、滚动/滑动/静压导向、滚珠丝杠、齿轮齿条、其他直线驱动、联轴器和支承轴承。
+- 梳理结构件的承载/运动关系、典型力流、安装基准、机械接口、导向与传动的方案边界；明确结构布局因机型变化，不将通用示意误作具体机型BOM或装配图。
+- 建立关键参数字典和测量口径：行程、导轨跨距/滑块间距、丝杠导程、轴向/径向刚度、预压、回差、几何误差、跳动、热漂移及定位精度。明确必须同时记录测点、基准、测量长度、温度、暖机、载荷、仪器和标准版本。
+- 复用CH02既有ISO 230-1:2012、ISO 230-2:2014来源；新增SRC-000077～SRC-000083，包含ISO 8636-1:2026官方范围页，以及THK、SKF、mayr和Bosch Rexroth原厂技术资料。原厂资料只支持对应产品族声明，不推断特定OEM采用、兼容性或库存。
+- 新增CH01主归属共用术语TERM-000041～TERM-000049，并在术语表中登记；CH03正文引用其ID，不另造重复术语。
+- 新增原创SVG资源：`mechanical-structure-overview.svg`、`linear-feed-axis.svg`；分别建立ASSET-000003、ASSET-000004和HAS_ASSET关系REL-000214、REL-000215。
+- 新增知识上下文关系REL-000213（KNOW-000013 DERIVED_FROM KNOW-000012），其语义仅为专题导航/上下文，不表示具体机型组成。
+- 仓库所有者在本任务执行期间另行上传 `Block Diagram of CNC Machine.png`（提交5b6285f）。已登记为ASSET-000005，但由于图片存在疑似拼写/识别错误，且作者、出处和权利状态未确认，状态保持candidate/in_review；暂不在正文中作为技术证据引用。
+- 更新CH03章节README、总目录、CH03字段字典、资源README/ASSET-INDEX、章节TaskPlan、覆盖矩阵和根TaskPlan。
+
+### 来源与技术边界
+
+- ISO 8636-1:2026只适用于其规定的固定双立柱、移动工作台固定横梁桥式铣床范围，不能外推至所有龙门/单柱/移动横梁布局。
+- ISO 230-1与ISO 230-2用于区分几何精度和数控轴定位精度/重复定位测试；不以单个导轨或丝杠产品参数代替整机验收。
+- THK、SKF、mayr、Bosch Rexroth资料均标记为原厂声明/官方技术文档；不将其产品特征或示例数值泛化到其他品牌和型号。
+- 没有录入未经来源核实的机床尺寸、材料牌号、载荷限值、安装公差、产品型号或OEM BOM；标准全文和厂商受版权保护的完整资料均未复制。
+- 维护与装配章节仅给出工程检查关注点；实际拆装、预紧、校准、吊装及维修必须遵循具体机床手册、风险评估和能量隔离/LOTO程序。
+
+### 覆盖度与质量验收
+
+- CH03：2篇技术文章；17个已核验主归属实体（11个SUBSYS、2个KNOW、4个已核验ASSET）；另有1个待审查ASSET-000005；39条关系；14条去重来源；5项资源文件。
+- CH01：新增9个主归属术语实体；覆盖矩阵更新为35个主归属实体、32条去重来源。
+- 全库：129条实体、215条关系、83条来源；104个Markdown文件、289条内部链接。
+- GitHub Actions Run 44984206408：5项单元测试全部通过；严格知识质量检查PASS（0 errors）；实体/关系/来源引用与资源路径检查通过。
+- 质量门禁检查本地结构和引用完整性，不验证外部URL的实时可访问性，也不构成实机性能验证。
+
+### 后续任务
+
+- CH03-T003：分析关键机械单元（主轴、进给轴、导轨丝杠、转台、刀库和辅助系统），依赖本任务及CH04。
+- 用户提供的 `Block Diagram of CNC Machine.png`：待核对原始出处、版权/许可和图中文字；未完成前不引用、不编辑原图、不作为技术依据。
