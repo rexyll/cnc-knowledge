@@ -106,6 +106,9 @@
 - **章节接口：** CH04负责零件/机械集成和试验数据身份；CH08负责伺服环路、采样和驱动参数；CH12负责扰动估计/补偿算法；CH14负责传感器、校准和不确定度；CH18负责故障树和根因闭环。当前只建立诊断框架，没有真实机床日志、扭矩/速度波形或实机测试结果。
 - **状态：** CH04-T003继续IN_PROGRESS；后续需要结合CH08/CH12/CH14/CH18实际专题进一步做配置和根因证据闭环。
 
+
+- **内容CI验收：** 内容提交 `7af544bc053700a0a87ca7ab568f7f2f6e7b15c0`，GitHub Actions [Run 45012453899](https://github.com/rexyll/cnc-knowledge/actions/runs/45012453899) success；5/5单元测试通过，strict lint PASS（0 errors）。
+- **计划/历史/根统计补录：** 最终补录提交 `1c8a43e8350477cc87a86666f67f8f728e8d3a32`，GitHub Actions [Run 45012521079](https://github.com/rexyll/cnc-knowledge/actions/runs/45012521079) success；5/5单元测试通过，strict lint PASS（0 errors）。最终统计：22章、110个Markdown文件、365条内部链接、140条实体、240条关系、319条来源、571处正文来源引用。
 ### CH04-T004 — 建立零件规格和替代关系
 
 - **目标：** 整理部件规格、精度等级、接口尺寸、寿命指标和可替代性约束。
