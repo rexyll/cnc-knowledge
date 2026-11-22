@@ -8,11 +8,11 @@
   "version": "GB/T 700-2006",
   "published_on": "2006-11-01",
   "accessed_on": "2026-11-22",
-  "locator": "官方标准详情/检索结果；仅核验标准元数据和目录状态，不复制标准全文。",
+  "locator": "官方标准详情页与检索结果；标准状态现行，标记采标，页面明确因版权保护不提供文本阅读；仅核验元数据，不复制标准全文。",
   "language": "zh-CN",
   "rights_status": "link_only",
   "license_or_permission": null,
-  "notes": "官方目录显示现行；产品形态、厚度和交货条件仍须核对。",
+  "notes": "非等效采用ISO 630:1995；全部代替GB/T 700-1988。官方详情页明确采标版权限制。结构钢新标准计划20251168-T-605处于批准阶段，不代表本标准已被替代。",
   "authority_tier": "A",
   "evidence_kind": "normative_requirement"
 }

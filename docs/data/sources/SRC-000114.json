@@ -8,11 +8,11 @@
   "version": "GB/T 3077-2015",
   "published_on": "2015-12-10",
   "accessed_on": "2026-11-22",
-  "locator": "官方标准详情/检索结果；仅核验标准元数据和目录状态，不复制标准全文。",
+  "locator": "官方标准检索结果；状态现行，GB/T 3077-1999废止；本轮未核验具体全文下载入口。",
   "language": "zh-CN",
   "rights_status": "link_only",
   "license_or_permission": null,
-  "notes": "官方目录显示现行；具体牌号、产品形态和热处理状态要求待全文核验。",
+  "notes": "官方检索结果未标记采标；具体牌号、产品形态、尺寸和热处理状态要求仍待全文核验。",
   "authority_tier": "A",
   "evidence_kind": "normative_requirement"
 }

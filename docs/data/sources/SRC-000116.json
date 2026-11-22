@@ -8,11 +8,11 @@
   "version": "GB/T 3880.1-2023",
   "published_on": "2023-09-07",
   "accessed_on": "2026-11-22",
-  "locator": "官方标准详情/检索结果；仅核验标准元数据和目录状态，不复制标准全文。",
+  "locator": "官方标准详情页；状态现行，2024-04-01实施，页面列有在线预览/下载入口；本轮仅核验元数据与入口存在，未提取全文。",
   "language": "zh-CN",
   "rights_status": "link_only",
   "license_or_permission": null,
-  "notes": "官方目录显示现行；需结合合金成分、状态和适用分册核对。",
+  "notes": "板带材一般要求；需与GB/T 3190-2020及GB/T 3880.2-2024、GB/T 3880.3-2024配套核对。",
   "authority_tier": "A",
   "evidence_kind": "normative_requirement"
 }

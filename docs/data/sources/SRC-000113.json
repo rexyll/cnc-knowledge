@@ -8,11 +8,11 @@
   "version": "GB/T 1591-2018",
   "published_on": "2018-05-14",
   "accessed_on": "2026-11-22",
-  "locator": "官方标准详情/检索结果；仅核验标准元数据和目录状态，不复制标准全文。",
+  "locator": "官方标准详情页；状态现行，页面列有在线预览/下载入口；本轮仅核验元数据与入口存在，未提取全文。",
   "language": "zh-CN",
   "rights_status": "link_only",
   "license_or_permission": null,
-  "notes": "官方目录显示现行；GB/T 1591-2008显示废止。具体牌号和性能条款待全文核录。",
+  "notes": "GB/T 1591-2008已废止；本轮未逐表核对钢级、厚度分档、交货状态和性能值。",
   "authority_tier": "A",
   "evidence_kind": "normative_requirement"
 }
