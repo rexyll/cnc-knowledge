@@ -682,3 +682,16 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - Linter统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、139条来源；正文来源引用数量以本次workflow日志为准。
 - 自动门禁验证仓库结构、数据记录、来源引用和内部链接；不验证外部URL实时可访问性、标准全文许可、修订计划后续进度或材料批次符合性。
 - CH04-T002保持IN_PROGRESS；本轮仅完成轴承钢材料族/产品形态标准入口与版本关系核验，未完成牌号/性能数据库。
+
+
+### CH04-T002 — 齿轮钢、淬透性结构钢与热处理标准扩展（2026-11-22）
+
+- 新增SRC-000140～SRC-000151，基于国家标准官方目录核验齿轮钢、保证淬透性结构钢和钢件热处理标准。
+- GB/T 37786-2019《数控机床用齿轮钢》及GB/T 33160-2016《风力发电用齿轮钢》均仍为现行标准；20260141-T-605《齿轮钢》修订项目正在起草，拟全部代替这两项标准。20262037-T-605《减速器用齿轮钢》是独立的新制定项目，2026-04-28下达，项目正在起草；不得与20260141修订项目混为一谈。
+- GB/T 5216-2014《保证淬透性结构钢》仍为现行版；20260929-T-605修订计划拟全部代替本版。未获得新版正式发布信息前，不提前切换现行版本。
+- 更新20251191-T-605《渗碳轴承钢》修订计划状态为官方目录显示“正在批准”，拟全部代替GB/T 3203-2016《渗碳轴承钢》和GB/T 33161-2016《汽车轴承用渗碳钢》。两项旧版在官方目录中仍标记现行，故保留当前版本状态。
+- 新增热处理工艺标准入口：GB/T 34889-2017《钢件的渗碳与碳氮共渗淬火回火》、GB/T 34882-2017《钢铁件的感应淬火与回火》、GB/T 16924-2008《钢件的淬火与回火》。其中20251401-T-469修订计划官方目录显示正在批准，拟全部代替GB/T 16924-2008。
+- 更新材料数据库2.8节和标准映射CSV，明确齿轮钢产品标准、淬透性钢种标准、热处理工艺标准、修订项目之间的边界；更新CH04 TaskPlan、章节README、资源README、根TaskPlan。
+- 官方来源：GB/T 37786-2019（https://std.samr.gov.cn/gb/search/gbDetailed?id=YPRlHxPZwQs%3D&mode=p）；GB/T 33160-2016（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D81749D3A7E05397BE0A0AB82A）；20260141-T-605（https://std.samr.gov.cn/gb/search/gbDetailed?id=49FD1852C812C31FE06397BE0A0A1304）；20262037-T-605（https://std.samr.gov.cn/gb/search/gbDetailed?id=511EEE661D8D9F8CE06397BE0A0A6C96）；GB/T 5216-2014（https://std.samr.gov.cn/gb/search/gbDetailed?id=P8OJDirzlQg%3D&mode=p）；20260929-T-605（https://std.samr.gov.cn/gb/search/gbDetailed?id=4C30F07BDC59BF1CE06397BE0A0A1DC6）；GB/T 3203-2016（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D8156ED3A7E05397BE0A0AB82A）；GB/T 33161-2016（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D816D0D3A7E05397BE0A0AB82A）；GB/T 34889-2017（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D822B1D3A7E05397BE0A0AB82A）；GB/T 34882-2017（https://std.samr.gov.cn/gb/search/gbDetailed?id=xMl4lHY0Ogs%3D&mode=p）；GB/T 16924-2008（https://std.samr.gov.cn/gb/search/gbDetailed?id=q1Hv1bJztgk%3D&mode=p）；20251401-T-469（https://std.samr.gov.cn/gb/search/gbDetailed?id=3495F17D86B33675E06397BE0A0A0E61）。
+- 未下载或归档标准全文/修订草案；未录入齿轮钢牌号成分、洁净度、淬透性带数值、渗碳层深度、硬度、金相组织或疲劳寿命保证值；未录入任何热处理温度/时间/介质/工艺窗口；未创建MAT实体或具体机床齿轮BOM关系。
+- CH04-T002保持IN_PROGRESS；本轮仅完成标准目录入口、版本状态和对象边界核验。所在分支：main；待提交及CI验收。
