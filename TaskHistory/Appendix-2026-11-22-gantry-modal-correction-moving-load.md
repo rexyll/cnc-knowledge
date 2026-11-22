@@ -126,3 +126,11 @@ Mdot=mp*(Phi_s.T*Phi+Phi.T*Phi_s)*s_dot
 - GitHub Actions [Run 45037385127](https://github.com/rexyll/cnc-knowledge/actions/runs/45037385127) completed/success；5/5单元测试通过；strict lint PASS（0 errors）。
 - 该次CI统计：22章、126个Markdown文件、406条内部链接、143条实体记录、240条关系记录、364条来源记录、649处正文来源引用。
 - 根TaskPlan本次将补入本研究入口和本历史附录两条导航链接，统计值按下一次CI的实际扫描复核。
+
+
+## 8. 根统计校准与最终CI验收
+
+- 上一轮根TaskPlan补入研究正文和历史附录导航后，原先按人工差分预估内部链接408条；实际CI扫描为407条。已据实校正根TaskPlan，避免保留估算值。
+- 校准提交：054ec259953010f0eb93cf08bee20d5eab7a3c54。
+- GitHub Actions [Run 45037565820](https://github.com/rexyll/cnc-knowledge/actions/runs/45037565820) success；5/5单元测试通过；strict lint PASS（0 errors）。
+- 最终统计：22章、126个Markdown文件、407条内部链接、143条实体、240条关系、364条来源、649处正文来源引用。
