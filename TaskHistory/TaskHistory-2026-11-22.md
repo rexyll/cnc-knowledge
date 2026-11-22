@@ -712,3 +712,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 在材料数据库新增2.9节和2.10节，分别定义丝杠轴、螺母、滚动体、导轨、滑块的材料数据采集边界，并区分钢材/材料标准、部件产品标准、功能可靠性、精度保持性、额定载荷和疲劳寿命试验标准。
 - 更新材料标准映射CSV、CH04章节README、资源README、章节TaskPlan和根TaskPlan。未下载标准全文或计划草案；未录入具体牌号、成分、硬度、渗层深度、疲劳寿命或热处理工艺数值；未创建MAT实体或机床实际BOM关系。
 - 所在分支：main。内容提交SHA和CI结果待补录；CH04-T002保持IN_PROGRESS。
+
+
+### CH04-T002 — 滚珠丝杠与滚动直线导轨标准扩展CI验收补录（2026-11-22）
+
+- 内容提交：[bb23ba01190f33ddb2fc94154666f2f3ac97dd3c](https://github.com/rexyll/cnc-knowledge/commit/bb23ba01190f33ddb2fc94154666f2f3ac97dd3c)，所在分支：main。
+- GitHub Actions Run [44988480508](https://github.com/rexyll/cnc-knowledge/actions/runs/44988480508)：success；5项单元测试全部通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、108个Markdown文件、319条内部链接、140条实体、240条关系、161条来源、331处正文来源引用。
+- 本次CI验证仓库结构、来源记录Schema、数据命名空间、正文来源引用及内部链接；不验证标准全文许可、计划草案内容、材料性能实测或具体机床BOM。
+- CH04-T002保持IN_PROGRESS；本轮仅完成标准计划/目录元数据与数据边界，不代表丝杠/导轨材料牌号及性能数据库已完成。
