@@ -314,12 +314,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 
 - 新增正文：docs/03-system-architecture-and-mechanics/architecture.md，知识实体KNOW-000012，版本1.0。
 - 建立L0加工对象与工艺、L1机械结构与运动执行、L2驱动与能源、L3数控与机床逻辑、L4测量反馈、L5人机交互/制造信息，以及横向安全约束层的通用功能架构。
-- 新增两幅Mermaid架构/运动链图（作为Markdown文本源码，不生成独立图片文件），说明典型加工任务链、运动链、力流及能量/控制/反馈/信息流。
+- 正文内嵌两幅Mermaid架构/运动链文本图，并另行导出两幅原创SVG图，说明典型加工任务链、运动链、力流及能量/控制/反馈/信息流；SVG文件和资源索引均归档在resouces/03-system-architecture-and-mechanics/。
 - 建立10类功能子系统（含抽象整机架构根节点）及15项功能接口关系表，明确接口双方、类别、方向/内容和验证关注点。
 - 新增11条SUBSYS实体（SUBSYS-000001～SUBSYS-000011）和5条TERM实体（TERM-000036～TERM-000040），新增KNOW-000012。
 - 新增10条HAS_SUBSYSTEM关系、8条CONTROLS关系和16条文章/术语DERIVED_FROM索引关系（REL-000177～REL-000210）；所有关系带来源和范围限定。抽象架构关系不代表具体机型BOM、接线或安全设计。
 - 新增来源SRC-000072～SRC-000076：ISO 841:2001标准目录、NISTIR 5331、NIST CAM/CNC集成研究、机床机械接口研究及机床系统标准化建模案例。
-- 新建CH03字段字典；更新CH03 README、docs总目录、GLOSSARY、章节TaskPlan、根TaskPlan、覆盖矩阵和本日历史。
+- 新建CH03字段字典；新增ASSET-000001/000002及REL-000211/000212；建立resouces/03-system-architecture-and-mechanics/ASSET-INDEX.md；更新正文图片引用、KNOW-000012资源字段、CH03 README、docs总目录、GLOSSARY、章节TaskPlan、根TaskPlan、覆盖矩阵和本日历史。
 - 未创建具体机型BOM、实际接线关系、产品参数或安全等级；未下载/复制版权受限的ISO/学术论文全文，新增两幅原创SVG图，归档至resouces/03-system-architecture-and-mechanics/并建立ASSET-INDEX.md；未复制外部受版权保护图片或标准/论文全文。
 
 ### 证据与边界
@@ -335,5 +335,5 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 ### 覆盖度与验收
 
 - CH03覆盖度提升为2级foundational：1篇知识文章、14个主归属实体（11 SUBSYS + 1 KNOW + 2 ASSET；5个TERM由CH01主归属并由本章引用）、36条关系（10 HAS_SUBSYSTEM + 8 CONTROLS + 16 DERIVED_FROM索引 + 2 HAS_ASSET）、5条去重来源、2项SVG资源文件。
-- 所在分支：main。完成时间：2026-11-22T12:30:00+08:00。内容提交SHA：[8e643f801d2f896a31a6e2ddd8dea9675455c525](https://github.com/rexyll/cnc-knowledge/commit/8e643f801d2f896a31a6e2ddd8dea9675455c525)。GitHub Actions Run 44983319094 success；5项单元测试通过，严格知识检查PASS（0 errors）。
+- 所在分支：main。完成时间：2026-11-22T12:42:00+08:00。架构正文与实体关系提交SHA：[8e643f801d2f896a31a6e2ddd8dea9675455c525](https://github.com/rexyll/cnc-knowledge/commit/8e643f801d2f896a31a6e2ddd8dea9675455c525)；术语主归属/覆盖矩阵校准提交SHA：[8963ac033c0192d10d92e6d3501a976571bd5f72](https://github.com/rexyll/cnc-knowledge/commit/8963ac033c0192d10d92e6d3501a976571bd5f72)；SVG资源归档提交SHA：[1e8304fa2ec7726ba408c4224fbc2b6646debcda](https://github.com/rexyll/cnc-knowledge/commit/1e8304fa2ec7726ba408c4224fbc2b6646debcda)。GitHub Actions Run 44983319094、44983367599、44983452904均success；5项单元测试通过，严格知识检查PASS（0 errors）。最终结构统计：116实体、212关系、76来源、103个Markdown文件、2项SVG资源、280条内部链接。
 - 自动CI验证Schema、ID唯一性、来源/关系引用、Markdown内部链接和严格质量规则；离线检查不替代外部URL实时检查、具体机型拆机/BOM/接线核验或安全验证。
