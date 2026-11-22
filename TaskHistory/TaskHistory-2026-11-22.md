@@ -497,3 +497,11 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 获取具体机型授权图纸、BOM和手册后，补充型号级接口/装配基准映射。
 - CH16建立装配/安装专题后映射接口到工序和检验点；CH18建立故障模式库后，将排查假设拆分为有证据的FAULT/CAUSES/RESOLVED_BY关系。
 - CH14建立计量验收专题后补充适用测量方法、仪器和不确定度模型。
+
+### CH04-T001验收信息补录（2026-11-22T12:26:42+08:00）
+
+- 最终内容提交：[502a998988dc5627cdedabfc2a09526365b46f27](https://github.com/rexyll/cnc-knowledge/commit/502a998988dc5627cdedabfc2a09526365b46f27)，所在分支：main。
+- GitHub Actions Run [44985068660](https://github.com/rexyll/cnc-knowledge/actions/runs/44985068660)：success；5项单元测试全部通过；严格知识质量检查PASS（0 errors）。
+- 全库统计：22章、107个Markdown文件、310条内部链接、139个实体、240条关系、97条来源、239处正文来源引用。
+- 首轮两次CI失败是由于误将SRC来源记录建模为实体关系的object；已按数据模型边界移除不合法关系记录，来源保留在KNOW实体source_ids中，最终CI通过。
+- 自动检查验证结构、Schema、ID、来源引用和内部链接；不验证外部URL实时可访问性，也不构成具体机床零件身份、BOM、材料或互换性的实机验证。
