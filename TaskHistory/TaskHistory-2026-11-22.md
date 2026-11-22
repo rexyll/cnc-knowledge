@@ -906,3 +906,11 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - **结果：** 初步识别制造工艺/整机结构/测量验收/装配安装/维护/故障诊断/产品供应链/BOM的知识主归属，提出避免重复维护和无证据推断的链接规则。
 - **限制：** 当前只完成第一轮入口和部分正文审查，不声称所有相关章节已逐段检查；无型号级BOM/图纸/工艺卡/现场数据，未建立实际零件或制造关系。
 - **验收：** 文档链接和质量门禁待CI。
+
+
+### CH04-T003跨章节审查第一轮 CI 验收（2026-11-22）
+
+- 内容提交 [`8c33d38a2ac41f0c96341808a8c3217dc7d48f2b`](https://github.com/rexyll/cnc-knowledge/commit/8c33d38a2ac41f0c96341808a8c3217dc7d48f2b) 的GitHub Actions [Run 45006912824](https://github.com/rexyll/cnc-knowledge/actions/runs/45006912824)：success。
+- 5/5单元测试通过；strict knowledge lint PASS（0 errors）。
+- 本CI只验证仓库结构、来源/关系引用和内部链接等自动规则；跨章节职责矩阵为第一轮桌面审查，尚未逐段审查所有关联正文，未做实机验证。
+- CH04-T003保持IN_PROGRESS。
