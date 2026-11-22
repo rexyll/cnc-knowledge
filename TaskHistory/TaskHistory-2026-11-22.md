@@ -413,3 +413,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - CH03：3篇技术文章、19个主归属实体（11 SUBSYS + 3 KNOW + 5 ASSET）、49条关联关系、21条去重来源、6项资源文件；另有19个CH01主归属术语可跨章引用。
 - 任务完成时间：2026-11-22T12:17:00+08:00；所在分支：main。最终提交SHA和CI结果以本节后续补录为准。
 - CI验收：待提交后运行；严格知识质量检查需0 errors，5项单元测试全部通过。
+
+
+### CH03-T003验收信息补录（2026-11-22T12:24:00+08:00）
+
+- 最终提交：[7a842e9ce0df78e3b35e20ff4601a31186ad0ad2](https://github.com/rexyll/cnc-knowledge/commit/7a842e9ce0df78e3b35e20ff4601a31186ad0ad2)，所在分支：main。
+- GitHub Actions Run [44984556535](https://github.com/rexyll/cnc-knowledge/actions/runs/44984556535)：success；5项单元测试全部通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、105个Markdown文件、303条内部链接、136条实体、225条关系、90条来源、229处正文来源引用；本地结构和内部链接检查通过。
+- 本地质量门禁不检查外部URL实时可访问性，也不构成具体机床实机性能验证。
+- 本补录替代前文“SHA和CI结果以本节后续补录为准”的临时状态；不改变任务实际交付范围。

@@ -19,3 +19,8 @@ CH03,knowledge_article,parameter_definitions,参数定义与测量口径,参数�
 CH03,knowledge_article,mechanical_interface,机械接口,安装基准/连接件/载荷方向/润滑冷却/防护等接口定义,array,,recommended,,区分概念接口和具体装配图,机械结构专题,yes,,具体图号与公差归CH04/CH16
 CH03,knowledge_article,verification_method,验证方法,几何精度/轴定位/热稳定性/动态与加工验证的适用标准及方法,string,,recommended,,注明标准版本/范围/测试条件,机械结构专题,yes,,单项部件参数不替代整机验收
 CH03,asset_file,license_status,许可/权利状态,资源保存与分发权利状态,string,,required,,原创图注明项目原创并关联LICENSE,本章资源,yes,,外部受版权限制资料仅保留链接
+CH03,knowledge_article,key_unit_groups,关键机械单元分组,主轴/ATC/回转工作台/润滑冷却/液压气动/排屑过滤等专题范围,array,,required,,仅记录通用分组并明确机型配置差异,关键机械单元专题,yes,,不代表某一机床具备全部单元
+CH03,knowledge_article,unit_architecture,单元组成与工作链,各单元功能模块及机械/能量/控制/介质流向,object,,required,,说明输入输出与工作状态，不推断具体接线,关键机械单元专题,yes,,通用示意不等于实际OEM图纸
+CH03,knowledge_article,unit_selection_matrix,单元选型参数矩阵,需求输入/结构方案/参数/接口/验证点的对照表,object,,recommended,,参数须带型号/配置/单位/条件和来源,关键机械单元专题,yes,,不记录脱离工况的通用阈值
+CH03,knowledge_article,maintenance_failure_signs,维护与失效征兆,单元级异常征兆和建议检查方向,array,,recommended,,区分现象与根因并标注安全前提,关键机械单元专题,yes,,不将检查方向表述为故障诊断结论
+CH03,knowledge_article,safety_energy_isolation,安全与能量隔离边界,旋转/夹挤/重力/压力/弹簧/电能等危险源和隔离要求,string,,required,,引用具体机床手册及现场LOTO程序,关键机械单元专题,yes,,不提供旁路联锁或带能拆装指导
