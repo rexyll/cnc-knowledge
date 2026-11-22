@@ -1,6 +1,6 @@
 {
   "source_id": "SRC-000197",
-  "source_type": "technical_article",
+  "source_type": "third_party_article",
   "title": "How Linear Guides Are Manufactured: A Step-by-Step Process",
   "publisher": "IMTEK Motion",
   "author": null,
@@ -14,5 +14,5 @@
   "license_or_permission": null,
   "notes": "非标准、非原厂具体产品工艺卡，作为工序识别和数据采集框架的二级线索；关键路线需原厂工艺文件/质量记录验证，不据此录入数值或供应商关系。",
   "authority_tier": "C",
-  "evidence_kind": "technical_article"
+  "evidence_kind": "secondary_summary"
 }
