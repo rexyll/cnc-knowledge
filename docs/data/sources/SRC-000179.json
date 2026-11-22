@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000179",
+  "source_type": "standard_catalog",
+  "title": "ISO 14104:2017 — Gears — Surface temper etch inspection after grinding, chemical method",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/70396.html",
+  "version": "ISO 14104:2017",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "ISO第3版，2017-04发布；2022年复审确认继续有效；规定齿轮磨削后通过化学蚀刻检测和分类局部过热，亦涉及热处理后硬车削、铣削及去毛刺等加工表面异常。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "适用对象为齿轮磨削表面，不是滚动轴承滚动体或滚珠丝杠滚道的通用检测标准。任何扩展应用需由产品规范、制造商批准工艺、方法适用性验证和判定准则支持；本项目不建立其与滚动体/滚道的直接适用关系。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
