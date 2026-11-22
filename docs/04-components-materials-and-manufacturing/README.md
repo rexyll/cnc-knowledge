@@ -12,7 +12,7 @@
 
 ## 已建立知识条目
 
-- [数控机床零部件分类与主数据规范](part-classification-and-master-data.md)：项目级分类树、PART身份与编号规则、主数据字段、跨章节边界和数据质量校验。该文档不代表具体机型BOM或实际零件清单。\n- [数控机床材料数据库：标准体系、牌号与性能数据规则](materials-database.md)：建立材料族、标准体系、牌号映射、材料状态和性能观测模型；当前为标准框架，已增加7项中国GB标准目录级核验，并细化GB/T 9439/1348铸铁性能采集条件；具体牌号性能数值仍待正式标准文本核录。\n- [材料标准与牌号体系映射表](../../resouces/04-components-materials-and-manufacturing/materials-standard-map.csv)：记录标准入口、适用范围、版本状态和数据缺口。
+- [数控机床零部件分类与主数据规范](part-classification-and-master-data.md)：项目级分类树、PART身份与编号规则、主数据字段、跨章节边界和数据质量校验。该文档不代表具体机型BOM或实际零件清单。\n- [数控机床材料数据库：标准体系、牌号与性能数据规则](materials-database.md)：建立材料族、标准体系、牌号映射、材料状态和性能观测模型；当前为标准框架，已增加7项中国GB标准目录级核验，并细化GB/T 9439/1348铸铁性能采集条件；具体牌号性能数值仍待正式标准文本核录；已补充采标类标准的公开/使用限制及第三方采购线索，卖方授权和仓库再分发许可尚未核验。\n- [材料标准与牌号体系映射表](../../resouces/04-components-materials-and-manufacturing/materials-standard-map.csv)：记录标准入口、适用范围、版本状态和数据缺口。
 
 ## 本章任务计划
 
