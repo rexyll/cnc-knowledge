@@ -1,0 +1,25 @@
+{
+  "relation_id": "REL-000140",
+  "subject_id": "KNOW-000008",
+  "predicate": "DERIVED_FROM",
+  "object_id": "MTYPE-000013",
+  "qualifiers": {
+    "article_path": "docs/02-machine-types-and-products/machine-tool-selection-methodology.md",
+    "article_version": "1.0",
+    "reference_role": "selection_methodology_scope",
+    "relationship_scope": "Selection methodology navigation and traceability only; does not assert that a machine type is suitable for a specific workpiece without project evidence."
+  },
+  "source_ids": [
+    "SRC-000049",
+    "SRC-000050",
+    "SRC-000051",
+    "SRC-000052"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T13:00:00+08:00",
+  "updated_at": "2026-11-22T13:00:00+08:00",
+  "notes": "DERIVED_FROM仅表示选型方法文章对机床类型的索引，不表示具体工件适用性或性能保证。"
+}

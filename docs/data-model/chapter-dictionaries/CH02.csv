@@ -18,3 +18,8 @@ CH02,machine_type,selection_constraints,选型约束,类型层面的关键适用
 CH02,machine_model,official_product_url,官方产品页,制造商产品型号或系列的官方页面URL,string,,recommended,,必须对应制造商域名并记录访问日期,整机型号,yes,,经销商页面只能作为补充来源
 CH02,machine_model,specification_revision,规格版本/核验日期,公开规格的页面版本或文档编号及核验日期,string,,recommended,,需能追溯到source_ids,有公开规格的型号,yes,,网页无发布日期时记录online page与accessed_on
 CH02,machine_model,specification_scope,规格适用范围,参数适用的具体子型号地区配置或控制器版本,string,,recommended,,不得将系列最高值套用于所有子型号,有参数记录的型号,yes,,标准配置/选配/定制必须分开
+CH02,machine_selection,selection_gate,选型硬门槛,候选设备进入加权比较前必须满足的尺寸承载工艺轴系质量安全现场与服务条件,array,,recommended,,每项记录判定结果和证据来源,项目选型,yes,,不满足项不得通过加权总分抵消
+CH02,machine_selection,score_weight,评价权重,选型比较维度权重且合计100%,number,%,recommended,,项目级权重需说明依据并合计100,项目选型,yes,,不是行业标准权重
+CH02,machine_selection,score_value,评价分值,候选设备对单项需求的匹配分值1至5或N/V,enum,,recommended,1|2|3|4|5|N/V,分值需有证据和评分说明,候选设备,yes,,N/V不得默认赋值或静默归一化
+CH02,machine_selection,evidence_level,证据层级,评分依据的证据类型与验证状态,enum,,recommended,manufacturer_declaration|independent_test|engineering_measurement|engineering_experience|pending,必须区分厂商声明第三方测试现场测量与工程判断,项目选型,yes,,证据层级不是设备质量等级
+CH02,machine_selection,selection_assumption,选型假设,评分和TCO/产能估算采用的项目假设及适用范围,array,,recommended,,需记录来源责任人日期和待验证状态,项目选型,yes,,不得把估算值记为实测值

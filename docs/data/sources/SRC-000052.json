@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000052",
+  "source_type": "standard_catalog",
+  "title": "ISO 13041-6:2009 — Test conditions for numerically controlled turning machines and turning centres — Part 6: Accuracy of a finished test piece",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/46439.html",
+  "version": "Edition 2; 2009-06; confirmed 2026",
+  "published_on": "2009-06-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Scope and status; standard test-piece cutting tests under finishing conditions",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "ISO页面称该版2026年复审确认仍为现行版本；用于数控车床/车削中心成品试件切削精度评估。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

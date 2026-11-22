@@ -14,13 +14,14 @@
 
 [机床分类体系](machine-tool-classification.md)  
 [主要机型技术档案](machine-type-technical-archives.md)  
-[典型产品与型号规格目录](representative-model-catalog.md)
+[典型产品与型号规格目录](representative-model-catalog.md)  
+[机型选型方法与工程比较矩阵](machine-tool-selection-methodology.md)
 
 ## 本章任务计划
 
 [打开本章 TaskPlan](../TaskPlan/02-machine-types-and-products/TaskPlan.md)
 
-本章已完成分类体系、主要机型技术档案和首轮典型产品型号库；选型矩阵和工程案例仍按任务计划推进。
+本章已完成分类体系、主要机型技术档案、首轮典型产品型号库和选型比较方法；具体项目的试切、产能与成本验证仍需结合现场执行。
 
 ## 相关资源
 
