@@ -547,4 +547,4 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 已确认GB/T 9439-2023现行且GB/T 9439-2010废止；GB/T 1591-2018现行且2008版废止；其余新增标准目录记录显示现行。
 - 更新材料标准映射CSV、材料数据库文章、章节README和资源README。将“目录状态确认”与“标准全文条款/牌号性能数据核录”明确分开。
 - 未录入未经核实的牌号性能值；未创建MAT实体；未建立GB与ISO/EN/ASTM/JIS牌号等同关系；未推断机床零件实际用料。
-- 本增量仍属于CH04-T002阶段性研究，任务保持IN_PROGRESS。提交及CI结果待补录。
+- 本增量仍属于CH04-T002阶段性研究，任务保持IN_PROGRESS。内容提交：62716230b7e87d9d4ad91b30f66de009e136c48d（main）。GitHub Actions Run [44986160684](https://github.com/rexyll/cnc-knowledge/actions/runs/44986160684)：success；5项单元测试通过；严格知识质量检查PASS（0 errors）。CI统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、116条来源、258处正文来源引用。
