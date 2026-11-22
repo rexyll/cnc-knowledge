@@ -83,3 +83,6 @@
 
 
 **跨章节索引/计划补录最终CI核验（2026-11-22）：** 提交 `65f2ec178a443652272d5f76f9b6a821df531eeb` 的GitHub Actions [Run 45013716276](https://github.com/rexyll/cnc-knowledge/actions/runs/45013716276) success；5/5单元测试通过；strict lint PASS（0 errors）。本轮统计：22章、112个Markdown文件、375条内部链接、140条实体、240条关系、326条来源、582处正文来源引用。CH08-T002保持IN_PROGRESS。
+
+
+**追加执行切片（2026-11-22）：多工况伺服级联控制器设计与验证。** 新增 multicondition-cascade-controller-design.md，以多工况辨识模型为对象基础，明确转矩/电流内环的一阶近似、速度PI、位置P、速度/位置反馈测点、候选增益计算与两惯量/三惯量模型边界。对象集合包含名义冷态、重载冷态、参数化热态变体和三惯量柔性参考；对两组候选控制器扫描0/0.5/1.0 ms反馈延迟，展示同一控制器跨负载/柔性工况的裕度变化。新增SRC-000338～SRC-000340；CH08字典新增级联控制器设计和多工况闭环验证2项字段。仿真脚本/配置/CSV统一归档在CH12资源目录。内容提交 b095839e3c2114c82c60dd978d2e864bbc000cdc，GitHub Actions [Run 45021742754](https://github.com/rexyll/cnc-knowledge/actions/runs/45021742754) success；5/5单元测试通过，strict lint PASS（0 errors）。本切片只完成CH08-T002的一部分，所有增益均为合成候选值、不能复制到实际驱动器，CH08-T002保持 IN_PROGRESS。

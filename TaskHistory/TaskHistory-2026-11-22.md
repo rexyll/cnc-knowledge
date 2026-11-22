@@ -1096,3 +1096,20 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - **内容CI统计：** 22章、116个Markdown文件、379条内部链接、140条实体、240条关系、337条来源、602处正文来源引用。
 - **未验证事项：** 未取得真实机床多工况转矩/电流/速度/位置波形、冷热态数据、闭环参数备份、HIL/台架或实机结果；未得出实际机床模型、参数调度或稳定裕度。CI不验证实机性能和安全。
 - **状态：** CH08-T002与CH12-T003继续IN_PROGRESS；本次只完成多工况识别/模型验证的局部专题。
+
+
+### CH08-T002 / CH12-T003 — 多工况伺服级联控制设计、稳定裕度与限幅联合仿真（2026-11-22）
+
+- **完成时间：** 2026-11-22T20:20:09.000+08:00
+- **分支：** main；提交前确认仓库仅有main分支，未创建其他分支。
+- **CH08交付：** 新增 docs/08-servo-spindle-and-motion-control/multicondition-cascade-controller-design.md，把多工况两/三惯量模型映射到电流/转矩内环近似、速度PI和位置P三级控制；明确电机侧速度反馈、负载侧位置反馈、控制器候选参数生成方式和真实设备设计前提。
+- **CH12交付：** 新增 docs/12-control-and-machining-algorithms/multicondition-cascade-robust-stability-and-saturation-simulation.md，定义速度内环和位置外环SISO开环、延迟处理口径、GM/PM多交越解释、局部连续极点检查和非线性时域限幅测试。
+- **结构化资产：** 新增SRC-000338～SRC-000340（三条MathWorks官方文档入口，分别说明anti-windup、延迟模型、经典GM/PM）；CH08字典追加2项级联控制器/多工况验证字段，CH12字典追加3项环路裕度/采样延迟/限幅anti-windup字段；更新CH08/CH12正文README和CH12资源README。
+- **仿真资源：** 新增 resouces/12-control-and-machining-algorithms/servo-cascade-control-robustness-simulation.py、servo-cascade-control-simulation-config.json、servo-cascade-loop-margin-envelope.csv及servo-cascade-step-response-envelope.csv。脚本使用Python 3.10+和NumPy，定义4种合成两/三惯量对象、2套级联控制器、0/0.5/1.0 ms反馈延迟，共24条频域扫描和24条非线性时域记录。
+- **频域结果（合成）：** 在1 ms反馈延迟、重载冷态模型下，aggressive_reference位置环PM/GM约14.97°/2.98 dB，conservative_candidate约36.81°/6.54 dB；三惯量对象的速度环检测到多个增益交越。跨四种对象与三个延迟设置的最小位置环PM/GM分别约14.97°/2.98 dB和36.81°/6.54 dB。
+- **时域结果（合成）：** 保守候选在0.25 rad较大阶跃且叠加负载扰动时，重载冷态/热态分别出现约1.83%/0.93%转矩饱和样本；较小0.12 rad阶跃未触发转矩限幅。报告超调、2%稳定时间、RMSE、饱和占比和轴系耦合扭转角。
+- **模型/验收边界：** 电流/转矩内环只用一阶执行器近似，未建模PMSM电磁与逆变器开关；热态仅为人为指定刚度/阻尼变体；频域延迟用整数样本+半采样相位近似，非精确离散模型；极点检查不含延迟/摩擦/饱和；GM/PM为SISO经典裕度，不是MIMO disk margin或鲁棒稳定证明。无真实机床波形、驱动器参数、HIL/台架/实机验证，不得将候选增益或数值用于生产设备。
+- **内容提交：** b095839e3c2114c82c60dd978d2e864bbc000cdc。
+- **内容CI：** [GitHub Actions Run 45021742754](https://github.com/rexyll/cnc-knowledge/actions/runs/45021742754) success；5/5单元测试通过；strict lint PASS（0 errors）。
+- **内容CI统计：** 22章、118个Markdown文件、386条内部链接、140条实体、240条关系、340条来源记录、609处正文来源引用。
+- **状态：** CH08-T002和CH12-T003继续 IN_PROGRESS；本切片只完成控制器设计方法与合成闭环验证，不宣称相关章节任务全部完成。
