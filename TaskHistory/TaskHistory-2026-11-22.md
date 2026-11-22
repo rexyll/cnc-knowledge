@@ -529,3 +529,13 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 ### 提交与CI
 - 提交前状态：main；无新建分支。
 - 提交SHA与CI结果将在后续验收补录。
+
+
+### CH04-T002阶段性交付验收补录（2026-11-22T13:14:00+08:00）
+
+- 最终内容提交：[3fc8406bc61881ef267e65a6eeedcc11a6309f70](https://github.com/rexyll/cnc-knowledge/commit/3fc8406bc61881ef267e65a6eeedcc11a6309f70)，分支main。
+- 资源归档校正：材料标准映射CSV已按全局资源规则移动至resouces/04-components-materials-and-manufacturing/materials-standard-map.csv，并登记在该章资源README；正文、章节计划和索引均已更新。
+- GitHub Actions Run [44985442087](https://github.com/rexyll/cnc-knowledge/actions/runs/44985442087)：success；5项单元测试通过；严格知识质量检查PASS（0 errors）。
+- CI统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、109条来源、251处正文来源引用。
+- 来源记录中仅在发布机构给出明确日级发布日期时填写published_on；仅有年份/月或页面最近更新日期时留空，避免把页面更新日期伪装为标准发布日期。
+- 本任务继续保持IN_PROGRESS：当前交付是标准入口和数据模型，不是具体牌号性能数据全集。
