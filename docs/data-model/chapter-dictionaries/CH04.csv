@@ -88,3 +88,9 @@ CH04,part,pneumatic_cylinder_configuration,气动缸配置,气缸系列/安装�
 CH04,part,pneumatic_tube_fitting_traceability,气动管材与接头追溯,热塑性管材/快插接头配套身份、批次和装配验证,object,,conditional,,记录管材材料/系列/外径、接头系列、密封材料、连接批次、插入/保持/泄漏验证,气动管路与快插接头,yes,,不跨品牌推断管材、接头和工作条件兼容
 CH04,part,pneumatic_port_thread_standard,气动端口螺纹体系,气动端口/螺柱端的螺纹体系和密封结构,string,,conditional,ISO_16030_G;ISO_1179;ISO_7_1;NPT;other;unknown,按图纸标注标准、螺纹类型、尺寸和密封形式；禁止仅按外观推断,阀体/气缸/歧管/接头,yes,,不同螺纹系统不得仅凭名义尺寸互换
 CH04,part,pneumatic_flow_characteristic_record,气动流量特性记录,适用气动元件的流量系数/有效导通能力等试验结果,object,,conditional,,记录测试标准和修订/流量参数定义/供气和下游条件/仪器/不确定度,阀和适用气动流道元件,yes,,ISO 6358-1不适用于调压器和气缸等其范围排除对象
+CH04,part,precision_coupling_configuration,精密联轴器配置,联轴器结构类型、两端轴接口、柔性元件、紧固与配置版本,object,,conditional,,记录完整订货代码、两端连接对象、轮毂孔/键/夹紧/胀套接口、柔性元件类型、紧固件与图纸版本,伺服—丝杠/齿轮箱/回转轴/主轴传动连接,yes,,不同构型不能仅凭外形或标称转矩推断互换性
+CH04,part,coupling_runout_alignment_record,联轴器跳动与对中记录,联轴器安装后轴线偏差、轮毂跳动和端面测量记录,object,,conditional,,注明平行偏移/角向偏差/轴向间距、测点/基准、仪器、温度、支承和测量不确定度,联轴器总成装配和轴系验收,yes,,允许偏差来自对应产品文件和机床图纸，不设置通用限值
+CH04,part,coupling_torsional_characteristic_record,联轴器扭转特性记录,扭矩—角位移、扭转刚度、回差/迟滞及相关试验条件,object,,conditional,,记录正反方向、扭矩区间、加载速率、温度、夹具柔度、传感器和曲线文件,需要扭转特性或回差验证的联轴器,yes,,弹性迟滞与齿轮传动背隙不可不加区分地等同
+CH04,part,brake_configuration,制动器配置,制动原理、安装位置、摩擦副、弹簧/线圈、释放接口和型号身份,object,,conditional,,记录制动器类型、订货代码、施加/释放原理、安装端、摩擦材料/弹簧/线圈批次、释放间隙和图纸版本,电机内置制动器/独立制动器/垂直轴制动模块,yes,,不从“抱闸”名称推断失电安全、动态制动或安全认证属性
+CH04,part,brake_static_holding_test_record,制动器静态保持试验记录,指定安装和工况下制动器静态保持能力的原始试验信息,object,,conditional,,记录载荷/转矩方法、方向、力臂/夹具、温度、电源状态、保持时间、位移、仪器校准和判据,保持制动器及垂直轴保持模块,yes,,静态保持合格不代表允许动态制动或整机安全功能通过
+CH04,part,brake_dynamic_and_release_test_record,制动器动态与释放试验记录,线圈释放、拖曳、动作时间、循环温升及获准的动态制动试验记录,object,,conditional,,区分释放/拖曳/电气试验与动态制动，记录转速、惯量、能量、频次、温度和原厂批准程序,有对应型号动态制动许可或释放性能要求的制动器,yes,,动态制动试验必须由具体型号文件、设施防护和批准程序授权
