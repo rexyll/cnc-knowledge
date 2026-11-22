@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000183",
+  "source_type": "other",
+  "title": "NSK's Steel Cleanliness Evaluation Technology (NSK-UT Method)",
+  "publisher": "NSK Corporation",
+  "author": "Technology Research & Development Office 1; Core Technology R&D Center; Technology Development Division Headquarter",
+  "url": "https://www.nskamericas.com/tools-resources/research-and-development/technical-review/2026/nsk-ut/",
+  "version": "NSK Technical Review, October 2026, No.2623",
+  "published_on": "2026-10-01",
+  "accessed_on": "2026-11-22",
+  "locator": "第2节说明夹杂物诱发剥落机理；第3.2节描述光学显微夹杂物评价；第4节及第5节介绍NSK专有超声洁净度评价及其钢厂准入/量产监控应用。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "制造商技术综述，仅作为NSK公开技术说明。文中夹杂物尺寸/数量与剥落风险的联系不能转化为其他厂商的验收阈值；NSK-UT是其专有方法，不是通用标准，也不能据此推断机床OEM的材料BOM或寿命增益。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

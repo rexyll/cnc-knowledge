@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000182",
+  "source_type": "standard_catalog",
+  "title": "SAE ARP4462C — Barkhausen Noise Inspection for Detecting Grinding Burns in High Strength Steel Parts",
+  "publisher": "SAE International",
+  "author": null,
+  "url": "https://saemobilus.sae.org/standards/arp4462c-barkhausen-noise-inspection-detecting-grinding-burns-high-strength-steel-parts",
+  "version": "ARP4462C",
+  "published_on": "2024-05-28",
+  "accessed_on": "2026-11-22",
+  "locator": "SAE官方目录：2024-05-28修订；Recommended Practice；范围为铁磁性钢制部件的巴克豪森噪声检测。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "检测实践文件，不提供适用于所有材料、曲率、表面状态和工艺的统一判定阈值；实际使用需按材料/零件几何、表面状态、设备探头、校准样件和经批准的验收准则验证。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

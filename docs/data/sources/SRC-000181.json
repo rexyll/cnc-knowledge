@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000181",
+  "source_type": "standard_catalog",
+  "title": "ISO 4967:2026 — Steel — Determination of the non-metallic inclusion content — Micrographic method",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/86687.html",
+  "version": "ISO 4967:2026, Edition 4",
+  "published_on": "2026-05-29",
+  "accessed_on": "2026-11-22",
+  "locator": "ISO官方页面：2026-05发布，第4版；适用于压缩比至少3的轧制或锻造钢产品，采用标准图谱或图像分析测定非金属夹杂物；ISO 4967:2013已撤销并由2026版替代。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "方法标准而非材料质量等级/采购验收限值；GB/T 10561-2023修改采用的是ISO 4967:2013，不能将其视为自动等同ISO 4967:2026。ISO全文受版权保护，本项目仅记录官方元数据和范围。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000185",
+  "source_type": "manufacturer_product_page",
+  "title": "Factory Guide — How Steel Balls are Made",
+  "publisher": "Amatsuji Steel MFG Corporation (AKS)",
+  "author": null,
+  "url": "https://www.aksball.co.jp/en/company/factory/",
+  "version": "网页版本；©2024",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "官方工厂介绍页面：钢球制造步骤包括线材下料/镦球、去飞边、热处理、精密磨削/研磨、两阶段研磨/抛光、全表面视觉检查和包装。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "仅代表AKS公开介绍的钢球生产流程示例，不是行业强制标准或所有钢球厂通用工艺；页面中的工序名称存在翻译/编排差异，不能据此推断具体机床滚珠丝杠或轴承的供应商、工艺参数、热处理窗口和检验限值。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000184",
+  "source_type": "standard_catalog",
+  "title": "ISO/AWI 14104 — Gears — Surface temper etch inspection after grinding, chemical method",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/cms/live/live/en/sites/isoorg/contents/data/standard/09/53/95324.html?browse=tc",
+  "version": "ISO/AWI 14104, Edition 4, stage 20.00",
+  "published_on": "2026-10-23",
+  "accessed_on": "2026-11-22",
+  "locator": "ISO官方工作项目：2026-09-21批准新项目，2026-10-23登记进入TC/SC工作计划，阶段20.00；拟替代ISO 14104:2017；范围包括齿轮、轴、花键和轴承等钢件。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "在研工作项目，不是已发布标准，不能作为现行验收依据。官方摘要指出不适用于渗氮件和不锈钢，且有高合金体系适用性限制；方法在磨削后、超精/喷丸/珩磨等后续精整前实施。具体滚动体或丝杠滚道应用仍需材料、几何和工艺适用性验证。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
