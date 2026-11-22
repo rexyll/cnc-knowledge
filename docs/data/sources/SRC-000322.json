@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000322",
+  "source_type": "manufacturer_manual",
+  "title": "SIMOTICS T-1FW3 Complete Torque Motors — Configuration Manual",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/497/60151497/att_884441/v1/1FW3_config_man_0822_en-US.pdf",
+  "version": "Edition 08/2022, A5E46027705B AB",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Section 6.2 Slot ripple and accuracy; stated motor models, SINAMICS S servo control, pulse frequency and torque-control conditions",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The manual reports slot-ripple/torque-accuracy data for named SIMOTICS T-1FW3 shaft-height variants under specified SINAMICS S control, construction, pulse-frequency and torque operating conditions. Its explanation lists motor slot ripple, encoder resolution and inverter voltage resolution as torque-ripple contributors. Product-family values are not universal direct-drive motor or machine-axis acceptance limits. PDF is linked only, not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

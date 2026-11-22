@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000321",
+  "source_type": "manufacturer_manual",
+  "title": "SINAMICS S120 Drive Functions — Servo Control and Controller Optimization",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://support.industry.siemens.com/cs/attachments/109757573/S120_drive_fct_man_0718_en-US.pdf",
+  "version": "Function Manual 07/2018, firmware 5.1 SP1, 6SL3097-5AB00-0BP0",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Section 4.12 Optimizing current and speed controller; speed controller frequency response measurement and resonance/current-setpoint filters",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "SINAMICS S120-specific controller optimization documentation. It illustrates use of frequency-response measurements to locate resonances and adjust current-setpoint filters, followed by gain/integral-time optimization. Values and procedures are specific to the stated drive generation/firmware and must not be transplanted to other drives or machines.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

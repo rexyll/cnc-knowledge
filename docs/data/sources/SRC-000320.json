@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000320",
+  "source_type": "manufacturer_manual",
+  "title": "SINAMICS S200 Compact Servo Drive System — Operating Instructions",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://support.industry.siemens.com/cs/attachments/109989519/S200_Compact_op_instr_0625_en-US.pdf",
+  "version": "Edition 06/2025, PROFINET version, firmware V6.5, A5E54029715A AA",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Chapter 11.3 Manual tuning; control-loop frequency hierarchy and servo gain adjustment",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Siemens S200 Compact with SIMOTICS S-1FL2/S-1FL1 documentation. Describes current, speed and position loop bandwidth hierarchy and warns that gain tuning depends on mechanical rigidity and coupled parameters. This product-family guidance is not a generic tuning recipe or universal bandwidth ratio for other drives/axes. PDF is linked only, not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}
