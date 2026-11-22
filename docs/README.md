@@ -45,6 +45,7 @@
 - [代表性厂商与系统生态图](19-manufacturers-products-and-supply-chain/representative-ecosystem.md)
 - [整机与数控系统厂商档案](19-manufacturers-products-and-supply-chain/machine-tool-oem-and-system-vendor-profiles.md)
 - [关键部件供应商与产品目录](19-manufacturers-products-and-supply-chain/key-component-suppliers-and-products.md)
+- [供应链比较、替代验证与风险管理](19-manufacturers-products-and-supply-chain/supply-chain-comparison-and-risk-management.md)
 
 ## 质量门禁与覆盖度
 

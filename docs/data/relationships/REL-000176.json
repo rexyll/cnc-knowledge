@@ -1,0 +1,23 @@
+{
+  "relation_id": "REL-000176",
+  "subject_id": "KNOW-000011",
+  "predicate": "DERIVED_FROM",
+  "object_id": "VENDOR-000015",
+  "qualifiers": {
+    "article_path": "docs/19-manufacturers-products-and-supply-chain/supply-chain-comparison-and-risk-management.md",
+    "article_version": "1.0",
+    "reference_role": "manufacturer_lifecycle_example",
+    "relationship_scope": "仅表示文章引用THK官方停产/替代公告作为生命周期风险方法示例；不表示THK制造本文档、不表示具体机床采用该产品，也不表示替代型号已完成兼容验证。",
+    "product_scope": "THK官方页面列出的特定直线轴承/LM Guide型号与地区页面；项目级型号和版本必须另行核验。"
+  },
+  "source_ids": [
+    "SRC-000071"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T11:52:00+08:00",
+  "updated_at": "2026-11-22T11:52:00+08:00",
+  "notes": "文章索引与来源关系。DERIVED_FROM仅表示导航和溯源，不构成制造、供货、兼容或替代批准事实。"
+}

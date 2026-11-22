@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000071",
+  "source_type": "manufacturer_product_page",
+  "title": "停产产品列表 / Discontinued Product List",
+  "publisher": "THK Co., Ltd.",
+  "author": null,
+  "url": "https://www.thk.com/?q=cn%2Fnode%2F13062",
+  "version": "Official China-region product information page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official discontinued product list; LM/LME/LM-L linear bushings and LM Guide RSR-M1 series with stated replacement series",
+  "language": "zh-CN",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official regional page lists selected discontinued product families, scheduled dates, replacement names and support information. THK warns replacement dimensions are not always identical. Evidence is limited to listed products/sizes/region and access date; it does not establish machine-level interchangeability, current inventory, delivery or local service.",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

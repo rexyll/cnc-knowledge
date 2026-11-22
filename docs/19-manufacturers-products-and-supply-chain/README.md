@@ -14,7 +14,8 @@
 
 [代表性厂商与系统生态图](representative-ecosystem.md)  
 [整机与数控系统厂商档案](machine-tool-oem-and-system-vendor-profiles.md)  
-[关键部件供应商与产品目录](key-component-suppliers-and-products.md)
+[关键部件供应商与产品目录](key-component-suppliers-and-products.md)  
+[供应链比较、替代验证与风险管理](supply-chain-comparison-and-risk-management.md)
 
 ## 本章任务计划
 

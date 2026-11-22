@@ -1,0 +1,64 @@
+{
+  "entity_id": "KNOW-000011",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床供应链比较、替代验证与风险管理",
+  "english_name": "CNC machine tool supply chain comparison, substitution validation and risk management",
+  "aliases": [],
+  "description": "建立关键部件跨厂商比较、机械/电气/通信/软件/工艺/安全兼容性证据等级、生命周期停产风险、地区供货与售后核验、风险台账及采购决策流程。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH03",
+    "CH04",
+    "CH05",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH10",
+    "CH14",
+    "CH16",
+    "CH17",
+    "CH18",
+    "CH20"
+  ],
+  "classification_path": [
+    "知识条目",
+    "supply_chain_comparison_and_risk_management"
+  ],
+  "tags": [
+    "供应链比较",
+    "替代验证",
+    "兼容性",
+    "产品生命周期",
+    "停产风险",
+    "地区供货",
+    "售后支持",
+    "采购核验",
+    "风险台账"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T11:52:00+08:00",
+  "updated_at": "2026-11-22T11:52:00+08:00",
+  "verified_at": "2026-11-22T11:52:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000071"
+  ],
+  "attributes": {
+    "document_path": "docs/19-manufacturers-products-and-supply-chain/supply-chain-comparison-and-risk-management.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "跨厂商关键部件比较、兼容性证据等级、生命周期/停产风险、地区供应/售后核验、风险台账和采购流程",
+    "knowledge_kind": "supply_chain_comparison_and_risk_management",
+    "article_status": "reviewed",
+    "compatibility_evidence_levels": [
+      "C0",
+      "C1",
+      "C2",
+      "C3",
+      "C4"
+    ],
+    "unknown_value_convention": "N/V or not_assessed; no score by default"
+  }
+}
