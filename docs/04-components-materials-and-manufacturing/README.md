@@ -10,25 +10,25 @@
 - 化学成分、力学性能、物理性能、热学性能、疲劳和耐磨指标
 - 铸造、锻造、焊接、热处理、精密加工、表面处理和质量检测
 
+## 已建立知识条目
+
+- [数控机床零部件分类与主数据规范](part-classification-and-master-data.md)：项目级分类树、PART身份与编号规则、主数据字段、跨章节边界和数据质量校验。该文档不代表具体机型BOM或实际零件清单。
+
 ## 本章任务计划
 
 [打开本章 TaskPlan](../TaskPlan/04-components-materials-and-manufacturing/TaskPlan.md)
 
-本章知识内容按任务计划逐步研究，不在初始化阶段预填未经核实的技术参数或结论。
-
 ## 建议正文结构
 
-- `overview.md`：章节总览、概念和分类。
-- `architecture.md` / `principles.md`：结构、原理和系统关系（适用时）。
-- `specifications.md`：参数、型号、接口和指标（适用时）。
-- `procedures/`：设计、制造、安装、操作或维护专题（适用时）。
-- `cases/`：工程案例、测试和故障分析（适用时）。
+- `materials-database.md`：材料牌号、状态和性能数据库。
+- `manufacturing-processes.md`：关键零件制造工艺与检测。
+- `part-specifications.md`：型号级零件规格与替代证据（依赖授权图纸/BOM/产品文件）。
 - `ASSET-INDEX.md`：本章在 `resouces/04-components-materials-and-manufacturing/` 中的资源索引。
 
 ## 相关资源
 
-本章图片、动图和有权保存的完整文档统一放在 [`resouces/04-components-materials-and-manufacturing/`](../../resouces/04-components-materials-and-manufacturing/README.md)。正文使用相对链接引用资源。外部版权受限资料只记录合法元数据和官方链接。
+本章图片、动图和有权保存的完整文档统一放在 [`resouces/04-components-materials-and-manufacturing/`](../../resouces/04-components-materials-and-manufacturing/README.md)。正文通过相对路径引用资源。外部版权受限资料只记录合法元数据和官方链接。
 
 ## 来源与审查
 
-事实性内容需记录来源、版本、适用机型/系统、核验日期和证据等级；未知项显式标记待核实。安全、版权和保密要求遵循根目录 `TaskPlan.md`。
+事实性内容需记录来源、版本、适用机型/系统、核验日期和证据等级；未知信息显式标注。安全、版权和保密要求遵循根目录 `TaskPlan.md`。

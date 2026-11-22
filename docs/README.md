@@ -11,7 +11,7 @@
 - [数控机床主要机械结构、导向与进给传动](03-system-architecture-and-mechanics/major-mechanical-structures.md)
 - [数控机床关键机械单元：主轴、换刀、转台与辅助系统](03-system-architecture-and-mechanics/key-mechanical-units.md)
 - [数控机床机械接口、精度链与故障关联](03-system-architecture-and-mechanics/mechanical-interfaces-accuracy-and-faults.md)
-- [04. 零部件、材料与制造工艺](./04-components-materials-and-manufacturing/README.md) — 机床零部件目录、零件规格、材料牌号与性能、热处理、表面处理、加工制造工艺及部件可替代关系。
+- [04. 零部件、材料与制造工艺](./04-components-materials-and-manufacturing/README.md) — 机床零部件分类、PART主数据、材料牌号与性能、制造工艺及部件规格/替代关系。
 - [05. 刀具、工装与工件装夹系统](./05-tooling-fixtures-and-workholding/README.md) — 刀具、刀柄、接口、刀库、自动换刀、夹具、卡盘、工作台、工件定位夹紧、测头和刀具/工件测量。
 - [06. 电气与电子系统](./06-electrical-electronic-systems/README.md) — 电气柜、供配电、保护、电机与执行器接线、传感器、继电器、接触器、I/O、电路板、电气原理图和电气安全接口。
 - [07. 数控系统、控制器与 PLC](./07-cnc-controller-and-plc/README.md) — CNC数控装置、插补控制、PLC逻辑、HMI控制接口、I/O、机床参数、宏程序、通道和数控系统配置。
@@ -30,6 +30,10 @@
 - [20. BOM、图纸与工程技术文档](./20-bom-drawings-and-technical-documents/README.md) — 整机/子系统BOM、零件清单、电气BOM、图纸、规格书、手册、技术变更、文档版本和数据关联。
 - [21. 数字化、联网与智能制造](./21-digitalization-and-smart-manufacturing/README.md) — 数控机床联网、数据采集、状态监测、工业信息模型、MES/ERP集成、能耗、预测性维护、数字孪生和网络安全。
 - [22. 典型机床、工程案例与系统拆解](./22-case-studies-and-reference-machines/README.md) — 典型机床整机档案、系统拆解、配置分析、方案对比、制造/使用案例和经验证的工程实践。
+
+## 零部件、材料与制造工艺
+
+- [数控机床零部件分类与主数据规范](04-components-materials-and-manufacturing/part-classification-and-master-data.md)
 
 ## 全库知识模型与公共资料
 

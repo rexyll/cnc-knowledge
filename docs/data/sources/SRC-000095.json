@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000095",
+  "source_type": "standard_catalog",
+  "title": "ISO 13584-35:2010 — Industrial automation systems and integration — Parts library — Part 35: Implementation resources: Spreadsheet interface for parts library",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/obp/ui?_escaped_fragment_=iso%3Astd%3Aiso%3Ats%3A13584%3A-35%3Aed-1%3Av1%3Aen",
+  "version": "ISO/TS 13584-35:2010",
+  "published_on": "2010-01-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official ISO OBP page; series structure and spreadsheet interface for parts-library data",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于零件库数据组织、供应方标识和交换机制的背景；不代表本项目分类树是ISO规定的数控机床零件分类。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

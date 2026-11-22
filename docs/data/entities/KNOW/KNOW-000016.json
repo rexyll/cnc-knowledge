@@ -1,0 +1,65 @@
+{
+  "entity_id": "KNOW-000016",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床零部件分类与主数据规范",
+  "english_name": "CNC machine tool part classification and master data specification",
+  "aliases": [],
+  "description": "建立数控机床零部件项目级分类树、PART身份判定、主数据字段、跨章节关系职责和数据质量校验规则。",
+  "primary_chapter": "CH04",
+  "related_chapters": [
+    "CH03",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床零部件",
+    "分类与主数据",
+    "knowledge_article"
+  ],
+  "tags": [
+    "CH04",
+    "零部件分类",
+    "PART",
+    "主数据",
+    "数据字典",
+    "BOM边界"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T23:00:00+08:00",
+  "updated_at": "2026-11-22T23:00:00+08:00",
+  "verified_at": "2026-11-22T23:00:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000095",
+    "SRC-000096",
+    "SRC-000097"
+  ],
+  "attributes": {
+    "document_path": "docs/04-components-materials-and-manufacturing/part-classification-and-master-data.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "数控机床零部件项目级分类、PART身份规则、主数据字段、跨章节职责与质量门槛",
+    "knowledge_kind": "cnc_part_classification_and_master_data",
+    "article_status": "reviewed",
+    "classification_scope": "project_reference_not_iso_or_oem_taxonomy",
+    "part_entities_created": 0,
+    "templates": [
+      "docs/data-model/templates/part-master.template.json"
+    ],
+    "field_dictionary": "docs/data-model/chapter-dictionaries/CH04.csv",
+    "validation_level": "data_model_and_source_scope_review_only",
+    "not_verified": [
+      "具体机型PART清单",
+      "型号级BOM与数量",
+      "具体零件图号/公差",
+      "零件材料牌号与状态",
+      "OEM实际采用/制造商关系",
+      "现场互换性和寿命"
+    ]
+  },
+  "notes": "当前无经授权的具体机床图纸/BOM，交付分类与空白模板，不创建虚构PART实体或BOM事实。"
+}

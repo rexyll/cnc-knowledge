@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000097",
+  "source_type": "standard_catalog",
+  "title": "ISO 8000-100:2016 — Data quality — Part 100: Master data: Exchange of characteristic data: Overview",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/62392.html",
+  "version": "Edition 1; 2016-10; reviewed and confirmed 2026",
+  "published_on": "2016-10-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official ISO catalogue abstract; master-data quality, property-value level and measurable data-quality metrics",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "支持主数据质量与属性值级管理方法；不直接规定机床零件的字段集合或工程验收值。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

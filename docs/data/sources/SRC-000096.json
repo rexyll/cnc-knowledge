@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000096",
+  "source_type": "standard_catalog",
+  "title": "IEC 61360-1:2017 — Standard data element types with associated classification scheme — Part 1: Definitions — Principles and methods",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/28560",
+  "version": "Edition 4.0; 2017-07-27",
+  "published_on": "2017-07-27",
+  "accessed_on": "2026-11-22",
+  "locator": "Official IEC publication page; property definitions, classification hierarchy, constraints, cardinality, mapping and coded units",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "原标准面向电工/电子领域及相关领域；本项目仅借鉴分类层级和特性属性建模方法，不宣称符合IEC CDD或扩展其适用范围。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,20 @@
+{
+  "relation_id": "REL-000243",
+  "subject_id": "KNOW-000016",
+  "predicate": "DERIVED_FROM",
+  "object_id": "SRC-000097",
+  "qualifiers": {
+    "relationship_role": "methodological_reference",
+    "scope": "仅支持分类/数据建模方法，不代表标准定义了本项目的零件分类树或具体机床零件事实"
+  },
+  "source_ids": [
+    "SRC-000097"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T23:00:00+08:00",
+  "updated_at": "2026-11-22T23:00:00+08:00",
+  "notes": "文章来源导航关系；不表示产品符合性或实际OEM配置。"
+}
