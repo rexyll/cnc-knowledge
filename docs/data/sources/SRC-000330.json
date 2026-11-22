@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000330",
+  "source_type": "other",
+  "title": "Estimating Models Using Frequency-Domain Data",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/ident/gs/estimate-models-using-frequency-domain-data.html",
+  "version": "MATLAB System Identification Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Frequency-domain input/output data, measured frequency-response data and model-estimation workflow",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official documentation explaining frequency-domain data and frequency-response measurements, including measured FRF and spectral-analysis workflows. Software-method reference only; no machine-specific injection amplitudes, sample rates or acceptance limits are prescribed.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

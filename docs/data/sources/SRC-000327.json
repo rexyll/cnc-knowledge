@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000327",
+  "source_type": "manufacturer_manual",
+  "title": "TwinCAT 3 | Autotuning Manual",
+  "publisher": "Beckhoff Automation GmbH & Co. KG",
+  "author": null,
+  "url": "https://download.beckhoff.com/download/document/automation/twincat3/TE5960_TC3_Autotuning_EN.pdf",
+  "version": "TE5960 Version 1.1.0, 2025-12-10",
+  "published_on": "2025-12-10",
+  "accessed_on": "2026-11-22",
+  "locator": "Sections 2, 4.1–4.3, 5.2–5.4: frequency-response-based tuning, Bode analysis, resonance and stability evaluation",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official Beckhoff TwinCAT 3 Drive Manager Autotuning manual. Describes broadband sine-based mechanical excitation, FRF/Bode analysis, load inertia estimation, stabilizing filters and stability evaluation within supported TwinCAT compatible configurations. Product-specific software and drive behavior only; PDF is linked, not archived.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

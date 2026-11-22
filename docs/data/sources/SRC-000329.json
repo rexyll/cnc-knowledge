@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000329",
+  "source_type": "other",
+  "title": "System Identification Overview",
+  "publisher": "The MathWorks, Inc.",
+  "author": null,
+  "url": "https://www.mathworks.com/help/ident/gs/about-system-identification.html",
+  "version": "MATLAB System Identification Toolbox documentation, R2026b",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Experiment design, excitation, measurement duration, signal-to-noise ratio, sampling and nonlinearities",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official MathWorks documentation describing data-driven model estimation and validation from measured time-domain/frequency-domain signals. Used as a general system-identification workflow reference, not as CNC axis acceptance method or a claim that the toolbox is required.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000332",
+  "source_type": "academic_paper",
+  "title": "A study of disturbance observers with unknown relative degree of the plant",
+  "publisher": "Automatica / Elsevier",
+  "author": "Nam H. Jo; Youngjun Joo; Hyungbo Shim",
+  "url": "https://doi.org/10.1016/j.automatica.2014.04.015",
+  "version": "Automatica, Volume 50, Issue 6, 2014, pages 1730–1734",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Robust stability of DOB when actual and nominal plant relative degrees differ; Q-filter design conditions",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Peer-reviewed theoretical study reports that a sufficiently fast Q-filter can destabilize DOB closed loops when actual plant relative degree is unknown or differs from nominal model. Motivates modeling actuator dynamics and delays; not a numeric bandwidth limit for a machine axis.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

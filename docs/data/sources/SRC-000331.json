@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000331",
+  "source_type": "academic_paper",
+  "title": "An almost necessary and sufficient condition for robust stability of closed-loop systems with disturbance observer",
+  "publisher": "Automatica / Elsevier",
+  "author": "Hyungbo Shim; Nam H. Jo",
+  "url": "https://doi.org/10.1016/j.automatica.2008.10.009",
+  "version": "Automatica, Volume 45, Issue 1, 2009, pages 296–299",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "DOB closed-loop transfer functions and robust stability conditions under stated plant uncertainty and Q-filter assumptions",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Peer-reviewed theoretical study of robust stability for a class of SISO disturbance-observer-based control systems. Conditions rely on explicit assumptions about plant, nominal model, outer controller and Q-filter; do not reduce to a universal cutoff-frequency rule.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

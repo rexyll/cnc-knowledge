@@ -21,6 +21,10 @@
 - [伺服级联控制：电流环、速度环与位置环](servo-cascade-control.md)：三环级联、PMSM FOC模型、前馈/反馈、带宽与稳定性、调试顺序和数据留存。
 - [伺服控制环辨识与调试记录模板](../../resouces/08-servo-spindle-and-motion-control/servo-control-loop-identification-template.csv)：参数基线、反馈点、采样/滤波、阶跃/频响和跟随误差记录。
 
+## 新增专题
+
+- [伺服参数辨识、负载惯量估计与频率响应建模](servo-parameter-identification-and-frequency-response.md)：负载惯量折算、转矩平衡回归、可辨识性、频响测量、柔性模态与独立验证。
+
 ## 建议正文结构
 
 - `overview.md`：章节总览、概念和分类。

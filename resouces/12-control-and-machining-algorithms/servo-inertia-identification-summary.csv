@@ -1,0 +1,14 @@
+metric,value,classification
+J_estimate,0.025025745526,synthetic_only
+J_relative_error_percent,0.102982105520,synthetic_only
+B_estimate,0.079787777090,synthetic_only
+B_relative_error_percent,-0.265278637329,synthetic_only
+Tc_estimate,0.149435533084,synthetic_only
+Tc_relative_error_percent,-0.376311277484,synthetic_only
+T0_estimate,0.030027941236,synthetic_only
+T0_relative_error_percent,0.093137450159,synthetic_only
+residual_rms_Nm,0.037561694229,synthetic_only
+r_squared,0.998345563423,synthetic_only
+column_scaled_condition_number,3.801792171957,synthetic_only
+samples_used,7960,synthetic_only
+matrix_rank,4,synthetic_only

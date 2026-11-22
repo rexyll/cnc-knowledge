@@ -1,0 +1,34 @@
+{
+  "data_classification": "synthetic_simulation_not_machine_measurement",
+  "python_requirement": "3.10+",
+  "sample_time_s": 0.001,
+  "identification_plant": {
+    "J_kg_m2": 0.025,
+    "B_Nm_s_rad": 0.08,
+    "Tc_Nm": 0.15,
+    "constant_torque_bias_Nm": 0.03
+  },
+  "dob_plant": {
+    "actual_J_kg_m2": 0.025,
+    "actual_B_Nm_s_rad": 0.08,
+    "nominal_J_kg_m2": 0.022,
+    "nominal_B_Nm_s_rad": 0.075,
+    "actuator_time_constant_s": 0.004,
+    "unmodelled_command_delay_s": 0.002,
+    "speed_reference_rad_s": 0.5,
+    "disturbance_Nm": 0.18,
+    "disturbance_interval_s": [
+      3,
+      7
+    ],
+    "measurement_noise_std_rad_s": 0.0005,
+    "PI_Kp_Nm_per_rad_s": 0.55,
+    "PI_Ki_Nm_per_rad": 7,
+    "torque_command_limit_Nm": 1.5
+  },
+  "random_seeds": {
+    "identification": 20261122,
+    "dob": 10
+  },
+  "interpretation": "Finite-horizon sensitivity demonstration only; not robust-stability proof or machine tuning recommendation."
+}

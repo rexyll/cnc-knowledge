@@ -22,6 +22,10 @@
 - [扰动观测器与直驱回转轴周期转矩补偿](disturbance-observer-and-periodic-torque-compensation.md)：DOB/Q滤波、摩擦模型、机械角/电角度周期映射、谐波前馈、重复控制/迭代学习和回归验证。
 - [周期扰动观测与转矩补偿验证模板](../../resouces/12-control-and-machining-algorithms/periodic-disturbance-observer-validation-template.csv)：名义模型、观测器、补偿参数、基线对照、限幅/副作用和验证层级记录。
 
+## 新增专题
+
+- [伺服对象不确定性、DOB鲁棒稳定性与数值仿真验证](servo-model-and-dob-robustness-simulation.md)：相对阶次、Q滤波可实现性、鲁棒稳定性审查及可复现合成仿真。
+
 ## 建议正文结构
 
 - `overview.md`：章节总览、概念和分类。

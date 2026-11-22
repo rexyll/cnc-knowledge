@@ -13,3 +13,9 @@
 
 - `servo-control-loop-identification-template.csv`：电流/速度/位置环架构、参数版本、反馈点、采样和滤波、阶跃/频响、跟随误差、机械负载与安全批准记录；不含通用增益或带宽值。
 - 来源记录SRC-000320～SRC-000322：Siemens SINAMICS S200（2025版）级联环路/机械刚度说明、S120（2018版）速度环频响优化手册和SIMOTICS T-1FW3（2022版）slot ripple/转矩准确度条件。厂商参数与过程仅支持指定产品/固件。
+
+
+## 本轮新增伺服辨识专题
+- 正文：docs/08-servo-spindle-and-motion-control/servo-parameter-identification-and-frequency-response.md。
+- 合成仿真脚本、配置和CSV结果集中存储于CH12资源目录，避免跨章节重复副本。
+- 新增SRC-000327～SRC-000330：Beckhoff TwinCAT 3 Autotuning、Siemens SINAMICS S120、MathWorks系统辨识和频域模型估计资料。厂商方法只支持对应产品/固件；软件文档仅说明一般辨识方法。

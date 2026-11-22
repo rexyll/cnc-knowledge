@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000328",
+  "source_type": "manufacturer_manual",
+  "title": "SINAMICS S120 Drive Functions",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/805/109771805/att_999003/v1/S120_drive_fct_man_0619_en-US.pdf",
+  "version": "Function Manual 06/2019, firmware 5.2, 6SL3097-5AB00-0BP2",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Motor data identification, speed controller optimization and moment of inertia pre-control",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "SINAMICS S120-specific manual describes rotating motor identification, load-to-motor inertia ratio determination, speed-controller optimization and acceleration feedforward scaling. Procedures and parameters apply only to the stated Siemens drive family/firmware context and are not generic CNC tuning values. PDF is linked only.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}
