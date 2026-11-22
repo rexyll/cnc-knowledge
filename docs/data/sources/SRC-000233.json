@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000233",
+  "source_type": "standard_catalog",
+  "title": "ISO 4993:2024 — Steel and iron castings — Radiographic testing",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/84184.html",
+  "version": "ISO 4993:2024, Edition 4",
+  "published_on": "2024-03-15",
+  "accessed_on": "2026-11-22",
+  "locator": "General requirements for radiography of steel and iron castings using X-rays or gamma-rays.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于钢/铁铸件射线检测方法要求；具体检测区域、比例、质量等级和验收条件仍须在图纸/采购规范中明确。不能把射线检测视作对所有铸件无差别全检。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

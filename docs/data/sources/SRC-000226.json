@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000226",
+  "source_type": "standard_catalog",
+  "title": "ISO 8062-3:2023 — GPS dimensional and geometrical tolerances and machining allowances for castings",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/77952.html",
+  "version": "ISO 8062-3:2023, Edition 2",
+  "published_on": "2023-02-15",
+  "accessed_on": "2026-11-22",
+  "locator": "General dimensional/geometrical tolerances and machining allowance grades for castings in cast metals and alloys; linear dimensions plus straightness, flatness, roundness, parallelism, perpendicularity, symmetry and coaxiality; does not cover all geometrical tolerances or un-dimensioned 3D CAD models.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "铸件图纸必须明确引用标准并给出适用公差/加工余量类别；该标准不是铸件缺陷验收规范，也不自动提供床身加工余量的设计值。标准全文未下载/归档。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

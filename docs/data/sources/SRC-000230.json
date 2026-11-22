@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000230",
+  "source_type": "standard_catalog",
+  "title": "ISO 5817:2023 — Fusion-welded joints — Quality levels for imperfections",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/80209.html",
+  "version": "ISO 5817:2023, Edition 4",
+  "published_on": "2023-02-24",
+  "accessed_on": "2026-11-22",
+  "locator": "Quality levels B, C and D for imperfections in fusion-welded joints in steel, nickel, titanium and their alloys, excluding beam welding; applies to specified joint types and material thickness ≥0.5 mm; metallurgical aspects such as grain size and hardness are outside its scope.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "质量等级必须由设计/合同基于载荷、疲劳、腐蚀和制造要求指定；质量等级不自动确定NDT方法、检测比例或NDT验收等级。标准全文未下载/归档。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

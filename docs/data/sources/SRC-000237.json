@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000237",
+  "source_type": "standard_catalog",
+  "title": "ISO 17636-2:2022 — Non-destructive testing of welds — Radiographic testing — Digital detectors",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://committee.iso.org/standard/78320.html",
+  "version": "ISO 17636-2:2022, Edition 2, corrected 2023-02",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Digital X-/gamma-ray radiography using CR or digital detector arrays; does not specify acceptance levels; an Edition 3 work item was approved in 2026-09.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "当前已发布版仍为2022版，但新版项目已启动；数字射线技术要求不自动提供缺陷验收标准。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

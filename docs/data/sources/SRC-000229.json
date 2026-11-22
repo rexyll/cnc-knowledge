@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000229",
+  "source_type": "standard_catalog",
+  "title": "ISO 3834-2:2021 — Quality requirements for fusion welding of metallic materials — Comprehensive quality requirements",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/81651.html",
+  "version": "ISO 3834-2:2021, Edition 3",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Comprehensive fusion-welding quality requirements for workshops and field installation sites; reviewed and confirmed in 2026.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "质量体系要求不是单条焊缝缺陷等级、WPS/PQR具体参数或整机结构承载能力验收值。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

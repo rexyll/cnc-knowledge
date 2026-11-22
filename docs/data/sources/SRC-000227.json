@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000227",
+  "source_type": "standard_catalog",
+  "title": "ISO 185:2020 — Grey cast irons — Classification",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/80283.html",
+  "version": "ISO 185:2020, Edition 4",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Grey cast iron classification; confirmed current in 2025. Test properties may be characterized using cast samples, samples cut from castings by agreement, and/or hardness by agreement.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "试样类别、取样位置/方向和供需约定影响结果；不把标准试棒数值无条件外推为大型床身各截面的性能保证。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

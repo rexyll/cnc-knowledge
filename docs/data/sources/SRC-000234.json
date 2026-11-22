@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000234",
+  "source_type": "standard_catalog",
+  "title": "ISO 4986:2020 — Steel and iron castings — Magnetic particle testing",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/73041.html",
+  "version": "ISO 4986:2020, Edition 3",
+  "published_on": "2020-02-11",
+  "accessed_on": "2026-11-22",
+  "locator": "Magnetic-particle testing method for ferromagnetic steel and iron castings; provides severity levels and applies only to specified casting areas and percentages; 2025 systematic review closed with status shown as under review.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "适用前需确认材料铁磁性和检测部位/比例；不代表整件全覆盖。当前ISO目录显示2025复审已结束但状态仍显示review，版本状态应在采购前复核。标准全文未下载/归档。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

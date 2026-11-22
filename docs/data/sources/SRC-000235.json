@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000235",
+  "source_type": "standard_catalog",
+  "title": "ISO 17640:2018 — Non-destructive testing of welds — Ultrasonic testing",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/75737.html",
+  "version": "ISO 17640:2018, Edition 4",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Manual ultrasonic testing of fusion-welded joints in metallic materials, primarily full-penetration ferritic welds, thickness ≥8 mm, low ultrasonic attenuation and object temperatures 0 °C to 60 °C; ISO/DIS 17640 is under development to replace it.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "不得套用于薄板、复杂几何、高衰减或材料条件不符的焊缝；方法适用性及修订状态需核验。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000232",
+  "source_type": "standard_catalog",
+  "title": "ISO 17635:2025 — Non-destructive testing of welds — General rules for metallic materials",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/85705.html",
+  "version": "ISO 17635:2025, Edition 4",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Guidelines for selecting weld NDT methods and evaluating results based on quality requirements, material, weld thickness, welding process and extent of testing.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "NDT验收等级不能直接解释为ISO 5817/ISO 10042质量等级；方法选择和验收准则应在检验计划中明确。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

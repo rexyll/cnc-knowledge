@@ -51,3 +51,5 @@
 - 新增SRC-000223～SRC-000224：HEIDENHAIN EnDat接口与EnDat 2.2编码器特性页面；仅作为厂商接口说明，不据此推断跨品牌兼容性。
 - 新增SRC-000225：Siemens SINAMICS Low Voltage Engineering Manual V6.6（2020-02），仅作为特定产品族电机/编码器线缆屏蔽、接地和布线示例；未下载/归档PDF副本。
 - [关键零件制造工艺与检测](../../docs/04-components-materials-and-manufacturing/manufacturing-processes.md)新增第25～29节，覆盖变频器—电机—编码器—CNC接口、PWM/EMC审查、温度/振动/位移/夹紧传感器、主轴动态试验、整机辅助系统联调和分层验证证据包；未录入通用驱动匹配数值、线缆长度、传感器阈值、动态性能限值或安全响应时间。
+
+- SRC-000242：ISO 4992-1:2020一般用途铁素体钢铸件超声检测标准；该标准不适用于灰铸铁/球墨铸铁床身，不得用作其通用UT依据。

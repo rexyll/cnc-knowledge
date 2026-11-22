@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000231",
+  "source_type": "standard_catalog",
+  "title": "ISO 13920:2023 — Welding — General tolerances for welded constructions",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/86032.html",
+  "version": "ISO 13920:2023, Edition 2",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "General tolerances for linear/angular dimensions and shape/position of weldments in four tolerance classes; classes are stated on drawings; complex structures may need special provisions.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "面向焊接结构一般尺寸/形位公差，不替代功能关键基准、机加工面和装配接口的单独标注。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

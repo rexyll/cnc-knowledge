@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000236",
+  "source_type": "standard_catalog",
+  "title": "ISO 17636-1:2022 — Non-destructive testing of welds — Radiographic testing — Film techniques",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/78319.html",
+  "version": "ISO 17636-1:2022, Edition 2",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Film radiographic techniques for fusion-welded joints in metallic plates and pipes; does not specify acceptance levels for indications.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "检测技术标准不等于缺陷验收准则；胶片射线和数字探测器射线应区分适用部分。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

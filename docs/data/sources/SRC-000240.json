@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000240",
+  "source_type": "standard_catalog",
+  "title": "ISO 15614-1:2017 — Welding procedure test — Arc and gas welding of steels and nickel alloys",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/51792.html",
+  "version": "ISO 15614-1:2017, Edition 2, corrected 2017-11, with Amd 1:2019",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Specifies qualification of preliminary welding procedure specifications by welding procedure tests for production, repair and build-up welding; replacement FDIS is in formal approval.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "已发布2017版与其修订仍需按项目合同核对；替代文本FDIS尚非正式出版标准。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

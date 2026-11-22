@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000238",
+  "source_type": "standard_catalog",
+  "title": "ISO 9013:2017 — Thermal cutting — Classification of thermal cuts and quality tolerances",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/60321.html",
+  "version": "ISO 9013:2017, Edition 3",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "GPS and quality tolerances for oxyfuel, plasma and laser thermal cuts within specified material thickness ranges; applies when referenced by drawings or pertinent documents; Amendment 1 published in 2024.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "只适用于标准范围内热切割边缘几何/质量；不自动覆盖折弯回弹、焊后变形、整体平面度或钣金件全部公差。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

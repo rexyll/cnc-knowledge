@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000242",
+  "source_type": "standard_catalog",
+  "title": "ISO 4992-1:2020 — Steel castings — Ultrasonic testing — Part 1: General-purpose steel castings",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/73044.html",
+  "version": "ISO 4992-1:2020, Edition 2",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Ultrasonic testing of ferritic steel castings for general purposes, typically after grain-refining heat treatment, up to 600 mm wall thickness, using pulse-echo technique.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "对象为铁素体钢铸件，不可直接套用于灰铸铁或球墨铸铁机床床身；更厚壁/特殊结构需要专门协议。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}
