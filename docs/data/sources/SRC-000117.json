@@ -1,6 +1,6 @@
 {
   "source_id": "SRC-000117",
-  "source_type": "standard_project_catalog",
+  "source_type": "standard_catalog",
   "title": "GB/T 9439-2023《灰铸铁件》修订项目范围与主要技术内容",
   "publisher": "全国标准信息公共服务平台（国家市场监督管理总局、国家标准化管理委员会）",
   "author": null,
@@ -12,7 +12,7 @@
   "language": "zh-CN",
   "rights_status": "link_only",
   "license_or_permission": null,
-  "notes": "这是标准制修订项目官方摘要，不是GB/T 9439-2023正式标准全文。只用于范围/修订脉络和数据采集字段设计，不据此录入具体牌号性能值。",
+  "notes": "这是标准制修订项目官方摘要，不是GB/T 9439-2023正式标准全文。只用于范围/修订脉络和数据采集字段设计，不据此录入具体牌号性能值。 source_type采用仓库允许的standard_catalog枚举。",
   "authority_tier": "A",
   "evidence_kind": "normative_requirement"
 }
