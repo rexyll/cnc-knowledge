@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000121",
+  "source_type": "standard_catalog",
+  "title": "国家市场监督管理总局：《标准出版管理办法》",
+  "publisher": "国家市场监督管理总局（原国家技术监督局、国家新闻出版署制定）",
+  "author": null,
+  "url": "https://www.samr.gov.cn/zw/zfxxgk/zc/xzgfxwj/art/2023/art_90ed8d36366f4183b32167dde8feef39.html",
+  "version": "技监局政发〔1997〕118号；官网现行公开页面",
+  "published_on": "1997-08-18",
+  "accessed_on": "2026-11-22",
+  "locator": "第3条：国家标准由中国标准出版社出版；第5条：出版单位根据授权/合同享有专有出版权；第7条：经营性复制标准任何部分及将标准任何部分存入电子信息网络传播，须事先取得专有出版权单位书面同意。",
+  "language": "zh-CN",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于确认国家标准正式出版主体及复制/网络传播的授权边界。该规定不证明某个第三方经销商获得了GB/T 9439-2023或GB/T 1348-2019的具体销售授权，也不授予购买者向公开GitHub仓库上传标准全文的权利。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
