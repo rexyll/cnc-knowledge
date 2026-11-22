@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000283",
+  "source_type": "manufacturer_product_page",
+  "title": "mayr ROBA topstop — Vertical Axis Safety Brake Module",
+  "publisher": "Chr. Mayr GmbH + Co. KG",
+  "author": null,
+  "url": "https://www.mayr.com/en/products/safety-brakes/industrial-brakes/roba-topstop~57",
+  "version": "Online product page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Product description for the ROBA topstop vertical-axis brake module, including holding function and available shaft-coupling configuration",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports only the listed mayr product family's declared structure and functions. It is an example of a ready-to-install vertical-axis brake module and does not establish that another brake is safety-rated or suitable for a given CNC axis. No product manual or PDF is archived.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}
