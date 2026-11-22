@@ -1,0 +1,9 @@
+chapter_id,entity_type,field_name,label_zh,description,data_type,unit,required_level,allowed_values,validation_rule,applicability,source_required,example_value,notes
+"CH12","algorithm","disturbance_observer_configuration","扰动观测器配置","扰动观测器的名义对象、扰动定义、Q滤波和反馈/补偿路径","object","","conditional","","记录P_n输入输出单位/符号、扰动注入点、Q滤波器结构/阶数/截止频率、采样/延迟和稳定性依据","伺服速度/电流/其他可观测控制对象","yes","","观测器输出是等效扰动估计，不自动表示具体物理故障"
+"CH12","test","disturbance_observer_identification_record","扰动观测器模型辨识记录","名义对象惯量/阻尼/延迟/频响参数和模型有效范围","object","","conditional","","记录辨识激励、采样、拟合区间、J/B/摩擦/柔性模态、模型残差、负载和校准状态","DOB模型建立与复核","yes","","不得以仿真模型参数冒充真实轴参数"
+"CH12","algorithm","periodic_disturbance_map_record","周期扰动映射配置","机械角/电角度索引的周期补偿表或谐波系数","object","","conditional","","记录角坐标、零位/方向/极对数、表长/插值、周期边界、正反向表和表格来源","重复机械角/电角度扰动补偿","yes","","电机角度和输出端角度数据须分开定义"
+"CH12","test","cogging_compensation_validation_record","齿槽/位置映射补偿验证","位置相关周期转矩补偿前后性能和工况范围","object","","conditional","","记录学习速度/方向/负载/温度、编码器、补偿表版本、开启/关闭对照、转矩/速度/角误差阶次","适用电机和驱动器支持的补偿功能","yes","","供应商专有功能和限制不得跨型号推断"
+"CH12","algorithm","friction_compensation_validation_record","摩擦补偿配置/验证","库仑/粘性/Stribeck/静摩擦等模型及其控制补偿验证","object","","conditional","","记录辨识方向/速度/温度、起动阈值、摩擦曲线、平滑/死区和零速行为","低速定位/回转轴摩擦补偿","yes","","摩擦补偿不得掩盖机械拖曳、轴承异常和夹紧未释放"
+"CH12","algorithm","harmonic_current_compensation_record","谐波电流/电压补偿记录","按机械角/电角度的谐波前馈或电流控制补偿参数","object","","conditional","","记录谐波阶次/系数/相位、坐标角、采样同步、带宽、限幅和固件/算法版本","具备相关算法实现的PMSM驱动","yes","","电流/电压注入位置必须与实际FOC控制结构一致"
+"CH12","algorithm","iterative_learning_control_record","重复控制/迭代学习配置","周期性轨迹/误差的学习控制参数和收敛证据","object","","conditional","","记录周期身份、学习增益/滤波/相位补偿、初始条件、更新规则、误差序列和停止条件","重复周期运动/加工任务","yes","","非重复工况下历史周期误差不一定有效"
+"CH12","test","compensation_regression_validation_record","补偿回归验证记录","不同方向/速度/负载/温度下补偿收益、副作用与适用范围","object","","conditional","","记录基线版本、补偿版本、试验矩阵、同一测量链、指标定义、置信/不确定度和回退条件","所有伺服误差/扰动补偿算法","yes","","补偿改善不代表物理缺陷已经消除"

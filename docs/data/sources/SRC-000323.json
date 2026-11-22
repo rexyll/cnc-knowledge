@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000323",
+  "source_type": "academic_paper",
+  "title": "A disturbance observer based approach to current control of PMSM drives for torque ripple reduction",
+  "publisher": "IFAC-PapersOnLine",
+  "author": null,
+  "url": "https://doi.org/10.1016/j.ifacol.2019.08.179",
+  "version": "Volume 52, Issue 4, 2019, pages 206–209",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Disturbance-observer current control method; rotor-position-synchronous current ripple and experimental result on 500 W SPMSM",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Research reports a disturbance-observer approach that targets current ripple synchronized with rotor position and its harmonics, with an experimental result on a 500 W surface-PMSM. The reported reduction is specific to the experimental motor and setup; it is not a guaranteed outcome or parameter set for CNC torque motors.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

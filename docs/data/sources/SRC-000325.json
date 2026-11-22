@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000325",
+  "source_type": "academic_paper",
+  "title": "Torque ripple attenuation of PMSM using improved robust two-degree-of-freedom controller via extended sliding mode parameter observer",
+  "publisher": "ISA Transactions / PubMed",
+  "author": "Mingfei Huang; Yongting Deng; Hongwen Li; Jianli Wang",
+  "url": "https://doi.org/10.1016/j.isatra.2022.01.033",
+  "version": "Volume 129, Part B, October 2022, pages 558–571; Epub 2022-02-07",
+  "published_on": "2022-02-07",
+  "accessed_on": "2026-11-22",
+  "locator": "Robust two-degree-of-freedom control, iterative learning, extended sliding-mode parameter observer and disturbance feedforward",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Research combines a robust two-degree-of-freedom controller, iterative learning and a parameter observer for PMSM torque-ripple attenuation. The abstract reports simulation/experimental results in its studied setup. Its architecture is a research option, not a drop-in CNC controller function or verified result for other machines.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

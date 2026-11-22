@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000324",
+  "source_type": "academic_paper",
+  "title": "Disturbance-Observer-Based Control and Related Methods—An Overview",
+  "publisher": "IEEE Transactions on Industrial Electronics",
+  "author": null,
+  "url": "https://doi.org/10.1109/TIE.2015.2478397",
+  "version": "2016; DOI 10.1109/TIE.2015.2478397",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Review of disturbance-observer architecture, Q-filter realizability, noise rejection and cutoff-frequency trade-offs",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Review discusses low-pass Q-filter design, properness relative to the nominal plant inverse, and the trade-off among disturbance attenuation, model uncertainty, control effort and measurement noise. DOB design must also consider minimum-phase assumptions and robust stability; do not copy a cutoff frequency from an unrelated plant.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

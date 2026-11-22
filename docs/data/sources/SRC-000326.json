@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000326",
+  "source_type": "academic_paper",
+  "title": "Study on Torque Ripple Suppression in Low-Speed Permanent Magnet Synchronous Motors Using the Current Averaging Method and Harmonic Voltage Injection",
+  "publisher": "MDPI, Actuators",
+  "author": "Junguo Cui; Kunchen Hu; Fuyuan Li; Yu Liu; Jianqing Gao; Hesong Wang; Yang Yu; Junchi Zhang; Xiyue Duan; Zilong Yang",
+  "url": "https://doi.org/10.3390/act15070356",
+  "version": "Actuators 2026, 15(7), 356; published 2026-06-23",
+  "published_on": "2026-06-23",
+  "accessed_on": "2026-11-22",
+  "locator": "Low-speed PMSM harmonic torque mechanism and current-averaging/harmonic-voltage compensation method",
+  "language": "en",
+  "rights_status": "open_license",
+  "license_or_permission": "CC BY 4.0; repository stores metadata/link only",
+  "notes": "Recent open-access study of low-speed PMSM torque ripple using current averaging and harmonic voltage injection. The paper's motor/application, assumptions and test conditions must be checked before drawing conclusions for CNC direct-drive rotary axes. It is a research lead, not a CNC machine acceptance standard or universal controller recommendation.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}
