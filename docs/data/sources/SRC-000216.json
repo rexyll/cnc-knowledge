@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000216",
+  "source_type": "standard_catalog",
+  "title": "IEC 60034-2-3:2024 — Rotating electrical machines — Part 2-3: Specific test methods for determining losses and efficiency of converter-fed AC motors",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/67758",
+  "version": "IEC 60034-2-3:2024 Edition 2.0",
+  "published_on": "2024-03-12",
+  "accessed_on": "2026-11-22",
+  "locator": "IEC官方目录：变频供电交流电机损耗与效率测试方法，包含标准化负载点和插值程序；适用于符合标准条件的变速交流电机。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "测试结果用于规定可比条件下电机设计比较，不代表最终应用中的电机-变频器-电缆组合或完整电主轴总成效率。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

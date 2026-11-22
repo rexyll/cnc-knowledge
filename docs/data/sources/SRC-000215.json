@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000215",
+  "source_type": "standard_catalog",
+  "title": "IEC 60034-6:1991 — Rotating electrical machines — Part 6: Methods of cooling (IC Code)",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/143",
+  "version": "IEC 60034-6:1991 Edition 2.0",
+  "published_on": "1991-10-01",
+  "accessed_on": "2026-11-22",
+  "locator": "IEC官方目录：识别旋转电机冷却回路布置和冷却介质运动方式，分类并提供完整/简化IC代码；稳定日期2028。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于冷却方法分类和标识，不提供电主轴冷却设计计算、介质参数或性能限值。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

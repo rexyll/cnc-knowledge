@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000219",
+  "source_type": "manufacturer_product_page",
+  "title": "Motor cooling — GMN high-speed spindle technology",
+  "publisher": "GMN",
+  "author": null,
+  "url": "https://www.gmn.de/en/spindles/know-how/motor-cooling/",
+  "version": "网页版本",
+  "published_on": "2026-11-22",
+  "accessed_on": "2026-11-22",
+  "locator": "GMN公开说明其部分高速主轴在轴承区域和电机区域配置液体冷却套，并说明可用性能受冷却介质及温度影响。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "仅作为GMN特定产品设计示例；页面中的冷却温度区间、回路结构和性能声明不可外推为行业统一要求。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

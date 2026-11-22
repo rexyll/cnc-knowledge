@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000218",
+  "source_type": "standard_catalog",
+  "title": "IEC 60034-14:2026 — Rotating electrical machines — Part 14: Mechanical vibration of certain machines with shaft heights 56 mm and higher",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/107548",
+  "version": "IEC 60034-14:2026 Edition 5.0",
+  "published_on": "2026-11-10",
+  "accessed_on": "2026-11-22",
+  "locator": "IEC官方目录：第5版，规定特定电机脱离负载/原动机条件下的工厂振动验收程序与限值；范围包括轴中心高≥56mm、额定输出≤50MW、运行速度120～15000r/min等条件。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "不适用于现场安装状态等列明的排除对象；高速内置电主轴若无传统中心高定义或超过转速范围，不可未经适用性分析直接套用；电机单体工厂验收不等于主轴总成/机床整机验收。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

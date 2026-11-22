@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000214",
+  "source_type": "standard_catalog",
+  "title": "IEC 60034-1:2026 — Rotating electrical machines — Part 1: Rating and performance",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/89961",
+  "version": "IEC 60034-1:2026 Edition 15.0",
+  "published_on": "2026-03-13",
+  "accessed_on": "2026-11-22",
+  "locator": "IEC官方目录：第15版，2026-03-13发布，替代IEC 60034-1:2022；对集成EMC主动部件的机器，标准仅适用于PDS中的电机部分。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "不可将IEC 2026版直接视为GB/T 755-2025的采标版本；中国现行国标仍标明等同采用IEC 60034-1:2022。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

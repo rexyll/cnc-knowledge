@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000217",
+  "source_type": "standard_catalog",
+  "title": "IEC 60034-11:2020 — Rotating electrical machines — Part 11: Thermal protection",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/64293",
+  "version": "IEC 60034-11:2020 Edition 3.0",
+  "published_on": "2020-10-05",
+  "accessed_on": "2026-11-22",
+  "locator": "IEC官方目录：规定特定单速三相50/60Hz鼠笼感应电机绕组内/适当位置热保护器和温度检测器要求，额定电压不超过1000V，直接起动或星三角起动。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "适用范围受电机类型和起动方式限制，不是所有变频驱动电主轴通用的温度传感器布置或热保护阈值规范。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
