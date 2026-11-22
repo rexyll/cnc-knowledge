@@ -574,3 +574,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 更新材料数据库2.4节，明确区分官方目录元数据、第三方销售声明、合法购买、个人研究许可和公开Git仓库再分发许可；更新标准映射CSV的正式文本访问、采购线索和权利核验字段。
 - 未下载或归档版权状态不明的标准全文；未录入HT/QT牌号性能数值；未创建MAT牌号实体或任何机床实际用料关系。CH04-T002保持IN_PROGRESS。
 - 所在分支：main。质量验收和最终提交SHA以本次提交触发的GitHub Actions为准。
+
+
+### CH04-T002 — 正式文本获取与版权边界核验CI验收补录（2026-11-22）
+
+- 内容提交：[fce67e7b9e8ecd3fe5f036bf503fad346feefcc0](https://github.com/rexyll/cnc-knowledge/commit/fce67e7b9e8ecd3fe5f036bf503fad346feefcc0)，所在分支：main。
+- GitHub Actions Run [44986603836](https://github.com/rexyll/cnc-knowledge/actions/runs/44986603836)：success；5项单元测试全部通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、120条来源、267处正文来源引用。
+- 质量门禁验证仓库结构、数据记录和内部链接；不验证第三方销售商授权链，不构成标准全文的版权许可，也不验证外部URL实时可访问性。
+- CH04-T002保持IN_PROGRESS；待合法取得正式标准文本且确认允许的使用范围后，才逐表录入HT/QT牌号和性能数据。
