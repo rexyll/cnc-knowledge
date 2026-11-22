@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000212",
+  "source_type": "standard_catalog",
+  "title": "ISO 21940-12:2016 — Mechanical vibration — Rotor balancing — Part 12: Procedures and tolerances for rotors with flexible behaviour",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/50429.html",
+  "version": "ISO 21940-12:2016; revision project ISO/CD 21940-12.2",
+  "published_on": "2016-03-29",
+  "accessed_on": "2026-11-22",
+  "locator": "ISO official catalogue: flexible-behaviour rotor balancing procedures and final balance-state assessment; 2025 review confirmed the 2016 edition, followed by a 2026-10-15 decision to revise; ISO/CD 21940-12.2 is under development at stage 30.99.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Provides procedures and guidance for flexible rotors; explicitly not an acceptance specification for any rotor and excludes structural resonances. ISO/CD 21940-12.2 is a draft under development, not a published replacement. Do not infer applicability or acceptance criteria for a specific machine-tool spindle without rotor-dynamic and contractual evidence.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

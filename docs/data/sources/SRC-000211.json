@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000211",
+  "source_type": "standard_catalog",
+  "title": "ISO 21940-11:2016+Amd 1:2022 — Mechanical vibration — Rotor balancing — Part 11: Procedures and tolerances for rotors with rigid behaviour",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/54074.html",
+  "version": "ISO 21940-11:2016+Amd 1:2022",
+  "published_on": "2016-11-09",
+  "accessed_on": "2026-11-22",
+  "locator": "ISO official catalogue: rigid-behaviour rotor balancing procedures and residual unbalance tolerances; 2026 systematic review entered 90.20 on 2026-04-15 and reached 90.60 close of review on 2026-09-03; the current page does not explicitly state the final outcome.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Applies to rotors with rigid behaviour and explicitly excludes flexible-behaviour rotors, for which ISO 21940-12 is relevant. The standard does not provide a universal machine-tool spindle balance grade; rotor behaviour must be determined from the actual rotor/dynamic operating conditions. Do not treat the 2026 review as confirmed without an explicit ISO outcome.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
