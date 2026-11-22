@@ -870,3 +870,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 新增SRC-000220～SRC-000225：IEC 61800-3:2022及2025勘误、IEC 61800-5-1:2022及2025-12勘误、IEC 61800-9-2:2023及AMD1:2025整合版、HEIDENHAIN EnDat/EnDat 2.2接口资料、Siemens SINAMICS V6.6工程手册。厂商接口和安装资料均限定于具体协议/产品系列。
 - 更新主轴制造/验收标准映射CSV，增加PDS/机床EMC、PDS安全、驱动系统能效、编码器接口和厂商安装示例；同步更新CH04 README、资源README、章节TaskPlan和根TaskPlan。
 - 未下载/归档受版权保护标准或Siemens PDF；未录入通用驱动匹配值、PWM滤波参数、电缆长度、编码器采样频率、传感器阈值、动态性能验收值或安全响应时间。CH04-T003保持IN_PROGRESS；提交和CI验收待补录。
+
+
+### CH04-T003 — 主轴驱动链专题CI验收补录（2026-11-22）
+
+- 内容提交：[`f85b1139c8283a53207e2cb8dbb24f3c67be9697`](https://github.com/rexyll/cnc-knowledge/commit/f85b1139c8283a53207e2cb8dbb24f3c67be9697)，所在分支：main。
+- GitHub Actions [Run 44991135602](https://github.com/rexyll/cnc-knowledge/actions/runs/44991135602)：success；5/5单元测试通过；strict lint PASS（0 errors）。
+- Linter统计：22章、109个Markdown文件、331条内部链接、140条实体、240条关系、225条来源、437处正文来源引用。
+- CI验证仓库结构、来源记录Schema、实体/关系命名空间、正文来源引用和内部链接；不验证外部URL长期可用性、标准全文许可、具体型号驱动兼容性、EMC实测、动态性能验收值或真实机床安全验证。
+- 本轮未下载/归档受版权保护标准全文或Siemens手册；未录入通用驱动匹配数值、PWM滤波参数、电缆长度、编码器采样频率、传感器阈值、动态性能验收值或安全响应时间。CH04-T003保持IN_PROGRESS。
