@@ -15,3 +15,6 @@ CH02,machine_type,typical_structure,典型结构,主要承载结构/主轴/工�
 CH02,machine_type,typical_axis_configuration,典型轴系,常见直线轴/旋转轴及其运动对象,object,,recommended,,区分可控轴和同时联动轴且不推定型号能力,数控机床类型,yes,,具体轴数和联动能力须回到型号规格
 CH02,machine_type,typical_workpieces,典型工件与工序,代表性工件几何/加工特征,array,,recommended,,只记录一般适用场景不作性能保证,所有机床类型,yes,,工艺参数由CH13维护
 CH02,machine_type,selection_constraints,选型约束,类型层面的关键适用边界和风险,array,,recommended,,应说明约束来源或标注为工程评估项,所有机床类型,yes,,不替代具体设备风险评估
+CH02,machine_model,official_product_url,官方产品页,制造商产品型号或系列的官方页面URL,string,,recommended,,必须对应制造商域名并记录访问日期,整机型号,yes,,经销商页面只能作为补充来源
+CH02,machine_model,specification_revision,规格版本/核验日期,公开规格的页面版本或文档编号及核验日期,string,,recommended,,需能追溯到source_ids,有公开规格的型号,yes,,网页无发布日期时记录online page与accessed_on
+CH02,machine_model,specification_scope,规格适用范围,参数适用的具体子型号地区配置或控制器版本,string,,recommended,,不得将系列最高值套用于所有子型号,有参数记录的型号,yes,,标准配置/选配/定制必须分开

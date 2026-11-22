@@ -21,19 +21,55 @@
   "lifecycle_status": "active",
   "verification_status": "verified",
   "created_at": "2026-11-22T00:02:02+08:00",
-  "updated_at": "2026-11-22T00:02:02+08:00",
-  "verified_at": "2026-11-22T00:02:02+08:00",
+  "updated_at": "2026-11-22T12:10:00+08:00",
+  "verified_at": "2026-11-22T12:10:00+08:00",
   "valid_from": null,
   "valid_to": null,
   "source_ids": [
-    "SRC-000011"
+    "SRC-000011",
+    "SRC-000045"
   ],
   "attributes": {
     "manufacturer_id": "VENDOR-000002",
     "model_code": "INTEGREX i NEO",
     "product_family": "车铣复合/多任务机床",
     "machine_type_id": "MTYPE-000013",
-    "configuration_note": "具体配置、行程、主轴、刀库和控制系统选件应以对应地区/版本规格书为准。"
+    "configuration_note": "具体配置、行程、主轴、刀库和控制系统选件应以对应地区/版本规格书为准。",
+    "official_product_url": "https://www.mazak.com/us-en/products/integrex-i-neo/",
+    "specification_revision": "官网在线系列页；核验日期2026-11-22",
+    "specification_scope": "INTEGREX i-200 NEO及i-200S NEO子型号参数分别适用，不作为整个i NEO系列统一参数",
+    "published_specs": {
+      "i_200_neo": {
+        "chuck_size": {
+          "value": 8,
+          "unit": "inch",
+          "source_id": "SRC-000045"
+        },
+        "max_machining_diameter": {
+          "value": 600,
+          "unit": "mm",
+          "source_id": "SRC-000045"
+        },
+        "max_machining_length": {
+          "value": 590,
+          "unit": "mm",
+          "source_id": "SRC-000045"
+        },
+        "y_axis_travel": {
+          "value": 210,
+          "unit": "mm",
+          "source_id": "SRC-000045"
+        }
+      },
+      "i_200s_neo": {
+        "max_machining_length": {
+          "value": 850,
+          "unit": "mm",
+          "source_id": "SRC-000045"
+        },
+        "configuration": "second spindle version"
+      }
+    }
   },
   "notes": null
 }

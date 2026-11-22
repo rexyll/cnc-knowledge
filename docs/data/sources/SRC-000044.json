@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000044",
+  "source_type": "manufacturer_product_page",
+  "title": "GENOS M560-V | Okuma",
+  "publisher": "Okuma Corporation",
+  "author": null,
+  "url": "https://www.okuma.com/products/genos-m560-v",
+  "version": "Online product page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Product detail and highlighted metric specifications; OSP-P500 configuration",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "页面列出最大加工范围1050×560×460 mm、工作台1300×560 mm、主轴15000 min⁻¹、刀库32把；注明OSP-P500配置。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

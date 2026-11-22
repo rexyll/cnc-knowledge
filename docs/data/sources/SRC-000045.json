@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000045",
+  "source_type": "manufacturer_product_page",
+  "title": "INTEGREX i NEO | Mazak",
+  "publisher": "Yamazaki Mazak Corporation",
+  "author": null,
+  "url": "https://www.mazak.com/us-en/products/integrex-i-neo/",
+  "version": "Online product page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "INTEGREX i-200 NEO/i-200S NEO model tables",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "i-200 NEO：8英寸卡盘、最大直径Φ600 mm、加工长度590 mm、Y轴210 mm；i-200S为副主轴版本、长度850 mm。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

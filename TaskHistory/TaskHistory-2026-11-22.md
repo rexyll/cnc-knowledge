@@ -177,3 +177,31 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - CH02覆盖度调整为2级foundational：2篇文章、23个主归属实体（14 MTYPE + 7 MACHINE + 2 KNOW）、60条关系（含14条新文章索引边）、19条去重来源、0项资源文件。
 - 覆盖统计按实体主归属、关系关联及文章/实体引用的去重SRC计算；未把型号未核验参数填入实体。
 - 所在分支：main。完成时间：2026-11-22T11:20:00+08:00。主要内容提交SHA：a80017ec5b17c57d534e5907fe7ff5229bae4088；GitHub Actions Run #18（44978860961）success，5项单元测试通过，严格知识检查PASS（0 errors）。最终目录索引与来源权利状态校正由后续提交补充。
+
+## CH02-T003研究与验收记录
+
+### 研究范围与交付
+
+- 新增正文：`docs/02-machine-types-and-products/representative-model-catalog.md`，知识实体KNOW-000007，版本1.0。
+- 复用已有7条MACHINE记录，新增3条型号实体：MACHINE-000008 DMG MORI DMU 50 3rd Generation、MACHINE-000009 Mazak QUICK TURN 200MSY、MACHINE-000010 TRUMPF TruLaser 3030 fiber。
+- 新增来源SRC-000044～SRC-000048，共5条制造商官方产品页；全部标记link_only，不复制版权受限文档。
+- 新增6条型号事实关系（MODEL_OF、MANUFACTURED_BY）和10条目录索引关系DERIVED_FROM；索引关系只表示导航与溯源。
+- 为Okuma GENOS M560-V、Mazak INTEGREX i-200 NEO/i-200S NEO、Mazak QUICK TURN 200MSY、DMG MORI DMU 50 3rd Generation及TRUMPF TruLaser 3030 fiber记录型号级公开参数，逐项标明单位和SRC ID。
+- 对INH 63、VARIAXIS i NEO、DN Solutions DVF series、沈阳机床H系列、秦川YKS7225A保留官方产品目录身份，未在缺少精确规格书时补造参数。
+- 扩展CH02字段字典，补充官方产品页、规格版本/核验日期、规格适用范围字段；更新CH02/总目录、根计划、章节计划和覆盖矩阵。
+
+### 规格边界与资料权利
+
+- 所有规格均为制造商公开声明，不是独立第三方测试或现场实测。
+- GENOS M560-V记录明确限定OSP-P500配置，不与GENOS M560V-5AX规格混用。
+- INTEGREX系列区分i-200、i-200S等子型号；第二主轴、下刀塔和主轴选项不得跨型号泛化。
+- QUICK TURN 200MSY参数只对应原厂页面该型号行；其他QUICK TURN型号不继承该参数。
+- DMU 50基础/选配主轴、刀库配置分开记录；TruLaser 3030 fiber的激光功率/板厚受激光器与工艺包影响。
+- 本轮没有下载/复制完整PDF或其他文档，没有生成/保存图片、动图；资源计数为0。外部资料保留官方链接并按link-only处理。
+
+### 覆盖度与验收
+
+- CH02覆盖度：2级foundational，3篇知识文章、27个主归属实体（14 MTYPE+10 MACHINE+3 KNOW）、76条关系、24条去重来源、0项资源。
+- CH19覆盖矩阵同步增加3条跨章OEM制造关系及本轮使用的3条厂商来源，更新为22个主归属实体、37条关系、23条去重来源。
+- 所在分支：main。完成时间：2026-11-22T12:10:00+08:00。提交SHA与CI结果在提交后补齐。
+- 验收包含Schema结构、ID唯一性、来源/关系引用、Markdown内部链接和严格知识质量脚本；离线CI不等于外部URL实时可用性验证。

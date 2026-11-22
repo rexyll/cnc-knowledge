@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000046",
+  "source_type": "manufacturer_product_page",
+  "title": "QUICK TURN | Mazak",
+  "publisher": "Yamazaki Mazak Corporation",
+  "author": null,
+  "url": "https://www.mazak.com/us-en/products/quick-turn/",
+  "version": "Online product page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "QUICK TURN 200MSY model table",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "200MSY：8英寸卡盘、最大加工直径Φ14.75英寸、长度22.70英寸；型号行标示铣削、第二主轴和Y轴。",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

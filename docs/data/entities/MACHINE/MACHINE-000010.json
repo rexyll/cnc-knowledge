@@ -1,0 +1,79 @@
+{
+  "entity_id": "MACHINE-000010",
+  "entity_type": "machine_model",
+  "canonical_name": "TRUMPF TruLaser 3030 fiber",
+  "english_name": null,
+  "aliases": [],
+  "description": "TRUMPF官方产品页列示的二维光纤激光板材切割设备型号；具体激光器和工艺包配置影响加工能力。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH19",
+    "CH22"
+  ],
+  "classification_path": [
+    "机床型号/系列"
+  ],
+  "tags": [
+    "激光切割",
+    "板材加工",
+    "光纤激光"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:10:00+08:00",
+  "updated_at": "2026-11-22T12:10:00+08:00",
+  "verified_at": "2026-11-22T12:10:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000048"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000006",
+    "model_code": "TruLaser 3030 fiber",
+    "product_family": "二维光纤激光切割机",
+    "machine_type_id": "MTYPE-000011",
+    "machine_layout": "other",
+    "axis_configuration": {
+      "controlled_axes": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "note": "X/Y为页面列示工作范围方向，Z轴具体配置查订货规格"
+    },
+    "process_capabilities": [
+      "二维激光板材切割"
+    ],
+    "published_specs": {
+      "x_working_range": {
+        "value": 3000,
+        "unit": "mm",
+        "source_id": "SRC-000048"
+      },
+      "y_working_range": {
+        "value": 1500,
+        "unit": "mm",
+        "source_id": "SRC-000048"
+      },
+      "basic_machine_mass": {
+        "value": 11700,
+        "unit": "kg",
+        "source_id": "SRC-000048"
+      },
+      "max_simultaneous_speed": {
+        "value": 170,
+        "unit": "m/min",
+        "source_id": "SRC-000048"
+      }
+    },
+    "configuration_options": [
+      "激光器功率按TruFiber型号/订货配置选择",
+      "最大板厚按材料、激光功率和工艺包核验",
+      "托盘交换和自动化按选配确认"
+    ],
+    "specification_revision": "官网在线规格页；核验日期2026-11-22",
+    "specification_scope": "TruLaser 3030 fiber型号行，不引用同页其他幅面型号参数"
+  },
+  "notes": null
+}

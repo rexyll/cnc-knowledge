@@ -1,0 +1,47 @@
+{
+  "entity_id": "KNOW-000007",
+  "entity_type": "knowledge_article",
+  "canonical_name": "典型数控机床产品与型号规格目录",
+  "english_name": "Representative CNC machine tool model and specification catalog",
+  "aliases": [],
+  "description": "基于整机制造商官方产品页和公开规格资料，建立典型数控机床型号、类型归属、配置边界、公开参数与来源定位的可追溯目录。",
+  "primary_chapter": "CH02",
+  "related_chapters": [
+    "CH19",
+    "CH20",
+    "CH22"
+  ],
+  "classification_path": [
+    "知识条目",
+    "representative_machine_model_catalog"
+  ],
+  "tags": [
+    "机床型号",
+    "产品规格",
+    "厂商目录",
+    "选型"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T12:10:00+08:00",
+  "updated_at": "2026-11-22T12:10:00+08:00",
+  "verified_at": "2026-11-22T12:10:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000044",
+    "SRC-000045",
+    "SRC-000046",
+    "SRC-000047",
+    "SRC-000048"
+  ],
+  "attributes": {
+    "document_path": "docs/02-machine-types-and-products/representative-model-catalog.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "10个代表性整机型号/系列，覆盖五轴加工中心、车铣复合、立式加工中心、车削中心、卧式加工中心、齿轮磨削与激光切割",
+    "knowledge_kind": "representative_machine_model_catalog",
+    "article_status": "reviewed"
+  },
+  "notes": "官方公开资料样本，不是市场排名或完整产品清单；厂商声明不是第三方实测。"
+}

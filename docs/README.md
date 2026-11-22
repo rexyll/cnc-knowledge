@@ -40,6 +40,7 @@
 - [行业实体与关系索引](01-industry-and-fundamentals/entity-relationship-index.md)
 - [数控机床分类体系](02-machine-types-and-products/machine-tool-classification.md)
 - [主要数控机床类型技术档案](02-machine-types-and-products/machine-type-technical-archives.md)
+- [典型数控机床产品与型号规格目录](02-machine-types-and-products/representative-model-catalog.md)
 - [代表性厂商与系统生态图](19-manufacturers-products-and-supply-chain/representative-ecosystem.md)
 
 ## 质量门禁与覆盖度
