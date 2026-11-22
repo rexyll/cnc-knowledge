@@ -631,3 +631,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 更新材料数据库正文、标准映射CSV、章节TaskPlan、章节README、资源README和根TaskPlan。未提取或归档标准全文；未录入未经核验的材料牌号成分/性能值；未创建MAT牌号实体或机床实际用料关系。
 - 官方来源：GB/T 17432-2012（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D7E602D3A7E05397BE0A0AB82A）；GB/T 3274-2017（https://std.samr.gov.cn/gb/search/gbDetailed?id=Kp06oCXybAo%3D&mode=p）；GB/T 709-2019（https://std.samr.gov.cn/gb/search/gbDetailed?id=8531C702DB296551E05397BE0A0ACD16）。
 - 所在分支：main；本任务保持IN_PROGRESS，待提交和CI验收。
+
+
+### CH04-T002 — 钢板带材与铝合金取样方法标准补充CI验收补录（2026-11-22）
+
+- 内容提交：[4f4c3d3a373c20fabd2d6c756d9360dd39aba3b8](https://github.com/rexyll/cnc-knowledge/commit/4f4c3d3a373c20fabd2d6c756d9360dd39aba3b8)，所在分支：main。
+- GitHub Actions Run [44987566055](https://github.com/rexyll/cnc-knowledge/actions/runs/44987566055)：success；5项单元测试全部通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、126条来源、279处正文来源引用。
+- 自动门禁验证本地结构、Schema、来源引用和内部链接；不验证外部URL实时可访问性、标准全文许可或具体材料批次符合性。
+- CH04-T002保持IN_PROGRESS；本次为标准目录元数据与职责边界增量，不代表牌号/性能数据库完成。
