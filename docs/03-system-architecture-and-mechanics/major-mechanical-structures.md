@@ -157,7 +157,9 @@ ISO 230-1:2012规定机床在无负载或准静态条件下的几何精度测试
 - [数控机床基本原理、坐标系与运动链](../01-industry-and-fundamentals/cnc-machine-fundamentals.md)：坐标系、轴命名和运动学基础。
 - [数控机床选型方法与工程比较矩阵](../02-machine-types-and-products/machine-tool-selection-methodology.md)：整机需求、硬门槛和选型决策。
 - [关键部件供应商与产品目录](../19-manufacturers-products-and-supply-chain/key-component-suppliers-and-products.md)：THK、SKF、Bosch Rexroth等产品族的厂商来源；本文不重复产品目录，也不推断某OEM实际采用。
-- CH04后续负责具体零件图号、材料牌号、热处理、制造工艺和零件级BOM；CH16负责精密装配/安装工艺，CH17负责设备级维护程序，CH18负责失效与故障案例。
+- [CH04 零部件、材料与制造](../04-components-materials-and-manufacturing/README.md)：维护可识别零件身份及其材料、热处理、制造工艺和零件级技术属性；不维护具体整机配置BOM。
+- [CH20 BOM、图纸与工程技术文档](../20-bom-drawings-and-technical-documents/README.md)：维护指定整机/子系统/配置下的BOM层级、数量、位号、修订、有效性及图纸/文档关联；零件项引用CH04的PART/MAT主数据。
+- [CH16 制造、装配、安装与调试](../16-manufacturing-assembly-installation/README.md)：负责精密机械装配、整机安装和现场调试；[CH14 性能计量与验收](../14-performance-metrology-and-acceptance/README.md)负责测量方法和整机性能验收；[CH17 操作、维护与维修](../17-operation-maintenance-and-repair/README.md)负责设备级维护程序；[CH18 故障诊断与可靠性](../18-fault-diagnosis-and-reliability/README.md)负责失效与故障案例。
 
 ## 10. 来源与证据边界
 

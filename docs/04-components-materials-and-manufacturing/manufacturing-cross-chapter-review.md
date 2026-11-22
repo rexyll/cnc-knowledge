@@ -2,7 +2,7 @@
 
 **审查日期：** 2026-11-22  
 **审查基线：** main / af75401d1963176ae65bfb059ea4f175fd7c7e64  
-**审查状态：** 第一轮桌面审查；不是对具体机床、工厂或实物的验证。
+**审查状态：** 第二轮桌面审查已完成指定文档抽查并修正BOM职责冲突；不是对具体机床、工厂或实物的验证。关联章节仍存在README级空缺。
 
 ## 1. 审查原则
 
@@ -50,3 +50,38 @@ CH04负责材料、零件身份、零件级制造与检验知识；涉及系统�
 - 厂商产品与生命周期 → CH19；图纸/BOM/配置/技术文件 → CH20。
 
 ---
+
+
+## 6. 第二轮逐文审查结果（2026-11-22）
+
+### 6.1 实际检查的文档
+
+| 章节 | 实际检查范围 | 结果 |
+|---|---|---|
+| CH03 | major-mechanical-structures.md、key-mechanical-units.md、mechanical-interfaces-accuracy-and-faults.md | 发现并修正BOM主归属表述冲突；进一步明确PART主数据与BOM实例分层 |
+| CH04 | part-classification-and-master-data.md、manufacturing-processes.md、README、TaskPlan | 与CH20分工一致；新增第34节及跨章节矩阵链接 |
+| CH14 | README、TaskPlan | 目录仅有README；T001～T004均TODO，无完整测量方法/验收正文 |
+| CH16 | README、TaskPlan | 目录仅有README；T001～T004均TODO，无完整装配/安装/调试正文 |
+| CH17 | README、TaskPlan | 目录仅有README；T001～T004均TODO，无完整操作/维护/维修正文 |
+| CH18 | README、TaskPlan | 目录仅有README；T001～T004均TODO，无完整故障/可靠性正文 |
+| CH19 | key-component-suppliers-and-products.md、supply-chain-comparison-and-risk-management.md、README | 证据边界一致：厂商资料不等同OEM采用、产品兼容或地区供货事实；未发现与CH04的直接冲突 |
+| CH20 | README、TaskPlan | 目录仅有README；T001～T004均TODO，BOM schema及配置文件索引尚未作为正文交付 |
+| CH05、CH06、CH07、CH08、CH10、CH13 | 章节目录入口检查 | 当前目录仅包含README；本轮未对不存在的专题正文进行逐文审查 |
+
+### 6.2 已修正的职责冲突
+
+- CH03《数控机床主要机械结构、导向与进给传动》原先将“零件级BOM”描述为CH04后续职责，与CH04主数据规范中“CH20负责BOM主数据”的规则冲突。现已改为：CH04维护PART/MAT/PROCESS及零件级属性；CH20维护具体机型/配置BOM实例、数量、位号、版本有效性和文件关联。
+- CH03《关键机械单元》原先只要求建立配置级BOM及接口清单，现已补充该BOM由CH20维护，零件属性引用CH04。
+- CH03《机械接口、精度链与故障关联》现明确将接口映射到CH04零件主数据与制造质量证据，将实际机型/配置BOM分配给CH20。
+
+### 6.3 本轮确认的内容空缺
+
+- CH14/CH16/CH17/CH18/CH20仍是README/TaskPlan层级，任务均为TODO；不得在跨章节矩阵中将这些责任描述成已经交付的完整知识内容。
+- CH05/CH06/CH07/CH08/CH10/CH13本轮通过目录检查确认当前仅有README入口，不作正文内容质量结论。
+- CH19已检查的两篇供应链专题保持“原厂声明、文件兼容性、实际设备验证、地区供货”分层；仍需在后续逐篇检查OEM档案和厂商产品档案的型号/版本及日期边界。
+- CH03与CH04的现有文章仍属通用工程参考，没有具体机床型号级BOM/图纸/制造批次/现场测量，故本轮不创建PART、MAT、BOM或供应商采用关系。
+
+### 6.4 审查结论和下一步
+
+本轮发现的BOM职责冲突已修正；章节成熟度空缺已明确登记。第一轮审查矩阵已升级为可执行的跨章节责任和覆盖状态清单，但整个CH04-T003不因此完成。后续应优先推进CH14测量方法/验收项目、CH16精密装配/安装、CH20 BOM与图纸数据模型等依赖章节，随后再对各自完整正文开展互相验证。
+

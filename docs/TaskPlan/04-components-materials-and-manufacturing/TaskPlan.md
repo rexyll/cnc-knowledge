@@ -184,3 +184,13 @@
 
 
 **跨章节审查第一轮CI验收（2026-11-22）：** 内容提交 `8c33d38a2ac41f0c96341808a8c3217dc7d48f2b` 的Run [45006912824](https://github.com/rexyll/cnc-knowledge/actions/runs/45006912824) success；5/5单元测试通过，strict lint 0 errors。该验收不代表已完成关联章节逐段审查或实机验证；CH04-T003继续IN_PROGRESS。
+
+
+### CH04-T003 — 跨章节BOM职责校准与第二轮逐文审查（2026-11-22）
+
+- **目标：** 对CH03机械结构/关键机械单元/接口精度链，以及CH14、CH16～CH18、CH19、CH20的交接边界进行文档级审查。
+- **执行结果：** 修正CH03将零件级BOM职责归入CH04的冲突；统一为CH04维护PART/MAT/PROCESS及零件级属性，CH20维护机型/配置BOM实例、数量、位号、修订和有效性。更新CH03三篇文章；在制造工艺正文新增第34节；扩展审查矩阵。
+- **内容空缺：** CH14/CH16/CH17/CH18/CH20当前只有README/TaskPlan入口，任务均为TODO；CH05/CH06/CH07/CH08/CH10/CH13本次目录检查也仅见README入口。该事实已写入审查矩阵，不能表述为相关专题已经完成。
+- **CH19抽查：** 检查关键部件供应商与产品、供应链比较与风险管理两篇专题，未发现与CH04的直接职责冲突；未完成全章逐篇复核。
+- **交付：** manufacturing-cross-chapter-review.md、manufacturing-processes.md第34节及CH03三篇机械专题的边界修正。
+- **状态：** IN_PROGRESS；后续待CH14/CH16/CH20形成正文后继续验证具体测量、装配与BOM数据接口。
