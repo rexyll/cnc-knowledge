@@ -662,3 +662,14 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - Linter统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、130条来源、288处正文来源引用。
 - 自动门禁验证仓库结构、数据记录、来源引用和内部链接；不验证外部URL实时可访问性、标准全文许可、修订草案的技术内容或材料批次符合性。
 - CH04-T002保持IN_PROGRESS；本轮仅完成标准元数据、版本替代关系及修订计划状态核验，尚未完成牌号/性能数据核录。
+
+
+### CH04-T002 — 轴承钢材料族与产品形态标准扩展（2026-11-22）
+
+- 对国家标准官方目录“轴承钢”结果进行分类梳理，新增SRC-000131～SRC-000139。
+- 新增现行标准：GB/T 29913-2025《中碳合金轴承钢》（全部代替GB/T 29913.1-2013）；GB/T 32959-2025《轴承钢锻制棒材、环件及毛坯》（全部代替GB/T 32959-2016）；GB/T 28417-2023《碳素轴承钢》（全部代替GB/T 28417-2012）；GB/T 3086-2019《高碳铬不锈轴承钢》（全部代替GB/T 3086-2008）；GB/T 42785-2023《轴承钢盘条》；GB/T 18579-2019《高碳铬轴承钢丝》；GB/T 33522-2017《渗碳轴承钢锻件 技术条件》（2023-12-28复审结论继续有效）。
+- 新增修订计划跟踪：20251189-T-605“高温轴承钢”拟修订GB/T 38886-2020和GB/T 38936-2020；20251191-T-605“渗碳轴承钢”拟修订GB/T 3203-2016和GB/T 33161-2016。计划项目与正式发布标准分开登记；没有证据确认的项目阶段不做推断。
+- 材料数据库新增2.7节，明确高碳铬、中碳合金、碳素、高碳铬不锈、渗碳和高温轴承钢分别建档；区分牌号/材料标准、盘条/钢丝/棒材/环件/毛坯产品形态标准、锻件技术条件和零件热处理标准。
+- 更新标准映射CSV、CH04 TaskPlan、章节README、资源README和根TaskPlan。官方来源包括：GB/T 29913-2025（https://std.samr.gov.cn/gb/search/gbDetailed?id=3DBA213285570D16E06397BE0A0A8119）；GB/T 32959-2025（https://std.samr.gov.cn/gb/search/gbDetailed?id=mZeF8VfZ7yI%3D&mode=p）；GB/T 28417-2023（https://std.samr.gov.cn/gb/search/gbDetailed?id=wCe3c21CrKU%3D&mode=p）；GB/T 3086-2019（https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=9E1558EA8CE059994AB353664BC331B2）；GB/T 42785-2023（https://std.samr.gov.cn/gb/search/gbDetailed?id=027A6096B05F643EE06397BE0A0A0867）；GB/T 18579-2019（https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=E62D1EC609871B95FE7C52D0041FF2B8）；GB/T 33522-2017（https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D816CDD3A7E05397BE0A0AB82A）；高温轴承钢修订项目（https://std.samr.gov.cn/gb/search/gbDetailed?id=23033A607868B961E06397BE0A0ADCC4）；渗碳轴承钢修订项目（https://std.samr.gov.cn/gb/search/gbDetailed?id=23124F8A31FDA2F5E06397BE0A0A652B）。
+- 未下载或归档标准全文/修订草案；未录入具体轴承钢牌号成分、洁净度、夹杂物、碳化物、淬透性、硬度或疲劳性能值；未创建MAT牌号实体或推断机床实际用料。CH04-T002保持IN_PROGRESS。
+- 所在分支：main；本轮待提交和CI验收。
