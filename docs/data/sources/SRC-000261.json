@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000261",
+  "source_type": "standard_catalog",
+  "title": "ISO 23309:2020 — Hydraulic fluid power systems — Assembled systems — Methods of cleaning lines by flushing",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/74772.html",
+  "version": "ISO 23309:2020, Edition 2; reviewed and confirmed in 2025",
+  "published_on": "2020-05",
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract and contents: flushing particulate contamination from hydraulic lines and components after manufacture, assembly, failure or repair; includes flushing criteria, parameters, filters, monitoring and procedures.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Line-flushing method, not a substitute for proper component cleaning or an automatic proof of achieved system cleanliness. Define the required cleanliness level and verify it using the relevant system procedure.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000260",
+  "source_type": "standard_catalog",
+  "title": "ISO/TS 18409:2018 — Hydraulic fluid power — Hose and hose assemblies — Method of collecting a fluid sample for analyzing the cleanliness of a hose or hose assembly",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/66733.html",
+  "version": "ISO/TS 18409:2018, Edition 1; reviewed and confirmed in 2025",
+  "published_on": "2018-04",
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: two methods for collecting fluid samples to analyse solid particulate contamination in hydraulic hoses or hose assemblies within the specified inside-diameter and length range.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Sampling method only; it does not specify an efficient cleaning process, a universal cleanliness target or suitability for liquid/grease contamination analysis. Verify dimensional scope and method conditions before use.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

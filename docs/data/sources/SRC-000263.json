@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000263",
+  "source_type": "standard_catalog",
+  "title": "ISO 10100:2020 — Hydraulic fluid power — Cylinders — Acceptance tests",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/75271.html",
+  "version": "ISO 10100:2020, Edition 3; confirmed in 2026",
+  "published_on": "2020-06",
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract and lifecycle: acceptance and function tests for hydraulic fluid power cylinders; confirmed current in 2026.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Applies to hydraulic cylinders within the standard scope, not automatically to valves, manifolds, pumps or complete machine hydraulic circuits. Product-specific test conditions and acceptance criteria still need the applicable specification.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

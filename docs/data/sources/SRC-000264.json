@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000264",
+  "source_type": "standard_catalog",
+  "title": "ISO 10771-1:2015 — Hydraulic fluid power — Fatigue pressure testing of metal pressure-containing envelopes — Part 1: Test method",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/59660.html",
+  "version": "ISO 10771-1:2015, Edition 2",
+  "published_on": "2015-08",
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract and scope: fatigue test method for metallic pressure-containing envelopes under sustained steady cyclic internal pressure loads; test pressure is determined by the user.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The scope excludes piping as defined in ISO 4413, including connectors, hoses, tubing and pipes. This is a component pressure-envelope fatigue method, not an every-unit production proof/leak test and not a hose assembly test.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

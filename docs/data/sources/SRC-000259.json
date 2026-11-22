@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000259",
+  "source_type": "standard_catalog",
+  "title": "ISO/TS 17165-2:2018 — Hydraulic fluid power — Hose assemblies — Part 2: Practices for hydraulic hose assemblies",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/74155.html",
+  "version": "ISO/TS 17165-2:2018, Edition 2; reviewed and confirmed in 2025; ISO/AWI 17165-2 subsequently registered for revision",
+  "published_on": "2018-04",
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract and lifecycle: guidance for selection, routing, fabrication, installation, replacement, maintenance and storage for hydraulic hose assemblies using the listed hose and fitting standards.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Practice guidance for hose assemblies, not a universal pressure or crimp specification. ISO/AWI 17165-2 is under development to replace the 2018 edition; check the contractually adopted edition and revision status. Do not mix hose/fitting/crimp equipment combinations without manufacturer compatibility evidence.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

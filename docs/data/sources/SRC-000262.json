@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000262",
+  "source_type": "standard_catalog",
+  "title": "ISO 16431:2012 — Hydraulic fluid power — System clean-up procedures and verification of cleanliness of assembled systems",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/50158.html",
+  "version": "ISO 16431:2012, Edition 1; reviewed and confirmed in 2022",
+  "published_on": "2012-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: methods to measure fluid cleanliness in an assembled hydraulic system, verify required cleanliness at production release and clean the system when required.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "System clean-up and cleanliness-verification method; the official description states that it is not intended to replace ISO 23309 system flushing. Do not infer a universal cleanliness target from the method.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}
