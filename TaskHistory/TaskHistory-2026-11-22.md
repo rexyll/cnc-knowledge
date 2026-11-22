@@ -592,3 +592,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 更新SRC-000119：Antpedia页面声称中国标准出版社正式授权销售并可官方验证，但未取得授权证明或出版方确认；搜索索引还出现全文附件入口，因来源和传播许可不明，本项目未下载、未阅读、未引用。SRC-000120仍仅为GBSTD采购线索。
 - 更新材料数据库2.4节、标准映射CSV、章节README、资源README、CH04任务计划和根TaskPlan。未购买标准、未下载第三方全文、未录入HT/QT性能值或创建牌号MAT实体。
 - CH04-T002保持IN_PROGRESS；下一步需要通过出版社正式渠道确认具体书目和许可，且购买行为/费用须经用户明确批准。
+
+
+### CH04-T002 — 正式出版渠道核验增量CI验收补录（2026-11-22）
+
+- 内容提交：[923ba8b9b1e4f9c4012a5c7bfbdaa6802d90ff4d](https://github.com/rexyll/cnc-knowledge/commit/923ba8b9b1e4f9c4012a5c7bfbdaa6802d90ff4d)，所在分支：main。
+- GitHub Actions Run [44986798209](https://github.com/rexyll/cnc-knowledge/actions/runs/44986798209)：success；5项单元测试全部通过；严格知识质量检查PASS（0 errors）。
+- Linter统计：22章、108个Markdown文件、318条内部链接、140条实体、240条关系、121条来源、270处正文来源引用。
+- 质量门禁仅验证仓库结构、数据记录、来源引用和内部链接；不验证出版社具体书目库存、第三方授权链或公开仓库再分发许可。
+- CH04-T002保持IN_PROGRESS；未采购、未下载标准全文，待正式出版渠道确认具体书目和许可范围。
