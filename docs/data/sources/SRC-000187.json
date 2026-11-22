@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000187",
+  "source_type": "standard_catalog",
+  "title": "ISO 3096:2018 — Rolling bearings — Needle rollers — Boundary dimensions, geometrical product specifications (GPS) and tolerance values",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/67519.html",
+  "version": "ISO 3096:2018, Edition 3",
+  "published_on": "2018-07-26",
+  "accessed_on": "2026-11-22",
+  "locator": "ISO官方页面：2018-07发布，2024-01-02系统复审确认继续有效；规定成品钢制滚针的尺寸和几何特性、公称边界尺寸及公差。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "滚针成品几何/GPS/公差标准，不是滚针材料钢种或热处理工艺标准；与GB/T 309-2021的采标/技术差异需另行逐条核对，不仅凭标题相似认定等同。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

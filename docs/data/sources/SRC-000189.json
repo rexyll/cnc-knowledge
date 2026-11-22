@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000189",
+  "source_type": "manufacturer_product_page",
+  "title": "Timken Wuxi Plant — Plant Overview and Manufacturing Processes",
+  "publisher": "The Timken Company",
+  "author": null,
+  "url": "https://www.timken.com/resources/introduction-to-wuxi-plant-in-china/",
+  "version": "网页版本",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Timken官方无锡工厂介绍：列示厂内热处理、磨削、超精加工和装配能力；工厂沿革提及圆锥滚子、圆柱滚子和调心滚子相关生产线/超精加工线。",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "属于Timken特定工厂能力/历史介绍，不证明当前所有产品均在该厂制造，也不构成所有滚子通用工艺路线；不得据此推断具体机床OEM采购或材料BOM。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}
