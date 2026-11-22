@@ -828,3 +828,11 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 新增SRC-000205～SRC-000209：SKF超精密轴承选型/目录、GMN主轴试验台/服务资料、Makino特定机型主轴技术声明。厂商证据限定于各自产品/服务，不外推为行业统一工艺或其他OEM的BOM。
 - 新增 `resouces/04-components-materials-and-manufacturing/manufacturing-standard-map.csv`，将转子平衡、主轴回转轴线几何和热效应试验与主轴制造工艺分开管理。
 - 未录入通用材料牌号、热处理参数、轴承配合/预紧量、平衡等级/残余不平衡、振动限值、温升/热漂移或跳动公差；未下载/归档受版权保护PDF；未创建无证据OEM BOM/兼容关系。CH04-T003保持IN_PROGRESS；CI验收待补录。
+
+
+### CH04-T003 — 主轴制造专题首轮CI验收（2026-11-22）
+
+- 内容提交 [`7e4206f07c1166e59bb9bf46f77ffe9a4797ef82`](https://github.com/rexyll/cnc-knowledge/commit/7e4206f07c1166e59bb9bf46f77ffe9a4797ef82)，GitHub Actions [Run 44990046215](https://github.com/rexyll/cnc-knowledge/actions/runs/44990046215)：success；5/5单元测试通过；strict lint PASS（0 errors）。
+- Linter统计：22章、109个Markdown文件、325条内部链接、140个实体、240条关系、209条来源、407处正文来源引用。
+- 验收后补充SRC-000210（GB/T 17421.1-2023）并修正SRC-000203官方计划URL和采标说明；这些补录改动在本条历史补录提交中，需独立确认CI。
+- CI不验证外部链接长期可用性、标准全文版权、主轴真实材料/工艺批次或制造商测试规范的普遍适用性。CH04-T003保持IN_PROGRESS。

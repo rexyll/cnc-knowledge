@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000210",
+  "source_type": "standard_catalog",
+  "title": "GB/T 17421.1-2023《机床检验通则 第1部分：在无负荷或准静态条件下机床的几何精度》",
+  "publisher": "全国标准信息公共服务平台",
+  "author": null,
+  "url": "https://std.samr.gov.cn/gb/search/gbDetailed?id=027A6096AF43643EE06397BE0A0A0867",
+  "version": "GB/T 17421.1-2023",
+  "published_on": "2023-08-06",
+  "accessed_on": "2026-11-22",
+  "locator": "国家标准平台：现行，2024-03-01实施；全部代替GB/T 17421.1-1998；等同采用ISO 230-1:2012。",
+  "language": "zh",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "机床无负荷或准静态几何精度检验方法；用于主轴端部/部件跳动等项目时仍需按适用条款、检验布置和机床产品标准确定，不能代替主轴制造图纸/总成验收规范。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

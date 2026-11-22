@@ -118,3 +118,6 @@
 
 
 **CH04-T003追加执行切片（2026-11-22）：主轴部件制造与精度形成。** 新增主轴轴芯候选工艺、轴承配合/预紧、驱动转子平衡、主轴总成装配和试验、整机回转轴线与热效应检验边界。新增SRC-000198～SRC-000209；识别GB/T 17421.7-2016和GB/T 17421.3-2009仍现行但分别采标旧版ISO 230-7:2006/ISO 230-3:2001，且修订计划20254003-T-604/20254203-T-604处于批准阶段。新增 `resouces/04-components-materials-and-manufacturing/manufacturing-standard-map.csv`。不录入通用材料/热处理/配合/预紧/平衡/振动/热漂移/跳动数值；未归档受版权保护PDF。CH04-T003保持IN_PROGRESS。
+
+
+**主轴专题首轮CI验收（2026-11-22）：** 主轴制造专题内容提交 `7e4206f07c1166e59bb9bf46f77ffe9a4797ef82` 对应Run [44990046215](https://github.com/rexyll/cnc-knowledge/actions/runs/44990046215) success，5/5单元测试通过，strict lint 0 errors；验收后补录SRC-000210及修正SRC-000203，补录提交需单独确认CI。CH04-T003保持IN_PROGRESS。
