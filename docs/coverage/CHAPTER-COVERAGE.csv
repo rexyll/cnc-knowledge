@@ -17,7 +17,7 @@ CH15,15-standards-safety-and-compliance,0,not_started,0,0,0,0,0,,按章节TaskPl
 CH16,16-manufacturing-assembly-installation,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH17,17-operation-maintenance-and-repair,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH18,18-fault-diagnosis-and-reliability,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
-CH19,19-manufacturers-products-and-supply-chain,2,foundational,2,23,52,34,0,2026-11-22,CH19-T003：机械功能部件、刀具、测量与周边供应商目录,IN_PROGRESS,15个组织+6个产品+2个KNOW；含16条制造事实关系和36条文章索引边（本轮新增15条）；去重SRC 34条。新增整机与CNC系统厂商档案；地区服务、库存和供货状态未评估。
+CH19,19-manufacturers-products-and-supply-chain,2,foundational,3,42,71,43,0,2026-11-22,CH19-T004：建立供应链比较与风险模型,IN_PROGRESS,23个组织+16个产品+3个KNOW；含26条制造事实关系和45条文章索引边；去重SRC 43条。新增8家关键部件供应商和10个产品族；未评估价格、库存、交期、地区服务和跨品牌兼容性。
 CH20,20-bom-drawings-and-technical-documents,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH21,21-digitalization-and-smart-manufacturing,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH22,22-case-studies-and-reference-machines,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
