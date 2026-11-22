@@ -811,3 +811,11 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 更新材料标准映射CSV、CH04章节README、资源README、CH04 TaskPlan和根TaskPlan。
 - 未下载/归档标准全文或厂商PDF；未录入通用材料牌号、热处理/磨削参数、硬度/硬化层深度、导程/直线度验收限值、预紧转矩、刚度或寿命数值；未创建无证据PART/MAT/BOM/供应商兼容关系。CH04-T003保持IN_PROGRESS。
 - 所在分支：main；提交和CI验收待补录。
+
+
+### CH04-T003 — 滚珠丝杠副与滚动直线导轨副制造工艺扩展CI验收补录（2026-11-22）
+
+- 内容提交 `c06a5f469f2f1fc40e94e926c7d86e95f3b6a2fc` 的GitHub Actions Run [44989774167](https://github.com/rexyll/cnc-knowledge/actions/runs/44989774167) 首次失败：5/5单元测试通过，strict lint发现SRC-000197的`source_type`和`evidence_kind`不在Schema枚举中，2 errors。
+- 修复提交：[`81257307f526db3f0085ca39c41f57c73c190b48`](https://github.com/rexyll/cnc-knowledge/commit/81257307f526db3f0085ca39c41f57c73c190b48)，将SRC-000197更正为`third_party_article` / `secondary_summary`，并修正文中误将SCHNEEBERGER资料写成KSK来源的描述。
+- GitHub Actions [Run 44989817497](https://github.com/rexyll/cnc-knowledge/actions/runs/44989817497)：success；5/5单元测试通过；strict lint PASS（0 errors）。统计：22章、109个Markdown文件、324条内部链接、140条实体、240条关系、197条来源、393处正文来源引用。
+- 本轮CI只验证结构、来源Schema、引用与内部链接，不验证外部URL长期可用性、标准全文许可、工艺参数或实际零件批次符合性。CH04-T003保持IN_PROGRESS。
