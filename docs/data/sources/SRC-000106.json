@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000106",
+  "source_type": "standard_catalog",
+  "title": "ISO 6507-1:2023 — Metallic materials — Vickers hardness test — Part 1: Test method",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/83898.html",
+  "version": "ISO 6507-1:2023",
+  "published_on": "2023-10-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Official publisher catalogue/abstract page; scope summary only, no full-text reproduction",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "维氏硬度方法，覆盖不同试验力范围；官方摘要说明压痕尺寸及涂层适用边界。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

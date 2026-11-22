@@ -1,0 +1,73 @@
+{
+  "entity_id": "KNOW-000017",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床材料数据库：标准体系、牌号与性能数据规则",
+  "english_name": "CNC machine tool materials database: standards, designations and property data rules",
+  "aliases": [],
+  "description": "建立数控机床材料族、标准牌号、材料状态和性能观测四层数据结构，明确标准体系映射及试样/测试条件约束。",
+  "primary_chapter": "CH04",
+  "related_chapters": [
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床材料",
+    "标准体系与性能数据库",
+    "knowledge_article"
+  ],
+  "tags": [
+    "CH04",
+    "材料数据库",
+    "MAT",
+    "材料牌号",
+    "材料性能",
+    "试样条件",
+    "标准映射"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T13:10:00+08:00",
+  "updated_at": "2026-11-22T13:10:00+08:00",
+  "verified_at": "2026-11-22T13:10:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000098",
+    "SRC-000099",
+    "SRC-000100",
+    "SRC-000101",
+    "SRC-000102",
+    "SRC-000103",
+    "SRC-000104",
+    "SRC-000105",
+    "SRC-000106",
+    "SRC-000107",
+    "SRC-000108",
+    "SRC-000109"
+  ],
+  "attributes": {
+    "document_path": "docs/04-components-materials-and-manufacturing/materials-database.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "材料族/标准牌号/状态/性能观测数据结构与首轮标准入口",
+    "knowledge_kind": "cnc_materials_database_framework",
+    "article_status": "reviewed_framework_only",
+    "material_grade_entities_created": 0,
+    "templates": [
+      "docs/data-model/templates/material-master.template.json",
+      "docs/data-model/templates/material-property-record.template.json"
+    ],
+    "standard_map": "docs/04-components-materials-and-manufacturing/materials-standard-map.csv",
+    "field_dictionary": "docs/data-model/chapter-dictionaries/CH04.csv",
+    "not_verified": [
+      "具体牌号完整性能值",
+      "GB/JIS牌号映射",
+      "铝/铜合金及硬质合金/陶瓷/复合材料牌号数据",
+      "材料批次实测数据",
+      "机床PART实际用料关系"
+    ]
+  },
+  "notes": "首轮标准目录和数据结构已核验；无合法取得的标准全文或质保书时，不录入具体牌号数值，不创建未经证实的MAT实体。"
+}

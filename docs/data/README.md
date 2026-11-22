@@ -7,3 +7,5 @@
 - sources/：来源元数据记录。
 
 Schema与记录模板位于data-model目录。数据记录必须通过Schema和业务规则检查。资源文件始终归档在resouces对应章节目录。
+
+MAT材料实体归档在 `docs/data/entities/MAT/`；单项性能观测使用CH04模板建档，批次实测结果须按证据和保密要求审查后入库。

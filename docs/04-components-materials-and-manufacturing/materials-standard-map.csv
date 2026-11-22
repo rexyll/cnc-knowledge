@@ -1,0 +1,13 @@
+material_family,standard_id,edition,designation_scope,product_form_or_scope,classification_or_property_basis,condition_fields_required,standard_status_on_2026-11-22,source_id,record_status,not_covered_or_caution
+灰铸铁,ISO 185,2020,ISO体系灰铸铁分类,砂型或热行为相当模具铸件,铸样抗拉强度；约定铸件取样抗拉强度；约定硬度,试样来源/铸件取样约定/硬度测点/壁厚,confirmed_current,SRC-000098,framework_only,不覆盖铸铁管件及连续铸造产品；不替代交付技术条件
+球墨铸铁,ISO 1083,2018,ISO体系球墨铸铁分类,铸件,铸样制备机加工试样的机械性能；硬度为信息性分类,试样类型/取样位置/壁厚/热处理状态,confirmed_current,SRC-000099,framework_only,不适用于管件/附件及特定高合金或奥铁体球铁
+灰铸铁,ASTM A48/A48M,22(2026),ASTM灰铸铁铸件规范,一般工程用途铸件,独立铸造试棒抗拉强度分类,试棒类别/控制壁厚/单位制/检验文件,active_reaffirmed_2026,SRC-000100,framework_only,试棒值不代表铸件所有截面；SI与英制数值不可混合使用
+非合金结构钢,EN 10025-2,2019,热轧非合金结构钢产品交付条件,扁平材/长材及相关半成品,化学成分和机械性能表及交货条件,产品形态/厚度/交货状态/检验文件,edition_verified_scope,SRC-000101,framework_only,不适用于结构空心型材和管材；具体厚度范围需查标准表格
+聚酰胺,ISO 16396-1,2022,PA成型和挤出材料指定体系,PA均聚物/共聚物/共混物及改性材料,黏度数/拉伸模量/成核剂及组成信息,填料/增强材料/添加剂/颜色/加工方法,edition_verified_scope,SRC-000102,framework_only,相同指定不意味着性能相同；标准本身不提供完整工程性能数据
+塑料聚合物标识,ISO 1043-1,2011+Amd1:2016,塑料基本聚合物缩写和符号,聚合物名称标识,缩写/符号一致性,标准版本/缩写原文/特殊特征,confirmed_current_with_amendment,SRC-000103,identifier_only,命名标准不是性能规范或材料牌号互换依据
+塑料及塑料复合材料,ISO 527-1,2019,拉伸性能测定一般原则,规定条件下的塑料/塑料复合材料试样,拉伸强度/拉伸模量/应力应变关系,试样类型/方向/制备/温度/速度/调湿状态,under_revision_project_noted,SRC-000104,test_method_only,具体材料适用试样类型需结合后续分册和材料形态
+金属材料,ISO 6892-1,2019,室温拉伸试验方法,金属材料试样,室温下可测定的拉伸性能,试样形状尺寸/标距/取样方向/测试温度/应变速率,confirmed_current_2025,SRC-000105,test_method_only,试验方法本身不定义某牌号的保证值
+金属材料,ISO 6507-1,2023,维氏硬度试验方法,金属/硬质合金/金属和无机涂层,不同试验力范围的维氏硬度,试验力/压痕对角线/表面状态/截面位置,edition_5_published,SRC-000106,test_method_only,微小压痕存在方法适用边界；涂层厚度限制需查标准全文
+金属材料,ISO 6508-1,2023,洛氏和表面洛氏硬度试验方法,金属材料,多种洛氏标尺硬度,标尺/压头/试验力/试样厚度/表面状态,edition_5_published,SRC-000107,test_method_only,不得脱离标尺直接比较或换算
+金属材料,ISO 148-1,2016,夏比摆锤冲击试验方法,金属材料V形或U形缺口试样,冲击吸收能量,缺口形状/试样尺寸/温度/取样方向,under_revision,SRC-000108,test_method_only,不覆盖仪器化冲击试验；新版本草案另行跟踪
+金属材料,ISO/FDIS 148-1,2026,ISO 148-1修订草案状态跟踪,批准阶段草案,不作为已发布规范,草案阶段/最终发布日期,FDIS_approval_stage,SRC-000109,status_tracking_only,草案不得作为现行已发布标准或验收依据

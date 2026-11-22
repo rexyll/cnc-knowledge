@@ -130,3 +130,5 @@
 - entity.schema.json：实体JSON Schema。
 - relationship.schema.json：关系JSON Schema。
 - source.schema.json：来源记录JSON Schema。
+
+- `KNOW-000017` — 数控机床材料数据库：标准体系、牌号与性能数据规则（CH04）。

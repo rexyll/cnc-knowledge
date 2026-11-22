@@ -11,7 +11,7 @@
 - [数控机床主要机械结构、导向与进给传动](03-system-architecture-and-mechanics/major-mechanical-structures.md)
 - [数控机床关键机械单元：主轴、换刀、转台与辅助系统](03-system-architecture-and-mechanics/key-mechanical-units.md)
 - [数控机床机械接口、精度链与故障关联](03-system-architecture-and-mechanics/mechanical-interfaces-accuracy-and-faults.md)
-- [04. 零部件、材料与制造工艺](./04-components-materials-and-manufacturing/README.md) — 机床零部件分类、PART主数据、材料牌号与性能、制造工艺及部件规格/替代关系。
+- [04. 零部件、材料与制造工艺](./04-components-materials-and-manufacturing/README.md) — 机床零部件分类、PART主数据、材料牌号与性能、制造工艺及部件规格/替代关系。\n- [数控机床零部件分类与主数据规范](04-components-materials-and-manufacturing/part-classification-and-master-data.md)\n- [数控机床材料数据库：标准体系、牌号与性能数据规则](04-components-materials-and-manufacturing/materials-database.md)
 - [05. 刀具、工装与工件装夹系统](./05-tooling-fixtures-and-workholding/README.md) — 刀具、刀柄、接口、刀库、自动换刀、夹具、卡盘、工作台、工件定位夹紧、测头和刀具/工件测量。
 - [06. 电气与电子系统](./06-electrical-electronic-systems/README.md) — 电气柜、供配电、保护、电机与执行器接线、传感器、继电器、接触器、I/O、电路板、电气原理图和电气安全接口。
 - [07. 数控系统、控制器与 PLC](./07-cnc-controller-and-plc/README.md) — CNC数控装置、插补控制、PLC逻辑、HMI控制接口、I/O、机床参数、宏程序、通道和数控系统配置。
