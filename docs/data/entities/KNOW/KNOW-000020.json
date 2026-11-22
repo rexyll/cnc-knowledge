@@ -31,7 +31,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-22T23:00:00+08:00",
-  "updated_at": "2026-11-23T00:35:00+08:00",
+  "updated_at": "2026-11-23T01:00:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -43,13 +43,15 @@
     "SRC-000364",
     "SRC-000365",
     "SRC-000366",
-    "SRC-000367"
+    "SRC-000367",
+    "SRC-000368",
+    "SRC-000369"
   ],
   "attributes": {
     "document_path": "docs/12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md",
-    "article_version": "0.2",
+    "article_version": "0.3",
     "reviewed_on": "2026-11-23",
-    "content_scope": "规定轨迹移动负载的时变质量矩阵、速度/加速度链式项和18组数值比较；自由路径坐标q/s双向耦合质量矩阵与拉格朗日方程的解析推导、移动轴驱动接口和能量平衡；PC/CP端口的MIMO multiloop disk-margin软件接口",
+    "content_scope": "规定轨迹移动负载的时变质量矩阵、速度/加速度链式项和18组数值比较；自由路径坐标q/s双向耦合质量矩阵与拉格朗日方程的解析推导、移动轴驱动接口和能量平衡；PC/CP端口的MIMO multiloop disk-margin软件接口；旋转伺服—滚珠丝杠的轴向力/等效惯量折算及直线电机推力常数/反电势口径边界",
     "article_status": "synthetic_method_study",
     "model_data_status": "synthetic_only",
     "moving_load_model": "prescribed_trajectory_numerical_model_plus_free_path_analytical_extension_not_numerically_implemented",
@@ -61,7 +63,9 @@
     "free_path_coordinate_equations_derived": true,
     "free_path_coordinate_numerically_implemented": false,
     "actuator_electrical_dynamics_included": false,
-    "bidirectional_motion_structure_validation": false
+    "bidirectional_motion_structure_validation": false,
+    "drive_conversion_equations_derived": true,
+    "drive_conversion_numeric_parameters": false
   },
-  "notes": "现有18组数值仿真仍使用预设s(t)，不含负载执行轴自由度；第7节只完成q/s联立方程的解析推导，未实现数值积分、驱动器电气动态或双向耦合验证。disk-margin接口尚未生成数值裕度。合成数据不代表机床性能、精度或安全证据。"
+  "notes": "现有18组数值仿真仍使用预设s(t)，不含负载执行轴自由度；第7节只完成q/s联立方程的解析推导，未实现数值积分、驱动器电气动态或双向耦合验证。disk-margin接口尚未生成数值裕度。合成数据不代表机床性能、精度或安全证据。新增了滚珠丝杠正/反向效率、旋转惯量折算和直线电机常数口径的解析换算；未录入任何具体机型参数或实测常数。"
 }

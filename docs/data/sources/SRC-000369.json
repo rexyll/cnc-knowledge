@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000369",
+  "source_type": "manufacturer_manual",
+  "title": "Linear Motor Brochure",
+  "publisher": "Parker Hannifin, Electromechanical North America",
+  "author": null,
+  "url": "https://www.parker.com/content/dam/Parker-com/Literature/Electromechanical-North-America/CATALOGS-BROCHURES/Linear_Motor_Brochure.pdf",
+  "version": "Linear motor catalogue/brochure, electrical and force data section (accessed 2026-11-23)",
+  "published_on": null,
+  "accessed_on": "2026-11-23",
+  "locator": "Motor specifications: force constant, back EMF, resistance, inductance and electrical time constant; catalogue footnotes define measurement connection and amplitude convention",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Manufacturer catalogue. Force/back-EMF constants must be interpreted with the catalogue winding connection, current amplitude and voltage measurement conventions; do not copy values across motors or drive conventions.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

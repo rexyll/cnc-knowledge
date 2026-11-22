@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000368",
+  "source_type": "manufacturer_manual",
+  "title": "Precision Screws — Ball Screw Efficiency and Torque Calculations",
+  "publisher": "Thomson Linear",
+  "author": null,
+  "url": "https://www.thomsonlinear.com/downloads/screws/Precision_Screws_ctuk.pdf",
+  "version": "Precision Screws technical catalogue, calculation section (accessed 2026-11-23)",
+  "published_on": null,
+  "accessed_on": "2026-11-23",
+  "locator": "Calculation, Efficiency and torques: separate forward torque-to-axial-force efficiency and reverse axial-force-to-torque efficiency; torque formula and practical operating-condition caveats",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Manufacturer technical catalogue. Efficiency formula applies to the stated ball-screw configuration; actual efficiency depends on operating conditions and should be taken from the selected screw and application, not treated as a universal constant.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}
