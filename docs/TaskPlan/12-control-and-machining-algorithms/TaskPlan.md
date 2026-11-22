@@ -93,3 +93,6 @@
 
 
 **更正补录（2026-11-22）：替换上一版级联控制裕度/阶跃表中的过期数值。** 前序补录虽已声明旧惯量定义和阶跃缓存错误，但原CH12稳定裕度专题仍残留旧表格。本次已把旧表实际替换为刚体惯量修正后的多交越PM/GM序列及1 ms反馈延迟、两样本缓存下的阶跃结果；详细滤波组合见 servo-feedforward-notch-lowpass-co-design.md 和资源CSV。更正提交 e95ed502e940105adf6b2ebfb45fc3233a6fddf3；GitHub Actions [Run 45024670605](https://github.com/rexyll/cnc-knowledge/actions/runs/45024670605) success，5/5单元测试通过，strict lint PASS（0 errors）。CH12-T003继续 IN_PROGRESS；这些数据仍是合成SISO模型，不能作为真实机床稳定性证据。
+
+
+**追加执行切片（2026-11-22）：双驱龙门MIMO耦合同步与鲁棒性诊断。** 新增 gantry-dual-drive-mimo-synchronization-and-robustness.md，构建左右轴差动弹簧/阻尼二自由度对象，比较独立PD与差动同步P-D；说明机械交叉通道、同步误差、MIMO返回差/灵敏度和严格multiloop disk margin之间的区别。新增SRC-000346～SRC-000351、KNOW-000018；CH12数据字典新增MIMO返回差诊断、多回路disk margin分析记录、交叉耦合同步控制器记录3项字段。资源脚本生成10组负载/耦合配置和140个频率采样点；仓库保存脚本、配置及两个摘要CSV。合成不对称负载/0.5 MN/m案例中，独立PD同步误差峰值60.61 μm，同步P-D候选约33.98 μm；峰值灵敏度由1.112升至1.209、最小返回差奇异值由0.900降至0.827，体现同步性能和鲁棒性指标的权衡。未计算严格multiloop disk margin/μ，也无真实设备/HIL验证。内容提交 `6cf618bda16ca8ef45e77d2eac903a459c45dcb0`，纠正提交 `0750805592e174171e03383c9b05b78dbc469d42` 对应GitHub Actions [Run 45027868840](https://github.com/rexyll/cnc-knowledge/actions/runs/45027868840) success；5/5单元测试通过、strict lint PASS（0 errors）。CH12-T003继续IN_PROGRESS，本切片不代表速度规划/热误差补偿等整个任务完成。
