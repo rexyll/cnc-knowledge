@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000069",
+  "source_type": "manufacturer_product_page",
+  "title": "Sandvik Coromant — Products and machining solutions",
+  "publisher": "Sandvik Coromant",
+  "author": null,
+  "url": "https://www.sandvik.coromant.com/",
+  "version": "Official cutting-tool product portfolio; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official manufacturer product portfolio or application page",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official catalogue categories include turning, parting/grooving, milling, drilling, solid round tools, threading, tooling systems, boring/reaming and machine integration. Exact grade/application data require product-specific documentation.",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

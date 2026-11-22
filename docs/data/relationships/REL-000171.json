@@ -1,0 +1,23 @@
+{
+  "relation_id": "REL-000171",
+  "subject_id": "PRODUCT-000012",
+  "predicate": "MANUFACTURED_BY",
+  "object_id": "VENDOR-000019",
+  "qualifiers": {
+    "product_scope": "Bosch Rexroth官方产品目录包括滚珠/滚柱导轨、集成测量系统、滚珠丝杠和行星滚柱丝杠组件及直线模组；产品代际与尺寸由具体目录版本确定。",
+    "manufacturer_role": "original_manufacturer_as_identified_by_official_product_catalogue",
+    "model_scope": "product_family_not_specific_order_code",
+    "compatibility": "not_assessed",
+    "regional_availability": "not_assessed"
+  },
+  "source_ids": [
+    "SRC-000066"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T11:30:00+08:00",
+  "updated_at": "2026-11-22T11:30:00+08:00",
+  "notes": "官方产品目录支持该产品族的原厂归属；不表示特定机床已采用、产品在某地区现货、可跨型号替换或与其他品牌兼容。"
+}

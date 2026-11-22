@@ -1,0 +1,59 @@
+{
+  "entity_id": "KNOW-000010",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床关键部件供应商与产品目录",
+  "english_name": "Key component suppliers and product catalogue for CNC machine tools",
+  "aliases": [],
+  "description": "按线性运动、主轴轴承、测量、刀具和工件装夹分类，整理代表性关键部件供应商的官方产品目录、产品族映射、选型证据和替代核验边界。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH03",
+    "CH04",
+    "CH05",
+    "CH08",
+    "CH14",
+    "CH17",
+    "CH20"
+  ],
+  "classification_path": [
+    "知识条目",
+    "key_component_supplier_catalogue"
+  ],
+  "tags": [
+    "关键部件",
+    "导轨",
+    "滚珠丝杠",
+    "主轴轴承",
+    "测量",
+    "刀具",
+    "工件夹持",
+    "供应链"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T11:30:00+08:00",
+  "updated_at": "2026-11-22T11:30:00+08:00",
+  "verified_at": "2026-11-22T11:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000062",
+    "SRC-000063",
+    "SRC-000064",
+    "SRC-000065",
+    "SRC-000066",
+    "SRC-000067",
+    "SRC-000068",
+    "SRC-000069",
+    "SRC-000070"
+  ],
+  "attributes": {
+    "document_path": "docs/19-manufacturers-products-and-supply-chain/key-component-suppliers-and-products.md",
+    "article_version": "1.0",
+    "reviewed_on": "2026-11-22",
+    "content_scope": "9家组织（含既有THK）与10个产品族；直线运动、轴承/主轴、测量、刀具、工件夹持",
+    "knowledge_kind": "key_component_supplier_catalogue",
+    "article_status": "reviewed"
+  },
+  "notes": "代表性官方目录样本，不是完整供应商名录、采购清单或兼容性矩阵；未评估价格、库存、交期、地区服务和第三方质量表现。"
+}

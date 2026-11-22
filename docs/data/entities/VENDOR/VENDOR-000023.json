@@ -1,0 +1,53 @@
+{
+  "entity_id": "VENDOR-000023",
+  "entity_type": "organization",
+  "canonical_name": "SCHUNK SE & Co. KG",
+  "english_name": null,
+  "aliases": [],
+  "description": "夹持与工件装夹系统供应商；本档案仅收录官方公开的VERO-S机床工件夹持/托盘快换产品。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH03",
+    "CH04",
+    "CH05",
+    "CH08",
+    "CH14",
+    "CH17",
+    "CH20"
+  ],
+  "classification_path": [
+    "供应链/产业角色"
+  ],
+  "tags": [
+    "关键部件供应商",
+    "代表性样本",
+    "workholding_systems",
+    "toolholding_systems"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T11:30:00+08:00",
+  "updated_at": "2026-11-22T11:30:00+08:00",
+  "verified_at": "2026-11-22T11:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000070"
+  ],
+  "attributes": {
+    "organization_roles": [
+      "workholding_systems",
+      "toolholding_systems"
+    ],
+    "product_segments": [
+      "VERO-S零点快换/托盘夹持系统",
+      "工件夹持技术"
+    ],
+    "record_scope": "官方公开产品目录可核验的代表性产品/业务范围",
+    "supplier_status": "not_assessed",
+    "registered_country": null,
+    "official_website": "https://schunk.com/",
+    "source_verified_on": "2026-11-22"
+  },
+  "notes": "仅用于行业地图和产品生态导航；不构成市场份额、供应能力、交期、价格、区域库存或产品质量评级。集团/品牌/区域法人和授权渠道应按具体合同及原厂资料另行核验。"
+}

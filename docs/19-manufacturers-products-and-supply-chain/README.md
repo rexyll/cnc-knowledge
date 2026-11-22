@@ -13,7 +13,8 @@
 ## 已建立的知识地图
 
 [代表性厂商与系统生态图](representative-ecosystem.md)  
-[整机与数控系统厂商档案](machine-tool-oem-and-system-vendor-profiles.md)
+[整机与数控系统厂商档案](machine-tool-oem-and-system-vendor-profiles.md)  
+[关键部件供应商与产品目录](key-component-suppliers-and-products.md)
 
 ## 本章任务计划
 

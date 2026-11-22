@@ -1,0 +1,44 @@
+{
+  "entity_id": "PRODUCT-000015",
+  "entity_type": "product_model",
+  "canonical_name": "Sandvik Coromant Cutting Tools and Tooling Systems",
+  "english_name": null,
+  "aliases": [],
+  "description": "Sandvik Coromant官方产品目录覆盖车削、铣削、钻削、切槽、螺纹加工、整体硬质合金刀具和刀具系统；刀片材质牌号、切削参数和适用材料需按具体产品目录及工况确认。",
+  "primary_chapter": "CH19",
+  "related_chapters": [
+    "CH03",
+    "CH04",
+    "CH05",
+    "CH08",
+    "CH14",
+    "CH17",
+    "CH20"
+  ],
+  "classification_path": [
+    "功能部件/控制产品"
+  ],
+  "tags": [
+    "关键部件产品",
+    "金属切削刀具及刀具系统"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-22T11:30:00+08:00",
+  "updated_at": "2026-11-22T11:30:00+08:00",
+  "verified_at": "2026-11-22T11:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000069"
+  ],
+  "attributes": {
+    "manufacturer_id": "VENDOR-000022",
+    "model_code": "Turning / Milling / Drilling / Tooling Systems",
+    "product_family": "金属切削刀具及刀具系统",
+    "product_scope": "Sandvik Coromant官方产品目录覆盖车削、铣削、钻削、切槽、螺纹加工、整体硬质合金刀具和刀具系统；刀片材质牌号、切削参数和适用材料需按具体产品目录及工况确认。",
+    "exact_revision": "本目录仅登记官方产品族/平台，未指定具体硬件版本、尺寸或订货代码；选型和替换前须按原厂型号资料核验。",
+    "supplier_status": "not_assessed"
+  },
+  "notes": "产品族记录，不代表某一台机床已采用该产品，也不证明与其他品牌系统的互换或兼容。"
+}

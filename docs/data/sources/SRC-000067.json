@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000067",
+  "source_type": "manufacturer_product_page",
+  "title": "Probing and tool measurement systems for machine tools",
+  "publisher": "Renishaw plc",
+  "author": null,
+  "url": "https://www.renishaw.com/en/machine-tool-probes-and-software--6073",
+  "version": "Official machine-tool measurement portfolio; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official manufacturer product portfolio or application page",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official product page covers touch-trigger/scanning workpiece probes, tool setting, broken-tool detection, software and enclosed optical encoders; controller support is software/version specific.",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

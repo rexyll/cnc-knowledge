@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000062",
+  "source_type": "manufacturer_product_page",
+  "title": "Machine tools — THK product applications",
+  "publisher": "THK Co., Ltd.",
+  "author": null,
+  "url": "https://www.thk.com/?q=us%2Fnode%2F5225",
+  "version": "Official machine-tool application page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official manufacturer product portfolio or application page",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "LM Guide, Ball Screw, Ball Spline and lubrication accessories are listed as products used in machine-tool applications; does not establish any named OEM's actual BOM.",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

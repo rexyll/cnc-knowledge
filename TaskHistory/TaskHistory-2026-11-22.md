@@ -254,3 +254,29 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 没有下载或复制受版权限制的厂商手册/目录；只保存官方链接元数据。未新增图片、动图或完整文档资源。
 - 所在分支：main。完成时间：2026-11-22T10:00:00+08:00。主要内容提交SHA：[64144980b3992448a24a744db883cc6747c1dd5d](https://github.com/rexyll/cnc-knowledge/commit/64144980b3992448a24a744db883cc6747c1dd5d)。GitHub Actions Run #26（44981812672）success；5项单元测试通过，严格知识质量检查PASS（0 errors）。
 - 研究结论均限定为原厂公开声明；本任务不包含第三方产品测试、采购价格、库存、交期或供应商质量评级。
+
+
+## CH19-T003研究与验收记录
+
+### 研究范围与交付
+
+- 新增正文：`docs/19-manufacturers-products-and-supply-chain/key-component-suppliers-and-products.md`，知识实体KNOW-000010，版本1.0。
+- 复用既有THK实体VENDOR-000015，不重复创建；新增8家厂商VENDOR-000016～VENDOR-000023：SKF、NSK、HIWIN、Bosch Rexroth、Renishaw、BLUM-Novotest、Sandvik Coromant、SCHUNK。
+- 新增10个产品族PRODUCT-000007～PRODUCT-000016：THK Ball Screw、SKF主轴超精密轴承、NSK超精密轴承、NSK精密主轴、HIWIN机械部件、Bosch Rexroth线性运动技术、Renishaw机床测量、BLUM机床测量、Sandvik Coromant刀具系统、SCHUNK VERO-S。
+- 新增官方来源SRC-000062～SRC-000070，共9条；来源均为原厂产品/应用页面，authority_tier=A、evidence_kind=manufacturer_declaration、rights_status=link_only。
+- 新增9条文章索引关系REL-000157～REL-000165（KNOW-000010 DERIVED_FROM VENDOR）和10条产品制造归属关系REL-000166～REL-000175（PRODUCT MANUFACTURED_BY VENDOR）。所有关系均有source_ids、verification_status、confidence、产品范围和不推断整机采用/兼容/供货状态的限定。
+- 供应链类别覆盖直线导轨、滚珠丝杠、主轴轴承、主轴单元、工件/刀具测量、断刀检测、位置反馈、切削刀具、工件装夹和零点快换；新增选型/替代核验清单。
+- 更新CH19 README、docs总目录、CH19字段字典、章节TaskPlan、根TaskPlan和覆盖矩阵；CH19-T003标记DONE，CH19-T004标记IN_PROGRESS。
+- 没有下载或复制版权受限的原厂PDF/手册；未新增图片、动图或完整文档资源。
+
+### 证据边界与未完成项
+
+- 官方页面只证明其发布者公开列出的产品类别/产品族；不证明任何特定整机OEM的实际BOM、产品在某地区的库存、交期、当前销售状态或本地授权服务能力。
+- 未取得具体订货代码/版本时，不录入精度、尺寸、额定载荷、预压、转速、切削参数、夹紧力等数字；这些字段需由对应原厂具体型号目录/图纸支持。
+- 未做第三方性能测试、替代互换试验、现场兼容验证或采购询价；跨品牌替代和供应状态均not_assessed。
+- 后续CH19-T004将建立比较字段、兼容性证据等级和供应风险核验流程；需结合具体机床配置和采购区域进一步研究。
+
+### 覆盖度与验收
+
+- CH19覆盖等级保持2级foundational：3篇文章、42个主归属实体（23 VENDOR + 16 PRODUCT + 3 KNOW）、71条关系（26条制造事实关系 + 45条文章索引边）、43条去重来源、0项资源文件。
+- 所在分支：main。完成时间：2026-11-22T11:30:00+08:00。内容提交SHA：待提交后补录；CI验收待触发。

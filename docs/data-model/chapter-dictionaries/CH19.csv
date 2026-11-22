@@ -12,3 +12,8 @@ CH19,product_model,product_family,产品类别/系列,CNC、驱动器、电机�
 CH19,product_model,hardware_revision,硬件版本,硬件版本/代际,string,,conditional,,必须引用官方手册或铭牌,具体配置,yes,,未知不得猜测
 CH19,product_model,software_firmware_versions,软件/固件版本,与产品有关的版本或支持范围,array,,conditional,,注明发布/兼容范围与日期,控制产品,yes,,不得用当前下载页推断旧机型可升级
 CH19,product_model,interface_compatibility,接口与兼容性,电气、机械、通信和软件接口关系,object,,conditional,,每一项兼容结论需要版本化证据,具体型号/配置,yes,,不能用产品族相似性推断互操作
+CH19,product_model,component_category,部件类别,产品在机床供应链中的部件类别,string,,recommended,,采用受控分类词并关联官方来源,关键部件产品族,yes,,不得将不同功能层级合并为一个型号
+CH19,product_model,selection_factors,选型因素,影响部件选型的关键工况和接口因素,array,,recommended,,每项因素需说明适用条件和来源,关键部件产品族,yes,,不是具体型号参数或兼容结论
+CH19,product_model,regional_catalog_scope,区域目录范围,来源目录明确的地区范围,string,,conditional,,注明官网区域站点和访问日期,区域产品目录,yes,,不得从区域目录推断全球可供货
+CH19,product_model,technical_documentation,官方技术资料入口,原厂目录手册和技术资料的官方URL,array,,recommended,,保留原始链接和文档编号；版权受限资料只记录链接,产品族/型号,yes,,完整文档副本须经许可并放入resouces
+CH19,product_model,compatibility_evidence,兼容性证据,产品与整机/接口兼容性证据状态,string,,conditional,verified|not_assessed|not_compatible|conditional,,具体型号和版本,yes,,同品牌或相似尺寸不构成兼容证据

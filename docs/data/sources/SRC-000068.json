@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000068",
+  "source_type": "manufacturer_product_page",
+  "title": "Products — BLUM-Novotest",
+  "publisher": "BLUM-Novotest GmbH",
+  "author": null,
+  "url": "https://www.blum-novotest.com/us/products/",
+  "version": "Official product portfolio; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official manufacturer product portfolio or application page",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official portfolio separates measuring components for machine tools, measuring machines and test engineering; machine-tool products include laser tool measurement, touch probes, tool setting, workpiece measurement and related software.",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}

@@ -1,0 +1,23 @@
+{
+  "relation_id": "REL-000175",
+  "subject_id": "PRODUCT-000016",
+  "predicate": "MANUFACTURED_BY",
+  "object_id": "VENDOR-000023",
+  "qualifiers": {
+    "product_scope": "SCHUNK官方VERO-S产品页描述机床工件夹持/托盘快换模块；接口尺寸、夹紧力、重复定位声明和兼容性均须按具体模块、安装条件和版本核验。",
+    "manufacturer_role": "original_manufacturer_as_identified_by_official_product_catalogue",
+    "model_scope": "product_family_not_specific_order_code",
+    "compatibility": "not_assessed",
+    "regional_availability": "not_assessed"
+  },
+  "source_ids": [
+    "SRC-000070"
+  ],
+  "verification_status": "verified",
+  "confidence": "high",
+  "valid_from": null,
+  "valid_to": null,
+  "created_at": "2026-11-22T11:30:00+08:00",
+  "updated_at": "2026-11-22T11:30:00+08:00",
+  "notes": "官方产品目录支持该产品族的原厂归属；不表示特定机床已采用、产品在某地区现货、可跨型号替换或与其他品牌兼容。"
+}

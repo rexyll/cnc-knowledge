@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000064",
+  "source_type": "manufacturer_product_page",
+  "title": "Machine Tools — NSK Global",
+  "publisher": "NSK Ltd.",
+  "author": null,
+  "url": "https://www.nsk.com/industries/machine-tools/",
+  "version": "Official machine-tool industry page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official manufacturer product portfolio or application page",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "NSK publicly lists precision bearings, spindles, ball screws and linear guides for machine-tool applications; product family claims do not establish adoption by a particular machine OEM.",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}
