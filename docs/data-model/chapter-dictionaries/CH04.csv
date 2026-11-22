@@ -114,3 +114,11 @@ CH04,part,rotary_output_encoder_configuration,回转输出端编码器配置,测
 CH04,part,rotary_encoder_installation_record,回转角度编码器安装记录,刻度环偏心/端面摆差/变形、读数头安装与零位建立记录,object,,conditional,,记录安装基准、环形刻度径向偏心、swash/端面摆差、紧固件/扭矩依据、读数头间隙/方向、参考标记和全周扫描,输出端环形角度编码器/圆光栅,yes,,具体间隙与公差必须按准确型号安装指南
 CH04,part,rotary_encoder_signal_quality_record,回转编码器信号质量记录,读数头信号幅值/质量、数据稳定性、误码和诊断状态,object,,conditional,,记录接口/协议、诊断工具/软件版本、全周信号质量、异常计数/丢帧、采样时间戳、电缆/接地/屏蔽状态,角度编码器及反馈系统制造验收,yes,,信号质量要求由编码器与驱动接口规格定义，不用位数替代
 CH04,part,direct_drive_motor_thermal_state_record,直驱电机热状态记录,绕组/定子/壳体/轴承/冷却介质等多个测点的热状态和工况,object,,conditional,,记录传感器位置/型号/校准、采样周期、环境/绕组/壳体/轴承/冷却进出口温度、速度/转矩/运行时长,直驱电机和回转轴热试验,yes,,单个“电机温度”字段不能替代空间测点和热路径追溯
+CH04,part,motor_torque_ripple_test_record,电机转矩波动试验记录,在指定转角、时间窗、速度和负载下的电机/轴端转矩波动测量,object,,conditional,,记录测量位置、传感器量程/带宽/校准、加载方式、平均/峰峰值/RMS、角度/时间窗口、滤波与测量不确定度,直驱力矩电机/回转轴,yes,,轴端测量值不自动等于气隙电磁转矩
+CH04,part,cogging_torque_position_map_record,齿槽转矩位置图记录,无电流或指定电流状态下随机械角变化的定位相关转矩数据,object,,conditional,,记录电机拓扑、槽极/磁极配置、机械零位、角度分辨率、CW/CCW、转矩传感器、加载结构和全周数据路径,适用永磁电机及直驱回转轴,yes,,齿槽转矩与电流相关总转矩波动分开测量
+CH04,part,servo_low_speed_motion_test_record,伺服低速运动试验记录,指定极低速、负载和方向下的速度纹波/爬行/起动迟滞测试,object,,conditional,,记录目标速度、实际速度、方向、角度区间、负载/惯量、夹紧释放状态、速度估计来源、采样周期和波形路径,NC直驱回转轴/力矩电机,yes,,平均速度接近零时不以百分比速度纹波替代绝对量
+CH04,part,servo_following_error_capture_record,伺服跟随误差联合采集记录,位置/速度/电流指令与反馈的同步时序记录,object,,conditional,,记录CNC/驱动器控制周期、时间戳同步、指令/反馈/跟随误差、速度估计、转矩电流、限幅/报警和参数版本,伺服轴与直接驱动轴,yes,,不同控制周期通道须通过时间戳/触发同步，不能按数组行号直接对齐
+CH04,part,rotary_axis_order_tracking_record,回转轴阶次跟踪与频谱记录,基于机械角、电角度和时间的周期扰动/振动阶次分析,object,,conditional,,记录转速扫描、机械角/电角度、时间采样率、角度重采样、窗函数、频率分辨率、阶次幅值/相位和测量位置,直驱回转轴/电机/输出台面,yes,,固定Hz峰和旋转阶次峰需结合转速扫描判断，不凭单峰推断根因
+CH04,part,current_feedback_integrity_record,电流反馈链完整性记录,电流传感器、采样同步、偏置/增益和驱动诊断数据,object,,conditional,,记录电流传感器型号/量程/校准、偏置/增益、采样触发/PWM相位、通道延迟、滤波/ADC配置和原始波形,电机驱动器制造/调试和诊断,yes,,电流反馈异常可导致转矩脉动，但须排除电机/负载其他原因
+CH04,part,torque_ripple_compensation_record,转矩波动/齿槽补偿记录,设计或驱动器补偿功能的建表、配置、启用状态及回归验证,object,,conditional,,记录补偿类型、目标扰动、机械/电气角坐标、方向表、学习工况、生成软件/固件、参数版本、启停对照和多工况回归数据,具有位置相关转矩补偿的直驱轴,yes,,补偿收益不代表装配缺陷/反馈误差已消失
+CH04,part,rotary_axis_vibration_test_record,回转轴振动试验记录,电机/支承/整机指定测点的振动与运行状态测试,object,,conditional,,记录测点/方向、加速度/速度/位移量、传感器与校准、采样率/滤波、转速/负载、安装状态、频谱和所用标准版本,直驱电机本体、转台总成或装机轴系,yes,,IEC 60034-14、ISO 20816系列和机床轴测试对象范围不同，不互换

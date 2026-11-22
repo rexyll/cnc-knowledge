@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000317",
+  "source_type": "standard_catalog",
+  "title": "IEC 60034-14:2026 — Mechanical vibration of certain rotating electrical machines",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/117863",
+  "version": "IEC 60034-14:2026, Edition 5.0; published 2026-11-10",
+  "published_on": "2026-11-10",
+  "accessed_on": "2026-11-22",
+  "locator": "Official publication catalogue and scope statement for factory acceptance vibration tests",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Scope-limited factory vibration acceptance method for certain uncoupled electrical machines: DC/three-phase AC, shaft heights at least 56 mm, rated output up to 50 MW and operating speed 120–15000 min-1. Excludes machines mounted in situ and magnetic-bearing machines among other exclusions. It is not a torque-ripple standard and must not be applied by default to an integrated low-speed torque-motor rotary axis.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

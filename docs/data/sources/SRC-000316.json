@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000316",
+  "source_type": "other",
+  "title": "Cogging",
+  "publisher": "Kollmorgen",
+  "author": null,
+  "url": "https://www.kollmorgen.com/en-us/developer-network/cogging",
+  "version": "Kollmorgen Support article dated 2013-11-07",
+  "published_on": "2013-11-07",
+  "accessed_on": "2026-11-22",
+  "locator": "Permanent-magnet/slot interaction, low-speed jerky motion and product-specific cogging statements",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Vendor explanation of cogging torque and low-speed effects; listed percentages belong to named Kollmorgen motor families only and are not generic acceptance limits.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000319",
+  "source_type": "standard_catalog",
+  "title": "ISO 230-4:2022 — Circular tests for numerically controlled machine tools",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/79155.html",
+  "version": "ISO 230-4:2022, Edition 3, publication month 2022-02",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official catalogue scope for circular and coordinated linear/rotary-axis contouring tests",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Method for evaluating contouring performance on coordinated NC axes, including circular/constant-radius paths using combinations of linear and rotary axes. It does not test motor cogging torque, static torque ripple or stand-alone single-axis low-speed servo behavior.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

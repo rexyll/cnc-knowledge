@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000315",
+  "source_type": "other",
+  "title": "FPGA Based Sin Cos Encoder Processing",
+  "publisher": "Kollmorgen",
+  "author": null,
+  "url": "https://www.kollmorgen.com/en-us/developer-network/fpga-based-sin-cos-encoder-processing",
+  "version": "Kollmorgen Developer Network article; source PCIM 2007; page dated 2016-09-29",
+  "published_on": "2016-09-29",
+  "accessed_on": "2026-11-22",
+  "locator": "Sine/cosine offset, gain, phase and sampling errors; interpolation and derived velocity feedback",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Vendor technical article explains that sine/cosine offset, gain mismatch and nonsynchronous sampling can produce interpolation/velocity errors. Numerical examples apply to its illustrated encoder and sampling assumptions, not all encoder systems.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

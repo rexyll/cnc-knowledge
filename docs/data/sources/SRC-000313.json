@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000313",
+  "source_type": "manufacturer_manual",
+  "title": "SINAMICS S120 Drive Functions — Cogging Torque Compensation",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/805/109771805/att_999003/v1/S120_drive_fct_man_0619_en-US.pdf",
+  "version": "Function Manual 06/2019, firmware version 5.2, 6SL3097-5AB00-0BP2",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Section 9.15 cogging torque compensation; slow learning and direction-specific tables",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "SINAMICS S120-specific function. The manual documents position-dependent compensation tables and a slow-learning procedure, including separate positive/negative direction tables. Parameters and procedures apply only to documented S120 firmware/configurations; do not copy to other drives or use without the applicable safety and commissioning documentation.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}

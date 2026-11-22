@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000310",
+  "source_type": "academic_paper",
+  "title": "Anticogging: Torque ripple suppression, modeling, and parameter selection",
+  "publisher": "SAGE, The International Journal of Robotics Research",
+  "author": "Matthew Piccoli; Mark Yim",
+  "url": "https://doi.org/10.1177/0278364915599045",
+  "version": "Volume 35, Issues 1–3, pages 148–160; first online 2015-10-27; DOI 10.1177/0278364915599045",
+  "published_on": "2015-10-27",
+  "accessed_on": "2026-11-22",
+  "locator": "Torque ripple taxonomy and position-indexed anticogging compensation concept",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Research article separates mutual, reluctance, cogging and friction torque components and discusses position-indexed compensation. Its demonstrated systems and parameter values are not universal CNC axis specifications.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

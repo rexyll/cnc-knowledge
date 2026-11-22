@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000309",
+  "source_type": "academic_paper",
+  "title": "Methods for Reducing Cogging Force in Permanent Magnet Machines: A Review",
+  "publisher": "MDPI, Energies",
+  "author": "Wenjuan Hao; Gong Zhang; Wenbo Liu; Hui Liu; Yu Wang",
+  "url": "https://www.mdpi.com/1996-1073/16/1/422",
+  "version": "Energies 2023, 16(1), 422; DOI 10.3390/en16010422",
+  "published_on": "2022-12-29",
+  "accessed_on": "2026-11-22",
+  "locator": "Abstract and review of cogging-force origins and design-side reduction methods in permanent-magnet machines",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": "Article published under CC BY; repository stores metadata/link only, not a copy",
+  "notes": "Review of slot-effect and end-effect cogging force in permanent-magnet machines. The discussion supports conceptual categorization and design-side mitigation, not quantitative limits for a specific CNC torque motor or rotary axis.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

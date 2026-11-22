@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000311",
+  "source_type": "academic_paper",
+  "title": "Analysis and Compensation of Current Measurement Errors in Machine Drive Systems—A Review",
+  "publisher": "MDPI, Energies",
+  "author": "Pingyue Song; Tao Wang; Lijian Wu; Hao Li; Xiang Meng; Cheng Li",
+  "url": "https://www.mdpi.com/1996-1073/18/6/1367",
+  "version": "Energies 2025, 18(6), 1367; DOI 10.3390/en18061367",
+  "published_on": "2025-03-11",
+  "accessed_on": "2026-11-22",
+  "locator": "Current sampling and measurement error mechanisms; current-controller effects and torque pulsation",
+  "language": "en",
+  "rights_status": "open_license",
+  "license_or_permission": "CC BY 4.0; repository stores metadata/link only",
+  "notes": "Review states current measurement errors can affect current-controller accuracy and produce electromagnetic torque pulsation, current ripple and mechanical vibration. Specific error mechanisms and mitigation depend on drive topology and sampling implementation.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

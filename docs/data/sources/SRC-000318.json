@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000318",
+  "source_type": "standard_catalog",
+  "title": "ISO 20816-1:2026 — Mechanical vibration measurement and evaluation, Part 1",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/89921.html",
+  "version": "ISO 20816-1:2026, Edition 2; publication month 2026-10; replaces ISO 20816-1:2016",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official ISO catalogue scope and lifecycle information",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "General principles for vibration measurements on complete machines and evaluation for operational monitoring/acceptance. Does not apply to torsional vibration and does not cover axial shaft vibration unless otherwise stated; vibration criteria for specific machine types are in other parts. Not a rotary-axis positioning or torque-ripple acceptance standard.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

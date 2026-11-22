@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000312",
+  "source_type": "academic_paper",
+  "title": "Accurate Torque Ripple Measurement for PMSM",
+  "publisher": "IEEE Transactions on Instrumentation and Measurement",
+  "author": "Greg Heins; Mark Thiele; Travis Brown",
+  "url": "https://doi.org/10.1109/TIM.2011.2138350",
+  "version": "2011, 60(12), 3868–3874; DOI 10.1109/TIM.2011.2138350",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Measurement-system dynamics, torque transducer bandwidth/resolution, smooth load and calibration requirements",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Peer-reviewed measurement study on a 1 hp axial-flux PMSM. It emphasizes that shaft torque is not automatically identical to air-gap torque; accurate ripple measurements require known mechanical dynamics, suitable sensors, smooth loading and calibration. The rig is a research example, not a CNC rotary-axis acceptance procedure.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}

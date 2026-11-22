@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000314",
+  "source_type": "third_party_article",
+  "title": "Driving Synchronized Precision Motion in Multiaxis Servo Control Systems",
+  "publisher": "Analog Devices",
+  "author": "Aengus Murray",
+  "url": "https://www.analog.com/en/resources/technical-articles/driving-synchronized-precision-motion-in-multiaxis-servo-control-systems.html",
+  "version": "Technical article, published 2015-04-01",
+  "published_on": "2015-04-01",
+  "accessed_on": "2026-11-22",
+  "locator": "Cascaded servo loops, velocity-loop load rejection and low-speed feedback resolution",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Technical overview describes the position/velocity/current control-loop roles and dependence of low-speed velocity feedback on position feedback resolution. It is conceptual guidance, not a drive-specific tuning recipe or quantitative acceptance requirement.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}
