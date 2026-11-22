@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000207",
+  "source_type": "manufacturer_manual",
+  "title": "Spindle Testing Stand — GMN",
+  "publisher": "GMN",
+  "author": null,
+  "url": "https://www.gmn.de/wp-content/uploads/2505_1219_e1.pdf",
+  "version": "网页PDF版本",
+  "published_on": "2026-11-22",
+  "accessed_on": "2026-11-22",
+  "locator": "GMN说明其高速主轴交付前在专用试验台进行自动循环测试，记录转速、编码器、制动、换刀/夹紧传感器、电机电流/电压、绕组与前轴承温度，以及部分配置的冷却液/可调预紧功能，并生成测试证书。",
+  "language": "zh/en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "GMN特定试验台和产品流程示例；其循环次数、参数和项目不能直接作为行业通用验收要求。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

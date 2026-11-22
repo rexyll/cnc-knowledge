@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000208",
+  "source_type": "manufacturer_manual",
+  "title": "GMN Spindle Service — Assembly, analysis and testing",
+  "publisher": "GMN",
+  "author": null,
+  "url": "https://www.gmn.de/wp-content/uploads/2508_1019_e_1.pdf",
+  "version": "网页PDF版本",
+  "published_on": "2026-11-22",
+  "accessed_on": "2026-11-22",
+  "locator": "GMN公开服务资料包含主轴装配/调试、润滑冷却设置核查、运行测试协议、轴承噪声频率分析、轴承检查、润滑剂分析和预紧核查。",
+  "language": "zh/en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "服务/维护流程资料不是主轴制造工艺规范；只代表GMN公开服务能力和建议。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

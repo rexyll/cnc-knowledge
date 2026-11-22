@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000201",
+  "source_type": "standard_catalog",
+  "title": "ISO 230-3:2020 — Test code for machine tools — Part 3: Determination of thermal effects",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/73291.html",
+  "version": "ISO 230-3:2020, Edition 3",
+  "published_on": "2020-11-16",
+  "accessed_on": "2026-11-22",
+  "locator": "ISO官方目录：包含环境温度变化误差试验、旋转主轴热变形试验、移动直线轴热变形试验及部件回转热变形试验；2026年复审确认继续有效。",
+  "language": "zh/en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "用于机床/主轴热效应测试方法，不给出所有主轴通用的温升或热漂移验收限值。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

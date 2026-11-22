@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000204",
+  "source_type": "standard_catalog",
+  "title": "ISO 21940-11:2016 — Mechanical vibration — Rotor balancing — Part 11: Procedures and tolerances for rotors with rigid behaviour",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/54074.html",
+  "version": "ISO 21940-11:2016 + Amd 1:2022",
+  "published_on": "2016-11-09",
+  "accessed_on": "2026-11-22",
+  "locator": "ISO官方目录说明刚性转子平衡程序、允许残余不平衡、校正平面分配及平衡误差处理；Amd 1:2022已发布。2026年系统复审页面显示状态处于review流程，目录不同展示位置对终结状态存在不一致。",
+  "language": "zh/en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "不覆盖柔性转子（需关注ISO 21940-12）；本轮不将其标记为无争议的最新确认状态，也不据此给主轴/刀具组合指定平衡等级。",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

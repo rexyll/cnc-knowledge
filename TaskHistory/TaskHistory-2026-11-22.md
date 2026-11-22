@@ -819,3 +819,12 @@ MAP-001首轮行业地图已完成并在根目录TaskPlan标记为DONE。CH01-T0
 - 修复提交：[`81257307f526db3f0085ca39c41f57c73c190b48`](https://github.com/rexyll/cnc-knowledge/commit/81257307f526db3f0085ca39c41f57c73c190b48)，将SRC-000197更正为`third_party_article` / `secondary_summary`，并修正文中误将SCHNEEBERGER资料写成KSK来源的描述。
 - GitHub Actions [Run 44989817497](https://github.com/rexyll/cnc-knowledge/actions/runs/44989817497)：success；5/5单元测试通过；strict lint PASS（0 errors）。统计：22章、109个Markdown文件、324条内部链接、140条实体、240条关系、197条来源、393处正文来源引用。
 - 本轮CI只验证结构、来源Schema、引用与内部链接，不验证外部URL长期可用性、标准全文许可、工艺参数或实际零件批次符合性。CH04-T003保持IN_PROGRESS。
+
+
+### CH04-T003 — 数控机床主轴制造工艺与精度形成（2026-11-22）
+
+- 新增 `manufacturing-processes.md` 第13节：主轴总成对象分层、轴芯毛坯/粗加工/热处理/精磨数据采集框架、轴承配合与预紧、转子平衡、主轴总成装配质量门、空载运行/功能/热稳定试验，以及整机主轴精度测试标准边界。
+- 新增SRC-000198～SRC-000204：ISO 230-7:2015、GB/T 17421.7-2016、修订计划20254003-T-604、ISO 230-3:2020、GB/T 17421.3-2009、修订计划20254203-T-604、ISO 21940-11:2016及Amd 1:2022。特别标注GB/T 17421.7-2016采标ISO 230-7:2006、GB/T 17421.3-2009采标ISO 230-3:2001；两项国内修订计划处于批准阶段，未发布新版。
+- 新增SRC-000205～SRC-000209：SKF超精密轴承选型/目录、GMN主轴试验台/服务资料、Makino特定机型主轴技术声明。厂商证据限定于各自产品/服务，不外推为行业统一工艺或其他OEM的BOM。
+- 新增 `resouces/04-components-materials-and-manufacturing/manufacturing-standard-map.csv`，将转子平衡、主轴回转轴线几何和热效应试验与主轴制造工艺分开管理。
+- 未录入通用材料牌号、热处理参数、轴承配合/预紧量、平衡等级/残余不平衡、振动限值、温升/热漂移或跳动公差；未下载/归档受版权保护PDF；未创建无证据OEM BOM/兼容关系。CH04-T003保持IN_PROGRESS；CI验收待补录。
