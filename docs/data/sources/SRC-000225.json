@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000225",
+  "source_type": "manufacturer_manual",
+  "title": "SINAMICS Low Voltage Engineering Manual, Version 6.6",
+  "publisher": "Siemens AG",
+  "author": null,
+  "url": "https://cache.industry.siemens.com/dl/files/185/83180185/att_1023081/v1/SINAMICS_Engineering_manual_V6.6_February_2020_external-e.pdf",
+  "version": "Version 6.6, February 2020",
+  "published_on": "2020-02-01",
+  "accessed_on": "2026-11-22",
+  "locator": "EMC installation guideline and examples: shield bonding of motor and encoder cables, separation/routing of power and signal cables, cabinet grounding and cable crossing practices.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Siemens SINAMICS产品族工程手册的特定安装示例；2020版本，不应把图示距离、布线或接地做法无条件推广到其他驱动平台。未下载/归档PDF副本。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

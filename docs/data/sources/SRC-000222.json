@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000222",
+  "source_type": "standard_catalog",
+  "title": "IEC 61800-9-2:2023 — Energy efficiency determination and classification of power drive systems",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/62107",
+  "version": "IEC 61800-9-2:2023, Edition 2.0; AMD1:2025 consolidated version shown by IEC",
+  "published_on": "2023-10-20",
+  "accessed_on": "2026-11-22",
+  "locator": "IEC official catalogue scope: loss determination and IE/IES classification for CDM, SDM, PDS and motor systems; methodology depends on system architecture and speed/torque operating profile.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "标准全文未下载/归档。用于驱动系统能效评估，不可直接等同于机床切削工况下整机能耗或主轴热性能验收。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

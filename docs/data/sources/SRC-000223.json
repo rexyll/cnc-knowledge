@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000223",
+  "source_type": "manufacturer_product_page",
+  "title": "EnDat interface from HEIDENHAIN",
+  "publisher": "DR. JOHANNES HEIDENHAIN GmbH",
+  "author": null,
+  "url": "https://endat.heidenhain.com/",
+  "version": "网页版本",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "EnDat interface overview: digital drive-system and position-control feedback; high-speed/reliable transmission, additional motor/sensor data and diagnostics; EnDat 3 architecture highlights.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "厂商接口技术说明，不代表任意编码器、驱动器或数控系统之间均兼容；需核对具体编码器型号、协议版本、线缆、驱动接口和参数集。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

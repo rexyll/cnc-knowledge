@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000224",
+  "source_type": "manufacturer_product_page",
+  "title": "EnDat 2.2 — overview of encoder characteristics",
+  "publisher": "DR. JOHANNES HEIDENHAIN GmbH",
+  "author": null,
+  "url": "https://endat.heidenhain.com/endat2/encoder-characteristics",
+  "version": "网页版本",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "EnDat 2.2 digital bidirectional encoder interface; serial clock-synchronous data transfer; position, parameter and diagnostic data; encoder characteristics and timing must be taken from the specific encoder specification.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "只支持EnDat 2.2接口功能说明；编码器位宽、计算时间、信号格式和支持功能随具体型号变化，不能用接口概览代替型号数据表。",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

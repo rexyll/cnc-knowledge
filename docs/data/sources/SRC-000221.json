@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000221",
+  "source_type": "standard_catalog",
+  "title": "IEC 61800-5-1:2022 — Safety requirements: electrical, thermal and energy",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/62103",
+  "version": "IEC 61800-5-1:2022, Edition 3.0; Corrigenda 1 (2023-09) and 2 (2025-12) incorporated in current copy",
+  "published_on": "2022-08-31",
+  "accessed_on": "2026-11-22",
+  "locator": "IEC official catalogue scope: adjustable-speed PDS and elements; electrical, thermal, fire, mechanical, energy and other relevant hazards; driven equipment excluded except interface requirements.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "标准全文未下载/归档。PDS安全标准不替代机床整机风险评估、机械防护和安全功能验证；具体适用性须结合系统边界和国家/地区法规。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

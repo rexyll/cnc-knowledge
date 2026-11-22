@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000220",
+  "source_type": "standard_catalog",
+  "title": "IEC 61800-3:2022 — EMC requirements and specific test methods for PDS and machine tools",
+  "publisher": "International Electrotechnical Commission (IEC)",
+  "author": null,
+  "url": "https://webstore.iec.ch/en/publication/65056",
+  "version": "IEC 61800-3:2022, Edition 4.0; Corrigendum 1 (2025-04) included in current IEC webstore copy",
+  "published_on": "2022-11-30",
+  "accessed_on": "2026-11-22",
+  "locator": "IEC official catalogue scope: EMC requirements for adjustable-speed PDS and machine tools; product EMC assessment for BDM/CDM/PDS/machine tools; motor itself referred to IEC 60034 series.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "标准全文未下载/归档。标准适用于PDS和机床EMC评估，不替代电机本体IEC 60034系列要求，也不自动证明某台整机已通过EMC试验。",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}
