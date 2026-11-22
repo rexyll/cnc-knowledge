@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000273",
+  "source_type": "standard_catalog",
+  "title": "ISO 6358-1:2013 — Pneumatic fluid power — Determination of flow-rate characteristics of components using compressible fluids — Part 1: General rules and test methods for steady-state flow",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/56612.html",
+  "version": "ISO 6358-1:2013, Edition 1; Amd 1:2020; Amd 2:2026",
+  "published_on": "2013-05-14",
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract and lifecycle: steady-state flow characteristic test for applicable gas-flow components; excludes unstable/hysteretic or feedback components such as regulators, and energy-exchanging components such as cylinders and accumulators; Amd 1 covers effective conductance and Amd 2 measurement uncertainty.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Do not apply the steady-state flow-characteristic method to regulators or cylinders excluded from its scope. Preserve the amendment set, test configuration, measurement uncertainty and flow-result conditions.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

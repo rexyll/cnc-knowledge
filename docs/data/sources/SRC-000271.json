@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000271",
+  "source_type": "standard_catalog",
+  "title": "ISO 8573-4:2019 — Compressed air — Contaminant measurement — Part 4: Particle content",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/69695.html",
+  "version": "ISO 8573-4:2019, Edition 2",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: sampling compressed air and determining particle size and number concentration; method limitations and uncertainty considerations are described; the method does not segregate solid and liquid particle fractions.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Particle measurement method, not a universal air-purity target. Sampling and instrument selection must follow the method scope and the applicable ISO 8573-1 class statement.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

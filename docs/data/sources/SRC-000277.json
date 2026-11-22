@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000277",
+  "source_type": "standard_catalog",
+  "title": "ISO 15552:2018 — Pneumatic fluid power — Cylinders with detachable mountings, 1 000 kPa (10 bar) series, bores from 32 mm to 320 mm — Basic, mounting and accessories dimensions",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/66921.html",
+  "version": "ISO 15552:2018, Edition 2; confirmed current in 2025",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: metric series for basic, mounting and accessory dimensions intended to support interchangeability for single/double rod pneumatic cylinders with detachable mountings in its stated pressure and bore scope.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Dimensional interface standard only; it does not establish universal force, speed, leakage, cushioning, friction, life or all sensor/accessory interchangeability. Confirm full configuration and manufacturer data.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

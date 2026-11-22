@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000272",
+  "source_type": "standard_catalog",
+  "title": "ISO 8573-5:2025 — Compressed air — Contaminant measurement — Part 5: Oil vapour content",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/86791.html",
+  "version": "ISO 8573-5:2025, Edition 2",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: oil vapour content measurement using pressurized sampling and gas chromatography, with sampling, evaluation, uncertainty and reporting in relation to ISO 8573-1 oil purity class.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Oil-vapour method; not a substitute for the oil aerosol method in ISO 8573-2. Gaseous contaminant measurement may require a different analytical method.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

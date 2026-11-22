@@ -81,3 +81,10 @@ CH04,part,hose_assembly_traceability,软管总成追溯,软管接头压接设备
 CH04,part,lubrication_metering_configuration,润滑计量配置,泵计量器出口管路润滑点和监测映射,object,,conditional,,记录拓扑/计量器型号/出口编号/管路编号/润滑点/介质/循环监测,集中润滑系统部件/总成,yes,,"出口数量不代表各出口计量量相同"
 CH04,part,coolant_filtration_configuration,冷却过滤配置,冷却液过滤器分离装置和回流拓扑及测试条件,object,,conditional,,记录介质/切屑材料形态/过滤原理/回流路径/压差流量/试验方法/配置版本,冷却液过滤和排屑一体化系统,yes,,"液压滤芯多次通过方法不直接等同于冷却液系统过滤验收"
 CH04,part,chip_conveyor_configuration,排屑输送配置,输送形式驱动结构和保护配置,string,,conditional,"auger;hinge_belt;drag_chain;scraper;filter_conveyor;combined;other;unknown",按机型图纸/供应商配置文件记录，不依据外观推断,排屑装置,yes,,"具体能力/张紧/保护值均需型号文件"
+CH04,part,pneumatic_air_quality_requirement,压缩空气品质要求,指定污染物类别/等级代码/采用标准版次及测量位置,object,,conditional,,记录颗粒/水/油及适用附加污染物的等级、指定点位和合同依据,气动系统/阀岛/气缸/敏感用气支路,yes,,不能以空压站出口或过滤器标称精度替代机床用气点品质要求
+CH04,part,pneumatic_air_quality_test_record,压缩空气品质检测记录,颗粒/湿度/油气溶胶/油蒸气测量结果和采样条件,object,,conditional,,记录采样点/压力/温度/方法版本/仪器/校准/不确定度/原始报告,压缩空气品质验收,yes,,ISO 8573各部分测量对象不同，油气溶胶与油蒸气不可混记
+CH04,part,pneumatic_valve_terminal_configuration,气动阀岛配置,阀站/阀型/先导形式/供气与排气分区/端板/密封/端口配置,object,,conditional,,关联完整订货代码、阀站顺序、隔离片/堵头、公共通道和配置版本,阀岛/歧管总成,yes,,电气I/O地址与现场总线配置由CH06～CH10主维护
+CH04,part,pneumatic_cylinder_configuration,气动缸配置,气缸系列/安装形式/缸径/行程/杆端/缓冲/传感器与密封配置,object,,conditional,,记录产品系列、订货代码、图纸版本、安装接口和附件,气动缸/执行器,yes,,尺寸标准不代表推力/速度/泄漏/寿命等性能等同
+CH04,part,pneumatic_tube_fitting_traceability,气动管材与接头追溯,热塑性管材/快插接头配套身份、批次和装配验证,object,,conditional,,记录管材材料/系列/外径、接头系列、密封材料、连接批次、插入/保持/泄漏验证,气动管路与快插接头,yes,,不跨品牌推断管材、接头和工作条件兼容
+CH04,part,pneumatic_port_thread_standard,气动端口螺纹体系,气动端口/螺柱端的螺纹体系和密封结构,string,,conditional,ISO_16030_G;ISO_1179;ISO_7_1;NPT;other;unknown,按图纸标注标准、螺纹类型、尺寸和密封形式；禁止仅按外观推断,阀体/气缸/歧管/接头,yes,,不同螺纹系统不得仅凭名义尺寸互换
+CH04,part,pneumatic_flow_characteristic_record,气动流量特性记录,适用气动元件的流量系数/有效导通能力等试验结果,object,,conditional,,记录测试标准和修订/流量参数定义/供气和下游条件/仪器/不确定度,阀和适用气动流道元件,yes,,ISO 6358-1不适用于调压器和气缸等其范围排除对象

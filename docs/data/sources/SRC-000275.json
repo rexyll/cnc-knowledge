@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000275",
+  "source_type": "standard_catalog",
+  "title": "ISO 14743:2020 — Pneumatic fluid power — Push-in connectors for thermoplastic tubes",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/73164.html",
+  "version": "ISO 14743:2020, Edition 2",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: general requirements and test methods for design and performance of push-in connectors for thermoplastic tubes with the specified outside-diameter range; tests complete connector assemblies; excludes air braking systems.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Applies to push-in connector assemblies within the specified scope, not to every pneumatic tube material or air-brake application. Tube/connector compatibility still requires product-family evidence.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

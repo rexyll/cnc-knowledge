@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000270",
+  "source_type": "standard_catalog",
+  "title": "ISO 8573-3:1999 — Compressed air — Part 3: Test methods for measurement of humidity",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/25282.html",
+  "version": "ISO 8573-3:1999, Edition 1; confirmed current in 2017",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: selection of humidity measurement methods, sampling, measurement, evaluation, uncertainty and reporting; excludes measurement of water in states other than vapour.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Humidity measurement method does not measure liquid condensate or all other water states. Do not equate a dew-point reading with absence of liquid water in downstream pipework.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000276",
+  "source_type": "standard_catalog",
+  "title": "ISO 16030:2022 — Pneumatic fluid power — Connections — Ports and stud ends",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/81907.html",
+  "version": "ISO 16030:2022, Edition 2",
+  "published_on": "2022-07-15",
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: dimensions and performance requirements for parallel G-series threaded ports and stud ends with reusable retained seals for pneumatic fluid power; warns against connection with ISO 1179 or ISO 7-1 interfaces.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Do not interchange with ISO 1179 series or ISO 7-1 threads based on nominal size or appearance. Confirm thread system and port geometry from the drawing and standard.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

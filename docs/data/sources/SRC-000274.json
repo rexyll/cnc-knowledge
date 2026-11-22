@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000274",
+  "source_type": "standard_catalog",
+  "title": "ISO 6358-1:2013/Amd 2:2026 — Evaluation of measurement uncertainty",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/88078.html",
+  "version": "ISO 6358-1:2013/Amd 2:2026",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract and publication page: Amendment 2 for ISO 6358-1:2013, Evaluation of measurement uncertainty, published 2026-04.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "This is an amendment to ISO 6358-1:2013, not a standalone replacement edition. Include it when identifying the current amendment set used for pneumatic flow-characteristic tests.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000278",
+  "source_type": "manufacturer_product_page",
+  "title": "SMC SY Series — 5-Port Solenoid Valves and Manifold Configurations",
+  "publisher": "SMC Corporation",
+  "author": null,
+  "url": "https://www.smcworld.com/webcatalog/en-jp/categoryID/102?view=list",
+  "version": "Online product-family page; accessed 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Manufacturer product-family page for SY3000/5000/7000 plug-in 5-port solenoid valves and manifold base options; lists product-specific flow characteristics, applicable cylinder sizes, electrical base and manifold codes.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Specific SMC series only. Product flow values and electrical/manifold options must not be used as cross-brand or machine-level compatibility claims.",
+  "authority_tier": "B",
+  "evidence_kind": "manufacturer_declaration"
+}

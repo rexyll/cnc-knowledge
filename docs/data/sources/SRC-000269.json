@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000269",
+  "source_type": "standard_catalog",
+  "title": "ISO 8573-2:2018 — Compressed air — Contaminant measurement — Part 2: Oil aerosol content",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/66999.html",
+  "version": "ISO 8573-2:2018, Edition 3",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract: sampling and quantitative analysis of liquid oil and oil aerosols in compressed air; oil vapour is excluded and addressed by ISO 8573-5.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Oil aerosol measurement method only; do not treat it as oil-vapour measurement or total-oil measurement without the applicable complementary method and sampling plan.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

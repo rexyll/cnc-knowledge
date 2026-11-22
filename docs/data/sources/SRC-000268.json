@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000268",
+  "source_type": "standard_catalog",
+  "title": "ISO 8573-1:2010 — Compressed air — Part 1: Contaminants and purity classes",
+  "publisher": "International Organization for Standardization",
+  "author": null,
+  "url": "https://www.iso.org/standard/46418.html",
+  "version": "ISO 8573-1:2010, Edition 3; ISO/AWI 8573-1 Edition 4 registered for revision; status 20.00 on 2026-11-22",
+  "published_on": null,
+  "accessed_on": "2026-11-22",
+  "locator": "Official abstract and lifecycle: classes for particles, water and oil; gaseous and microbiological contaminants also identified; ISO/AWI 8573-1 Edition 4 is under development and will replace the 2010 edition.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "The 2010 edition remains the published edition while Edition 4 is only an approved work item under development. Do not mark the AWI as a published replacement or infer machine-tool air purity targets.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}
