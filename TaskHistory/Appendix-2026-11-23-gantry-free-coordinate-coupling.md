@@ -27,3 +27,11 @@
 - 没有生成自由路径坐标模型的时域曲线、CSV、频率响应或稳定性结果。
 - 没有引入实测电机参数、丝杠导程、传动效率、轴摩擦、限位或接触参数。
 - 现有18组仿真结果仍属于预设 s(t) 的单向规定轨迹模型；本附录不能作为双向耦合验证证据。
+
+
+## CI验收补录（2026-11-23）
+
+- 自由路径双向耦合解析内容提交：e665db824dbe730908ad8cd7e3d77b2c1dad1483；GitHub Actions [Run 45045633287](https://github.com/rexyll/cnc-knowledge/actions/runs/45045633287) success。
+- 执行器虚功/相对速度接口符号澄清提交：f45ac78b90dc82ba3e0cbfd03a20a928193821c3；GitHub Actions [Run 45045811445](https://github.com/rexyll/cnc-knowledge/actions/runs/45045811445) success。
+- 两次CI均为5/5单元测试通过；strict lint PASS（0 errors）。最终扫描：22章、127个Markdown文件、407条内部链接、143条实体、240条关系、367条来源、653处章节正文来源引用。
+- CH12-T003保持IN_PROGRESS；当前分析不包含自由路径坐标联合积分、电机电流环、接触/间隙建模、HIL或实机验证。
