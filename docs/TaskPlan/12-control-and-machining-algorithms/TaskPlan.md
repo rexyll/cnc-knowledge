@@ -197,3 +197,11 @@
 
 
 **追加静态审查细化（2026-11-23）：不可逆参数数组只读存储。** 复查发现 NumPy 对自有内存的只读数组可能允许通过 `setflags(write=True)` 恢复写权限，因此前一提交的 `write=False` 不是足够强的只读契约。现将模型内部数组构造为不可变 `bytes` 缓冲区的视图，并将资源测试改为逐一验证质量、阻尼、刚度、重力与执行器系数数组不能重新开启写权限。该项仍未实际执行资源测试；CH12-T003继续 IN_PROGRESS。
+
+
+### CH12-T003 不可逆参数数组只读加固CI验收（2026-11-23）
+
+- 内容提交 `00f84c647e8d212b67b43c54dee7fb6dbf53f00a` 对应 GitHub Actions [Run 45124730690](https://github.com/rexyll/cnc-knowledge/actions/runs/45124730690) success。
+- 仓库现有单元测试5/5通过；strict knowledge lint PASS（0 errors）。
+- CI扫描：22章、130 Markdown、407内部链接、143实体、240关系、371来源、660处正文来源引用。
+- 测试文件中的只读检查已覆盖质量、阻尼、刚度、重力与执行器系数五类数组；资源级13项测试仍未执行。CH12-T003继续 `IN_PROGRESS`。

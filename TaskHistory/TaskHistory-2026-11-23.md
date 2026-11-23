@@ -39,5 +39,8 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **问题：** NumPy 对自有内存的只读数组可允许调用方通过 `setflags(write=True)` 重新开启写权限，前一提交的 `write=False` 只能防止直接赋值，不能充分保证只读。
 - **处理：** `_readonly_float_array` 改为将浮点快照序列化为不可变 `bytes` 缓冲区，再以 `np.frombuffer` 生成数组视图；资源测试逐一检查 `M0/D0/K0`、重力向量和执行器系数数组无法恢复写权限。
 - **交付文件：** `resouces/12-control-and-machining-algorithms/gantry_joint_drive_solver.py`、`resouces/12-control-and-machining-algorithms/test_gantry_joint_drive_solver.py`、`docs/12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md`、本章 TaskPlan 与本历史记录。
-- **验收边界：** 本轮静态修订尚待提交及CI；13项资源测试仍未运行。仓库CI不运行资源级测试，不能用CI成功替代该测试结果。
+- **内容提交SHA：** `00f84c647e8d212b67b43c54dee7fb6dbf53f00a`。
+- **GitHub CI：** [Run 45124730690](https://github.com/rexyll/cnc-knowledge/actions/runs/45124730690) success；仓库原有单元测试5/5通过，strict knowledge lint PASS（0 errors）。
+- **CI扫描统计：** 22章、130个Markdown文件、407条内部链接、143个实体、240条关系、371条来源、660处章节来源引用。
+- **验收边界：** 该CI不运行资源级测试；13项资源测试仍未执行。
 - **遗留事项：** 运行13项资源测试、RK4步长收敛和独立能量平衡核验；真实机床参数辨识与HIL/实机验证未完成。CH12-T003保持 `IN_PROGRESS`。
