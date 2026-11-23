@@ -275,4 +275,6 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **失败恢复：** 运行器发现CSV存在但manifest缺失时明确提示前次发布可能中断；检查目录后使用 --force 重跑完整输出集，或切换新目录。不能仅补写缺失文件，也不能把无manifest目录认作完整结果。
 - **测试用例：** 新增3项PATH-01资源测试，覆盖SHA/大小/行列绑定、暂存失败保留旧归档、发布中断移除完成标记并支持整套重试。运行器测试20项、求解器测试25项，共45项，全部未执行。
 - **同步文件：** PATH-01运行器、运行器测试、资源README、ASSET-INDEX、数值验证协议5.8节、专题正文7.6.17节、本章TaskPlan及本历史。
-- **CI/验证边界：** 本切片仅完成静态实现与文档同步，尚未提交/CI；仓库Knowledge Quality CI不运行resouces资源测试，不能替代上述45项测试。PATH-01仿真未执行，验证矩阵8项仍全部 NOT_RUN，无数值仿真或HIL结果。
+- **CI验收：** 内容提交 e063555b9b48104e29f83a25ed8e258f0bc1a734 对应 GitHub Actions [Run 45190354624](https://github.com/rexyll/cnc-knowledge/actions/runs/45190354624) success；仓库单元测试与strict knowledge lint步骤均成功。该CI不执行resouces资源测试。
+- **静态核对：** PATH-01运行器测试方法20项、求解器测试25项，共45项资源测试均未执行；时序CSV和汇总CSV均为73列，字段名及顺序分别与模板一致。代码静态顺序检查确认发布步骤为旧manifest移除→时序CSV→汇总CSV→新manifest。
+- **验证边界：** PATH-01仿真未执行，验证矩阵8项仍全部 NOT_RUN，无数值仿真或HIL结果；CH12-T003继续 IN_PROGRESS。
