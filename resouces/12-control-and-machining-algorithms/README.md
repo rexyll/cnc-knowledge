@@ -105,3 +105,10 @@
 - `gantry-joint-drive-numerical-verification-protocol.md`：步长收敛、机电能量预算和自由路径/规定轨迹对照协议；定义混合量纲状态归一化、观测阶数、功率项、约束反力和结果归档要求。
 - `gantry-joint-drive-verification-matrix.csv`：7个RK4/能量工况和1个自由轴对照工况的未执行矩阵，逐项记录输入要求、参考方法、指标和验收规则。
 - 当前矩阵8项均为 `NOT_RUN`；规定轨迹降阶参考积分器已实现，PATH-01 尚未进行数值对照。以上文件为验证计划，不含数值结果。
+
+## PATH-01自由轴/规定轨迹对照模板（2026-11-23）
+
+- gantry-joint-drive-path-comparison-config-template.json：空白参数与初值模板，定义解析五次静止—静止路径、相同电流命令/外力回调、四档步长和逐状态容差；机床参数、控制增益、阈值均留空。
+- gantry-joint-drive-path-comparison-timeseries-template.csv：按统一输出时间栅格记录参考/自由/受约束路径、结构状态、移动负载点、约束力/功率及储能/功率账本的列定义。
+- gantry-joint-drive-path-comparison-summary-template.csv：记录路径误差、混合单位结构差、负载点偏差、约束力峰值/RMS、约束功、能量残差、收敛阶数和验收结论的列定义。
+- 三份文件均为空白模板；所有数值字段尚未填写，PATH-01保持 NOT_RUN，不可当作已执行仿真结果。

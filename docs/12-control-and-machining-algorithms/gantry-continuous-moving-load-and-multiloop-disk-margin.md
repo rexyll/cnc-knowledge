@@ -492,3 +492,16 @@ M_{qq}\ddot q=Q_q-h_q-M_{qs}\ddot s_{ref}
 约束力符号约定为 `+e_s * lambda` 加在完整系统方程右端。电流环仍通过当前相对速度 `ell_dot` 计算反电势；路径约束反力是理想运动约束的反力，不应误解为驱动器可实现推力或真实伺服输出。初始路径位置和速度必须与 `JointState.s/s_dot` 一致；路径函数须在所有RK4阶段返回三个有限数值。
 
 资源测试由18项增至24项，增加自由方程零约束反力一致性、静止加速下约束力符号、参考路径位置/速度跟踪、初始路径/非有限轨迹拒绝和回调状态快照隔离测试。**这些测试尚未执行**；仓库知识质量CI不运行 `resouces/` 下资源测试。PATH-01 因参考积分器已具备而从 `BLOCKED` 更新为 `NOT_RUN`，自由/规定轨迹数值比较尚未开展。本实现仍不含硬限位、接触或驱动器带宽/力矩能力约束。
+
+#### 7.6.10 PATH-01工况与结果归档模板（2026-11-23）
+
+PATH-01使用解析五次静止—静止轨迹，采用 \(u=t/T\)、\(\Delta s=s_1-s_0\)、\(f(u)=10u^3-15u^4+6u^5\)，并由其解析一阶/二阶导数生成位置、速度、加速度。输入参数、机械/电气矩阵、初始结构状态、外环控制增益、外力、四档积分步长和各状态分量容差均留在JSON配置模板中待填写；当前没有引入任何机床或合成夹具数值。
+
+控制输入约定为两套积分器共用同一确定性回调定义 \(i_{cmd}=i_{ff}+K_{p,pos}(s_{ref}-s)+K_{d,vel}(\dot s_{ref}-\dot s)\)，外部广义力回调也必须保持相同定义和输入数据。理想约束侧控制反馈误差会按约束状态自然变为零；该侧额外需要的约束广义力由 \(\lambda\) 反映，不得把它并入电机电流或重复计入外力。
+
+新增三份资源模板：
+- [PATH-01配置JSON](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-config-template.json)
+- [时序CSV](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-timeseries-template.csv)
+- [单工况汇总CSV](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-summary-template.csv)
+
+比较指标包括自由路径位置/速度误差、逐结构坐标归一化差、移动负载点位置差、约束反力峰值/RMS、约束功及两模型能量残差。受约束模型能量账本显式加入 \(+\lambda\dot s_{ref}\)。所有阈值需事先登记；缺失阈值只能做描述性比较，不能给出合格结论。模板不含数值结果，PATH-01仍为 `NOT_RUN`。

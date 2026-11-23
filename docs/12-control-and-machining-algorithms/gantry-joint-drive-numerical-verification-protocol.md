@@ -162,14 +162,55 @@ M_{qq}\ddot q=Q_q-h_q-M_{qs}\ddot s_{\rm ref}
 
 **实现状态：** 已新增 `GantryJointDriveModel.prescribed_path_derivative()` 与 `simulate_prescribed_path()`。前者对降阶状态 `[q, q_dot, i, x_i]` 计算结构加速度和路径约束反力；后者在每个RK4阶段调用确定性的 `prescribed_path(t) -> (s, s_dot, s_ddot)`，只积分降阶状态，并返回与自由轴求解器相同排列的完整输出状态矩阵及输出栅格上的 `lambda`。初始路径位置/速度必须与 `JointState` 一致。该路径是理想运动学约束参考，不表示真实驱动器能实现该轨迹。PATH-01 由“实现阻塞”转为 `NOT_RUN`；仍须先执行资源测试并完成两种积分器各自的步长收敛，再做自由/约束轨迹对照。
 
+
+### 5.1 PATH-01 固定工况与可复现输入定义
+
+PATH-01 使用解析五次静止—静止路径作为统一参照。令 \(u=t/T\)、\(\Delta s=s_1-s_0\)：
+
+\[
+f(u)=10u^3-15u^4+6u^5
+\]
+\[
+s_{ref}=s_0+\Delta s f(u)
+\]
+\[
+\dot s_{ref}=\frac{\Delta s}{T}(30u^2-60u^3+30u^4)
+\]
+\[
+\ddot s_{ref}=\frac{\Delta s}{T^2}(60u-180u^2+120u^3)
+\]
+
+该轨迹在起点和终点速度、加速度均为零，适合构造端点无速度/加速度跃变的基准工况。\(s_0\)、\(s_1\)、\(T\) 必须来自明确的合成夹具声明或设备行程/工艺需求；不得在没有设备资料时把模板数值当作机床参数。初始状态必须满足 \(s(0)=s_0\)、\(\dot s(0)=0\)。
+
+建议两套模型使用同一确定性外环命令回调：
+\[
+i_{cmd}(t,x)=i_{ff}(t)+K_{p,pos}(s_{ref}-s)+K_{d,vel}(\dot s_{ref}-\dot s)
+\]
+该回调对自由模型根据路径误差生成电流参考，对理想约束模型则按其实际零路径误差计算；两侧均使用同一个函数定义和同一组控制参数。电流参考限幅与电压饱和仍由模型内部执行。前馈 \(i_{ff}(t)\) 如启用，必须保存生成方式/原始时序并在两侧共享。若不用前馈，明确记录为零，而不是遗漏说明。外部广义力回调同样使用相同确定性定义，顺序为 \([Q_q,Q_s]\)；不得把电气执行器力重复写入外部载荷。
+
+执行配置与结果模板：
+- [PATH-01配置模板](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-config-template.json)
+- [时序结果CSV模板](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-timeseries-template.csv)
+- [单工况汇总CSV模板](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-summary-template.csv)
+
+输出误差必须分量归一化。对结构坐标分量 \(j\) 定义：
+\[
+E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{prescribed,j}|)}
+\]
+其中 \(a_j\) 与 \(r_j\) 是执行前登记的绝对/相对比较尺度。路径位置/速度误差分别为 \(e_s=s_{free}-s_{ref}\)、\(e_v=\dot s_{free}-\dot s_{ref}\)。移动负载点差为 \(\Delta r=r(q_{free},s_{free})-r(q_{prescribed},s_{ref})\)。
+
+记录 \(\lambda_{peak}=\max|\lambda|\)、\(\lambda_{rms}=\sqrt{T^{-1}\int_0^T\lambda^2dt}\) 与约束功 \(W_\lambda=\int_0^T\lambda\dot s_{ref}dt\)。受约束模型能量预算中的净功率须增加 \(+\lambda\dot s_{ref}\)；自由模型不加入该项。两者均使用同一储能定义，不把PI积分器计入物理储能。功率/约束功采用对齐输出栅格上的复合Simpson 1/3，另可用梯形法作求积敏感性对照。
+
+两套积分器分别按 \(h,h/2,h/4,h/8\) 完成收敛筛查后，才比较模型差异。各分量绝对/相对容差、自由路径最大误差、约束反力峰值/RMS、约束功及归一化能量残差阈值必须预先给出。**若没有应用级阈值，结果只能标注为描述性对照，不能判定通过/不通过或模型优劣。**
+
 ## 6. 执行顺序与结果归档
 
 1. 先执行现有24项资源级单元测试，保存完整stdout/stderr、退出码、Python/NumPy版本和求解器提交SHA。
-2. 处理失败项并复跑全部18项；不得以仓库知识质量CI替代该步骤。
+2. 处理失败项并复跑全部24项；不得以仓库知识质量CI替代该步骤。
 3. 完成 RK4-01～04 的细化试验，记录每档状态输出和误差。
 4. 完成 ENE-01～03 的功率账本及残差细化。
 5. 在资源测试完成后进行 PATH-01；自由轴与规定轨迹两侧各自完成步长收敛后再对照。
-6. 所有完整输出、配置和结果文件保存到 `resouces/12-control-and-machining-algorithms/`，并登记 `ASSET-INDEX.md`。本轮新增的验证矩阵只是未执行计划，不包含结果。
+6. 所有完整输出、配置和结果文件保存到 `resouces/12-control-and-machining-algorithms/`，并登记 `ASSET-INDEX.md`。PATH-01配置模板和两份CSV空白模板只定义输入/输出格式，不包含参数或结果；执行后另存带配置SHA/求解器SHA的实际文件，不覆盖模板。
 
 每个结果文件必须记录 `case_id`、参数配置SHA、代码SHA、时间网格、所有状态量单位、容差、求积方法（若适用）、关键指标、运行命令、环境信息、退出码及 `PASS/FAIL/NOT_RUN/BLOCKED` 状态。保留原始输出，不只保存摘要表。
 

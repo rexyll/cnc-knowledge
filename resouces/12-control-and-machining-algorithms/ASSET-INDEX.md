@@ -61,3 +61,13 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | `gantry-joint-drive-numerical-verification-protocol.md` | Markdown验证规范 | RK4步长收敛、机电功率/能量预算、自由轴与规定轨迹约束参考模型比较、验收与归档口径 | 项目原创 | 2026-11-23 | 原创文档 | 龙门连续移动负载与双向耦合专题 |
 | `gantry-joint-drive-verification-matrix.csv` | CSV测试矩阵 | RK4-01～04、ENE-01～03、PATH-01的输入/参考/指标/判据模板；8项均未执行，规定路径参考积分器已实现 | 项目原创 | 2026-11-23 | 原创模板 | 同上 |
 
+
+## PATH-01自由轴/规定轨迹对照模板（2026-11-23）
+
+| 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
+|---|---|---|---|---|---|---|
+| gantry-joint-drive-path-comparison-config-template.json | JSON配置模板 | 空白参数、初始状态、五次静止—静止参考路径、相同控制/外力回调、四档步长和分量容差定义；无机床默认值 | 项目原创 | 2026-11-23 | 原创模板 | 龙门连续移动负载与双向耦合专题 |
+| gantry-joint-drive-path-comparison-timeseries-template.csv | CSV时序模板 | 自由/受约束路径、结构状态、负载点、约束反力/功率及储能字段 | 项目原创 | 2026-11-23 | 原创模板 | 同上 |
+| gantry-joint-drive-path-comparison-summary-template.csv | CSV汇总模板 | 路径/结构/负载点误差、lambda峰值/RMS、约束功、能量残差、收敛阶数及验收状态字段 | 项目原创 | 2026-11-23 | 原创模板 | 同上 |
+
+以上为未填写模板，不包含参数、结果或验收通过声明。
