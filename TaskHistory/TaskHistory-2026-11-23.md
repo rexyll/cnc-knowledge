@@ -123,3 +123,11 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **新增资源：** `resouces/12-control-and-machining-algorithms/gantry-joint-drive-verification-matrix.csv`；定义RK4-01～04、ENE-01～03、PATH-01共8项验证工况，其中7项为 `NOT_RUN`，PATH-01因规定轨迹降阶参考积分器尚未实现而为 `BLOCKED`。
 - **协议要点：** 混合单位状态误差使用分量绝对/相对容差归一化；RK4用四档细化和观测阶数判定；能量预算显式包含实际端电压功率、铜耗、结构阻尼、路径摩擦和外部广义力功率；规定轨迹约束参考模型单独计算路径约束广义力与约束功。
 - **验证边界：** 仅完成协议、矩阵和索引归档；没有执行18项资源测试，没有运行数值仿真或能量平衡测试，没有建立真实机床参数。CH12-T003继续 `IN_PROGRESS`。
+
+
+## 联合求解器数值验证协议CI验收及格式修正（2026-11-23）
+
+- **协议/矩阵内容提交：** `020be49b00ea9ba3436718d691d19dcc7625e638`。
+- **GitHub Actions：** [Run 45157109891](https://github.com/rexyll/cnc-knowledge/actions/runs/45157109891) success；仓库原有单元测试和 strict knowledge lint 步骤均成功。
+- **格式修正：** 回读发现协议内22处行内代码标记包含多余反斜杠，现已修正为标准Markdown代码标记。
+- **验收边界：** 该CI未执行18项资源测试；验证矩阵7项为 `NOT_RUN`、PATH-01为 `BLOCKED`。无新增数值仿真或实机/HIL结果；CH12-T003继续 `IN_PROGRESS`。
