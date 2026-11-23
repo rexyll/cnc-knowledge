@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "case_id": "PATH-01",
+  "status": "NOT_RUN",
+  "description": "Blank template; complete only with measured machine data or an explicitly declared synthetic fixture.",
+  "provenance": {
+    "parameter_source": null,
+    "source_documents_or_measurement_ids": [],
+    "solver_git_sha_at_execution": null,
+    "config_sha256_at_execution": null,
+    "python_version": null,
+    "numpy_version": null,
+    "operating_system": null,
+    "command_line": null,
+    "stdout_artifact": null,
+    "stderr_artifact": null,
+    "exit_code": null
+  },
+  "mechanical": {
+    "geometry_span_m": null,
+    "torsion_x_offset_m": null,
+    "torsion_z_offset_m": null,
+    "M0": [
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "D0": [
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "K0": [
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "payload_mass_kg": null,
+    "axis_equivalent_mass_kg": null,
+    "gravity_acceleration_m_s2": [
+      null,
+      null,
+      null
+    ],
+    "axis_viscous_Ns_m": null,
+    "axis_coulomb_N": null,
+    "friction_smoothing_speed_m_s": null
+  },
+  "electrical": {
+    "resistance_ohm": null,
+    "inductance_h": null,
+    "back_emf_V_per_m_s": null,
+    "force_constant_N_per_A": null,
+    "current_limit_A": null,
+    "voltage_min_V": null,
+    "voltage_max_V": null,
+    "kp_V_per_A": null,
+    "ki_V_per_A_s": null,
+    "antiwindup_gain_per_s": null
+  },
+  "actuator": {
+    "q_coefficients": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "s_coefficient": null,
+    "offset_m": null,
+    "displacement_definition_and_sign": null
+  },
+  "initial_state": {
+    "q": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "q_units": [
+      "m",
+      "rad",
+      "m",
+      "rad"
+    ],
+    "q_dot": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "q_dot_units": [
+      "m/s",
+      "rad/s",
+      "m/s",
+      "rad/s"
+    ],
+    "s_m": null,
+    "s_dot_m_s": 0,
+    "current_A": null,
+    "current_integrator_V": null
+  },
+  "prescribed_path": {
+    "family": "quintic_rest_to_rest",
+    "s0_m": null,
+    "s1_m": null,
+    "duration_s": null,
+    "normalized_time": "u=t/T",
+    "position": "s_ref=s0+(s1-s0)*(10*u^3-15*u^4+6*u^5)",
+    "velocity": "sdot_ref=(s1-s0)/T*(30*u^2-60*u^3+30*u^4)",
+    "acceleration": "sddot_ref=(s1-s0)/T^2*(60*u-180*u^2+120*u^3)",
+    "callback_contract": "prescribed_path(t) -> (s_ref_m, sdot_ref_m_s, sddot_ref_m_s2)",
+    "out_of_range_policy": "Reject or explicitly define extension; do not silently extrapolate."
+  },
+  "controller_and_loads": {
+    "current_command_law": "i_cmd=i_ff(t)+Kp_pos*(s_ref-state.s)+Kd_vel*(sdot_ref-state.s_dot)",
+    "Kp_pos_A_per_m": null,
+    "Kd_vel_A_s_per_m": null,
+    "i_ff_definition_or_artifact": null,
+    "use_identical_deterministic_callback_for_both_models": true,
+    "external_generalized_force_order": [
+      "Q_x_common",
+      "Q_yaw",
+      "Q_bending",
+      "Q_torsion",
+      "Q_s"
+    ],
+    "external_force_definition_or_artifact": null,
+    "note": "Do not double-count actuator force as external load."
+  },
+  "integration": {
+    "duration_s": null,
+    "base_step_s": null,
+    "refinement_schedule": [
+      "h",
+      "h/2",
+      "h/4",
+      "h/8"
+    ],
+    "aligned_output_grid": true
+  },
+  "tolerances": {
+    "absolute_q": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "relative_q": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "absolute_q_dot": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "relative_q_dot": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "absolute_s_m": null,
+    "relative_s": null,
+    "absolute_s_dot_m_s": null,
+    "relative_s_dot": null,
+    "application_path_error_limit_m": null,
+    "application_force_limit_N": null,
+    "constraint_work_limit_J": null,
+    "normalized_energy_residual_limit": null
+  },
+  "metrics": {
+    "free_path_position_error": "s_free-s_ref",
+    "free_path_velocity_error": "sdot_free-sdot_ref",
+    "payload_point_error": "r(q_free,s_free)-r(q_prescribed,s_ref)",
+    "constraint_force_peak": "max(abs(lambda))",
+    "constraint_force_rms": "sqrt(integral(lambda^2 dt)/T)",
+    "constraint_work": "integral(lambda*sdot_ref dt)",
+    "constrained_energy_power": "P_net includes +lambda*sdot_ref"
+  },
+  "result_state": {
+    "status": "NOT_RUN",
+    "numerical_results_present": false,
+    "resource_tests_executed": false
+  }
+}
