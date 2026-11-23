@@ -383,3 +383,11 @@
 - **CI验收：** 内容提交 `decf6ce69653d9fb82f5a88fc1c548becd4eb76f` 对应 [Run 45199785490](https://github.com/rexyll/cnc-knowledge/actions/runs/45199785490) success；仓库单元测试和strict knowledge lint均成功。该CI不运行resouces资源测试。
 - **静态核对：** 运行器测试方法32项；验证器拒绝manifest路径覆盖并核对SHA/字节数/表头/行列，CLI独立验证不需要配置；schema/来源ID/数值边界检查在积分前执行。
 - **状态与边界：** PATH-01仍为 `NOT_RUN`，验证矩阵8项仍全部 `NOT_RUN`；没有执行57项资源测试或任何数值仿真，亦无实机/HIL结论。CH12-T003继续 `IN_PROGRESS`。
+
+### CH12-T003 联合质量矩阵尺度均衡求解与能量账本极端值防护（2026-11-23）
+
+- **质量矩阵求解：** 自由路径5×5联合质量矩阵和规定路径4×4结构主子块统一使用对角尺度均衡Cholesky；同步缩放RHS并恢复原变量，校验矩阵/RHS有限性、尺度化后的对称性及Cholesky可分解性。新增 scaled_joint_mass_matrix_condition_number(q, s)，报告单位对角归一化矩阵的特征值比，仅作惯性耦合诊断，不设通用PASS阈值。
+- **能量极端值：** 机械储能、磁场储能、电气诊断、逐采样点能量账本、Simpson/梯形积分与最终能量指标对NaN/Inf/溢出显式失败；梯形求积校验数组形状、样本有限性和时间单调性。
+- **资源回归用例：** 求解器新增5项（混合坐标量级求解、尺度归一化条件指标、非SPD拒绝、模型条件指标、有限输入引起的储能溢出）；PATH-01新增2项（能量账本非有限输入拒绝、梯形输入契约），现分别为30项与34项，共64项资源测试，全部未执行。
+- **内容提交与仓库CI：** 7420db400200fd2722445c35a56859f8802bb68e；GitHub Actions [Run 45203091144](https://github.com/rexyll/cnc-knowledge/actions/runs/45203091144) success。CI既有单元测试与strict knowledge lint成功，但不运行resouces资源测试。
+- **验证边界：** 未执行资源测试、PATH-01数值仿真或能量平衡实验；未给出任何实际工况条件数、求解误差或能量残差数值。PATH-01和矩阵8项继续 NOT_RUN，CH12-T003保持 IN_PROGRESS。

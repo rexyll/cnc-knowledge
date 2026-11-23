@@ -290,3 +290,12 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **同步文件：** PATH-01运行器及测试、资源README、ASSET-INDEX、数值验证协议5.9节、专题正文7.6.18节、本章TaskPlan与本历史。
 - **CI验收：** 内容提交 `decf6ce69653d9fb82f5a88fc1c548becd4eb76f` 对应 [Run 45199785490](https://github.com/rexyll/cnc-knowledge/actions/runs/45199785490) success；既有仓库单元测试步骤与strict knowledge lint步骤均成功。Knowledge Quality CI不执行 `resouces/` 资源测试。
 - **验证边界：** 本轮没有执行PATH-01仿真或57项资源测试；验证矩阵8项仍全部 `NOT_RUN`，没有生成轨迹/收敛/能量数值或HIL证据。CH12-T003保持 `IN_PROGRESS`。
+
+### CH12-T003 联合质量矩阵尺度均衡求解与能量账本极端值防护（2026-11-23）
+
+- **审查发现：** 自由路径和规定路径动力学分别用通用 np.linalg.solve 求解理论SPD质量矩阵；广义坐标含m/rad/模态坐标，原始量纲和等效惯量可能造成对角量级差异。能量/功率由有限输入计算后仍可能溢出为Inf/NaN，原异常可能延迟到求积或JSON写入。
+- **质量矩阵处理：** 新增对角尺度归一化 _diagonal_scaled_symmetric_matrix() 和 _scaled_spd_solve()，构造单位对角对称矩阵、对RHS同步缩放、执行Cholesky并恢复解；自由路径5×5和规定路径4×4结构方程共用该实现。加入模型接口 scaled_joint_mass_matrix_condition_number(q, s)，返回归一化矩阵特征值比；该量不是原始混合单位矩阵条件数，不设通用PASS门限，也未接入验收门控。
+- **极端值处理：** 质量矩阵/右端项、电气诊断、机械与磁场储能、逐样本能量账本、Simpson/梯形积分和能量指标均检查非有限结果；梯形求积增加输入形状、有限性和时间单调性校验，能量账本错误包含样本序号与时间上下文。
+- **回归用例：** 求解器资源测试增加5项、PATH-01运行器测试增加2项；现分别30项和34项，共64项，全部未执行。时序/汇总CSV字段结构没有改变。
+- **内容提交：** 7420db400200fd2722445c35a56859f8802bb68e；GitHub Actions [Run 45203091144](https://github.com/rexyll/cnc-knowledge/actions/runs/45203091144) success（仓库既有单元测试与strict knowledge lint均成功）；该CI不运行64项资源测试。
+- **验证边界：** 本切片无模型参数、实际条件数、数值求解误差或能量残差结果；未执行PATH-01仿真，验证矩阵8项仍全部 NOT_RUN，CH12-T003继续 IN_PROGRESS。
