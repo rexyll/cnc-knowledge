@@ -164,6 +164,31 @@ def _mapping(parent: dict[str, Any], key: str, path: str) -> dict[str, Any]:
     return value
 
 
+def _source_document_ids(value: Any) -> list[str]:
+    """Validate and normalize provenance document/measurement identifiers."""
+    if not isinstance(value, list):
+        raise ConfigurationError(
+            "provenance.source_documents_or_measurement_ids must be a JSON string array"
+        )
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for index, item in enumerate(value):
+        if not isinstance(item, str) or not item.strip():
+            raise ConfigurationError(
+                "provenance.source_documents_or_measurement_ids"
+                f"[{index}] must be a non-empty string"
+            )
+        identifier = item.strip()
+        if identifier in seen:
+            raise ConfigurationError(
+                "provenance.source_documents_or_measurement_ids"
+                f" contains duplicate identifier {identifier!r}"
+            )
+        seen.add(identifier)
+        normalized.append(identifier)
+    return normalized
+
+
 def quintic_rest_to_rest(
     time_s: float, start_m: float, end_m: float, duration_s: float
 ) -> tuple[float, float, float]:
@@ -337,6 +362,10 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
         raise ConfigurationError(
             "provenance.parameter_source is required; identify machine data or synthetic fixture"
         )
+    parameter_source = parameter_source.strip()
+    source_document_ids = _source_document_ids(
+        provenance.get("source_documents_or_measurement_ids", [])
+    )
     path_cfg = _mapping(config, "prescribed_path", "prescribed_path")
     if path_cfg.get("family") != "quintic_rest_to_rest":
         raise ConfigurationError("only prescribed_path.family=quintic_rest_to_rest is supported")
@@ -426,6 +455,7 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
         "limits": limits,
         "acceptance_profile_id": profile or "UNSPECIFIED",
         "parameter_source": parameter_source,
+        "source_documents_or_measurement_ids": source_document_ids,
     }
 
 
@@ -1048,6 +1078,7 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         "started_at_utc": started,
         "completed_at_utc": completed,
         "parameter_source": validated["parameter_source"],
+        "source_documents_or_measurement_ids": validated["source_documents_or_measurement_ids"],
         "config_path": str(config_path),
         "config_sha256": config_sha,
         "solver_git_sha": git_sha,

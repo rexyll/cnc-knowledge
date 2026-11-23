@@ -14,6 +14,7 @@ from gantry_joint_drive_path_comparison import (
     _acceptance_decision,
     _current_reference_was_limited,
     _saturation_stage_report,
+    _source_document_ids,
     composite_simpson_13,
     normalized_state_error,
     quintic_rest_to_rest,
@@ -110,6 +111,21 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
         self.assertEqual(report["current_reference_saturated_stages"], 0)
         self.assertEqual(report["voltage_saturated_stages"], 2)
         self.assertEqual(report["any_limiter_active_stages"], 2)
+
+    def test_source_document_ids_require_a_list(self) -> None:
+        with self.assertRaisesRegex(ValueError, "must be a JSON string array"):
+            _source_document_ids(None)
+
+    def test_source_document_ids_reject_blank_or_non_string_entries(self) -> None:
+        for invalid in (["SRC-1", "  "], ["SRC-1", 7]):
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(ValueError, "must be a non-empty string"):
+                    _source_document_ids(invalid)
+
+    def test_source_document_ids_trim_and_reject_duplicates(self) -> None:
+        self.assertEqual(_source_document_ids([" SRC-1 ", "SRC-2"]), ["SRC-1", "SRC-2"])
+        with self.assertRaisesRegex(ValueError, "duplicate identifier"):
+            _source_document_ids(["SRC-1", " SRC-1 "])
 
     def test_current_reference_limiter_detects_adjacent_float_clipping(self) -> None:
         requested = np.nextafter(1.0, np.inf)

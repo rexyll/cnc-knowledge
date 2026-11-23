@@ -329,3 +329,12 @@
 - **测试：** 新增相邻IEEE浮点数裁剪用例，覆盖仅一个可表示浮点间隔的裁剪以及相等值不算裁剪。PATH运行器测试由12项增至13项，连同求解器24项共37项，均未执行。
 - **同步：** 运行器、测试、资源README、ASSET-INDEX、数值验证协议5.5节、专题正文7.6.14节与本章TaskPlan/History。
 - **状态：** 尚待提交与仓库CI；未运行PATH-01或资源测试。CH12-T003继续 `IN_PROGRESS`。
+
+
+### CH12-T003 PATH-01输入来源追溯补强（2026-11-23）
+
+- **审查发现：** 空白配置模板含 `provenance.source_documents_or_measurement_ids`，但运行器未验证该字段类型、空项/重复项，也没有将具体来源ID写进manifest；仅记录 `parameter_source` 与配置SHA，不便于执行结果反查参数依据。
+- **处理：** 新增 `_source_document_ids()`，要求JSON字符串数组、每项非空、trim后不重复；允许空数组（如明确标识合成夹具、无独立来源ID）。manifest保留规范化后的 `source_documents_or_measurement_ids` 数组。
+- **测试：** 新增3项纯函数测试，覆盖非数组、空白/非字符串项，以及去空白与重复值拒绝。运行器辅助测试16项；求解器24项，合计40项资源测试均未执行。
+- **同步：** 运行器、资源测试、README、ASSET-INDEX、数值验证协议5.6节、专题正文7.6.15节与本章TaskPlan/History。
+- **状态：** 尚未提交与运行CI；PATH-01仍 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
