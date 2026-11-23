@@ -119,6 +119,10 @@ class ConfigurationError(ValueError):
     """Raised when a PATH-01 config is incomplete or inconsistent."""
 
 
+class ArchiveVerificationError(ValueError):
+    """Raised when an existing PATH-01 output bundle fails integrity checks."""
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -131,7 +135,10 @@ def _number(value: Any, name: str, *, positive: bool = False,
             nonnegative: bool = False) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ConfigurationError(f"{name} must be numeric; null/strings are not accepted")
-    result = float(value)
+    try:
+        result = float(value)
+    except OverflowError as error:
+        raise ConfigurationError(f"{name} must fit in a finite floating-point value") from error
     if not math.isfinite(result):
         raise ConfigurationError(f"{name} must be finite")
     if positive and result <= 0.0:
@@ -139,6 +146,36 @@ def _number(value: Any, name: str, *, positive: bool = False,
     if nonnegative and result < 0.0:
         raise ConfigurationError(f"{name} must be >= 0")
     return result
+
+
+def _interval_count(duration_s: float, base_step_s: float) -> int:
+    """Validate a finite, representable even interval count for Simpson 1/3."""
+    try:
+        ratio = duration_s / base_step_s
+    except OverflowError as error:
+        raise ConfigurationError("duration_s/base_step_s ratio overflowed") from error
+    if not math.isfinite(ratio) or ratio > sys.maxsize:
+        raise ConfigurationError(
+            "duration_s/base_step_s must be finite and fit the platform index range"
+        )
+    intervals = int(round(ratio))
+    if intervals < 0 or intervals > sys.maxsize // 8:
+        raise ConfigurationError(
+            "base interval count times the h/8 refinement factor exceeds the platform index range"
+        )
+    try:
+        represented_duration = intervals * base_step_s
+    except OverflowError as error:
+        raise ConfigurationError("interval count times base_step_s overflowed") from error
+    if not math.isfinite(represented_duration):
+        raise ConfigurationError("interval count times base_step_s must be finite")
+    if intervals < 2 or intervals % 2 != 0 or not math.isclose(
+        represented_duration, duration_s, rel_tol=1e-9, abs_tol=1e-12
+    ):
+        raise ConfigurationError(
+            "duration_s/base_step_s must be an integer, even interval count for Simpson 1/3"
+        )
+    return intervals
 
 
 def _vector(value: Any, name: str, size: int, *,
@@ -353,8 +390,8 @@ def _build_model(config: dict[str, Any]) -> tuple[GantryJointDriveModel, JointSt
 def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(config, dict):
         raise ConfigurationError("configuration root must be a JSON object")
-    if config.get("schema_version") != 1:
-        raise ConfigurationError("unsupported config schema_version; expected 1")
+    if type(config.get("schema_version")) is not int or config["schema_version"] != 1:
+        raise ConfigurationError("unsupported config schema_version; expected integer 1")
     if config.get("case_id") != "PATH-01":
         raise ConfigurationError("case_id must be PATH-01")
     provenance = _mapping(config, "provenance", "provenance")
@@ -364,8 +401,12 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
             "provenance.parameter_source is required; identify machine data or synthetic fixture"
         )
     parameter_source = parameter_source.strip()
+    if "source_documents_or_measurement_ids" not in provenance:
+        raise ConfigurationError(
+            "provenance.source_documents_or_measurement_ids is required; use [] when no IDs apply"
+        )
     source_document_ids = _source_document_ids(
-        provenance.get("source_documents_or_measurement_ids", [])
+        provenance["source_documents_or_measurement_ids"]
     )
     path_cfg = _mapping(config, "prescribed_path", "prescribed_path")
     if path_cfg.get("family") != "quintic_rest_to_rest":
@@ -389,13 +430,7 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
     base_step = _number(integration.get("base_step_s"), "integration.base_step_s", positive=True)
     if not math.isclose(integration_duration, duration, rel_tol=1e-10, abs_tol=1e-12):
         raise ConfigurationError("integration.duration_s must equal prescribed_path.duration_s")
-    intervals = int(round(duration / base_step))
-    if intervals < 2 or intervals % 2 != 0 or not math.isclose(
-        intervals * base_step, duration, rel_tol=1e-9, abs_tol=1e-12
-    ):
-        raise ConfigurationError(
-            "duration_s/base_step_s must be an integer, even interval count for Simpson 1/3"
-        )
+    intervals = _interval_count(duration, base_step)
     if integration.get("refinement_schedule") != ["h", "h/2", "h/4", "h/8"]:
         raise ConfigurationError("integration.refinement_schedule must be [h,h/2,h/4,h/8]")
     if integration.get("aligned_output_grid") is not True:
@@ -434,8 +469,10 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
         value = acceptance.get(name)
         limits[name] = None if value is None else _number(value, f"acceptance.{name}", nonnegative=True)
     profile = acceptance.get("profile_id")
-    if profile is not None and not isinstance(profile, str):
-        raise ConfigurationError("acceptance.profile_id must be a string or null")
+    if profile is not None:
+        if not isinstance(profile, str) or not profile.strip():
+            raise ConfigurationError("acceptance.profile_id must be a non-empty string or null")
+        profile = profile.strip()
 
     return {
         "model": model,
@@ -978,6 +1015,125 @@ def _write_output_bundle(
     return output_artifacts
 
 
+def verify_output_bundle(output_dir: Path) -> dict[str, Any]:
+    """Verify the manifest and both CSV artifacts without loading a model config."""
+    output_dir = output_dir.resolve()
+    timeseries_path = output_dir / "gantry-joint-drive-path-comparison-timeseries.csv"
+    summary_path = output_dir / "gantry-joint-drive-path-comparison-summary.csv"
+    manifest_path = output_dir / "gantry-joint-drive-path-comparison-run-manifest.json"
+
+    if not manifest_path.is_file():
+        raise ArchiveVerificationError(f"run manifest not found: {manifest_path}")
+    try:
+        with manifest_path.open("r", encoding="utf-8") as stream:
+            manifest = json.load(stream)
+    except (OSError, ValueError) as error:
+        raise ArchiveVerificationError(f"cannot read run manifest: {error}") from error
+
+    if not isinstance(manifest, dict):
+        raise ArchiveVerificationError("run manifest root must be a JSON object")
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 2:
+        raise ArchiveVerificationError("unsupported manifest schema_version; expected integer 2")
+    if manifest.get("case_id") != "PATH-01":
+        raise ArchiveVerificationError("run manifest case_id must be PATH-01")
+    archive_status = manifest.get("status")
+    if not isinstance(archive_status, str) or archive_status not in {
+        "PASS", "FAIL", "COMPLETED_REPORT_ONLY"
+    }:
+        raise ArchiveVerificationError("run manifest status is missing or invalid")
+
+    expected_files = {
+        "timeseries_csv": (timeseries_path, TIMESERIES_FIELDS),
+        "summary_csv": (summary_path, SUMMARY_FIELDS),
+    }
+    output_files = manifest.get("output_files")
+    artifacts = manifest.get("output_artifacts")
+    if not isinstance(output_files, dict) or not isinstance(artifacts, dict):
+        raise ArchiveVerificationError("manifest output_files and output_artifacts must be JSON objects")
+
+    verified: dict[str, dict[str, Any]] = {}
+    for key, (path, expected_fields) in expected_files.items():
+        expected_name = path.name
+        if output_files.get(key) != expected_name:
+            raise ArchiveVerificationError(f"manifest output_files.{key} must be {expected_name}")
+        metadata = artifacts.get(key)
+        if not isinstance(metadata, dict):
+            raise ArchiveVerificationError(f"manifest output_artifacts.{key} must be a JSON object")
+        if metadata.get("file") != expected_name:
+            raise ArchiveVerificationError(f"manifest output_artifacts.{key}.file must be {expected_name}")
+
+        digest = metadata.get("sha256")
+        if not isinstance(digest, str) or len(digest) != 64 or any(
+            character not in "0123456789abcdef" for character in digest
+        ):
+            raise ArchiveVerificationError(f"manifest output_artifacts.{key}.sha256 is invalid")
+        size_bytes = metadata.get("size_bytes")
+        data_rows = metadata.get("data_rows")
+        columns = metadata.get("columns")
+        if type(size_bytes) is not int or size_bytes < 0:
+            raise ArchiveVerificationError(f"manifest output_artifacts.{key}.size_bytes is invalid")
+        if type(data_rows) is not int or data_rows < 0:
+            raise ArchiveVerificationError(f"manifest output_artifacts.{key}.data_rows is invalid")
+        if type(columns) is not int or columns != len(expected_fields):
+            raise ArchiveVerificationError(
+                f"manifest output_artifacts.{key}.columns must be {len(expected_fields)}"
+            )
+        if not path.is_file():
+            raise ArchiveVerificationError(f"output artifact not found: {path}")
+
+        actual_size = path.stat().st_size
+        if actual_size != size_bytes:
+            raise ArchiveVerificationError(
+                f"{expected_name} byte size mismatch: manifest={size_bytes}, actual={actual_size}"
+            )
+        actual_digest = sha256_file(path)
+        if actual_digest != digest:
+            raise ArchiveVerificationError(f"{expected_name} SHA-256 mismatch")
+
+        actual_rows = 0
+        try:
+            with path.open("r", encoding="utf-8", newline="") as stream:
+                reader = csv.reader(stream)
+                try:
+                    header = next(reader)
+                except StopIteration as error:
+                    raise ArchiveVerificationError(f"{expected_name} is empty") from error
+                if header != expected_fields:
+                    raise ArchiveVerificationError(f"{expected_name} CSV header does not match PATH-01 schema")
+                for row in reader:
+                    if len(row) != len(expected_fields):
+                        raise ArchiveVerificationError(
+                            f"{expected_name} row {actual_rows + 2} has {len(row)} columns; "
+                            f"expected {len(expected_fields)}"
+                        )
+                    actual_rows += 1
+        except csv.Error as error:
+            raise ArchiveVerificationError(f"{expected_name} CSV parse failed: {error}") from error
+        except UnicodeError as error:
+            raise ArchiveVerificationError(f"{expected_name} is not valid UTF-8: {error}") from error
+
+        if actual_rows != data_rows:
+            raise ArchiveVerificationError(
+                f"{expected_name} row count mismatch: manifest={data_rows}, actual={actual_rows}"
+            )
+        verified[key] = {
+            "file": expected_name,
+            "sha256": actual_digest,
+            "size_bytes": actual_size,
+            "data_rows": actual_rows,
+            "columns": len(expected_fields),
+            "verified": True,
+        }
+
+    return {
+        "case_id": "PATH-01",
+        "status": "VERIFIED",
+        "recorded_run_status": archive_status,
+        "manifest_json": str(manifest_path),
+        "artifacts": verified,
+    }
+
+
 def _git_sha() -> str | None:
     try:
         result = subprocess.run(
@@ -1228,19 +1384,38 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Run the configured CH12 PATH-01 free/prescribed path comparison."
     )
-    parser.add_argument("--config", type=Path, required=True, help="completed PATH-01 JSON config")
+    parser.add_argument(
+        "--config", type=Path,
+        help="completed PATH-01 JSON config (required unless --verify-archive is used)"
+    )
     parser.add_argument(
         "--output-dir", type=Path, required=True,
         help="directory for timeseries, summary and provenance manifest outputs"
+    )
+    parser.add_argument(
+        "--verify-archive", action="store_true",
+        help="verify the existing PATH-01 manifest and CSV files; does not run a simulation"
     )
     parser.add_argument(
         "--force", action="store_true",
         help="overwrite output files with the same three fixed names"
     )
     arguments = parser.parse_args(argv)
+    if arguments.verify_archive:
+        if arguments.config is not None:
+            parser.error("--config must be omitted with --verify-archive")
+        if arguments.force:
+            parser.error("--force cannot be combined with --verify-archive")
+    elif arguments.config is None:
+        parser.error("--config is required unless --verify-archive is used")
     try:
-        result = run_path_comparison(arguments.config, arguments.output_dir, force=arguments.force)
-    except (OSError, ValueError, RuntimeError, np.linalg.LinAlgError) as error:
+        if arguments.verify_archive:
+            result = verify_output_bundle(arguments.output_dir)
+        else:
+            result = run_path_comparison(
+                arguments.config, arguments.output_dir, force=arguments.force
+            )
+    except (OSError, ValueError, RuntimeError, OverflowError, np.linalg.LinAlgError) as error:
         print(f"PATH-01 ERROR: {error}", file=sys.stderr)
         return 2
     print(json.dumps(result, ensure_ascii=False, indent=2))

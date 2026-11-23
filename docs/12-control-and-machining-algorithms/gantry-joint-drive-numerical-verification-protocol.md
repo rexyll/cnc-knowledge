@@ -285,3 +285,20 @@ RK4阶段统计和时序CSV输出点必须使用同一电流参考限幅判定�
 输出发布采用同一输出目录内的临时暂存子目录，先完整生成两份CSV、计算哈希，再生成暂存manifest。全部暂存成功后才开始发布：先移除旧manifest，再逐个以同文件系统的替换操作发布时序CSV、汇总CSV，最后发布manifest。由此，暂存阶段失败不会覆盖已有归档；若CSV发布期间中断，manifest不会遗留为旧版完成标记，目录内可能存在部分新旧文件，但该次输出集必须视为未提交/不完整。
 
 遇到CSV存在而manifest缺失时，运行器会提示上次发布可能中断。应检查目录后使用 --force 重新生成并发布整套结果，或改用新的输出目录；不能只补写其中一份CSV，也不能把没有manifest的CSV当作完整归档。正常存在manifest的既有结果仍受默认防覆盖检查保护。该流程提供可识别的完成标记和可校验的文件内容绑定，不声称多文件发布具备文件系统级整体事务原子性。
+
+
+### 5.9 PATH-01独立归档校验与输入/CLI边界
+
+运行后可在不提供原配置、不重跑模型的情况下独立校验结果归档：
+
+```bash
+python resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comparison.py \
+  --verify-archive \
+  --output-dir resouces/12-control-and-machining-algorithms/generated/path-01/results
+```
+
+该模式要求省略 `--config` 和 `--force`。校验器只接受本工具定义的两个固定CSV文件名，拒绝manifest中任意路径覆盖；要求manifest为schema_version 2、case_id为PATH-01且状态是PASS、FAIL或COMPLETED_REPORT_ONLY。它逐文件检查存在性、SHA-256、字节数、CSV表头、每行列数、数据行数，并核对manifest中的文件名和列数元数据。全部匹配返回 `VERIFIED`；缺失文件、错误schema、摘要/尺寸/行列数不一致或CSV无法解析均以CLI错误退出。这里的 `VERIFIED` 只说明归档文件与manifest记录一致，不代表仿真正确、工程验收通过或实机/HIL有效。
+
+配置校验方面，`schema_version` 必须是JSON整数1（布尔值true不因Python中与1相等而被接受）；`provenance.source_documents_or_measurement_ids` 必须显式提供字符串数组，没有独立ID时填写空数组 `[]`；非null的 `acceptance.profile_id` 必须是非空字符串并去除首尾空白。数值转浮点溢出、duration/base_step比值非有限或超出平台索引范围，以及再细化到h/8后区间数不可表示时，均须在进入积分前拒绝。CLI对文件/JSON/配置错误、数值溢出和已知运行异常输出 `PATH-01 ERROR` 并返回退出码2；命令行参数组合错误由argparse拒绝。
+
+新增归档验证、配置类型/字段、数值溢出与CLI错误返回资源测试后，PATH-01运行器测试共32项，求解器测试25项，共57项均未执行。仓库Knowledge Quality CI不覆盖这些资源测试。

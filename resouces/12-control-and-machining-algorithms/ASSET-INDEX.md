@@ -78,9 +78,9 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
 |---|---|---|---|---|---|---|
 | gantry_joint_drive_path_comparison.py | Python源码 | PATH-01四档步长自由轴/理想规定路径比较运行器；输出逐点时序、归一化误差、约束反力/约束功、机电能量账本、阶段限幅诊断和运行manifest | 项目原创 | 2026-11-23 | 原创代码 | 龙门连续移动负载与双向耦合专题 |
-| test_gantry_joint_drive_path_comparison.py | Python测试 | 20项资源级纯函数测试：五次参考路径、Simpson/梯形求积、混合单位归一化、限幅精确比较、阶段计数、全细化序列门控、CSV哈希绑定与归档失败恢复 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
+| test_gantry_joint_drive_path_comparison.py | Python测试 | 32项资源级测试：五次参考路径、Simpson/梯形求积、混合单位归一化、限幅精确比较、来源ID校验、CSV哈希绑定、归档校验/篡改识别/路径覆盖拒绝、溢出边界与CLI错误返回 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
 
-新增13项运行器资源测试尚未执行；加上求解器原有24项，PATH/求解器资源测试合计37项，仓库CI均不执行。
+当前PATH-01运行器资源测试32项、求解器资源测试25项，共57项，均未执行；仓库CI不执行resouces资源测试。
 
 
 ## PATH-01限幅感知诊断更新（2026-11-23）
@@ -105,3 +105,8 @@ PATH-01 manifest现额外保留 `source_documents_or_measurement_ids`，与 `par
 ## PATH-01输出文件哈希绑定与失败恢复（2026-11-23）
 
 PATH-01运行器的manifest采用 schema_version: 2，并在 output_artifacts 中分别记录时序CSV和汇总CSV的SHA-256、字节数、数据行数与列数。运行器先把完整输出写入输出目录下的暂存子目录，再发布两份CSV，manifest最后发布作为完成标记。暂存失败时保留原归档；发布中断时manifest缺失，该目录不能视为完整结果，须检查后以 --force 重跑整套输出。新增3项资源级测试，运行器辅助测试20项、求解器25项、合计45项，全部未执行。
+
+
+## PATH-01独立归档校验与配置/CLI边界（2026-11-23）
+
+运行器新增 --verify-archive，无需原始配置、不运行求解器；对manifest schema/case/status、固定CSV文件名、内容SHA-256、字节数、列名、每行列宽、数据行数与manifest元数据进行核对，成功返回 VERIFIED。路径覆盖、哈希不一致、缺文件或CSV结构错误均会失败。配置校验要求schema_version为整数1、来源ID数组显式存在；拒绝浮点转换溢出、非有限步长比值，以及h/8细化后超过平台索引范围的区间数。CLI对I/O、JSON/配置、数值溢出与运行异常返回2。PATH-01辅助测试32项、求解器25项，共57项，均未执行。

@@ -6,7 +6,9 @@ python -m unittest discover -s resouces/12-control-and-machining-algorithms -p '
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
+import io
 import json
 import os
 import tempfile
@@ -18,7 +20,10 @@ import numpy as np
 
 import gantry_joint_drive_path_comparison as path_runner
 from gantry_joint_drive_path_comparison import (
+    _interval_count,
+    _number,
     _write_output_bundle,
+    verify_output_bundle,
     _acceptance_decision,
     _current_reference_was_limited,
     _energy_metrics,
@@ -234,6 +239,106 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
             self.assertEqual(sorted(path.name for path in root.iterdir()),
                              ["manifest.json", "summary.csv", "timeseries.csv"])
 
+    def test_output_bundle_verifier_accepts_matching_manifest_and_csvs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_output_bundle(
+                root / "gantry-joint-drive-path-comparison-timeseries.csv",
+                root / "gantry-joint-drive-path-comparison-summary.csv",
+                root / "gantry-joint-drive-path-comparison-run-manifest.json",
+                timeseries_rows=[{}], summary_rows=[{}, {}],
+                manifest={"schema_version": 2, "case_id": "PATH-01",
+                          "status": "COMPLETED_REPORT_ONLY",
+                          "output_files": {
+                              "timeseries_csv": "gantry-joint-drive-path-comparison-timeseries.csv",
+                              "summary_csv": "gantry-joint-drive-path-comparison-summary.csv",
+                          }},
+            )
+            verified = verify_output_bundle(root)
+            self.assertEqual(verified["status"], "VERIFIED")
+            self.assertEqual(verified["recorded_run_status"], "COMPLETED_REPORT_ONLY")
+            self.assertTrue(verified["artifacts"]["timeseries_csv"]["verified"])
+            self.assertEqual(verified["artifacts"]["summary_csv"]["data_rows"], 2)
+
+    def test_output_bundle_verifier_cli_needs_no_config_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_output_bundle(
+                root / "gantry-joint-drive-path-comparison-timeseries.csv",
+                root / "gantry-joint-drive-path-comparison-summary.csv",
+                root / "gantry-joint-drive-path-comparison-run-manifest.json",
+                timeseries_rows=[{}], summary_rows=[{}],
+                manifest={"schema_version": 2, "case_id": "PATH-01",
+                          "status": "COMPLETED_REPORT_ONLY",
+                          "output_files": {
+                              "timeseries_csv": "gantry-joint-drive-path-comparison-timeseries.csv",
+                              "summary_csv": "gantry-joint-drive-path-comparison-summary.csv",
+                          }},
+            )
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                exit_code = path_runner.main(["--verify-archive", "--output-dir", str(root)])
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(json.loads(stdout.getvalue())["status"], "VERIFIED")
+
+    def test_output_bundle_verifier_detects_csv_tampering(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            timeseries = root / "gantry-joint-drive-path-comparison-timeseries.csv"
+            summary = root / "gantry-joint-drive-path-comparison-summary.csv"
+            manifest = root / "gantry-joint-drive-path-comparison-run-manifest.json"
+            _write_output_bundle(
+                timeseries, summary, manifest,
+                timeseries_rows=[{}], summary_rows=[{}],
+                manifest={"schema_version": 2, "case_id": "PATH-01",
+                          "status": "FAIL",
+                          "output_files": {
+                              "timeseries_csv": timeseries.name,
+                              "summary_csv": summary.name,
+                          }},
+            )
+            original_bytes = timeseries.read_bytes()
+            timeseries.write_bytes(b"X" + original_bytes[1:])
+            with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+                verify_output_bundle(root)
+
+    def test_output_bundle_verifier_rejects_non_string_status_without_type_error(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_output_bundle(
+                root / "gantry-joint-drive-path-comparison-timeseries.csv",
+                root / "gantry-joint-drive-path-comparison-summary.csv",
+                root / "gantry-joint-drive-path-comparison-run-manifest.json",
+                timeseries_rows=[{}], summary_rows=[{}],
+                manifest={"schema_version": 2, "case_id": "PATH-01",
+                          "status": ["PASS"],
+                          "output_files": {
+                              "timeseries_csv": "gantry-joint-drive-path-comparison-timeseries.csv",
+                              "summary_csv": "gantry-joint-drive-path-comparison-summary.csv",
+                          }},
+            )
+            with self.assertRaisesRegex(ValueError, "status is missing or invalid"):
+                verify_output_bundle(root)
+
+    def test_output_bundle_verifier_rejects_manifest_path_override(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            timeseries = root / "gantry-joint-drive-path-comparison-timeseries.csv"
+            summary = root / "gantry-joint-drive-path-comparison-summary.csv"
+            manifest_path = root / "gantry-joint-drive-path-comparison-run-manifest.json"
+            _write_output_bundle(
+                timeseries, summary, manifest_path,
+                timeseries_rows=[{}], summary_rows=[{}],
+                manifest={"schema_version": 2, "case_id": "PATH-01",
+                          "status": "PASS",
+                          "output_files": {
+                              "timeseries_csv": "../outside.csv",
+                              "summary_csv": summary.name,
+                          }},
+            )
+            with self.assertRaisesRegex(ValueError, "output_files.timeseries_csv"):
+                verify_output_bundle(root)
+
     def test_output_bundle_publish_failure_removes_completion_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -275,6 +380,47 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
                 verified["output_artifacts"]["timeseries_csv"]["sha256"],
                 hashlib.sha256(timeseries.read_bytes()).hexdigest(),
             )
+
+    def test_config_schema_version_rejects_boolean_true(self) -> None:
+        with self.assertRaisesRegex(ValueError, "expected integer 1"):
+            path_runner._validate_config({"schema_version": True, "case_id": "PATH-01"})
+
+    def test_config_requires_explicit_source_document_id_array(self) -> None:
+        config = {
+            "schema_version": 1,
+            "case_id": "PATH-01",
+            "provenance": {"parameter_source": "synthetic fixture"},
+        }
+        with self.assertRaisesRegex(ValueError, "source_documents_or_measurement_ids is required"):
+            path_runner._validate_config(config)
+
+    def test_number_rejects_integer_that_overflows_float_conversion(self) -> None:
+        with self.assertRaisesRegex(ValueError, "finite floating-point"):
+            _number(10**10000, "oversized_integer")
+
+    def test_interval_count_rejects_overflowing_ratio(self) -> None:
+        with self.assertRaisesRegex(ValueError, "must be finite"):
+            _interval_count(1.0e308, 1.0e-308)
+
+    def test_interval_count_rejects_unrepresentable_index_range(self) -> None:
+        with self.assertRaisesRegex(ValueError, "platform index range"):
+            _interval_count(1.0, 1.0e-30)
+
+    def test_interval_count_checks_the_finest_refinement_index_range(self) -> None:
+        with self.assertRaisesRegex(ValueError, "h/8 refinement factor"):
+            _interval_count(1.5e18, 1.0)
+
+    def test_cli_reports_missing_config_as_a_path01_error(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                exit_code = path_runner.main([
+                    "--config", str(root / "missing-config.json"),
+                    "--output-dir", str(root / "results"),
+                ])
+            self.assertEqual(exit_code, 2)
+            self.assertIn("PATH-01 ERROR", stderr.getvalue())
 
     def test_normalized_state_error_rejects_nonpositive_absolute_tolerance(self) -> None:
         values = np.zeros((2, 2))
