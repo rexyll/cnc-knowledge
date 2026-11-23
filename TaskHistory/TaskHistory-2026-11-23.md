@@ -172,3 +172,13 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **修复后CI：** [Run 45170044496](https://github.com/rexyll/cnc-knowledge/actions/runs/45170044496) success；仓库既有单元测试5/5成功，strict knowledge lint PASS。
 - **验收边界：** PATH-01 JSON配置模板及两份CSV模板均为占位模板，机械/电气参数、外环增益、积分步长、容差和验收阈值未填写，未产生数值数据。PATH-01保持 `NOT_RUN`；CI不运行 `resouces/` 下24项资源测试。
 - **任务状态：** CH12-T003继续 `IN_PROGRESS`。
+
+
+## PATH-01独立对照运行器与结果生成工具（2026-11-23）
+
+- **新增运行器：** resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comparison.py；读取完成的PATH-01 JSON配置，自动建立自由轴与理想规定路径对照，执行h/h2/h4/h8四档RK4，并生成时序CSV、汇总CSV和JSON运行manifest。
+- **控制/载荷接口：** 共用确定性PD电流参考回调、显式常值前馈电流和常值五维外部广义力；不执行JSON任意代码。未启用前馈或无外载时必须显式配置零值。路径端点限制在几何跨度内，外力分量顺序固定。
+- **数值指标：** 逐分量容差归一化、自由路径位置/速度误差、结构坐标差、负载点差、约束力峰值/RMS、Simpson/梯形约束功，以及两种模型独立步长收敛筛查。
+- **能量账本：** 包含实际限幅端电压功率、铜耗、结构阻尼、路径摩擦、外部广义力功率、(Kf-Ke)*i*ell_dot互易常数不匹配项；受约束模型另计lambda*sdot_ref。
+- **新增测试：** test_gantry_joint_drive_path_comparison.py含7项纯函数资源测试；与原求解器24项合计31项资源测试。均未执行，仓库CI不运行resouces/资源测试。
+- **限制：** v1只支持常值前馈和常值广义力，不支持任意控制回调代码；工程阈值不完整时输出COMPLETED_REPORT_ONLY，而不是PASS。运行器与测试尚未运行，PATH-01仍为NOT_RUN，无数值结果、实机参数或HIL结论。
