@@ -328,3 +328,9 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **测试计数：** PATH-01运行器测试新增3项后为37项；求解器32项不变，共69项资源级测试，均未执行。
 - **代码提交与CI：** f28696c3df90b7a29b2a1a959a5ff8a0f66b5d6d；GitHub Actions [Run 45208562193](https://github.com/rexyll/cnc-knowledge/actions/runs/45208562193) success，仓库既有单元测试步骤和 strict knowledge lint 均成功。
 - **范围边界：** 该切片只完成代数推导、已有账本实现核对和符号回归用例定义，不构成ENE-01～03或PATH-01数值能量闭合验证。矩阵8项保持 NOT_RUN，CH12-T003继续 IN_PROGRESS。
+
+### CH12-T003机电功率互易/约束功符号测试CI验收（2026-11-23）
+
+- **资源测试提交：** f28696c3df90b7a29b2a1a959a5ff8a0f66b5d6d；GitHub Actions [Run 45208562193](https://github.com/rexyll/cnc-knowledge/actions/runs/45208562193) success。仓库既有单元测试和strict knowledge lint通过；该CI不执行PATH-01资源测试。
+- **文档提交：** b463ed487c3251be088b00066b40a33d94654d88；GitHub Actions [Run 45208815716](https://github.com/rexyll/cnc-knowledge/actions/runs/45208815716) success。TaskPlan、数值验证协议5.12、专题7.6.21、资源README和ASSET-INDEX已同步。
+- **最终静态状态：** 求解器32项、PATH-01运行器37项，共69项资源测试未执行；ENE-01～03与PATH-01及验证矩阵8项仍NOT_RUN。机电互易和约束功本轮仅完成解析/符号检查及测试用例定义，没有数值能量闭合或HIL/实机结论。CH12-T003继续IN_PROGRESS。
