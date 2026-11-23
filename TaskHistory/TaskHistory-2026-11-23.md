@@ -105,3 +105,12 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **资源测试：** 新增非有限电流命令（NaN、正/负Inf）与非有限状态两项用例，测试方法由16项增至18项；**未执行**。
 - **交付文件：** 求解器、资源测试、联合移动负载/电流环专题、资源README、ASSET-INDEX、CH12 TaskPlan和本历史文件。
 - **验证边界：** 仅完成静态审查、实现与测试编写；没有资源测试运行、数值仿真、能量平衡、步长收敛、驱动器参数辨识或HIL/实机验证。CH12-T003继续 `IN_PROGRESS`。
+
+
+## 电气诊断公开入口校验切片CI验收（2026-11-23）
+
+- **内容提交：** `8fcbbbbd2aae2c2974ffda64782ff19b8a6042d3`（公开 `electrical_diagnostics()` 的有限值/状态输入校验，新增两项资源测试）。
+- **GitHub Actions：** [Run 45155665754](https://github.com/rexyll/cnc-knowledge/actions/runs/45155665754) success；仓库既有单元测试步骤和 strict knowledge lint 步骤均成功。
+- **资源测试边界：** 文件包含18个测试方法，但该次CI没有运行 `resouces/` 下的18项资源级测试；它们仍未执行。
+- **验证边界：** CI成功不等于电气诊断资源测试已运行，也不代表数值仿真、步长收敛、能量平衡、硬件过流保护或HIL/实机验证完成。
+- **任务状态：** CH12-T003继续 `IN_PROGRESS`。

@@ -237,3 +237,11 @@
 - 当前资源测试文件包含16个 test 方法，全部仍标记为待独立执行；CH12-T003继续 `IN_PROGRESS`。
 
 **追加静态审查切片（2026-11-23）：电气诊断公开入口输入校验。** 复查发现 `electrical_diagnostics()` 可被外部直接调用，但此前只在 `derivative()` 路径上拒绝非有限电流命令/状态；直接调用可能将NaN/Inf扩散至PI、电压和电流变化率诊断结果。现于公开入口独立校验电流命令有限性，并复用 `pack(state)` 验证状态维数和所有状态字段有限性。新增两项资源级回归测试，分别覆盖NaN/Inf命令与NaN状态；资源测试由16项增至18项。同步更新联合求解器专题、README和ASSET-INDEX。**18项资源测试尚未执行，仓库CI不运行资源测试**；CH12-T003继续 IN_PROGRESS。
+
+
+### CH12-T003 电气诊断公开入口校验切片CI验收（2026-11-23）
+
+- 内容提交 `8fcbbbbd2aae2c2974ffda64782ff19b8a6042d3` 对应 GitHub Actions [Run 45155665754](https://github.com/rexyll/cnc-knowledge/actions/runs/45155665754) success；仓库既有单元测试步骤与 strict knowledge lint 步骤均成功。
+- 测试文件当前包含18个 `test_` 方法；该次CI未执行 `resouces/` 下的18项求解器资源测试，资源级测试仍未执行。
+- 本次结果只证明仓库既有质量工作流通过，不构成电流诊断运行时回归、数值仿真、步长收敛、能量平衡、驱动器保护或HIL/实机验证。
+- CH12-T003继续 `IN_PROGRESS`。
