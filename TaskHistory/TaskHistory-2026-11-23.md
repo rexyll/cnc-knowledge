@@ -162,3 +162,13 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **比较指标：** 自由路径位置/速度误差、结构坐标逐分量归一化差、移动负载点差、约束力峰值/RMS、约束功，以及包含 lambda*sdot_ref 的受约束能量残差。未预先给出工程阈值时只能描述性报告。
 - **新增模板：** gantry-joint-drive-path-comparison-config-template.json、gantry-joint-drive-path-comparison-timeseries-template.csv、gantry-joint-drive-path-comparison-summary-template.csv；均为空白模板，不含默认机床参数或数值结果。
 - **状态：** PATH-01维持 NOT_RUN；本切片未执行资源测试或数值仿真。另将协议中“复跑全部18项”的旧表述纠正为24项。
+
+
+## PATH-01配置与结果模板归档CI验收及链接修正（2026-11-23）
+
+- **模板提交：** `d9aca86ce0b8a40a65aecdb22a68a2d9898b6eea`；[Run 45169802109](https://github.com/rexyll/cnc-knowledge/actions/runs/45169802109) success。
+- **首轮文档提交：** `2853347c3a841c21710318636cfa7d81d2eb955f`；[Run 45169914782](https://github.com/rexyll/cnc-knowledge/actions/runs/45169914782) failure。日志定位为6条Markdown相对链接的目录上跳层级过多，越过仓库根目录；仓库既有单元测试5/5成功，strict lint有6个链接错误。
+- **修复提交：** `0fc31fa0589ce0c8358d2c6e2291817fe1a947a4`，将6条链接由 `../../../resouces/...` 修正为 `../../resouces/...`。
+- **修复后CI：** [Run 45170044496](https://github.com/rexyll/cnc-knowledge/actions/runs/45170044496) success；仓库既有单元测试5/5成功，strict knowledge lint PASS。
+- **验收边界：** PATH-01 JSON配置模板及两份CSV模板均为占位模板，机械/电气参数、外环增益、积分步长、容差和验收阈值未填写，未产生数值数据。PATH-01保持 `NOT_RUN`；CI不运行 `resouces/` 下24项资源测试。
+- **任务状态：** CH12-T003继续 `IN_PROGRESS`。

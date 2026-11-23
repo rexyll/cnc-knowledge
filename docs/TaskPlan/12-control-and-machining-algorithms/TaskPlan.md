@@ -270,3 +270,12 @@
 
 
 追加执行切片（2026-11-23）：PATH-01工况、控制输入与结果归档定义。固定五次静止—静止参考轨迹，明确位置/速度/加速度解析表达式；规定自由/理想约束两侧共用同一确定性电流命令回调和外力回调，约束侧额外反力由 lambda 单独记账。定义逐坐标混合单位归一化误差、自由轴路径误差、负载点位置差、约束反力峰值/RMS、约束功和加入 lambda*sdot_ref 的受约束能量账本。新增空白配置JSON、时序CSV与汇总CSV模板，参数和验收阈值全部留空；PATH-01仍为 NOT_RUN。同步纠正验证协议中复测测试数量的旧文字（18更正为24）。
+
+
+### CH12-T003 PATH-01配置/结果模板CI验收（2026-11-23）
+
+- 模板提交 `d9aca86ce0b8a40a65aecdb22a68a2d9898b6eea` 对应 [Run 45169802109](https://github.com/rexyll/cnc-knowledge/actions/runs/45169802109) success。
+- 首轮文档链接提交 `2853347c3a841c21710318636cfa7d81d2eb955f` 的 [Run 45169914782](https://github.com/rexyll/cnc-knowledge/actions/runs/45169914782) 失败，原因为6条Markdown相对链接使用三级上跳并越出仓库根目录；仓库原有单元测试5/5成功，strict lint报告6个链接错误。
+- 修复提交 `0fc31fa0589ce0c8358d2c6e2291817fe1a947a4` 将6条路径统一改为两级上跳；[Run 45170044496](https://github.com/rexyll/cnc-knowledge/actions/runs/45170044496) success，单元测试5/5成功，strict knowledge lint PASS。
+- PATH-01配置/结果模板已归档，参数/阈值保持空值；PATH-01仍为 `NOT_RUN`。仓库CI不运行 `resouces/` 下的24项求解器资源测试。
+- CH12-T003继续 `IN_PROGRESS`。
