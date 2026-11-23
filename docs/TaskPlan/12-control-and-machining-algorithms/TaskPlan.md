@@ -292,3 +292,10 @@
 - 运行器实施记录提交 `260c5d82ffec4ffff40a033d8c18d867c5e2576d` 对应 [Run 45172789219](https://github.com/rexyll/cnc-knowledge/actions/runs/45172789219) success。
 - 各轮仓库既有单元测试5/5通过、strict knowledge lint成功；CI不执行资源目录下的24项求解器测试和7项运行器测试。
 - PATH-01运行器尚未执行，配置参数/容差/能量归一化尺度/工程阈值均留待填写；验证矩阵8项仍为 `NOT_RUN`。CH12-T003继续 `IN_PROGRESS`。
+
+
+### CH12-T003 PATH-01运行器最终补录CI验收（2026-11-23）
+
+- 最新补录提交 `574c5e8c1fdf3e04e4aba6b9c1341f744ffa9736` 对应 GitHub Actions [Run 45172904724](https://github.com/rexyll/cnc-knowledge/actions/runs/45172904724) success。
+- 单元测试步骤5/5通过；strict knowledge lint成功。此前运行器提交、资源说明、协议/矩阵与TaskPlan提交对应的CI Run 45171976920、45172483718、45172703500和45172789219也均成功。
+- 运行器输入/输出契约已补入TaskPlan；资源运行器和7项辅助资源测试未执行，原24项求解器资源测试未执行；矩阵8项仍为 `NOT_RUN`。CH12-T003保持 `IN_PROGRESS`。
