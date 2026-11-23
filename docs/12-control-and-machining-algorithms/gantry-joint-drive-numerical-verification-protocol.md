@@ -189,9 +189,9 @@ i_{cmd}(t,x)=i_{ff}(t)+K_{p,pos}(s_{ref}-s)+K_{d,vel}(\dot s_{ref}-\dot s)
 该回调对自由模型根据路径误差生成电流参考，对理想约束模型则按其实际零路径误差计算；两侧均使用同一个函数定义和同一组控制参数。电流参考限幅与电压饱和仍由模型内部执行。前馈 \(i_{ff}(t)\) 如启用，必须保存生成方式/原始时序并在两侧共享。若不用前馈，明确记录为零，而不是遗漏说明。外部广义力回调同样使用相同确定性定义，顺序为 \([Q_q,Q_s]\)；不得把电气执行器力重复写入外部载荷。
 
 执行配置与结果模板：
-- [PATH-01配置模板](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-config-template.json)
-- [时序结果CSV模板](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-timeseries-template.csv)
-- [单工况汇总CSV模板](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-summary-template.csv)
+- [PATH-01配置模板](../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-config-template.json)
+- [时序结果CSV模板](../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-timeseries-template.csv)
+- [单工况汇总CSV模板](../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-summary-template.csv)
 
 输出误差必须分量归一化。对结构坐标分量 \(j\) 定义：
 \[

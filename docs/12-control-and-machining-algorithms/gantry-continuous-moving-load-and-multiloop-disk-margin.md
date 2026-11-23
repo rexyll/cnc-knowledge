@@ -500,8 +500,8 @@ PATH-01使用解析五次静止—静止轨迹，采用 \(u=t/T\)、\(\Delta s=s
 控制输入约定为两套积分器共用同一确定性回调定义 \(i_{cmd}=i_{ff}+K_{p,pos}(s_{ref}-s)+K_{d,vel}(\dot s_{ref}-\dot s)\)，外部广义力回调也必须保持相同定义和输入数据。理想约束侧控制反馈误差会按约束状态自然变为零；该侧额外需要的约束广义力由 \(\lambda\) 反映，不得把它并入电机电流或重复计入外力。
 
 新增三份资源模板：
-- [PATH-01配置JSON](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-config-template.json)
-- [时序CSV](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-timeseries-template.csv)
-- [单工况汇总CSV](../../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-summary-template.csv)
+- [PATH-01配置JSON](../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-config-template.json)
+- [时序CSV](../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-timeseries-template.csv)
+- [单工况汇总CSV](../../resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-comparison-summary-template.csv)
 
 比较指标包括自由路径位置/速度误差、逐结构坐标归一化差、移动负载点位置差、约束反力峰值/RMS、约束功及两模型能量残差。受约束模型能量账本显式加入 \(+\lambda\dot s_{ref}\)。所有阈值需事先登记；缺失阈值只能做描述性比较，不能给出合格结论。模板不含数值结果，PATH-01仍为 `NOT_RUN`。
