@@ -14,5 +14,5 @@
   "license_or_permission": null,
   "notes": "Supports generic dq current/voltage equations and motor electromechanical modeling concepts. Equations/parameter definitions must be adapted to the selected motor, drive, coordinate, and current measurement convention.",
   "authority_tier": "B",
-  "evidence_kind": "academic_publication"
+  "evidence_kind": "academic_research"
 }
