@@ -354,4 +354,6 @@
 - **能量输出缺项：** `_energy_metrics()` 已返回梯形积分能量残差，但汇总层未使用该字段。新增 `free_energy_residual_trapezoid_J` 与 `prescribed_energy_residual_trapezoid_J` 两列，作为Simpson 1/3主残差的求积敏感性对照；验收阈值与主残差定义不变。
 - **资源测试数量：** 求解器测试从24增至25项，运行器测试从16增至17项，共42项资源测试，均未执行。
 - **同步文件：** 求解器、求解器测试、PATH-01运行器/测试、汇总CSV模板、资源README、ASSET-INDEX、数值验证协议5.7节、专题正文7.6.16节、本章TaskPlan与本历史。
-- **状态：** 本切片尚未提交，未运行资源测试或PATH-01模拟；验证矩阵8项仍 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
+- **CI验收：** 内容提交 `5c24dcbcfeb8be4543dbef44dd81f333c63635d1` 对应 [Run 45188707292](https://github.com/rexyll/cnc-knowledge/actions/runs/45188707292) success；仓库单元测试步骤与strict knowledge lint步骤均成功。该CI不运行资源级测试。
+- **静态核对：** 求解器25项、PATH-01辅助测试17项，共42项资源测试未执行；汇总CSV模板/运行器字段均为73列，名称与顺序一致。
+- **状态：** PATH-01仍未模拟、验证矩阵8项仍 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。

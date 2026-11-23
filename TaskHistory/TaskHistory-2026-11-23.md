@@ -262,4 +262,6 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **处理二：** 汇总字段和模板新增 `free_energy_residual_trapezoid_J`、`prescribed_energy_residual_trapezoid_J`；保留Simpson 1/3残差为主指标、梯形残差作为求积敏感性对照，不调整工程验收阈值。新增运行器资源测试验证两种求积结果。
 - **资源测试：** 求解器25项、PATH-01运行器17项，总计42项，均未执行。
 - **同步归档：** 求解器及测试、PATH-01运行器及测试、汇总模板、资源README、ASSET-INDEX、协议5.7节、专题正文7.6.16节、TaskPlan及本历史。
-- **验证边界：** 本切片仅完成静态更改与测试用例写入，尚未提交/CI；PATH-01依旧 `NOT_RUN`，没有新的数值仿真或HIL结果。
+- **CI验收：** 内容提交 `5c24dcbcfeb8be4543dbef44dd81f333c63635d1` 对应 [Run 45188707292](https://github.com/rexyll/cnc-knowledge/actions/runs/45188707292) success，既有仓库单元测试步骤与strict knowledge lint步骤均成功；该CI不运行资源级测试。
+- **静态核对：** 求解器25项、PATH-01辅助测试17项，共42项资源测试均未执行；汇总CSV模板与运行器均为73列，字段顺序一致。
+- **验证边界：** PATH-01依旧 `NOT_RUN`，没有新的数值仿真或HIL结果。
