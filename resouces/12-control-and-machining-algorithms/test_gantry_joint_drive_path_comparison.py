@@ -11,6 +11,7 @@ import unittest
 import numpy as np
 
 from gantry_joint_drive_path_comparison import (
+    _saturation_stage_report,
     composite_simpson_13,
     normalized_state_error,
     quintic_rest_to_rest,
@@ -53,6 +54,60 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
             relative_tolerance=np.array([0.0, 0.0]),
         )
         self.assertTrue(np.allclose(normalized, [[1.0, 1.0], [-1.0, -1.0]]))
+
+    def test_saturation_stage_report_identifies_smooth_unsaturated_stages(self) -> None:
+        report = _saturation_stage_report(
+            {
+                "callback_evaluations": 8,
+                "current_reference_saturated": 0,
+                "voltage_saturated": 0,
+                "any_limiter_active": 0,
+                "last": None,
+            },
+            expected_stage_evaluations=8,
+        )
+        self.assertEqual(report["rk4_stage_evaluations"], 8)
+        self.assertEqual(report["any_limiter_active_stages"], 0)
+        self.assertEqual(report["limiter_active_stage_fraction"], 0.0)
+        self.assertTrue(report["stage_count_matches_expected"])
+
+    def test_saturation_stage_report_excludes_prescribed_terminal_probe(self) -> None:
+        report = _saturation_stage_report(
+            {
+                "callback_evaluations": 9,
+                "current_reference_saturated": 2,
+                "voltage_saturated": 1,
+                "any_limiter_active": 2,
+                "last": {
+                    "current_reference_saturated": True,
+                    "voltage_saturated": False,
+                    "any_limiter_active": True,
+                },
+            },
+            expected_stage_evaluations=8,
+            exclude_last_evaluation=True,
+        )
+        self.assertEqual(report["rk4_stage_evaluations"], 8)
+        self.assertEqual(report["current_reference_saturated_stages"], 1)
+        self.assertEqual(report["voltage_saturated_stages"], 1)
+        self.assertEqual(report["any_limiter_active_stages"], 1)
+        self.assertEqual(report["limiter_active_stage_fraction"], 0.125)
+        self.assertTrue(report["stage_count_matches_expected"])
+
+    def test_saturation_stage_report_detects_voltage_only_saturation(self) -> None:
+        report = _saturation_stage_report(
+            {
+                "callback_evaluations": 4,
+                "current_reference_saturated": 0,
+                "voltage_saturated": 2,
+                "any_limiter_active": 2,
+                "last": None,
+            },
+            expected_stage_evaluations=4,
+        )
+        self.assertEqual(report["current_reference_saturated_stages"], 0)
+        self.assertEqual(report["voltage_saturated_stages"], 2)
+        self.assertEqual(report["any_limiter_active_stages"], 2)
 
     def test_normalized_state_error_rejects_nonpositive_absolute_tolerance(self) -> None:
         values = np.zeros((2, 2))

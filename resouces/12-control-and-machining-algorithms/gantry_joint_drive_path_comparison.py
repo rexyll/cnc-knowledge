@@ -47,6 +47,10 @@ TIMESERIES_FIELDS = [
     "prescribed_qdot1_m_s", "prescribed_qdot2_rad_s",
     "prescribed_qdot3_m_s", "prescribed_qdot4_rad_s",
     "free_current_A", "prescribed_current_A",
+    "free_requested_current_command_A", "prescribed_requested_current_command_A",
+    "free_limited_current_reference_A", "prescribed_limited_current_reference_A",
+    "free_current_reference_saturated", "prescribed_current_reference_saturated",
+    "free_voltage_saturated", "prescribed_voltage_saturated",
     "free_current_integrator_V", "prescribed_current_integrator_V",
     "free_terminal_voltage_V", "prescribed_terminal_voltage_V",
     "free_payload_x_m", "free_payload_y_m", "free_payload_z_m",
@@ -90,6 +94,20 @@ SUMMARY_FIELDS = [
     "prescribed_D_h", "prescribed_D_h2", "prescribed_D_h4",
     "prescribed_observed_order_h_h2", "prescribed_observed_order_h2_h4",
     "prescribed_convergence_screen",
+    "expected_rk4_stage_evaluations",
+    "free_rk4_stage_evaluations",
+    "free_current_reference_saturated_stages",
+    "free_voltage_saturated_stages",
+    "free_any_limiter_active_stages",
+    "free_limiter_active_stage_fraction",
+    "free_stage_count_matches_expected",
+    "prescribed_rk4_stage_evaluations",
+    "prescribed_current_reference_saturated_stages",
+    "prescribed_voltage_saturated_stages",
+    "prescribed_any_limiter_active_stages",
+    "prescribed_limiter_active_stage_fraction",
+    "prescribed_stage_count_matches_expected",
+    "smooth_unsaturated_regime",
     "acceptance_profile_id", "acceptance_decision", "status",
     "timeseries_artifact", "exit_code",
 ]
@@ -410,6 +428,90 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+
+
+def _track_current_command(
+    model: GantryJointDriveModel,
+    current_command: Callable[[float, JointState], float],
+) -> tuple[Callable[[float, JointState], float], dict[str, Any]]:
+    """Observe limiter activation at every solver current-command callback."""
+    observations: dict[str, Any] = {
+        "callback_evaluations": 0,
+        "current_reference_saturated": 0,
+        "voltage_saturated": 0,
+        "any_limiter_active": 0,
+        "last": None,
+    }
+
+    def tracked(time_s: float, state: JointState) -> float:
+        diagnostic_state = state.copy()
+        command_state = state.copy()
+        requested = float(current_command(float(time_s), command_state))
+        diagnostics = model.electrical_diagnostics(diagnostic_state, requested)
+        reference_saturated = not math.isclose(
+            float(diagnostics["current_reference_A"]),
+            requested,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        )
+        voltage_saturated = bool(diagnostics["voltage_saturated"])
+        any_limiter_active = reference_saturated or voltage_saturated
+        observations["callback_evaluations"] += 1
+        observations["current_reference_saturated"] += int(reference_saturated)
+        observations["voltage_saturated"] += int(voltage_saturated)
+        observations["any_limiter_active"] += int(any_limiter_active)
+        observations["last"] = {
+            "current_reference_saturated": reference_saturated,
+            "voltage_saturated": voltage_saturated,
+            "any_limiter_active": any_limiter_active,
+        }
+        return requested
+
+    return tracked, observations
+
+
+def _saturation_stage_report(
+    observations: dict[str, Any],
+    expected_stage_evaluations: int,
+    *,
+    exclude_last_evaluation: bool = False,
+) -> dict[str, Any]:
+    """Summarize RK4-stage limiter flags, optionally excluding a terminal probe."""
+    if isinstance(expected_stage_evaluations, bool) or expected_stage_evaluations <= 0:
+        raise ValueError("expected_stage_evaluations must be a positive integer")
+    if int(expected_stage_evaluations) != expected_stage_evaluations:
+        raise ValueError("expected_stage_evaluations must be a positive integer")
+    total = int(observations.get("callback_evaluations", 0))
+    excluded = 1 if exclude_last_evaluation else 0
+    if total < excluded:
+        raise ValueError("cannot exclude a terminal evaluation when no callback was observed")
+    stage_evaluations = total - excluded
+    last = observations.get("last") if excluded else None
+    counts: dict[str, int] = {}
+    for key in (
+        "current_reference_saturated",
+        "voltage_saturated",
+        "any_limiter_active",
+    ):
+        count = int(observations.get(key, 0))
+        if last is not None:
+            count -= int(bool(last[key]))
+        if count < 0 or count > stage_evaluations:
+            raise ValueError(f"invalid saturation counter: {key}")
+        counts[key] = count
+    return {
+        "rk4_stage_evaluations": stage_evaluations,
+        "current_reference_saturated_stages": counts["current_reference_saturated"],
+        "voltage_saturated_stages": counts["voltage_saturated"],
+        "any_limiter_active_stages": counts["any_limiter_active"],
+        "limiter_active_stage_fraction": (
+            counts["any_limiter_active"] / stage_evaluations
+            if stage_evaluations else 0.0
+        ),
+        "stage_count_matches_expected": stage_evaluations == expected_stage_evaluations,
+    }
+
+
 def _energy_ledger(
     model: GantryJointDriveModel,
     times: np.ndarray,
@@ -430,6 +532,11 @@ def _energy_ledger(
         magnetic = 0.5 * model.electrical.inductance_h * state.current_A**2
         stored = kinetic + potential + magnetic
         voltage = float(diagnostics["voltage_V"])
+        current_reference = float(diagnostics["current_reference_A"])
+        current_reference_saturated = not math.isclose(
+            current_reference, command, rel_tol=0.0, abs_tol=1e-12
+        )
+        voltage_saturated = bool(diagnostics["voltage_saturated"])
         terminal = voltage * state.current_A
         copper = model.electrical.resistance_ohm * state.current_A**2
         structural_damping = float(state.q_dot @ model.mechanical.D0 @ state.q_dot)
@@ -457,6 +564,10 @@ def _energy_ledger(
             "magnetic": float(magnetic),
             "stored": float(stored),
             "voltage": voltage,
+            "requested_command": command,
+            "current_reference": current_reference,
+            "current_reference_saturated": current_reference_saturated,
+            "voltage_saturated": voltage_saturated,
             "terminal": terminal,
             "copper": float(copper),
             "structural_damping": structural_damping,
@@ -544,6 +655,8 @@ def _step_metrics(
     step_s: float,
     convergence_free: dict[str, Any],
     convergence_prescribed: dict[str, Any],
+    saturation_free: dict[str, Any],
+    saturation_prescribed: dict[str, Any],
     artifact_name: str,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     normalized = normalized_state_error(
@@ -605,6 +718,25 @@ def _step_metrics(
         "prescribed_observed_order_h_h2": convergence_prescribed["orders"][0],
         "prescribed_observed_order_h2_h4": convergence_prescribed["orders"][1],
         "prescribed_convergence_screen": convergence_prescribed["screen"],
+        "expected_rk4_stage_evaluations": int(4 * round(times[-1] / step_s)),
+        "free_rk4_stage_evaluations": saturation_free["rk4_stage_evaluations"],
+        "free_current_reference_saturated_stages": saturation_free["current_reference_saturated_stages"],
+        "free_voltage_saturated_stages": saturation_free["voltage_saturated_stages"],
+        "free_any_limiter_active_stages": saturation_free["any_limiter_active_stages"],
+        "free_limiter_active_stage_fraction": saturation_free["limiter_active_stage_fraction"],
+        "free_stage_count_matches_expected": saturation_free["stage_count_matches_expected"],
+        "prescribed_rk4_stage_evaluations": saturation_prescribed["rk4_stage_evaluations"],
+        "prescribed_current_reference_saturated_stages": saturation_prescribed["current_reference_saturated_stages"],
+        "prescribed_voltage_saturated_stages": saturation_prescribed["voltage_saturated_stages"],
+        "prescribed_any_limiter_active_stages": saturation_prescribed["any_limiter_active_stages"],
+        "prescribed_limiter_active_stage_fraction": saturation_prescribed["limiter_active_stage_fraction"],
+        "prescribed_stage_count_matches_expected": saturation_prescribed["stage_count_matches_expected"],
+        "smooth_unsaturated_regime": bool(
+            saturation_free["stage_count_matches_expected"]
+            and saturation_prescribed["stage_count_matches_expected"]
+            and saturation_free["any_limiter_active_stages"] == 0
+            and saturation_prescribed["any_limiter_active_stages"] == 0
+        ),
         "acceptance_profile_id": config["acceptance_profile_id"],
         "timeseries_artifact": artifact_name,
         "exit_code": 0,
@@ -677,6 +809,14 @@ def _step_metrics(
         row.update({
             "free_current_A": float(free[10]),
             "prescribed_current_A": float(prescribed[10]),
+            "free_requested_current_command_A": free_energy_row["requested_command"],
+            "prescribed_requested_current_command_A": prescribed_energy_row["requested_command"],
+            "free_limited_current_reference_A": free_energy_row["current_reference"],
+            "prescribed_limited_current_reference_A": prescribed_energy_row["current_reference"],
+            "free_current_reference_saturated": free_energy_row["current_reference_saturated"],
+            "prescribed_current_reference_saturated": prescribed_energy_row["current_reference_saturated"],
+            "free_voltage_saturated": free_energy_row["voltage_saturated"],
+            "prescribed_voltage_saturated": prescribed_energy_row["voltage_saturated"],
             "free_current_integrator_V": float(free[11]),
             "prescribed_current_integrator_V": float(prescribed[11]),
             "free_terminal_voltage_V": free_energy_row["voltage"],
@@ -701,6 +841,8 @@ def _acceptance_decision(
     )
     if not convergence_ok:
         return "FAIL", "FAIL"
+    if not finest_summary["smooth_unsaturated_regime"]:
+        return "DESCRIPTIVE_ONLY", "COMPLETED_REPORT_ONLY"
     if any(value is None for value in limits.values()):
         return "DESCRIPTIVE_ONLY", "COMPLETED_REPORT_ONLY"
     checks = [
@@ -794,11 +936,23 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
     for level, label in enumerate(labels):
         intervals = validated["base_intervals"] * (2**level)
         step = duration / intervals
+        free_monitored_command, free_observations = _track_current_command(model, current_command)
+        prescribed_monitored_command, prescribed_observations = _track_current_command(model, current_command)
         times, free_states = model.simulate(
-            initial_state, duration, step, current_command, external_force
+            initial_state, duration, step, free_monitored_command, external_force
         )
         prescribed_times, prescribed_states, lambda_values = model.simulate_prescribed_path(
-            initial_state, duration, step, path_callback, current_command, external_force
+            initial_state, duration, step, path_callback, prescribed_monitored_command, external_force
+        )
+        expected_stage_evaluations = 4 * intervals
+        saturation_free = _saturation_stage_report(
+            free_observations, expected_stage_evaluations
+        )
+        # simulate_prescribed_path performs one extra endpoint diagnostic after
+        # its 4*N RK4 stage callbacks; exclude that terminal probe from stage counts.
+        saturation_prescribed = _saturation_stage_report(
+            prescribed_observations, expected_stage_evaluations,
+            exclude_last_evaluation=True,
         )
         if not np.array_equal(times, prescribed_times):
             raise RuntimeError("free and prescribed solvers returned different output time grids")
@@ -824,6 +978,8 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
             "path_samples": path_samples,
             "free_ledger": free_ledger,
             "prescribed_ledger": prescribed_ledger,
+            "saturation_free": saturation_free,
+            "saturation_prescribed": saturation_prescribed,
         })
 
     free_convergence = _convergence(
@@ -849,6 +1005,8 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
             data["step"],
             free_convergence,
             prescribed_convergence,
+            data["saturation_free"],
+            data["saturation_prescribed"],
             timeseries_path.name,
         )
         all_timeseries_rows.extend(rows)
@@ -870,6 +1028,7 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         "case_id": "PATH-01",
         "status": final_status,
         "acceptance_decision": decision,
+        "smooth_unsaturated_regime": bool(level_data[-1]["summary"]["smooth_unsaturated_regime"]),
         "numerical_results_present": True,
         "resource_tests_executed": False,
         "started_at_utc": started,
@@ -902,6 +1061,9 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         "notes": [
             "The prescribed path is an ideal kinematic constraint, not a physical servo capability model.",
             "The same deterministic current-command and constant external-force callbacks are used by both solvers.",
+            "Current-reference and voltage saturation are counted at every RK4 stage callback; output-grid diagnostics are also written to the timeseries CSV.",
+            "The RK4 observed-order screen is eligible for ordinary smooth-regime PASS only when neither limiter activates in either model; limiter-active or stage-count-mismatch cases remain report-only.",
+            "The prescribed solver's final endpoint diagnostic is excluded from RK4-stage counts.",
             "The constrained energy ledger includes lambda * sdot_ref; the PI integrator is not physical stored energy.",
             "Kf/Ke mismatch power is reported separately as (Kf-Ke)*i*ell_dot.",
             "This runner does not execute resource unit tests or establish machine/HIL validity.",
@@ -921,6 +1083,7 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         "manifest_json": str(manifest_path),
         "free_convergence_screen": free_convergence["screen"],
         "prescribed_convergence_screen": prescribed_convergence["screen"],
+        "smooth_unsaturated_regime": bool(level_data[-1]["summary"]["smooth_unsaturated_regime"]),
     }
 
 

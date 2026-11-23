@@ -125,3 +125,12 @@
   python resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comparison.py --config resouces/12-control-and-machining-algorithms/generated/path-01/config.json --output-dir resouces/12-control-and-machining-algorithms/generated/path-01/results
 - 配置中全部工程验收阈值都填写后才会给出PASS/FAIL；任一阈值为空且收敛筛查成功时状态为COMPLETED_REPORT_ONLY，只做描述性输出；步长收敛筛查失败为FAIL。
 - test_gantry_joint_drive_path_comparison.py：7项纯函数资源测试，覆盖五次轨迹端点/中点/越界、Simpson积分和逐分量误差归一化。该测试文件和PATH-01运行器尚未执行；仓库CI不执行资源模块。
+
+
+## PATH-01限幅感知诊断补充（2026-11-23）
+
+- 运行器在自由轴与规定路径的每次电流命令回调处采集当前参考限幅和电压饱和标志；计数覆盖每个RK4步的四个阶段。规定路径积分器额外的最终端点诊断从RK4阶段计数中单独剔除。
+- 汇总CSV报告两种模型的RK4阶段数、电流参考限幅阶段数、电压饱和阶段数、任一限幅激活阶段数、激活比例及阶段计数一致性；`smooth_unsaturated_regime` 仅在两种模型均未触发限幅且阶段计数完整时为真。
+- 时序CSV另记录输出采样点的请求电流命令、裁剪后的电流参考值、电流参考限幅标志和电压饱和标志；这些采样点标志不替代RK4阶段累计计数。
+- 观测阶数筛查仍作为数值诊断保留，但若任一积分器在任一RK4阶段触发限幅，或阶段回调数不符，则最终状态最高只能为 `COMPLETED_REPORT_ONLY`，不输出常规光滑工况的工程 `PASS`。若数值收敛筛查失败，仍记 `FAIL`。
+- 运行器纯函数辅助资源测试新增3项，现为10项；与原求解器24项合计34项，均未执行。仓库Knowledge Quality CI不执行这些资源测试。
