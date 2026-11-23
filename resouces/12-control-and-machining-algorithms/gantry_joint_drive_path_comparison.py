@@ -108,6 +108,7 @@ SUMMARY_FIELDS = [
     "prescribed_limiter_active_stage_fraction",
     "prescribed_stage_count_matches_expected",
     "smooth_unsaturated_regime",
+    "all_refinements_smooth_unsaturated_regime",
     "acceptance_profile_id", "acceptance_decision", "status",
     "timeseries_artifact", "exit_code",
 ]
@@ -448,12 +449,7 @@ def _track_current_command(
         command_state = state.copy()
         requested = float(current_command(float(time_s), command_state))
         diagnostics = model.electrical_diagnostics(diagnostic_state, requested)
-        reference_saturated = not math.isclose(
-            float(diagnostics["current_reference_A"]),
-            requested,
-            rel_tol=0.0,
-            abs_tol=1e-12,
-        )
+        reference_saturated = float(diagnostics["current_reference_A"]) != requested
         voltage_saturated = bool(diagnostics["voltage_saturated"])
         any_limiter_active = reference_saturated or voltage_saturated
         observations["callback_evaluations"] += 1
@@ -841,7 +837,7 @@ def _acceptance_decision(
     )
     if not convergence_ok:
         return "FAIL", "FAIL"
-    if not finest_summary["smooth_unsaturated_regime"]:
+    if not finest_summary["all_refinements_smooth_unsaturated_regime"]:
         return "DESCRIPTIVE_ONLY", "COMPLETED_REPORT_ONLY"
     if any(value is None for value in limits.values()):
         return "DESCRIPTIVE_ONLY", "COMPLETED_REPORT_ONLY"
@@ -1012,6 +1008,17 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         all_timeseries_rows.extend(rows)
         data["summary"] = summary
 
+    all_refinements_smooth_unsaturated = all(
+        data["saturation_free"]["stage_count_matches_expected"]
+        and data["saturation_prescribed"]["stage_count_matches_expected"]
+        and data["saturation_free"]["any_limiter_active_stages"] == 0
+        and data["saturation_prescribed"]["any_limiter_active_stages"] == 0
+        for data in level_data
+    )
+    for data in level_data:
+        data["summary"]["all_refinements_smooth_unsaturated_regime"] = bool(
+            all_refinements_smooth_unsaturated
+        )
     decision, final_status = _acceptance_decision(level_data[-1]["summary"], validated["limits"])
     summary_rows: list[dict[str, Any]] = []
     for data in level_data:
@@ -1028,7 +1035,7 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         "case_id": "PATH-01",
         "status": final_status,
         "acceptance_decision": decision,
-        "smooth_unsaturated_regime": bool(level_data[-1]["summary"]["smooth_unsaturated_regime"]),
+        "smooth_unsaturated_regime": bool(all_refinements_smooth_unsaturated),
         "numerical_results_present": True,
         "resource_tests_executed": False,
         "started_at_utc": started,
@@ -1062,7 +1069,7 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
             "The prescribed path is an ideal kinematic constraint, not a physical servo capability model.",
             "The same deterministic current-command and constant external-force callbacks are used by both solvers.",
             "Current-reference and voltage saturation are counted at every RK4 stage callback; output-grid diagnostics are also written to the timeseries CSV.",
-            "The RK4 observed-order screen is eligible for ordinary smooth-regime PASS only when neither limiter activates in either model; limiter-active or stage-count-mismatch cases remain report-only.",
+            "The RK4 observed-order screen is eligible for ordinary smooth-regime PASS only when neither limiter activates in either model at any of the h, h/2, h/4 or h/8 refinements; limiter-active or stage-count-mismatch cases remain report-only.",
             "The prescribed solver's final endpoint diagnostic is excluded from RK4-stage counts.",
             "The constrained energy ledger includes lambda * sdot_ref; the PI integrator is not physical stored energy.",
             "Kf/Ke mismatch power is reported separately as (Kf-Ke)*i*ell_dot.",
@@ -1083,7 +1090,7 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         "manifest_json": str(manifest_path),
         "free_convergence_screen": free_convergence["screen"],
         "prescribed_convergence_screen": prescribed_convergence["screen"],
-        "smooth_unsaturated_regime": bool(level_data[-1]["summary"]["smooth_unsaturated_regime"]),
+        "smooth_unsaturated_regime": bool(all_refinements_smooth_unsaturated),
     }
 
 

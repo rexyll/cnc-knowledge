@@ -68,7 +68,7 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 |---|---|---|---|---|---|---|
 | gantry-joint-drive-path-comparison-config-template.json | JSON配置模板 | 空白参数、初始状态、五次静止—静止参考路径、相同控制/外力回调、四档步长和分量容差定义；无机床默认值 | 项目原创 | 2026-11-23 | 原创模板 | 龙门连续移动负载与双向耦合专题 |
 | gantry-joint-drive-path-comparison-timeseries-template.csv | CSV时序模板 | 自由/受约束路径、结构状态、负载点、约束反力/功率、储能及输出采样点电流指令/参考限幅/电压饱和字段 | 项目原创 | 2026-11-23 | 原创模板 | 同上 |
-| gantry-joint-drive-path-comparison-summary-template.csv | CSV汇总模板 | 路径/结构/负载点误差、lambda峰值/RMS、约束功、能量残差、收敛阶数、RK4阶段限幅计数及验收状态字段 | 项目原创 | 2026-11-23 | 原创模板 | 同上 |
+| gantry-joint-drive-path-comparison-summary-template.csv | CSV汇总模板 | 路径/结构/负载点误差、lambda峰值/RMS、约束功、能量残差、收敛阶数、逐档/全细化序列RK4限幅门控及验收状态字段 | 项目原创 | 2026-11-23 | 原创模板 | 同上 |
 
 以上为未填写模板，不包含参数、结果或验收通过声明。
 
@@ -78,11 +78,14 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
 |---|---|---|---|---|---|---|
 | gantry_joint_drive_path_comparison.py | Python源码 | PATH-01四档步长自由轴/理想规定路径比较运行器；输出逐点时序、归一化误差、约束反力/约束功、机电能量账本、阶段限幅诊断和运行manifest | 项目原创 | 2026-11-23 | 原创代码 | 龙门连续移动负载与双向耦合专题 |
-| test_gantry_joint_drive_path_comparison.py | Python测试 | 10项资源级纯函数测试：五次参考路径、Simpson求积、混合单位归一化、限幅阶段计数、末端诊断剔除和阶段数一致性 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
+| test_gantry_joint_drive_path_comparison.py | Python测试 | 12项资源级纯函数测试：五次参考路径、Simpson求积、混合单位归一化、限幅阶段计数、末端诊断剔除、阶段数一致性及全细化序列门控 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
 
-新增10项运行器资源测试尚未执行；加上求解器原有24项，PATH/求解器资源测试合计34项，仓库CI均不执行。
+新增12项运行器资源测试尚未执行；加上求解器原有24项，PATH/求解器资源测试合计36项，仓库CI均不执行。
 
 
 ## PATH-01限幅感知诊断更新（2026-11-23）
 
 运行器在每次电流命令回调中观测电流参考限幅和电压饱和；自由与规定路径两侧分别按RK4阶段计数。规定路径积分器最后一次端点诊断不计入RK4阶段，避免阶段次数偏差。汇总模板新增预期/实际阶段计数、两类限幅计数、任一限幅激活比例、计数一致性和 `smooth_unsaturated_regime`；时序模板新增请求电流命令、限幅后参考值及两类饱和布尔字段。新增3项纯函数测试，资源辅助测试现为10项；连同求解器24项共34项，均未执行。
+
+
+PATH-01的光滑未限幅门控现覆盖 `h/h2/h4/h8` 全部四档，而非只看 `h/8`。新增字段 `all_refinements_smooth_unsaturated_regime` 写入汇总CSV，manifest中的 `smooth_unsaturated_regime` 表示整个收敛细化序列；任何一档触发限幅或阶段计数异常，均阻止常规工程PASS。辅助测试增至12项（求解器24项，合计36项），均未执行。

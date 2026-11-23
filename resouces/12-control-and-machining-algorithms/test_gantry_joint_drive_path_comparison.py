@@ -11,6 +11,7 @@ import unittest
 import numpy as np
 
 from gantry_joint_drive_path_comparison import (
+    _acceptance_decision,
     _saturation_stage_report,
     composite_simpson_13,
     normalized_state_error,
@@ -108,6 +109,37 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
         self.assertEqual(report["current_reference_saturated_stages"], 0)
         self.assertEqual(report["voltage_saturated_stages"], 2)
         self.assertEqual(report["any_limiter_active_stages"], 2)
+
+    def test_acceptance_requires_all_refinements_to_be_unsaturated(self) -> None:
+        summary = {
+            "free_convergence_screen": True,
+            "prescribed_convergence_screen": True,
+            "smooth_unsaturated_regime": True,
+            "all_refinements_smooth_unsaturated_regime": False,
+        }
+        limits = {
+            "application_path_error_limit_m": 0.0,
+            "application_path_velocity_error_limit_m_s": 0.0,
+            "payload_point_error_limit_m": 0.0,
+            "application_force_limit_N": 0.0,
+            "application_force_rms_limit_N": 0.0,
+            "constraint_work_limit_J": 0.0,
+            "normalized_energy_residual_limit": 0.0,
+        }
+        decision, status = _acceptance_decision(summary, limits)
+        self.assertEqual(decision, "DESCRIPTIVE_ONLY")
+        self.assertEqual(status, "COMPLETED_REPORT_ONLY")
+
+    def test_acceptance_fails_when_convergence_screen_fails_even_if_limited(self) -> None:
+        summary = {
+            "free_convergence_screen": False,
+            "prescribed_convergence_screen": True,
+            "smooth_unsaturated_regime": False,
+            "all_refinements_smooth_unsaturated_regime": False,
+        }
+        decision, status = _acceptance_decision(summary, {})
+        self.assertEqual(decision, "FAIL")
+        self.assertEqual(status, "FAIL")
 
     def test_normalized_state_error_rejects_nonpositive_absolute_tolerance(self) -> None:
         values = np.zeros((2, 2))

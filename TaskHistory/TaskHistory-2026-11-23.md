@@ -215,3 +215,12 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **新增测试：** 运行器资源测试新增3项，现为10项；与求解器24项合计34项。所有资源测试均未执行。
 - **同步归档：** `gantry_joint_drive_path_comparison.py`、`test_gantry_joint_drive_path_comparison.py`、两份CSV模板、资源README、ASSET-INDEX、数值验证协议5.3节、专题正文7.6.12节与本TaskPlan。
 - **验证边界：** 本次完成代码/测试/文档写入与静态审查；时序CSV模板/运行器均为73列，汇总CSV模板/运行器均为70列，字段名称与顺序一致；运行器测试方法数10项。提交 `7ceda93f04edb8ffffd7ce6c365d16d1db868816` 对应GitHub Actions [Run 45181996783](https://github.com/rexyll/cnc-knowledge/actions/runs/45181996783) success，既有仓库单元测试5/5通过，strict knowledge lint success。该CI不运行 `resouces/` 下34项资源测试；这些资源测试仍未执行，PATH-01模拟也未执行。矩阵8项仍全部 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+
+
+## PATH-01全细化序列限幅门控修正（2026-11-23）
+
+- **二次审查发现：** 上一轮新增的 `smooth_unsaturated_regime` 是逐档标志，但最终验收门控只读取最细 `h/8`。收敛阶数由 `h`、`h/2`、`h/4`、`h/8` 共同构造；若粗档触发限幅而最细档未触发，原门控仍可能允许对含非光滑切换的观测阶给出工程 `PASS`。
+- **处理：** 新增 `all_refinements_smooth_unsaturated_regime`，必须四档的自由轴和规定路径模型均有正确RK4阶段回调计数，且所有阶段无电流参考限幅、电压饱和，才可作为光滑工况通过工程验收的前置条件。逐档标志继续保留，manifest顶层标志改为全序列聚合。
+- **回归用例：** 新增两项纯函数测试，验证粗档/任一细化档限幅仍返回 `COMPLETED_REPORT_ONLY`，以及收敛筛查失败优先返回 `FAIL`。运行器测试现为12项；与求解器24项合计36项，全部未执行。
+- **同步文件：** 运行器、运行器测试、汇总CSV模板、资源README、ASSET-INDEX、数值验证协议5.4节、专题正文7.6.13节、TaskPlan与本历史。
+- **验证边界：** 此修正尚未提交，仓库CI待运行；PATH-01模拟和全部36项资源测试均未执行，矩阵8项仍 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。

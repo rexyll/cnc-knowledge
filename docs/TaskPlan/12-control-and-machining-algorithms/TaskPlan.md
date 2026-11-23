@@ -311,3 +311,12 @@
 - **资源测试：** 运行器辅助测试新增3项，方法数从7增至10；求解器24项不变，资源测试合计34项，全部未执行。仓库Knowledge Quality CI不运行这些资源测试。
 - **同步文件：** 运行器、运行器测试、两份CSV模板、资源README、ASSET-INDEX、数值验证协议第5.3节、龙门联合模型专题第7.6.12节。
 - **状态：** PATH-01仍为 `NOT_RUN`，没有新数值轨迹、步长收敛、能量残差或工程验收结论；CH12-T003继续 `IN_PROGRESS`。本切片提交 `7ceda93f04edb8ffffd7ce6c365d16d1db868816` 对应 GitHub Actions [Run 45181996783](https://github.com/rexyll/cnc-knowledge/actions/runs/45181996783) success；仓库既有单元测试5/5通过，strict knowledge lint success。该CI不运行 `resouces/` 下34项资源测试。
+
+
+### CH12-T003 PATH-01全细化序列限幅门控修正（2026-11-23）
+
+- **复核发现：** 上一版 `smooth_unsaturated_regime` 在单档汇总中表示该档是否未触发限幅，但最终 `_acceptance_decision()` 只读取最细 `h/8` 的单档标志。由于观测阶数由四档 `h/h2/h4/h8` 共同计算，这会允许粗档限幅却最细档无饱和时误判为具备光滑收敛解释资格。
+- **修改：** 新增 `all_refinements_smooth_unsaturated_regime`，要求四个细化档的自由/规定路径两模型阶段计数全部准确，且所有RK4阶段均无电流参考限幅和电压饱和。最终验收门控与manifest聚合字段均使用全序列标志；逐档标志仍保留在汇总CSV。
+- **测试：** 新增两项验收门控纯函数测试，分别验证粗细档任一处限幅均禁止工程PASS，以及收敛筛查失败仍优先FAIL。运行器辅助资源测试由10项增至12项；连同求解器24项共36项，均未执行。
+- **输出：** 汇总CSV模板新增全序列聚合列；资源README、ASSET-INDEX、协议第5.4节与专题正文第7.6.13节同步说明。
+- **状态：** 此次静态审查修正尚未提交；PATH-01仍为 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
