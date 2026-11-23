@@ -16,6 +16,13 @@ from numpy.typing import NDArray
 FloatArray = NDArray[np.float64]
 
 
+def _readonly_float_array(values: object) -> FloatArray:
+    """Return a private float copy whose contents cannot be mutated."""
+    result = np.array(values, dtype=float, copy=True)
+    result.setflags(write=False)
+    return result
+
+
 @dataclass(frozen=True)
 class SinusoidalBeamGeometry:
     """Four-coordinate assumed-mode geometry used by the CH12 example.
@@ -157,10 +164,29 @@ class GantryJointDriveModel:
         actuator: ActuatorKinematics,
     ) -> None:
         self.geometry = geometry
-        self.mechanical = mechanical
+        # frozen dataclasses do not make contained NumPy arrays immutable.
+        # Snapshot caller-owned arrays so post-construction mutation cannot
+        # invalidate the parameter checks performed by this model instance.
+        self.mechanical = MechanicalParameters(
+            M0=_readonly_float_array(mechanical.M0),
+            D0=_readonly_float_array(mechanical.D0),
+            K0=_readonly_float_array(mechanical.K0),
+            payload_mass_kg=mechanical.payload_mass_kg,
+            axis_equivalent_mass_kg=mechanical.axis_equivalent_mass_kg,
+            gravity_acceleration_m_s2=_readonly_float_array(
+                mechanical.gravity_acceleration_m_s2
+            ),
+            axis_viscous_Ns_m=mechanical.axis_viscous_Ns_m,
+            axis_coulomb_N=mechanical.axis_coulomb_N,
+            friction_smoothing_speed_m_s=mechanical.friction_smoothing_speed_m_s,
+        )
         self.electrical = electrical
-        self.actuator = actuator
-        mass_shape = np.asarray(mechanical.M0).shape
+        self.actuator = ActuatorKinematics(
+            q_coefficients=_readonly_float_array(actuator.q_coefficients),
+            s_coefficient=actuator.s_coefficient,
+            offset_m=actuator.offset_m,
+        )
+        mass_shape = np.asarray(self.mechanical.M0).shape
         if len(mass_shape) != 2 or mass_shape[0] != mass_shape[1] or mass_shape[0] < 1:
             raise ValueError("M0 must be a non-empty square matrix")
         self.nq = int(mass_shape[0])

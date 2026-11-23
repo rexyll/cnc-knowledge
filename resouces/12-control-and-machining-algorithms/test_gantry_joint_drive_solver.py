@@ -20,7 +20,10 @@ from gantry_joint_drive_solver import (
 )
 
 
-def make_model(payload_mass: float = 15.0) -> GantryJointDriveModel:
+def make_model(
+    payload_mass: float = 15.0,
+    gravity_acceleration_m_s2: np.ndarray | None = None,
+) -> GantryJointDriveModel:
     M0 = np.diag([75.0, 12.0, 9.0, 2.0])
     D0 = np.diag([10.0, 2.0, 3.0, 1.0])
     K0 = np.diag([0.0, 120.0, 180.0, 60.0])
@@ -30,7 +33,11 @@ def make_model(payload_mass: float = 15.0) -> GantryJointDriveModel:
         K0=K0,
         payload_mass_kg=payload_mass,
         axis_equivalent_mass_kg=8.0,
-        gravity_acceleration_m_s2=np.array([0.0, 0.0, -9.80665]),
+        gravity_acceleration_m_s2=(
+            np.array([0.0, 0.0, -9.80665])
+            if gravity_acceleration_m_s2 is None
+            else np.asarray(gravity_acceleration_m_s2, dtype=float)
+        ),
         axis_viscous_Ns_m=2.0,
         axis_coulomb_N=1.0,
         friction_smoothing_speed_m_s=0.01,
@@ -111,8 +118,10 @@ class TestGantryJointDriveSolver(unittest.TestCase):
         self.assertLess(float(derivative[-1]), 0.0)
 
     def test_zero_input_rest_state_has_zero_acceleration_without_gravity(self) -> None:
-        model = make_model(payload_mass=0.0)
-        model.mechanical.gravity_acceleration_m_s2[:] = 0.0
+        model = make_model(
+            payload_mass=0.0,
+            gravity_acceleration_m_s2=np.zeros(3),
+        )
         state = JointState(
             q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
             current_A=0.0, current_integrator_V=0.0,
@@ -233,6 +242,47 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             GantryJointDriveModel(
                 base.geometry, mechanics, base.electrical, actuator
             )
+
+    def test_parameter_arrays_are_snapshotted_and_read_only(self) -> None:
+        source_M0 = np.diag([75.0, 12.0, 9.0, 2.0])
+        source_D0 = np.diag([10.0, 2.0, 3.0, 1.0])
+        source_K0 = np.diag([0.0, 120.0, 180.0, 60.0])
+        source_gravity = np.array([0.0, 0.0, -9.80665])
+        source_actuator_coefficients = np.zeros(4)
+        mechanics = MechanicalParameters(
+            M0=source_M0,
+            D0=source_D0,
+            K0=source_K0,
+            payload_mass_kg=0.0,
+            axis_equivalent_mass_kg=8.0,
+            gravity_acceleration_m_s2=source_gravity,
+        )
+        actuator = ActuatorKinematics(
+            q_coefficients=source_actuator_coefficients,
+            s_coefficient=1.0,
+        )
+        base = make_model()
+        model = GantryJointDriveModel(
+            base.geometry, mechanics, base.electrical, actuator
+        )
+
+        source_M0[0, 0] = -1.0
+        source_D0[0, 0] = -1.0
+        source_K0[1, 1] = -1.0
+        source_gravity[2] = 0.0
+        source_actuator_coefficients[0] = 1.0
+
+        self.assertAlmostEqual(float(model.mechanical.M0[0, 0]), 75.0)
+        self.assertAlmostEqual(float(model.mechanical.D0[0, 0]), 10.0)
+        self.assertAlmostEqual(float(model.mechanical.K0[1, 1]), 120.0)
+        self.assertAlmostEqual(
+            float(model.mechanical.gravity_acceleration_m_s2[2]), -9.80665
+        )
+        self.assertAlmostEqual(float(model.actuator.q_coefficients[0]), 0.0)
+        with self.assertRaises(ValueError):
+            model.mechanical.M0[0, 0] = 1.0
+        with self.assertRaises(ValueError):
+            model.actuator.q_coefficients[0] = 1.0
 
     def test_rejects_non_finite_initial_state(self) -> None:
         model = make_model()

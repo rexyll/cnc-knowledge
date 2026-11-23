@@ -94,7 +94,7 @@
 
 ## 本轮新增：龙门自由坐标—电流环联合求解器（2026-11-23）
 - gantry_joint_drive_solver.py：NumPy实现联合坐标机械模型、移动负载惯性耦合、运输项、路径摩擦、重力势能梯度、执行器虚功投影及单轴等效RL/连续PI电流环；自由路径坐标s与结构坐标q同一步联合求解。
-- test_gantry_joint_drive_solver.py：12项资源级unittest，覆盖联合质量矩阵对称正定、零负载极限、虚功功率、零速RL衰减、限幅/anti-windup、无输入静止极限、机电能量/铜耗平衡、自由路径状态积分、几何维数契约、非有限状态拒绝、非有限电流指令与非有限外力拒绝。
+- test_gantry_joint_drive_solver.py：13项资源级unittest，覆盖联合质量矩阵对称正定、零负载极限、虚功功率、零速RL衰减、限幅/anti-windup、无输入静止极限、机电能量/铜耗平衡、自由路径状态积分、几何维数契约、参数数组快照/只读、非有限状态拒绝、非有限电流指令与非有限外力拒绝。
 - 测试运行：python -m unittest discover -s resouces/12-control-and-machining-algorithms -p 'test_gantry_joint_drive_solver.py' -v
 - 模型需要调用方提供M0/D0/K0、轴等效质量、电气参数、限幅与执行器位移映射；不提供伪装成通用机床参数的默认额定值。四坐标正弦几何仅是合成示例。
-- 当前脚本和12项测试均尚未执行；仓库结构CI不执行资源测试。无数值仿真、参数辨识、硬限位/接触、完整PMSM dq、离散采样驱动或实机/HIL证据。
+- 当前脚本和13项测试均尚未执行；仓库结构CI不执行资源测试。无数值仿真、参数辨识、硬限位/接触、完整PMSM dq、离散采样驱动或实机/HIL证据。
