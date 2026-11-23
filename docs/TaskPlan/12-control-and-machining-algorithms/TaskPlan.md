@@ -282,3 +282,13 @@
 
 
 追加执行切片（2026-11-23）：PATH-01独立对照运行器。新增 gantry_joint_drive_path_comparison.py，将填写后的JSON配置转换为自由轴/规定路径两套求解器的同一几何、机械、电气、初始状态、确定性PD电流回调和常值五维外载；自动执行 h/h2/h4/h8 四档并生成时序CSV、汇总CSV及运行manifest。能量账本拆分端电压功率、铜耗、结构阻尼、轴摩擦、外部功率、(Kf-Ke)*i*ell_dot 与约束功 lambda*sdot_ref。明确v1只支持常值前馈与常值外载，不执行任意JSON代码。增加7项辅助资源测试；24项求解器测试与7项运行器测试均未执行。路径配置、步长、容差、能量尺度和工程阈值均保持待填写，PATH-01继续 NOT_RUN。
+
+
+### CH12-T003 PATH-01运行器与文档CI验收（2026-11-23）
+
+- 运行器/测试/模板提交 `076ab8290f9bf772e9551b7d50b80dcb17a93a00` 对应 [Run 45171976920](https://github.com/rexyll/cnc-knowledge/actions/runs/45171976920) success。
+- 资源README、ASSET-INDEX与专题正文提交 `0ce4a852aa7c78971b83912705603f1941ca625d` 对应 [Run 45172483718](https://github.com/rexyll/cnc-knowledge/actions/runs/45172483718) success。
+- PATH-01协议/矩阵/计划提交 `0632571f46c4be7c80a22e24677cf3530e14e896` 对应 [Run 45172703500](https://github.com/rexyll/cnc-knowledge/actions/runs/45172703500) success。
+- 运行器实施记录提交 `260c5d82ffec4ffff40a033d8c18d867c5e2576d` 对应 [Run 45172789219](https://github.com/rexyll/cnc-knowledge/actions/runs/45172789219) success。
+- 各轮仓库既有单元测试5/5通过、strict knowledge lint成功；CI不执行资源目录下的24项求解器测试和7项运行器测试。
+- PATH-01运行器尚未执行，配置参数/容差/能量归一化尺度/工程阈值均留待填写；验证矩阵8项仍为 `NOT_RUN`。CH12-T003继续 `IN_PROGRESS`。

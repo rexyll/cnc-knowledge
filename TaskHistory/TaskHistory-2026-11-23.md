@@ -182,3 +182,14 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **能量账本：** 包含实际限幅端电压功率、铜耗、结构阻尼、路径摩擦、外部广义力功率、(Kf-Ke)*i*ell_dot互易常数不匹配项；受约束模型另计lambda*sdot_ref。
 - **新增测试：** test_gantry_joint_drive_path_comparison.py含7项纯函数资源测试；与原求解器24项合计31项资源测试。均未执行，仓库CI不运行resouces/资源测试。
 - **限制：** v1只支持常值前馈和常值广义力，不支持任意控制回调代码；工程阈值不完整时输出COMPLETED_REPORT_ONLY，而不是PASS。运行器与测试尚未运行，PATH-01仍为NOT_RUN，无数值结果、实机参数或HIL结论。
+
+
+## PATH-01运行器与文档CI验收（2026-11-23）
+
+- **运行器/测试/配置模板提交：** `076ab8290f9bf772e9551b7d50b80dcb17a93a00`；[Run 45171976920](https://github.com/rexyll/cnc-knowledge/actions/runs/45171976920) success。
+- **资源README、ASSET-INDEX与专题正文提交：** `0ce4a852aa7c78971b83912705603f1941ca625d`；[Run 45172483718](https://github.com/rexyll/cnc-knowledge/actions/runs/45172483718) success。
+- **协议/矩阵/TaskPlan提交：** `0632571f46c4be7c80a22e24677cf3530e14e896`；[Run 45172703500](https://github.com/rexyll/cnc-knowledge/actions/runs/45172703500) success。
+- **运行器实施历史提交：** `260c5d82ffec4ffff40a033d8c18d867c5e2576d`；[Run 45172789219](https://github.com/rexyll/cnc-knowledge/actions/runs/45172789219) success。
+- **CI内容：** 上述仓库Knowledge Quality工作流均成功，既有单元测试5/5通过，strict knowledge lint成功。该CI不运行资源目录下的求解器/运行器代码或31项资源测试。
+- **静态核对：** 路径时序/汇总模板字段分别为65/56列，与运行器字段名称及顺序一致；配置的模型参数、初始值、前馈、外载、容差、能量尺度和验收阈值仍保留待填写值。
+- **验收边界：** PATH-01运行器与新增7项辅助测试尚未执行；原24项求解器资源测试仍未执行；无步长收敛、能量残差、路径误差、约束反力或实机/HIL数值结果。PATH-01保持 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
