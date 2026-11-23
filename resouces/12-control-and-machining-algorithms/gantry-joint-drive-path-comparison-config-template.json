@@ -188,7 +188,15 @@
       "Q_s"
     ],
     "external_force_definition_or_artifact": null,
-    "note": "Do not double-count actuator force as external load."
+    "note": "Do not double-count actuator force as external load.",
+    "feedforward_current_A": null,
+    "external_generalized_force_constant": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
   },
   "integration": {
     "duration_s": null,
@@ -233,7 +241,11 @@
     "application_path_error_limit_m": null,
     "application_force_limit_N": null,
     "constraint_work_limit_J": null,
-    "normalized_energy_residual_limit": null
+    "normalized_energy_residual_limit": null,
+    "absolute_current_A": null,
+    "relative_current": null,
+    "absolute_current_integrator_V": null,
+    "relative_current_integrator": null
   },
   "metrics": {
     "free_path_position_error": "s_free-s_ref",
@@ -242,11 +254,24 @@
     "constraint_force_peak": "max(abs(lambda))",
     "constraint_force_rms": "sqrt(integral(lambda^2 dt)/T)",
     "constraint_work": "integral(lambda*sdot_ref dt)",
-    "constrained_energy_power": "P_net includes +lambda*sdot_ref"
+    "constrained_energy_power": "P_net includes +lambda*sdot_ref",
+    "energy_normalization_scale_J": null,
+    "energy_normalization_floor_J": null
   },
   "result_state": {
     "status": "NOT_RUN",
     "numerical_results_present": false,
     "resource_tests_executed": false
+  },
+  "acceptance": {
+    "profile_id": null,
+    "application_path_error_limit_m": null,
+    "application_path_velocity_error_limit_m_s": null,
+    "payload_point_error_limit_m": null,
+    "application_force_limit_N": null,
+    "application_force_rms_limit_N": null,
+    "constraint_work_limit_J": null,
+    "normalized_energy_residual_limit": null,
+    "note": "Leave limits null until predeclared from an application requirement or explicitly scoped synthetic screen; null limits cause report-only execution."
   }
 }
