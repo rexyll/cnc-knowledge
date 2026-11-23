@@ -13,6 +13,7 @@ import numpy as np
 from gantry_joint_drive_path_comparison import (
     _acceptance_decision,
     _current_reference_was_limited,
+    _energy_metrics,
     _saturation_stage_report,
     _source_document_ids,
     composite_simpson_13,
@@ -126,6 +127,18 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
         self.assertEqual(_source_document_ids([" SRC-1 ", "SRC-2"]), ["SRC-1", "SRC-2"])
         with self.assertRaisesRegex(ValueError, "duplicate identifier"):
             _source_document_ids(["SRC-1", " SRC-1 "])
+
+    def test_energy_metrics_report_trapezoid_residual(self) -> None:
+        times = np.array([0.0, 1.0, 2.0])
+        ledger = [
+            {"stored": 0.0, "net": 0.0},
+            {"stored": 2.0, "net": 1.0},
+            {"stored": 4.0, "net": 4.0},
+        ]
+        metrics = _energy_metrics(times, ledger, energy_scale=1.0, energy_floor=1.0)
+        self.assertAlmostEqual(metrics["residual"], 4.0 / 3.0, places=14)
+        self.assertAlmostEqual(metrics["trapezoid_residual"], 1.0, places=14)
+        self.assertNotAlmostEqual(metrics["residual"], metrics["trapezoid_residual"])
 
     def test_current_reference_limiter_detects_adjacent_float_clipping(self) -> None:
         requested = np.nextafter(1.0, np.inf)

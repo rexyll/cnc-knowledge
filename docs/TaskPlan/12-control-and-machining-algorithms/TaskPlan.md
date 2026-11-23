@@ -346,3 +346,12 @@
 - **相关CI：** `95cd8b1` / [Run 45183631562](https://github.com/rexyll/cnc-knowledge/actions/runs/45183631562)、`a93a9da` / [Run 45183921384](https://github.com/rexyll/cnc-knowledge/actions/runs/45183921384)、`35b2525` / [Run 45184190958](https://github.com/rexyll/cnc-knowledge/actions/runs/45184190958) 均 success；每次仓库既有单元测试步骤与 strict knowledge lint 步骤均成功。
 - **静态核对：** PATH-01时序字段73列、汇总字段71列，均与对应CSV模板字段名/顺序一致；运行器辅助测试16项，求解器测试24项，共40项资源测试均未执行。
 - **验收状态：** 验证矩阵8项全部 `NOT_RUN`；PATH-01没有数值运行结果；真实机床参数辨识、HIL/实机验证未完成。CH12-T003保持 `IN_PROGRESS`。
+
+
+### CH12-T003 PATH-01电压饱和精度与能量残差求积输出（2026-11-23）
+
+- **电压限幅缺陷：** `electrical_diagnostics()` 原用 `np.isclose(voltage, raw_voltage, atol=1e-12)` 生成 `voltage_saturated`，极小的真实裁剪可能被漏标，进而干扰四档全细化序列限幅门控。现精确比较裁剪后 `voltage_V` 与 `raw_voltage_V`，任何可表示数值差均标记饱和；新增正/负电压轨一ULP越界测试。
+- **能量输出缺项：** `_energy_metrics()` 已返回梯形积分能量残差，但汇总层未使用该字段。新增 `free_energy_residual_trapezoid_J` 与 `prescribed_energy_residual_trapezoid_J` 两列，作为Simpson 1/3主残差的求积敏感性对照；验收阈值与主残差定义不变。
+- **资源测试数量：** 求解器测试从24增至25项，运行器测试从16增至17项，共42项资源测试，均未执行。
+- **同步文件：** 求解器、求解器测试、PATH-01运行器/测试、汇总CSV模板、资源README、ASSET-INDEX、数值验证协议5.7节、专题正文7.6.16节、本章TaskPlan与本历史。
+- **状态：** 本切片尚未提交，未运行资源测试或PATH-01模拟；验证矩阵8项仍 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。

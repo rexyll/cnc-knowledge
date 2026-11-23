@@ -358,7 +358,7 @@ class GantryJointDriveModel:
             "current_error_A": error,
             "raw_voltage_V": raw_voltage,
             "voltage_V": voltage,
-            "voltage_saturated": not np.isclose(voltage, raw_voltage, rtol=0.0, atol=1e-12),
+            "voltage_saturated": voltage != raw_voltage,
             "actuator_relative_velocity_m_s": ell_dot,
             "current_rate_A_s": current_rate,
             "integrator_rate_V_s": integrator_rate,

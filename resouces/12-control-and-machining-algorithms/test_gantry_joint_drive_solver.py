@@ -125,6 +125,28 @@ class TestGantryJointDriveSolver(unittest.TestCase):
         # from its extreme positive stored value.
         self.assertLess(float(derivative[-1]), 0.0)
 
+    def test_voltage_saturation_detects_one_ulp_clipping(self) -> None:
+        model = make_model()
+        upper_raw = np.nextafter(model.electrical.voltage_max_V, np.inf)
+        upper_state = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=upper_raw,
+        )
+        upper = model.electrical_diagnostics(upper_state, current_command_A=0.0)
+        self.assertGreater(upper["raw_voltage_V"], model.electrical.voltage_max_V)
+        self.assertEqual(upper["voltage_V"], model.electrical.voltage_max_V)
+        self.assertTrue(upper["voltage_saturated"])
+
+        lower_raw = np.nextafter(model.electrical.voltage_min_V, -np.inf)
+        lower_state = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=lower_raw,
+        )
+        lower = model.electrical_diagnostics(lower_state, current_command_A=0.0)
+        self.assertLess(lower["raw_voltage_V"], model.electrical.voltage_min_V)
+        self.assertEqual(lower["voltage_V"], model.electrical.voltage_min_V)
+        self.assertTrue(lower["voltage_saturated"])
+
     def test_current_reference_limit_does_not_hard_clamp_state_current(self) -> None:
         model = make_model()
         above_limit = 2.0 * model.electrical.current_limit_A

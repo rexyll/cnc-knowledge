@@ -95,3 +95,8 @@ PATH-01的光滑未限幅门控现覆盖 `h/h2/h4/h8` 全部四档，而非只�
 
 
 PATH-01 manifest现额外保留 `source_documents_or_measurement_ids`，与 `parameter_source` 一同建立模型参数的来源追溯；配置来源ID必须是去空白、无重复的非空字符串数组。新增3项资源测试，目前运行器16项、求解器24项，共40项均未执行。
+
+
+## PATH-01电压饱和精确判定与能量求积复核（2026-11-23）
+
+运行器时序限幅标志沿用求解器 `voltage_saturated`，该标志现以裁剪后的电压与原始PI电压精确比较；上下电压轨一ULP越界均有新增资源测试。汇总CSV新增 `free_energy_residual_trapezoid_J`、`prescribed_energy_residual_trapezoid_J` 两列，保留梯形残差与Simpson残差的差异供数值敏感性判读。求解器测试25项、PATH-01辅助测试17项，共42项资源测试均未执行。

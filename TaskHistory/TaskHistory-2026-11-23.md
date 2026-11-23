@@ -252,3 +252,14 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **CI步骤：** 三轮均为仓库Knowledge Quality工作流成功，既有单元测试步骤与strict knowledge lint步骤均成功；不运行 `resouces/` 下的资源脚本和测试。
 - **静态核对：** 时序CSV 73列、汇总CSV 71列，字段名及顺序分别与运行器一致；PATH-01运行器纯函数测试16项，求解器测试24项，共40项资源测试全部未执行。
 - **状态：** PATH-01仍 `NOT_RUN`；验证矩阵8项全部 `NOT_RUN`；无新增数值仿真、能量残差或实机/HIL结果。CH12-T003继续 `IN_PROGRESS`。
+
+
+## PATH-01电压饱和精度与能量残差梯形复核输出（2026-11-23）
+
+- **审查发现一：** 求解器 `voltage_saturated` 使用1e-12绝对容差，可能漏掉电压上/下限外侧一个可表示浮点数的真实裁剪，导致RK4阶段限幅计数失真。
+- **处理一：** 将标志改为 `voltage_V != raw_voltage_V`；新增求解器资源测试，一次覆盖正、负电压轨一ULP越界。
+- **审查发现二：** PATH-01 `_energy_metrics()` 已返回梯形能量残差，但 `_step_metrics()` 没有把它放进摘要，导致计算结果没有被CSV/manifest持久化。
+- **处理二：** 汇总字段和模板新增 `free_energy_residual_trapezoid_J`、`prescribed_energy_residual_trapezoid_J`；保留Simpson 1/3残差为主指标、梯形残差作为求积敏感性对照，不调整工程验收阈值。新增运行器资源测试验证两种求积结果。
+- **资源测试：** 求解器25项、PATH-01运行器17项，总计42项，均未执行。
+- **同步归档：** 求解器及测试、PATH-01运行器及测试、汇总模板、资源README、ASSET-INDEX、协议5.7节、专题正文7.6.16节、TaskPlan及本历史。
+- **验证边界：** 本切片仅完成静态更改与测试用例写入，尚未提交/CI；PATH-01依旧 `NOT_RUN`，没有新的数值仿真或HIL结果。
