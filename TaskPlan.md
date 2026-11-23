@@ -433,3 +433,11 @@
 - 资源测试从8项扩展为10项，新增“拒绝非四维模型”和“拒绝NaN初始状态”两个接口测试；README与资源索引同步登记。
 - 内容提交 66c795744ee80bc73c8067718cb8cb125fbfb427 对应 GitHub Actions [Run 45113662565](https://github.com/rexyll/cnc-knowledge/actions/runs/45113662565) success；仓库原有测试5/5通过，strict lint PASS（0 errors）。
 - CI未调用resouces目录下的10项求解器测试；本轮只是静态接口审查和仓库结构质量检查，没有联合仿真或物理验证。CH12-T003继续 IN_PROGRESS。
+
+
+### CH12-T003 静态接口契约补强补录验收（2026-11-23）
+
+- 计划/历史与README补录提交 bd9cb6bf5ebddaac9c804e2bb4fa6eaffae86dc6 对应 GitHub Actions [Run 45113772002](https://github.com/rexyll/cnc-knowledge/actions/runs/45113772002) success。
+- 仓库原有单元测试5/5通过，strict knowledge lint PASS（0 errors）；CI扫描统计22章、129 Markdown、407内部链接、143实体、240关系、371来源、660处正文来源引用。
+- 资源求解器测试共10项，仍未由仓库CI运行；也未使用其他执行器代跑。没有新增数值仿真、机电能量平衡或步长收敛结论。
+- 当前阶段已完成第一轮代码静态接口审查和知识库验收；CH12-T003保持 IN_PROGRESS，资源测试独立运行与模型数值交叉核验仍为后续工作。

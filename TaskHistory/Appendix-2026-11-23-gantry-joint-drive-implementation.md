@@ -61,3 +61,11 @@ python -m unittest discover -s resouces/12-control-and-machining-algorithms -p '
 - 内容提交：66c795744ee80bc73c8067718cb8cb125fbfb427。
 - GitHub Actions Run 45113662565：success；仓库原有单元测试5/5通过，strict lint PASS（0 errors）。
 - **测试边界：** 新增10项资源测试没有在本轮CI运行，亦没有由其他执行器运行。当前无数值仿真、能量平衡、时间步长收敛或实机/HIL结果。
+
+
+## 静态接口补强的计划/历史补录CI验收
+
+- 补录提交：bd9cb6bf5ebddaac9c804e2bb4fa6eaffae86dc6。
+- GitHub Actions Run 45113772002：success；既有仓库测试5/5，strict lint PASS（0 errors）。
+- 最终扫描统计：22章、129 Markdown、407内部链接、143实体、240关系、371来源、660处正文来源引用。
+- 资源测试共10项，但本次CI未执行资源测试，亦未产生任何新数值模型证据。
