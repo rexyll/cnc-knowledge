@@ -208,3 +208,11 @@
 
 
 **追加静态审查切片（2026-11-23）：RK4请求步长与输出时间轴一致性。** `simulate()` 允许 `duration_s/step_s` 在浮点容差内舍入为整数步数，但先前返回时间轴以总时长均分，RK4阶段却使用原始请求步长；现在统一使用 `h=duration_s/count` 作为有效步长。新增回归用例检查每步 (k_4) 时间与下一步 (k_1) 时间一致，资源测试从13项增至14项。资源测试尚未执行；CH12-T003继续 IN_PROGRESS。
+
+
+### CH12-T003 RK4时间栅格修正CI验收（2026-11-23）
+
+- 内容提交 `cba6a39e55dc981a42c2ea30d72141cd25134e1b` 对应 GitHub Actions [Run 45125109149](https://github.com/rexyll/cnc-knowledge/actions/runs/45125109149) success。
+- 仓库既有单元测试5/5通过；strict knowledge lint PASS（0 errors）。
+- CI扫描：22章、130 Markdown、407内部链接、143实体、240关系、371来源、660处正文来源引用。
+- 新增的RK4时间栅格边界用例属于资源测试，未由该CI执行；14项资源测试均未执行。CH12-T003继续 `IN_PROGRESS`。
