@@ -320,3 +320,11 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **代码提交：** `039d9f7b53dcfb9ed57beb1d92947fa5b64c829f`；GitHub Actions [Run 45206627681](https://github.com/rexyll/cnc-knowledge/actions/runs/45206627681) success，仓库既有单元测试步骤及strict knowledge lint均成功。
 - **文档提交：** `2a35bc405a0276cf2685bc350ef2f3587c14e285`；GitHub Actions [Run 45206901778](https://github.com/rexyll/cnc-knowledge/actions/runs/45206901778) success，仓库既有单元测试步骤及strict knowledge lint均成功。
 - **状态边界：** 两次CI均不覆盖 `resouces/` 下资源测试；目前求解器32项、PATH-01运行器34项，共66项仍全部未执行。PATH-01与矩阵8项继续NOT_RUN，CH12-T003保持IN_PROGRESS。
+
+### CH12-T003 机电功率互易与规定路径约束功符号静态审查（2026-11-23）
+
+- **互易功率推导：** 由 v=R*i+L*di/dt+Ke*ell_dot 和机械执行器功率 Kf*i*ell_dot 得到合并储能预算的有符号互易项 (Kf-Ke)*i*ell_dot。现有运行器定义与推导一致；新增匹配、驱动侧常数大于反电势常数、反之三种测试定义。
+- **约束功推导：** 规定路径约束力按 +s 方向的施加广义力定义，因此对系统功率为 +lambda*sdot_ref；反向速度需反号。自由路径不施加理想约束，即使传入lambda数组也不计约束功。
+- **测试计数：** PATH-01运行器测试新增3项后为37项；求解器32项不变，共69项资源级测试，均未执行。
+- **代码提交与CI：** f28696c3df90b7a29b2a1a959a5ff8a0f66b5d6d；GitHub Actions [Run 45208562193](https://github.com/rexyll/cnc-knowledge/actions/runs/45208562193) success，仓库既有单元测试步骤和 strict knowledge lint 均成功。
+- **范围边界：** 该切片只完成代数推导、已有账本实现核对和符号回归用例定义，不构成ENE-01～03或PATH-01数值能量闭合验证。矩阵8项保持 NOT_RUN，CH12-T003继续 IN_PROGRESS。

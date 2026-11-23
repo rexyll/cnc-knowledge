@@ -402,3 +402,11 @@
 - **验证边界：** 本轮为代码/测试定义与静态审查，未执行资源测试或PATH-01仿真；验证矩阵8项继续NOT_RUN。
 
 - **M0预检提交/CI：** 代码提交 `039d9f7b53dcfb9ed57beb1d92947fa5b64c829f` 对应 [Run 45206627681](https://github.com/rexyll/cnc-knowledge/actions/runs/45206627681) success；既有单元测试与strict knowledge lint均成功。协议/资源索引/计划历史提交 `2a35bc405a0276cf2685bc350ef2f3587c14e285` 对应 [Run 45206901778](https://github.com/rexyll/cnc-knowledge/actions/runs/45206901778) success。两次CI均不运行66项资源测试。
+
+### CH12-T003 机电功率互易与规定路径约束功符号契约（2026-11-23）
+
+- **机电端口：** 核对电气端口方程 v=R*i+L*di/dt+Ke*ell_dot 与机械广义力 Ja.T*Kf*i，联合储能预算中的互易不匹配项为有符号 (Kf-Ke)*i*ell_dot；匹配SI互易常数时为零，不能作为始终非负耗散量。
+- **约束功：** 约束力按正向 +s 广义力定义，规定路径能量账本应加 +lambda*sdot_ref；反向速度自然变号；自由路径无理想约束，约束功必须为零。
+- **回归用例：** 新增3项PATH-01测试覆盖端口互易项正/负/零、规定路径正/反向约束功及自由模型排除约束功。求解器32项、运行器37项，共69项资源测试均未执行。
+- **内容提交与仓库CI：** 代码测试提交 f28696c3df90b7a29b2a1a959a5ff8a0f66b5d6d；GitHub Actions [Run 45208562193](https://github.com/rexyll/cnc-knowledge/actions/runs/45208562193) success，仓库既有单元测试步骤和 strict knowledge lint 均成功。该CI不执行资源测试。
+- **验证边界：** 仅补强代数/符号契约测试及文档；未运行ENE-01～03、PATH-01仿真或能量收敛分析。验证矩阵8项继续 NOT_RUN，CH12-T003保持 IN_PROGRESS。
