@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000370",
+  "source_type": "academic_paper",
+  "title": "Tracking Control of Single-Axis Feed Drives Based on ADRC and Feedback Linearisation",
+  "publisher": "Electronics (MDPI)",
+  "author": null,
+  "url": "https://www.mdpi.com/2079-9292/10/10/1184",
+  "version": "Article, Section 2 modelling of feed drives (accessed 2026-11-23)",
+  "published_on": "2021-05-18",
+  "accessed_on": "2026-11-23",
+  "locator": "Section 2.1 PMSM dq electrical subsystem and feed-drive electromechanical equations",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports generic dq current/voltage equations and motor electromechanical modeling concepts. Equations/parameter definitions must be adapted to the selected motor, drive, coordinate, and current measurement convention.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_publication"
+}

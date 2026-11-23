@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000371",
+  "source_type": "academic_paper",
+  "title": "Motion control for linear motor feed drives in advanced machine tools",
+  "publisher": "ScienceDirect",
+  "author": null,
+  "url": "https://www.sciencedirect.com/science/article/abs/pii/S0890695500000894",
+  "version": "Abstract and plant/control modeling sections (accessed 2026-11-23)",
+  "published_on": null,
+  "accessed_on": "2026-11-23",
+  "locator": "Plant model/control strategy: amplifier saturation and simplified plant limitations",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports general feed-drive control modeling considerations including amplifier saturation; use the full paper and machine-specific data before relying on any numerical or detailed model.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_publication"
+}
