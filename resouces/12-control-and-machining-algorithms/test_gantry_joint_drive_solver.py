@@ -248,5 +248,29 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             model.pack(state)
 
 
+    def test_rejects_non_finite_current_command(self) -> None:
+        model = make_model()
+        state = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        with self.assertRaisesRegex(ValueError, "current_command_A must be finite"):
+            model.derivative(0.0, model.pack(state), current_command_A=float("nan"))
+
+    def test_rejects_non_finite_external_generalized_force(self) -> None:
+        model = make_model()
+        state = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        force = np.zeros(model.nq + 1)
+        force[-1] = float("inf")
+        with self.assertRaisesRegex(ValueError, "external_generalized_force"):
+            model.derivative(
+                0.0, model.pack(state), current_command_A=0.0,
+                external_generalized_force=force,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -201,7 +201,7 @@ class GantryJointDriveModel:
             raise ValueError("K0 must be positive semidefinite")
         if np.asarray(m.gravity_acceleration_m_s2).shape != (3,):
             raise ValueError("gravity_acceleration_m_s2 must be a 3-vector")
-        if self.actuator.q_coefficients.shape != (n,):
+        if numeric_arrays["actuator q_coefficients"].shape != (n,):
             raise ValueError("actuator q_coefficients must have one entry per q coordinate")
         mechanical_scalars = np.array([
             m.payload_mass_kg, m.axis_equivalent_mass_kg,
@@ -249,6 +249,8 @@ class GantryJointDriveModel:
         y = np.asarray(vector, dtype=float)
         if y.shape != (2 * self.nq + 4,):
             raise ValueError("state vector has an incorrect length")
+        if not np.all(np.isfinite(y)):
+            raise ValueError("state vector must contain only finite values")
         n = self.nq
         return JointState(y[:n].copy(), y[n:2*n].copy(),
                           float(y[2*n]), float(y[2*n+1]),
@@ -333,6 +335,10 @@ class GantryJointDriveModel:
         current_command_A: float,
         external_generalized_force: FloatArray | None = None,
     ) -> FloatArray:
+        if not np.isfinite(time_s):
+            raise ValueError("time_s must be finite")
+        if not np.isfinite(current_command_A):
+            raise ValueError("current_command_A must be finite")
         state = self.unpack(state_vector)
         m = self.mechanical
         e = self.electrical
@@ -371,6 +377,8 @@ class GantryJointDriveModel:
             external = np.asarray(external_generalized_force, dtype=float)
             if external.shape != (self.nq + 1,):
                 raise ValueError("external_generalized_force must have nq+1 entries")
+            if not np.all(np.isfinite(external)):
+                raise ValueError("external_generalized_force must contain only finite values")
 
         rhs = (
             actuator_generalized_force + external
