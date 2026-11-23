@@ -226,3 +226,6 @@
 - 代码/文档提交 `d9b9afbc2948f7b6f9a1e7a148fca96f67026db3` 对应 GitHub Actions [Run 45126336210](https://github.com/rexyll/cnc-knowledge/actions/runs/45126336210) success；测试文件补正提交 `49e52d14c51fb6d2378fb85254f97d35716ff787` 对应 [Run 45126386640](https://github.com/rexyll/cnc-knowledge/actions/runs/45126386640) success。
 - 两轮仓库既有测试均5/5通过，strict knowledge lint均PASS（0 errors）；CI扫描统计22章、130 Markdown、407内部链接、143实体、240关系、371来源、660处正文引用。
 - 实际资源测试文件包含15个测试方法，但资源级测试未由仓库CI执行；没有验证实际驱动器的硬件过流保护。CH12-T003继续 `IN_PROGRESS`。
+
+
+**追加静态审查切片（2026-11-23）：RK4阶段回调状态快照隔离。** 发现 simulate() 在同一RK4阶段将同一个可变 JointState 对象依次传给电流指令和外部力回调；回调对内部NumPy数组的原地修改可能串扰后续回调。现分别构造独立阶段快照，回调侧修改不会传给另一回调，也不会回写积分状态。新增资源级回归用例，资源测试由15项增至16项；同步更新联合求解器专题、README与ASSET-INDEX。**资源测试尚未执行，仓库CI不运行资源测试**；CH12-T003继续 IN_PROGRESS。

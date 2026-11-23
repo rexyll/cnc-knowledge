@@ -441,6 +441,8 @@ class GantryJointDriveModel:
 
         The current command is evaluated at each RK4 stage. This is a
         continuous-command model; it does not emulate a sampled drive task.
+        Each callback receives an independent stage-state snapshot; callback
+        mutations are not shared with the other callback or the integrator.
         """
         if not np.all(np.isfinite([duration_s, step_s])):
             raise ValueError("duration_s and step_s must be finite")
@@ -451,9 +453,14 @@ class GantryJointDriveModel:
             raise ValueError("duration_s must be an integer multiple of step_s")
 
         def evaluate(t: float, y: FloatArray) -> FloatArray:
-            x = self.unpack(y)
-            command = float(current_command(t, x))
-            force = None if external_force is None else external_force(t, x)
+            command_state = self.unpack(y)
+            command = float(current_command(t, command_state))
+            if external_force is None:
+                force = None
+            else:
+                # Do not share mutable JointState arrays across user callbacks.
+                force_state = self.unpack(y)
+                force = external_force(t, force_state)
             return self.derivative(t, y, command, force)
 
         h = duration_s / count

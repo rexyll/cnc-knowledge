@@ -395,5 +395,41 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             )
 
 
+    def test_simulation_callbacks_receive_independent_stage_state_snapshots(self) -> None:
+        model = make_model(payload_mass=0.0)
+        initial = JointState(
+            q=np.array([0.125, 0.0, 0.0, 0.0]),
+            q_dot=np.zeros(4),
+            s=0.5,
+            s_dot=0.0,
+            current_A=0.0,
+            current_integrator_V=0.0,
+        )
+        external_force_observations: list[float] = []
+
+        def current_command(_time_s: float, state: JointState) -> float:
+            state.q[0] = 123.0
+            return 0.0
+
+        def external_force(_time_s: float, state: JointState) -> np.ndarray:
+            external_force_observations.append(float(state.q[0]))
+            state.q[0] = -456.0
+            return np.zeros(model.nq + 1, dtype=float)
+
+        _, states = model.simulate(
+            initial,
+            duration_s=0.002,
+            step_s=0.001,
+            current_command=current_command,
+            external_force=external_force,
+        )
+
+        self.assertEqual(len(external_force_observations), 8)
+        for observed_q0 in external_force_observations:
+            self.assertAlmostEqual(observed_q0, initial.q[0], places=12)
+        self.assertTrue(
+            np.allclose(states[:, 0], initial.q[0], atol=1e-12, rtol=0.0)
+        )
+
 if __name__ == "__main__":
     unittest.main()
