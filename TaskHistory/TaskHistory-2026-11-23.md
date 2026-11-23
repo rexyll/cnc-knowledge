@@ -313,3 +313,10 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **测试：** 新增两项资源级回归用例，验证跨多个数量级的合法SPD矩阵能够通过初始化，以及缩放后仍然不定的矩阵会被拒绝。求解器资源测试32项、PATH-01运行器34项，合计66项，全部未执行。
 - **协议同步：** 数值验证协议5.11、专题正文7.6.20、资源README、ASSET-INDEX、TaskPlan和本历史均已更新；第6节执行清单当前总数修正为66项。
 - **验证边界：** 本轮不执行资源测试或仿真，无新增条件数/求解误差/能量残差结果；PATH-01和验证矩阵8项仍NOT_RUN。
+
+
+### CH12-T003 M0尺度一致性切片CI验收（2026-11-23）
+
+- **代码提交：** `039d9f7b53dcfb9ed57beb1d92947fa5b64c829f`；GitHub Actions [Run 45206627681](https://github.com/rexyll/cnc-knowledge/actions/runs/45206627681) success，仓库既有单元测试步骤及strict knowledge lint均成功。
+- **文档提交：** `2a35bc405a0276cf2685bc350ef2f3587c14e285`；GitHub Actions [Run 45206901778](https://github.com/rexyll/cnc-knowledge/actions/runs/45206901778) success，仓库既有单元测试步骤及strict knowledge lint均成功。
+- **状态边界：** 两次CI均不覆盖 `resouces/` 下资源测试；目前求解器32项、PATH-01运行器34项，共66项仍全部未执行。PATH-01与矩阵8项继续NOT_RUN，CH12-T003保持IN_PROGRESS。

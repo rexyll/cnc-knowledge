@@ -400,3 +400,5 @@
 - **修正：** M0正定性检查与实际求解共用对角归一化方法，在归一化矩阵上执行Cholesky。只调整M0严格正定预检，不改变D0/K0半正定要求。
 - **回归用例：** 新增跨多个数量级的合法SPD矩阵接受测试，以及尺度归一化后不定矩阵拒绝测试。求解器测试32项、PATH-01运行器34项，共66项资源测试，全部未执行。
 - **验证边界：** 本轮为代码/测试定义与静态审查，未执行资源测试或PATH-01仿真；验证矩阵8项继续NOT_RUN。
+
+- **M0预检提交/CI：** 代码提交 `039d9f7b53dcfb9ed57beb1d92947fa5b64c829f` 对应 [Run 45206627681](https://github.com/rexyll/cnc-knowledge/actions/runs/45206627681) success；既有单元测试与strict knowledge lint均成功。协议/资源索引/计划历史提交 `2a35bc405a0276cf2685bc350ef2f3587c14e285` 对应 [Run 45206901778](https://github.com/rexyll/cnc-knowledge/actions/runs/45206901778) success。两次CI均不运行66项资源测试。
