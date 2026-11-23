@@ -468,4 +468,27 @@ simulate() 在每个RK4阶段分别调用电流指令回调和可选外部广义
 
 #### 7.6.8 联合求解器数值验证协议（2026-11-23）
 
-步长收敛、机电能量预算和自由路径轴/规定轨迹对照的详细工况、公式、状态归一化指标及验收规则已独立整理为 [《龙门移动轴—电流环联合求解器数值验证协议》](gantry-joint-drive-numerical-verification-protocol.md)，对应资源矩阵为 `resouces/12-control-and-machining-algorithms/gantry-joint-drive-verification-matrix.csv`。矩阵中的 RK4-01～04、ENE-01～03 均为 `NOT_RUN`；PATH-01 在规定轨迹降阶参考积分器实现前为 `BLOCKED`。协议没有设置脱离设备参数的统一精度阈值，所有工况必须事先声明分量容差、能量尺度和应用要求。
+步长收敛、机电能量预算和自由路径轴/规定轨迹对照的详细工况、公式、状态归一化指标及验收规则已独立整理为 [《龙门移动轴—电流环联合求解器数值验证协议》](gantry-joint-drive-numerical-verification-protocol.md)，对应资源矩阵为 `resouces/12-control-and-machining-algorithms/gantry-joint-drive-verification-matrix.csv`。矩阵中的 RK4-01～04、ENE-01～03 与 PATH-01 均为 `NOT_RUN`；规定路径降阶参考积分器已实现，但自由轴/规定轨迹数值对照尚未执行。协议没有设置脱离设备参数的统一精度阈值，所有工况必须事先声明分量容差、能量尺度和应用要求。
+
+#### 7.6.9 规定路径降阶参考积分器（2026-11-23）
+
+为支持自由路径轴与理想规定轨迹的独立比较，求解器新增 `prescribed_path_derivative()` 和 `simulate_prescribed_path()`。规定轨迹由调用方提供确定性函数 `prescribed_path(t) -> (s_ref, sdot_ref, sddot_ref)`；每个RK4阶段读取该时刻的位移、速度和加速度，只对降阶状态
+
+\[
+x_r=[q^T,\dot q^T,i,x_i]^T
+\]
+
+进行积分。输出状态矩阵仍采用自由轴求解器的完整排列 `[q, q_dot, s, s_dot, i, x_i]`，其中 `s` 和 `s_dot` 直接来自参考路径；另返回同一输出时间栅格上的约束广义力 `lambda`。
+
+实现按完整质量矩阵分块计算：
+
+\[
+M_{qq}\ddot q=Q_q-h_q-M_{qs}\ddot s_{ref}
+\]
+\[
+\lambda=M_{sq}\ddot q+M_{ss}\ddot s_{ref}+h_s-Q_s
+\]
+
+约束力符号约定为 `+e_s * lambda` 加在完整系统方程右端。电流环仍通过当前相对速度 `ell_dot` 计算反电势；路径约束反力是理想运动约束的反力，不应误解为驱动器可实现推力或真实伺服输出。初始路径位置和速度必须与 `JointState.s/s_dot` 一致；路径函数须在所有RK4阶段返回三个有限数值。
+
+资源测试由18项增至24项，增加自由方程零约束反力一致性、静止加速下约束力符号、参考路径位置/速度跟踪、初始路径/非有限轨迹拒绝和回调状态快照隔离测试。**这些测试尚未执行**；仓库知识质量CI不运行 `resouces/` 下资源测试。PATH-01 因参考积分器已具备而从 `BLOCKED` 更新为 `NOT_RUN`，自由/规定轨迹数值比较尚未开展。本实现仍不含硬限位、接触或驱动器带宽/力矩能力约束。

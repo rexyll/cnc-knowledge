@@ -255,3 +255,6 @@
 - 协议/矩阵归档提交 `020be49b00ea9ba3436718d691d19dcc7625e638` 对应 GitHub Actions [Run 45157109891](https://github.com/rexyll/cnc-knowledge/actions/runs/45157109891) success；仓库既有单元测试步骤与 strict knowledge lint 步骤均成功。
 - 本次CI只验证仓库既有质量工作流；18项资源级测试没有执行，RK4/ENE验证矩阵7项 `NOT_RUN`，PATH-01仍为 `BLOCKED`。
 - 协议只定义验证方法和验收口径，不产生仿真、能量平衡或实机/HIL结论；CH12-T003继续 `IN_PROGRESS`。
+
+
+**追加执行切片（2026-11-23）：规定路径降阶参考积分器。** 联合求解器新增 `prescribed_path_derivative()` 与 `simulate_prescribed_path()`：通过调用方提供的确定性 `(s_ref, sdot_ref, sddot_ref)` 路径函数，在RK4阶段只积分结构坐标与电流状态，并按完整质量矩阵分块方程输出约束反力 `lambda`。增加自由方程零反力一致性、约束力符号、路径位置/速度输出、无效初值/非有限路径和回调状态隔离测试，资源测试由18项增至24项。验证矩阵PATH-01由 `BLOCKED` 改为 `NOT_RUN`；积分器实现不代表数值对照通过。资源测试未执行，RK4步长收敛、能量账本和自由/规定路径对照均未运行；CH12-T003继续 `IN_PROGRESS`。
