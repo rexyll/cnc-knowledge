@@ -299,3 +299,8 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **回归用例：** 求解器资源测试增加5项、PATH-01运行器测试增加2项；现分别30项和34项，共64项，全部未执行。时序/汇总CSV字段结构没有改变。
 - **内容提交：** 7420db400200fd2722445c35a56859f8802bb68e；GitHub Actions [Run 45203091144](https://github.com/rexyll/cnc-knowledge/actions/runs/45203091144) success（仓库既有单元测试与strict knowledge lint均成功）；该CI不运行64项资源测试。
 - **验证边界：** 本切片无模型参数、实际条件数、数值求解误差或能量残差结果；未执行PATH-01仿真，验证矩阵8项仍全部 NOT_RUN，CH12-T003继续 IN_PROGRESS。
+### CH12-T003数值求解/能量边界文档同步与CI验收（2026-11-23）
+
+- **文档提交：** f544a08ee49bc40490e2451ddec6f85617e748e3；更新数值验证协议5.10、专题正文7.6.19、资源README/ASSET-INDEX及TaskPlan/TaskHistory，补充尺度均衡方程、归一化条件指标解释限制、能量溢出边界和64项资源测试未执行的状态。
+- **CI验收：** GitHub Actions [Run 45203542953](https://github.com/rexyll/cnc-knowledge/actions/runs/45203542953) success；仓库既有单元测试与strict knowledge lint均成功。该CI不运行resouces目录下64项资源测试。
+- **静态状态：** 求解器测试30项、PATH-01运行器测试34项，共64项均未执行；没有实际工况条件数、求解误差、能量残差或仿真结果。PATH-01与矩阵8项继续 NOT_RUN，CH12-T003保持 IN_PROGRESS。

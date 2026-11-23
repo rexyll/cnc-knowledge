@@ -391,3 +391,4 @@
 - **资源回归用例：** 求解器新增5项（混合坐标量级求解、尺度归一化条件指标、非SPD拒绝、模型条件指标、有限输入引起的储能溢出）；PATH-01新增2项（能量账本非有限输入拒绝、梯形输入契约），现分别为30项与34项，共64项资源测试，全部未执行。
 - **内容提交与仓库CI：** 7420db400200fd2722445c35a56859f8802bb68e；GitHub Actions [Run 45203091144](https://github.com/rexyll/cnc-knowledge/actions/runs/45203091144) success。CI既有单元测试与strict knowledge lint成功，但不运行resouces资源测试。
 - **验证边界：** 未执行资源测试、PATH-01数值仿真或能量平衡实验；未给出任何实际工况条件数、求解误差或能量残差数值。PATH-01和矩阵8项继续 NOT_RUN，CH12-T003保持 IN_PROGRESS。
+- **文档同步CI：** 协议5.10节、专题7.6.19节、资源README、ASSET-INDEX、TaskPlan与TaskHistory同步提交 `f544a08ee49bc40490e2451ddec6f85617e748e3`；GitHub Actions [Run 45203542953](https://github.com/rexyll/cnc-knowledge/actions/runs/45203542953) success，既有单元测试与strict knowledge lint均成功。该工作流不执行64项资源测试。

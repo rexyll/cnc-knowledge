@@ -52,7 +52,7 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | gantry_joint_drive_solver.py | Python源码 | 自由路径坐标、单点移动负载联合质量矩阵/运输项、执行器虚功与连续RL/PI电流环 | 项目原创 | 2026-11-23 | 原创代码 | 龙门连续移动负载与双向耦合专题 |
 | test_gantry_joint_drive_solver.py | Python测试 | 30项资源级回归测试：联合质量矩阵、尺度均衡Cholesky、归一化惯性耦合条件指标、能量/电气有限值边界、自由路径积分、规定路径分块方程与零反力一致性、约束力符号、路径输出及输入拒绝、回调快照隔离 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
 
-上述24项测试尚未执行。CI只验证知识库结构与数据，不运行资源模块或资源测试。
+上述30项测试尚未执行。CI只验证知识库结构与数据，不运行资源模块或资源测试。
 
 ## 联合移动轴—电流环数值验证协议（2026-11-23）
 
@@ -109,7 +109,7 @@ PATH-01运行器的manifest采用 schema_version: 2，并在 output_artifacts �
 
 ## PATH-01独立归档校验与配置/CLI边界（2026-11-23）
 
-运行器新增 --verify-archive，无需原始配置、不运行求解器；对manifest schema/case/status、固定CSV文件名、内容SHA-256、字节数、列名、每行列宽、数据行数与manifest元数据进行核对，成功返回 VERIFIED。路径覆盖、哈希不一致、缺文件或CSV结构错误均会失败。配置校验要求schema_version为整数1、来源ID数组显式存在；拒绝浮点转换溢出、非有限步长比值，以及h/8细化后超过平台索引范围的区间数。CLI对I/O、JSON/配置、数值溢出与运行异常返回2。PATH-01辅助测试32项、求解器25项，共57项，均未执行。
+运行器新增 --verify-archive，无需原始配置、不运行求解器；对manifest schema/case/status、固定CSV文件名、内容SHA-256、字节数、列名、每行列宽、数据行数与manifest元数据进行核对，成功返回 VERIFIED。路径覆盖、哈希不一致、缺文件或CSV结构错误均会失败。配置校验要求schema_version为整数1、来源ID数组显式存在；拒绝浮点转换溢出、非有限步长比值，以及h/8细化后超过平台索引范围的区间数。CLI对I/O、JSON/配置、数值溢出与运行异常返回2。PATH-01辅助测试34项、求解器30项，共64项，均未执行。
 
 ## PATH-01质量矩阵求解与能量账本数值边界（2026-11-23）
 

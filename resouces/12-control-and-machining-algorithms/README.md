@@ -127,7 +127,7 @@
 - 已归档结果独立校验（不需要配置文件，不运行模型）：
   python resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comparison.py --verify-archive --output-dir resouces/12-control-and-machining-algorithms/generated/path-01/results
 - 配置中全部工程验收阈值都填写后才会给出PASS/FAIL；任一阈值为空且收敛筛查成功时状态为COMPLETED_REPORT_ONLY，只做描述性输出；步长收敛筛查失败为FAIL。
-- test_gantry_joint_drive_path_comparison.py：32项PATH-01资源级测试，覆盖参考轨迹、Simpson/梯形求积、状态归一化、限幅门控、来源ID、CSV哈希绑定、归档独立校验/篡改识别/路径覆盖拒绝、溢出边界和CLI错误返回。测试尚未执行；仓库CI不执行资源模块。
+- test_gantry_joint_drive_path_comparison.py：34项PATH-01资源级测试，覆盖参考轨迹、Simpson/梯形求积、状态归一化、限幅门控、来源ID、CSV哈希绑定、归档独立校验/篡改识别/路径覆盖拒绝、溢出边界、CLI错误返回和能量有限值边界。测试尚未执行；仓库CI不执行资源模块。
 
 
 ## PATH-01限幅感知诊断补充（2026-11-23）
@@ -169,7 +169,7 @@ PATH-01输入来源追溯：`provenance.source_documents_or_measurement_ids` 必
 - CLI新增 --verify-archive；仅需 --output-dir，不需要原始配置文件，不运行求解器。校验manifest schema/case/status、固定输出文件名、CSV SHA-256、字节数、表头、每行列数、数据行数及manifest中的对应元数据；拒绝manifest指定其他路径。成功返回 VERIFIED，文件缺失或内容不一致返回非零错误。
 - 配置schema_version必须是整数1（JSON true不视为1）；来源ID数组必须显式存在，无单独ID时填写[]；可选profile_id若非null必须为非空字符串并会去首尾空白。
 - 数值输入转换溢出、duration/base_step非有限、超出平台索引范围或h/8细化后不可表示时，在仿真前作为配置错误拒绝。CLI对文件/JSON/配置/数值溢出/运行异常打印 PATH-01 ERROR 并返回2。
-- 新增12项归档验证、配置与数值边界/CLI测试；PATH-01运行器资源测试现为32项，求解器资源测试25项，共57项，均未执行。
+- 新增12项归档验证、配置与数值边界/CLI测试；当时PATH-01运行器资源测试为32项、求解器资源测试25项，共57项。其后资源测试扩展为运行器34项、求解器30项，共64项，全部仍未执行。
 
 ## PATH-01数值尺度求解和能量账本边界补充（2026-11-23）
 
