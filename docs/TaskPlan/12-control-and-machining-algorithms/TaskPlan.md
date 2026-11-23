@@ -310,4 +310,4 @@
 - **验收门控：** 既有收敛筛查仍报告数值误差/观测阶；只有两侧阶段计数完整且所有阶段均无参考限幅/电压饱和，才具备常规光滑工况下继续评估工程PASS的资格。若收敛筛查通过但检测到限幅或阶段数不完整，状态限定为 `COMPLETED_REPORT_ONLY`；若收敛筛查失败仍为 `FAIL`。此统计不表示硬件过流保护。
 - **资源测试：** 运行器辅助测试新增3项，方法数从7增至10；求解器24项不变，资源测试合计34项，全部未执行。仓库Knowledge Quality CI不运行这些资源测试。
 - **同步文件：** 运行器、运行器测试、两份CSV模板、资源README、ASSET-INDEX、数值验证协议第5.3节、龙门联合模型专题第7.6.12节。
-- **状态：** PATH-01仍为 `NOT_RUN`，没有新数值轨迹、步长收敛、能量残差或工程验收结论；CH12-T003继续 `IN_PROGRESS`。本切片仓库CI待提交后运行。
+- **状态：** PATH-01仍为 `NOT_RUN`，没有新数值轨迹、步长收敛、能量残差或工程验收结论；CH12-T003继续 `IN_PROGRESS`。本切片提交 `7ceda93f04edb8ffffd7ce6c365d16d1db868816` 对应 GitHub Actions [Run 45181996783](https://github.com/rexyll/cnc-knowledge/actions/runs/45181996783) success；仓库既有单元测试5/5通过，strict knowledge lint success。该CI不运行 `resouces/` 下34项资源测试。

@@ -214,4 +214,4 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **状态门控：** 数值收敛筛查失败仍记 `FAIL`；收敛筛查通过但出现任一限幅阶段或阶段数不匹配，限定为 `COMPLETED_REPORT_ONLY`，不再允许常规光滑工况的工程 `PASS`。该诊断不代表电流状态硬限幅或硬件过流保护。
 - **新增测试：** 运行器资源测试新增3项，现为10项；与求解器24项合计34项。所有资源测试均未执行。
 - **同步归档：** `gantry_joint_drive_path_comparison.py`、`test_gantry_joint_drive_path_comparison.py`、两份CSV模板、资源README、ASSET-INDEX、数值验证协议5.3节、专题正文7.6.12节与本TaskPlan。
-- **验证边界：** 本次只有代码/测试/文档写入与静态审查，尚无仓库CI结果、未执行资源测试、未执行PATH-01模拟；矩阵8项仍全部 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+- **验证边界：** 本次完成代码/测试/文档写入与静态审查；时序CSV模板/运行器均为73列，汇总CSV模板/运行器均为70列，字段名称与顺序一致；运行器测试方法数10项。提交 `7ceda93f04edb8ffffd7ce6c365d16d1db868816` 对应GitHub Actions [Run 45181996783](https://github.com/rexyll/cnc-knowledge/actions/runs/45181996783) success，既有仓库单元测试5/5通过，strict knowledge lint success。该CI不运行 `resouces/` 下34项资源测试；这些资源测试仍未执行，PATH-01模拟也未执行。矩阵8项仍全部 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
