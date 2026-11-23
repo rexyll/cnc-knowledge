@@ -147,6 +147,7 @@ class JointState:
 
 CurrentCommand = Callable[[float, JointState], float]
 ExternalForce = Callable[[float, JointState], FloatArray]
+PrescribedPath = Callable[[float], tuple[float, float, float]]
 
 
 class GantryJointDriveModel:
@@ -485,3 +486,242 @@ class GantryJointDriveModel:
                 raise FloatingPointError(f"non-finite integrated state at t={times[index+1]}")
             states[index + 1] = y
         return times, states
+
+
+    def _unpack_prescribed_state(
+        self,
+        reduced_vector: FloatArray,
+        path_position_m: float,
+        path_velocity_m_s: float,
+    ) -> JointState:
+        """Build a full state from [q, q_dot, current, integrator] and path data."""
+        y = np.asarray(reduced_vector, dtype=float)
+        expected_size = 2 * self.nq + 2
+        if y.shape != (expected_size,):
+            raise ValueError(
+                f"reduced prescribed-path state must have {expected_size} entries"
+            )
+        if not np.all(np.isfinite(y)):
+            raise ValueError("reduced prescribed-path state must contain only finite values")
+        if not np.all(np.isfinite([path_position_m, path_velocity_m_s])):
+            raise ValueError("prescribed path position and velocity must be finite")
+        n = self.nq
+        return JointState(
+            q=y[:n].copy(),
+            q_dot=y[n:2*n].copy(),
+            s=float(path_position_m),
+            s_dot=float(path_velocity_m_s),
+            current_A=float(y[2*n]),
+            current_integrator_V=float(y[2*n+1]),
+        )
+
+    def prescribed_path_derivative(
+        self,
+        time_s: float,
+        reduced_state_vector: FloatArray,
+        current_command_A: float,
+        path_position_m: float,
+        path_velocity_m_s: float,
+        path_acceleration_m_s2: float,
+        external_generalized_force: FloatArray | None = None,
+    ) -> tuple[FloatArray, float]:
+        """Return reduced-state derivative and ideal path constraint force.
+
+        The reduced state order is [q, q_dot, current_A, current_integrator_V].
+        The prescribed path contributes s, s_dot and s_ddot at this instant.
+        The returned constraint force lambda follows the convention that
+        +e_s * lambda is added to the right-hand side of the full equations.
+        """
+        if not np.isfinite(time_s):
+            raise ValueError("time_s must be finite")
+        if not np.isfinite(current_command_A):
+            raise ValueError("current_command_A must be finite")
+        if not np.all(np.isfinite([
+            path_position_m, path_velocity_m_s, path_acceleration_m_s2
+        ])):
+            raise ValueError("prescribed path position, velocity and acceleration must be finite")
+
+        state = self._unpack_prescribed_state(
+            reduced_state_vector, path_position_m, path_velocity_m_s
+        )
+        m = self.mechanical
+        e = self.electrical
+        g = self.geometry_terms(state.q, state.s)
+        phi = g["Phi"]
+        phi_s = g["Phi_s"]
+        r_s = g["r_s"]
+        r_ss = g["r_ss"]
+
+        transport = (
+            2.0 * (phi_s @ state.q_dot) * state.s_dot
+            + r_ss * state.s_dot**2
+        )
+        J = np.column_stack((phi, r_s))
+        mass = self.joint_mass_matrix(state.q, state.s)
+        bias = m.payload_mass_kg * (J.T @ transport)
+
+        axis_friction = (
+            m.axis_viscous_Ns_m * state.s_dot
+            + m.axis_coulomb_N
+            * np.tanh(state.s_dot / m.friction_smoothing_speed_m_s)
+        )
+        damping = np.concatenate((m.D0 @ state.q_dot, [axis_friction]))
+        potential_gradient = np.concatenate((m.K0 @ state.q, [0.0]))
+        potential_gradient -= m.payload_mass_kg * (
+            J.T @ m.gravity_acceleration_m_s2
+        )
+
+        electrical = self.electrical_diagnostics(state, current_command_A)
+        actuator_force_N = e.force_constant_N_per_A * state.current_A
+        actuator_generalized_force = self.actuator.jacobian() * actuator_force_N
+
+        if external_generalized_force is None:
+            external = np.zeros(self.nq + 1, dtype=float)
+        else:
+            external = np.asarray(external_generalized_force, dtype=float)
+            if external.shape != (self.nq + 1,):
+                raise ValueError("external_generalized_force must have nq+1 entries")
+            if not np.all(np.isfinite(external)):
+                raise ValueError("external_generalized_force must contain only finite values")
+
+        generalized_force = actuator_generalized_force + external
+        n = self.nq
+        rhs_q = (
+            generalized_force[:n]
+            - bias[:n]
+            - damping[:n]
+            - potential_gradient[:n]
+            - mass[:n, n] * path_acceleration_m_s2
+        )
+        q_ddot = np.linalg.solve(mass[:n, :n], rhs_q)
+
+        constraint_force_N = float(
+            mass[n, :n] @ q_ddot
+            + mass[n, n] * path_acceleration_m_s2
+            + bias[n]
+            + damping[n]
+            + potential_gradient[n]
+            - generalized_force[n]
+        )
+        result = np.concatenate((
+            state.q_dot,
+            q_ddot,
+            np.array([
+                float(electrical["current_rate_A_s"]),
+                float(electrical["integrator_rate_V_s"]),
+            ]),
+        ))
+        if not np.all(np.isfinite(result)) or not np.isfinite(constraint_force_N):
+            raise FloatingPointError(
+                f"non-finite prescribed-path derivative or constraint force at t={time_s}"
+            )
+        return result, constraint_force_N
+
+    def simulate_prescribed_path(
+        self,
+        initial_state: JointState,
+        duration_s: float,
+        step_s: float,
+        prescribed_path: PrescribedPath,
+        current_command: CurrentCommand,
+        external_force: ExternalForce | None = None,
+    ) -> tuple[FloatArray, FloatArray, FloatArray]:
+        """Integrate q, q_dot and current-loop states under s_ref(t).
+
+        prescribed_path(time_s) deterministically returns
+        (s_ref_m, s_ref_dot_m_s, s_ref_ddot_m_s2). The returned state matrix
+        uses the same full ordering as simulate(); its s and s_dot columns
+        come directly from the prescribed path. The third return value is
+        lambda on the output grid. This ideal constraint is not a physical
+        servo or drive-capability model.
+        """
+        if not np.all(np.isfinite([duration_s, step_s])):
+            raise ValueError("duration_s and step_s must be finite")
+        if duration_s <= 0.0 or step_s <= 0.0:
+            raise ValueError("duration_s and step_s must be positive")
+        count = int(round(duration_s / step_s))
+        if count < 1 or not np.isclose(
+            count * step_s, duration_s, rtol=1e-9, atol=1e-12
+        ):
+            raise ValueError("duration_s must be an integer multiple of step_s")
+
+        def evaluate_path(time_s: float) -> tuple[float, float, float]:
+            values = np.asarray(prescribed_path(float(time_s)), dtype=float)
+            if values.shape != (3,) or not np.all(np.isfinite(values)):
+                raise ValueError(
+                    "prescribed_path must return three finite values "
+                    "(position, velocity, acceleration)"
+                )
+            return float(values[0]), float(values[1]), float(values[2])
+
+        initial_path = evaluate_path(0.0)
+        if not np.isclose(
+            initial_state.s, initial_path[0], rtol=1e-9, atol=1e-12
+        ) or not np.isclose(
+            initial_state.s_dot, initial_path[1], rtol=1e-9, atol=1e-12
+        ):
+            raise ValueError(
+                "initial_state s and s_dot must match prescribed_path at t=0"
+            )
+
+        def full_state_from_reduced(
+            reduced: FloatArray, path_values: tuple[float, float, float]
+        ) -> JointState:
+            return self._unpack_prescribed_state(
+                reduced, path_values[0], path_values[1]
+            )
+
+        def evaluate(
+            time_s: float, reduced: FloatArray
+        ) -> tuple[FloatArray, float, tuple[float, float, float]]:
+            path_values = evaluate_path(time_s)
+            command_state = full_state_from_reduced(reduced, path_values)
+            command = float(current_command(time_s, command_state))
+            if external_force is None:
+                force = None
+            else:
+                force_state = full_state_from_reduced(reduced, path_values)
+                force = external_force(time_s, force_state)
+            derivative, reaction = self.prescribed_path_derivative(
+                time_s,
+                reduced,
+                command,
+                path_values[0],
+                path_values[1],
+                path_values[2],
+                force,
+            )
+            return derivative, reaction, path_values
+
+        h = duration_s / count
+        times = np.linspace(0.0, duration_s, count + 1)
+        full_states = np.empty((count + 1, 2 * self.nq + 4), dtype=float)
+        constraint_forces = np.empty(count + 1, dtype=float)
+        reduced_size = 2 * self.nq + 2
+        initial_full = self.pack(initial_state)
+        y = np.concatenate((
+            initial_full[:2*self.nq],
+            initial_full[2*self.nq+2:],
+        ))
+        for index in range(count):
+            t = times[index]
+            k1, lambda_1, path_1 = evaluate(t, y)
+            k2, _, _ = evaluate(t + 0.5*h, y + 0.5*h*k1)
+            k3, _, _ = evaluate(t + 0.5*h, y + 0.5*h*k2)
+            k4, _, _ = evaluate(t + h, y + h*k3)
+
+            current_state = full_state_from_reduced(y, path_1)
+            full_states[index] = self.pack(current_state)
+            constraint_forces[index] = lambda_1
+
+            y = y + (h / 6.0) * (k1 + 2.0*k2 + 2.0*k3 + k4)
+            if y.shape != (reduced_size,) or not np.all(np.isfinite(y)):
+                raise FloatingPointError(
+                    f"non-finite prescribed-path state at t={times[index+1]}"
+                )
+
+        final_path = evaluate_path(float(times[-1]))
+        final_state = full_state_from_reduced(y, final_path)
+        full_states[-1] = self.pack(final_state)
+        _, constraint_forces[-1], _ = evaluate(float(times[-1]), y)
+        return times, full_states, constraint_forces

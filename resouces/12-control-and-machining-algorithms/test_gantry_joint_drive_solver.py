@@ -455,5 +455,140 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             np.allclose(states[:, 0], initial.q[0], atol=1e-12, rtol=0.0)
         )
 
+
+    def test_prescribed_path_partition_matches_free_dynamics_at_zero_reaction(self) -> None:
+        model = make_model(payload_mass=15.0)
+        state = JointState(
+            q=np.array([1.0e-4, -2.0e-4, 3.0e-5, 4.0e-4]),
+            q_dot=np.array([0.012, -0.006, 0.002, -0.001]),
+            s=0.61,
+            s_dot=0.13,
+            current_A=0.35,
+            current_integrator_V=0.2,
+        )
+        command = 0.8
+        external = np.array([0.2, -0.1, 0.05, 0.03, 0.4])
+        free_derivative = model.derivative(
+            0.17, model.pack(state), command, external
+        )
+        n = model.nq
+        reduced = np.concatenate((
+            state.q, state.q_dot, [state.current_A, state.current_integrator_V]
+        ))
+        constrained_derivative, reaction = model.prescribed_path_derivative(
+            0.17, reduced, command,
+            state.s, state.s_dot, float(free_derivative[2*n+1]), external
+        )
+        free_reduced_derivative = np.concatenate((
+            free_derivative[:2*n], free_derivative[2*n+2:]
+        ))
+        self.assertTrue(np.allclose(
+            constrained_derivative, free_reduced_derivative,
+            atol=2e-12, rtol=2e-12
+        ))
+        self.assertAlmostEqual(reaction, 0.0, delta=2e-11)
+
+    def test_prescribed_path_constraint_force_sign_for_rest_acceleration(self) -> None:
+        model = make_model(
+            payload_mass=0.0,
+            gravity_acceleration_m_s2=np.zeros(3),
+        )
+        state = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        reduced = np.concatenate((
+            state.q, state.q_dot, [state.current_A, state.current_integrator_V]
+        ))
+        derivative, reaction = model.prescribed_path_derivative(
+            0.0, reduced, 0.0, 0.5, 0.0, 0.5
+        )
+        self.assertTrue(np.all(np.isfinite(derivative)))
+        self.assertAlmostEqual(reaction, 8.0 * 0.5, places=12)
+
+    def test_simulate_prescribed_path_tracks_reference_position_and_velocity(self) -> None:
+        model = make_model(payload_mass=0.0)
+        initial = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.2,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+
+        def path(time_s: float) -> tuple[float, float, float]:
+            acceleration = 0.4
+            return (
+                0.5 + 0.2*time_s + 0.5*acceleration*time_s**2,
+                0.2 + acceleration*time_s,
+                acceleration,
+            )
+
+        times, states, reactions = model.simulate_prescribed_path(
+            initial, duration_s=0.01, step_s=0.001,
+            prescribed_path=path,
+            current_command=lambda _time, _state: 0.0,
+        )
+        expected_s = 0.5 + 0.2*times + 0.5*0.4*times**2
+        expected_s_dot = 0.2 + 0.4*times
+        self.assertTrue(np.allclose(states[:, 2*model.nq], expected_s, atol=1e-14))
+        self.assertTrue(np.allclose(states[:, 2*model.nq+1], expected_s_dot, atol=1e-14))
+        self.assertTrue(np.all(np.isfinite(reactions)))
+        self.assertEqual(reactions.shape, times.shape)
+
+    def test_simulate_prescribed_path_rejects_initial_path_mismatch(self) -> None:
+        model = make_model()
+        initial = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        with self.assertRaisesRegex(ValueError, "must match prescribed_path"):
+            model.simulate_prescribed_path(
+                initial, duration_s=0.01, step_s=0.001,
+                prescribed_path=lambda _time: (0.6, 0.0, 0.0),
+                current_command=lambda _time, _state: 0.0,
+            )
+
+    def test_simulate_prescribed_path_rejects_non_finite_path_values(self) -> None:
+        model = make_model()
+        initial = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        with self.assertRaisesRegex(ValueError, "three finite values"):
+            model.simulate_prescribed_path(
+                initial, duration_s=0.01, step_s=0.001,
+                prescribed_path=lambda _time: (0.5, 0.0, float("nan")),
+                current_command=lambda _time, _state: 0.0,
+            )
+
+    def test_prescribed_path_callbacks_receive_independent_state_snapshots(self) -> None:
+        model = make_model(payload_mass=0.0)
+        initial = JointState(
+            q=np.array([0.125, 0.0, 0.0, 0.0]),
+            q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        observed_q0: list[float] = []
+
+        def current_command(_time_s: float, state: JointState) -> float:
+            state.q[0] = 123.0
+            return 0.0
+
+        def external_force(_time_s: float, state: JointState) -> np.ndarray:
+            observed_q0.append(float(state.q[0]))
+            state.q[0] = -456.0
+            return np.zeros(model.nq + 1, dtype=float)
+
+        _, states, _ = model.simulate_prescribed_path(
+            initial, duration_s=0.002, step_s=0.001,
+            prescribed_path=lambda _time: (0.5, 0.0, 0.0),
+            current_command=current_command,
+            external_force=external_force,
+        )
+        self.assertEqual(len(observed_q0), 9)
+        for value in observed_q0:
+            self.assertAlmostEqual(value, initial.q[0], places=12)
+        self.assertTrue(np.allclose(
+            states[:, 0], initial.q[0], atol=1e-12, rtol=0.0
+        ))
+
 if __name__ == "__main__":
     unittest.main()
