@@ -464,3 +464,8 @@ simulate() 在每个RK4阶段分别调用电流指令回调和可选外部广义
 现于 `electrical_diagnostics()` 入口检查电流命令有限性，并调用 `pack(state)` 复用状态维数与全部状态字段有限值检查。无效输入以 `ValueError` 拒绝，诊断方程和限幅语义不变。新增两项资源级用例，分别覆盖 NaN/Inf 命令与含 NaN 的状态向量。
 
 **验收边界：** 这是公开函数输入契约的静态实现与测试用例补强；18项资源测试仍未执行，仓库CI不运行 `resouces/` 下的资源测试。本节不代表电流环数值性能、抗饱和鲁棒性或驱动器保护验证。
+
+
+#### 7.6.8 联合求解器数值验证协议（2026-11-23）
+
+步长收敛、机电能量预算和自由路径轴/规定轨迹对照的详细工况、公式、状态归一化指标及验收规则已独立整理为 [《龙门移动轴—电流环联合求解器数值验证协议》](gantry-joint-drive-numerical-verification-protocol.md)，对应资源矩阵为 `resouces/12-control-and-machining-algorithms/gantry-joint-drive-verification-matrix.csv`。矩阵中的 RK4-01～04、ENE-01～03 均为 `NOT_RUN`；PATH-01 在规定轨迹降阶参考积分器实现前为 `BLOCKED`。协议没有设置脱离设备参数的统一精度阈值，所有工况必须事先声明分量容差、能量尺度和应用要求。

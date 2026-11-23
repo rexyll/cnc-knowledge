@@ -114,3 +114,12 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **资源测试边界：** 文件包含18个测试方法，但该次CI没有运行 `resouces/` 下的18项资源级测试；它们仍未执行。
 - **验证边界：** CI成功不等于电气诊断资源测试已运行，也不代表数值仿真、步长收敛、能量平衡、硬件过流保护或HIL/实机验证完成。
 - **任务状态：** CH12-T003继续 `IN_PROGRESS`。
+
+
+## 联合移动轴—电流环数值验证协议归档（2026-11-23）
+
+- **任务ID：** CH12-T003（联合移动轴/电流环模型数值验证准备）
+- **新增文档：** `docs/12-control-and-machining-algorithms/gantry-joint-drive-numerical-verification-protocol.md`。
+- **新增资源：** `resouces/12-control-and-machining-algorithms/gantry-joint-drive-verification-matrix.csv`；定义RK4-01～04、ENE-01～03、PATH-01共8项验证工况，其中7项为 `NOT_RUN`，PATH-01因规定轨迹降阶参考积分器尚未实现而为 `BLOCKED`。
+- **协议要点：** 混合单位状态误差使用分量绝对/相对容差归一化；RK4用四档细化和观测阶数判定；能量预算显式包含实际端电压功率、铜耗、结构阻尼、路径摩擦和外部广义力功率；规定轨迹约束参考模型单独计算路径约束广义力与约束功。
+- **验证边界：** 仅完成协议、矩阵和索引归档；没有执行18项资源测试，没有运行数值仿真或能量平衡测试，没有建立真实机床参数。CH12-T003继续 `IN_PROGRESS`。
