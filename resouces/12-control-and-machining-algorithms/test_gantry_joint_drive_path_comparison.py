@@ -12,6 +12,7 @@ import numpy as np
 
 from gantry_joint_drive_path_comparison import (
     _acceptance_decision,
+    _current_reference_was_limited,
     _saturation_stage_report,
     composite_simpson_13,
     normalized_state_error,
@@ -109,6 +110,11 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
         self.assertEqual(report["current_reference_saturated_stages"], 0)
         self.assertEqual(report["voltage_saturated_stages"], 2)
         self.assertEqual(report["any_limiter_active_stages"], 2)
+
+    def test_current_reference_limiter_detects_adjacent_float_clipping(self) -> None:
+        requested = np.nextafter(1.0, np.inf)
+        self.assertTrue(_current_reference_was_limited(requested, 1.0))
+        self.assertFalse(_current_reference_was_limited(1.0, 1.0))
 
     def test_acceptance_requires_all_refinements_to_be_unsaturated(self) -> None:
         summary = {

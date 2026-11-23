@@ -78,9 +78,9 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
 |---|---|---|---|---|---|---|
 | gantry_joint_drive_path_comparison.py | Python源码 | PATH-01四档步长自由轴/理想规定路径比较运行器；输出逐点时序、归一化误差、约束反力/约束功、机电能量账本、阶段限幅诊断和运行manifest | 项目原创 | 2026-11-23 | 原创代码 | 龙门连续移动负载与双向耦合专题 |
-| test_gantry_joint_drive_path_comparison.py | Python测试 | 12项资源级纯函数测试：五次参考路径、Simpson求积、混合单位归一化、限幅阶段计数、末端诊断剔除、阶段数一致性及全细化序列门控 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
+| test_gantry_joint_drive_path_comparison.py | Python测试 | 13项资源级纯函数测试：五次参考路径、Simpson求积、混合单位归一化、限幅精确比较、阶段计数、末端诊断剔除及全细化序列门控 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
 
-新增12项运行器资源测试尚未执行；加上求解器原有24项，PATH/求解器资源测试合计36项，仓库CI均不执行。
+新增13项运行器资源测试尚未执行；加上求解器原有24项，PATH/求解器资源测试合计37项，仓库CI均不执行。
 
 
 ## PATH-01限幅感知诊断更新（2026-11-23）
@@ -89,3 +89,6 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 
 
 PATH-01的光滑未限幅门控现覆盖 `h/h2/h4/h8` 全部四档，而非只看 `h/8`。新增字段 `all_refinements_smooth_unsaturated_regime` 写入汇总CSV，manifest中的 `smooth_unsaturated_regime` 表示整个收敛细化序列；任何一档触发限幅或阶段计数异常，均阻止常规工程PASS。辅助测试增至12项（求解器24项，合计36项），均未执行。
+
+
+电流参考限幅标志在RK4阶段计数和输出网格时序中统一调用精确裁剪比较函数，避免输出采样列因容差而漏掉小幅裁剪。新增相邻浮点数裁剪回归测试；运行器辅助资源测试13项，求解器24项，共37项未执行。

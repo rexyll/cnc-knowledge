@@ -257,3 +257,8 @@ E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{presc
 PATH-01的观测阶数由 `h`、`h/2`、`h/4`、`h/8` 四档计算得到，因此光滑未限幅资格必须覆盖参与比较的全部四档，而不能只检查最细档。运行器为每档分别记录 `smooth_unsaturated_regime`，并在汇总CSV中增加 `all_refinements_smooth_unsaturated_regime`，其值要求四档中自由模型和规定路径模型的RK4阶段计数均匹配且所有阶段的电流参考限幅/电压饱和计数均为零。只有聚合字段为真，才允许在全部预先声明的工程阈值满足时产生 `PASS`。manifest顶层的 `smooth_unsaturated_regime` 也指整个细化序列的聚合值；逐档统计保留在汇总CSV。任一档触发限幅且收敛筛查通过时，只能 `COMPLETED_REPORT_ONLY`；收敛筛查失败仍为 `FAIL`。
 
 该门控不替代对限幅工况自身的专门非光滑积分收敛研究，也不代表驱动器硬件保护。新增2项验收门控纯函数资源测试，运行器测试现为12项；连同求解器24项合计36项，均未执行。
+
+
+### 5.5 限幅标志比较口径
+
+RK4阶段统计和时序CSV输出点必须使用同一电流参考限幅判定：将 `electrical_diagnostics()` 返回的 `current_reference_A` 与原始 `current_command_A` 比较，二者数值不同即认为裁剪发生。不得在输出采样点处额外采用 `1e-12` 绝对容差，否则极小但真实发生的裁剪可能在阶段计数中出现、却在CSV采样标志中消失，造成口径不一致。电压饱和沿用求解器 `electrical_diagnostics()` 暴露的 `voltage_saturated` 标志。新增相邻浮点数裁剪测试；PATH-01运行器资源测试现为13项，连同求解器24项共37项，均未执行。

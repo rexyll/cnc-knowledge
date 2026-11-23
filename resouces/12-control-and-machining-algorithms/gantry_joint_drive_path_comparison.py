@@ -431,6 +431,11 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
 
 
 
+def _current_reference_was_limited(requested_command_A: float, limited_reference_A: float) -> bool:
+    """Return whether clipping changed the requested current reference."""
+    return float(limited_reference_A) != float(requested_command_A)
+
+
 def _track_current_command(
     model: GantryJointDriveModel,
     current_command: Callable[[float, JointState], float],
@@ -449,7 +454,9 @@ def _track_current_command(
         command_state = state.copy()
         requested = float(current_command(float(time_s), command_state))
         diagnostics = model.electrical_diagnostics(diagnostic_state, requested)
-        reference_saturated = float(diagnostics["current_reference_A"]) != requested
+        reference_saturated = _current_reference_was_limited(
+            requested, float(diagnostics["current_reference_A"])
+        )
         voltage_saturated = bool(diagnostics["voltage_saturated"])
         any_limiter_active = reference_saturated or voltage_saturated
         observations["callback_evaluations"] += 1
@@ -529,8 +536,8 @@ def _energy_ledger(
         stored = kinetic + potential + magnetic
         voltage = float(diagnostics["voltage_V"])
         current_reference = float(diagnostics["current_reference_A"])
-        current_reference_saturated = not math.isclose(
-            current_reference, command, rel_tol=0.0, abs_tol=1e-12
+        current_reference_saturated = _current_reference_was_limited(
+            command, current_reference
         )
         voltage_saturated = bool(diagnostics["voltage_saturated"])
         terminal = voltage * state.current_A
