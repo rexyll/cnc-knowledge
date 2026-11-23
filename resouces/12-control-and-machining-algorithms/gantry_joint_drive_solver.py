@@ -331,6 +331,12 @@ class GantryJointDriveModel:
         return float(kinetic + potential + magnetic)
 
     def electrical_diagnostics(self, state: JointState, current_command_A: float) -> dict[str, float | bool]:
+        """Validate public inputs and return the continuous current-loop diagnostics."""
+        if not np.isfinite(current_command_A):
+            raise ValueError("current_command_A must be finite")
+        # This public method is also called outside derivative(); enforce the
+        # same state dimension and finite-value contract at this boundary.
+        self.pack(state)
         e = self.electrical
         # This is a command-reference limit, not a clamp on measured/state current.
         i_ref = float(np.clip(current_command_A, -e.current_limit_A, e.current_limit_A))

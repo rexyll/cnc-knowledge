@@ -96,3 +96,12 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **GitHub Actions：** [Run 45128932385](https://github.com/rexyll/cnc-knowledge/actions/runs/45128932385) success；单元测试步骤和 strict knowledge lint 步骤均成功。
 - **验收边界：** CI未执行 resouces/ 下的16项求解器测试。该结果不等于新资源测试通过，不代表资源仿真、步长收敛、能量平衡、参数辨识或实机/HIL验证完成。
 - **任务状态：** CH12-T003继续 `IN_PROGRESS`。
+
+## 电气诊断公开入口输入校验（2026-11-23）
+
+- **任务ID：** CH12-T003（联合移动轴/电流环模型静态接口加固）
+- **审查发现：** `electrical_diagnostics()` 是可直接调用的公开方法，但此前有限值检查主要位于 `derivative()`。外部直接传入NaN/Inf电流命令或非有限状态时，可能得到包含非有限值的诊断字典。
+- **处理：** 在 `electrical_diagnostics()` 入口拒绝非有限电流命令，并复用 `pack(state)` 校验状态坐标维数及全部状态值有限性；PI/电压限幅和动力学方程保持不变。
+- **资源测试：** 新增非有限电流命令（NaN、正/负Inf）与非有限状态两项用例，测试方法由16项增至18项；**未执行**。
+- **交付文件：** 求解器、资源测试、联合移动负载/电流环专题、资源README、ASSET-INDEX、CH12 TaskPlan和本历史文件。
+- **验证边界：** 仅完成静态审查、实现与测试编写；没有资源测试运行、数值仿真、能量平衡、步长收敛、驱动器参数辨识或HIL/实机验证。CH12-T003继续 `IN_PROGRESS`。

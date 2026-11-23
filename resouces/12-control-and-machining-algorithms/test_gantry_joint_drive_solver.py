@@ -380,6 +380,30 @@ class TestGantryJointDriveSolver(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "current_command_A must be finite"):
             model.derivative(0.0, model.pack(state), current_command_A=float("nan"))
 
+    def test_electrical_diagnostics_rejects_non_finite_commands(self) -> None:
+        model = make_model()
+        state = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        for command in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(command=command):
+                with self.assertRaisesRegex(ValueError, "current_command_A must be finite"):
+                    model.electrical_diagnostics(state, current_command_A=command)
+
+    def test_electrical_diagnostics_rejects_non_finite_state(self) -> None:
+        model = make_model()
+        state = JointState(
+            q=np.array([0.0, 0.0, float("nan"), 0.0]),
+            q_dot=np.zeros(4),
+            s=0.5,
+            s_dot=0.0,
+            current_A=0.0,
+            current_integrator_V=0.0,
+        )
+        with self.assertRaisesRegex(ValueError, "state values must all be finite"):
+            model.electrical_diagnostics(state, current_command_A=0.0)
+
     def test_rejects_non_finite_external_generalized_force(self) -> None:
         model = make_model()
         state = JointState(
