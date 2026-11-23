@@ -50,3 +50,14 @@ python -m unittest discover -s resouces/12-control-and-machining-algorithms -p '
 - 仓库现有测试：5/5通过；strict lint：PASS（0 errors）。
 - 最新扫描：22章、129 Markdown、407内部链接、143实体、240关系、371来源、660处正文来源引用。
 - 本次补录将资源测试从6项扩展为8项，加入机电储能/电阻铜耗平衡与自由路径状态积分检查；这些资源测试仍未执行，当前没有数值结果。
+
+
+## 后续静态接口审查与资源测试补强
+
+- 在 GantryJointDriveModel 构造阶段明确要求当前 SinusoidalBeamGeometry 对应四个广义坐标；非四维M0不再等到几何运算或积分时才失败。
+- 增加几何参数、机械/电气参数数组与标量、初始状态、积分时长和步长的有限值检查。
+- 新增两项资源测试：非四维模型构造应拒绝；NaN初始状态打包应拒绝。原8项测试加新增2项，共10项。
+- README已补充完整测试覆盖说明。ASSET-INDEX已列出维数契约与非有限输入测试。
+- 内容提交：66c795744ee80bc73c8067718cb8cb125fbfb427。
+- GitHub Actions Run 45113662565：success；仓库原有单元测试5/5通过，strict lint PASS（0 errors）。
+- **测试边界：** 新增10项资源测试没有在本轮CI运行，亦没有由其他执行器运行。当前无数值仿真、能量平衡、时间步长收敛或实机/HIL结果。
