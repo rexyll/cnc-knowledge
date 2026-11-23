@@ -112,10 +112,45 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
             current_A=0.0, current_integrator_V=1.0e6,
         )
+        diagnostics = model.electrical_diagnostics(state, current_command_A=100.0)
         derivative = model.derivative(0.0, model.pack(state), current_command_A=100.0)
-        # The saturated voltage and back-calculation anti-windup must pull
-        # the PI integrator away from its extreme positive stored value.
+        self.assertAlmostEqual(
+            diagnostics["current_reference_A"], model.electrical.current_limit_A
+        )
+        self.assertTrue(diagnostics["voltage_saturated"])
+        self.assertAlmostEqual(
+            diagnostics["voltage_V"], model.electrical.voltage_max_V
+        )
+        # Back-calculation anti-windup must pull the PI integrator away
+        # from its extreme positive stored value.
         self.assertLess(float(derivative[-1]), 0.0)
+
+    def test_current_reference_limit_does_not_hard_clamp_state_current(self) -> None:
+        model = make_model()
+        above_limit = 2.0 * model.electrical.current_limit_A
+        state = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=above_limit, current_integrator_V=0.0,
+        )
+        diagnostics = model.electrical_diagnostics(state, current_command_A=100.0)
+        derivative = model.derivative(
+            0.0, model.pack(state), current_command_A=100.0
+        )
+        expected_current_rate = (
+            diagnostics["voltage_V"] - model.electrical.resistance_ohm * above_limit
+        ) / model.electrical.inductance_h
+
+        self.assertAlmostEqual(
+            diagnostics["current_reference_A"], model.electrical.current_limit_A
+        )
+        self.assertGreater(abs(state.current_A), model.electrical.current_limit_A)
+        self.assertAlmostEqual(
+            diagnostics["current_rate_A_s"], expected_current_rate, places=10
+        )
+        self.assertAlmostEqual(
+            float(derivative[2 * model.nq + 2]), expected_current_rate, places=10
+        )
+        self.assertLess(expected_current_rate, 0.0)
 
     def test_zero_input_rest_state_has_zero_acceleration_without_gravity(self) -> None:
         model = make_model(
