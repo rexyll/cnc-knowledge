@@ -218,5 +218,35 @@ class TestGantryJointDriveSolver(unittest.TestCase):
 
 
 
+    def test_rejects_geometry_coordinate_dimension_mismatch_at_construction(self) -> None:
+        base = make_model()
+        mechanics = MechanicalParameters(
+            M0=np.eye(3),
+            D0=np.zeros((3, 3)),
+            K0=np.zeros((3, 3)),
+            payload_mass_kg=0.0,
+            axis_equivalent_mass_kg=1.0,
+            gravity_acceleration_m_s2=np.zeros(3),
+        )
+        actuator = ActuatorKinematics(q_coefficients=np.zeros(3))
+        with self.assertRaisesRegex(ValueError, "exactly four generalized coordinates"):
+            GantryJointDriveModel(
+                base.geometry, mechanics, base.electrical, actuator
+            )
+
+    def test_rejects_non_finite_initial_state(self) -> None:
+        model = make_model()
+        state = JointState(
+            q=np.array([0.0, np.nan, 0.0, 0.0]),
+            q_dot=np.zeros(4),
+            s=0.5,
+            s_dot=0.0,
+            current_A=0.0,
+            current_integrator_V=0.0,
+        )
+        with self.assertRaisesRegex(ValueError, "finite"):
+            model.pack(state)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -34,8 +34,12 @@ class SinusoidalBeamGeometry:
                FloatArray, FloatArray]:
         if q.shape != (4,):
             raise ValueError("SinusoidalBeamGeometry requires exactly four q coordinates")
-        if self.span_m <= 0.0 or not np.isfinite(self.span_m):
-            raise ValueError("span_m must be finite and positive")
+        if not np.all(np.isfinite([self.span_m, self.torsion_x_offset_m, self.torsion_z_offset_m])):
+            raise ValueError("geometry parameters must be finite")
+        if self.span_m <= 0.0:
+            raise ValueError("span_m must be positive")
+        if not np.isfinite(s):
+            raise ValueError("path coordinate s must be finite")
 
         k = np.pi / self.span_m
         shape = np.sin(k * s)
@@ -156,7 +160,14 @@ class GantryJointDriveModel:
         self.mechanical = mechanical
         self.electrical = electrical
         self.actuator = actuator
-        self.nq = int(np.asarray(mechanical.M0).shape[0])
+        mass_shape = np.asarray(mechanical.M0).shape
+        if len(mass_shape) != 2 or mass_shape[0] != mass_shape[1] or mass_shape[0] < 1:
+            raise ValueError("M0 must be a non-empty square matrix")
+        self.nq = int(mass_shape[0])
+        if self.nq != 4:
+            raise ValueError(
+                "SinusoidalBeamGeometry requires exactly four generalized coordinates"
+            )
         self._validate_parameters()
 
     def _validate_parameters(self) -> None:
@@ -170,6 +181,16 @@ class GantryJointDriveModel:
                 raise ValueError(f"{name} must have the same shape as M0")
             if not np.allclose(matrix, np.asarray(matrix).T, atol=1e-10, rtol=1e-10):
                 raise ValueError(f"{name} must be symmetric")
+        numeric_arrays = {
+            "M0": np.asarray(m.M0, dtype=float),
+            "D0": np.asarray(m.D0, dtype=float),
+            "K0": np.asarray(m.K0, dtype=float),
+            "gravity_acceleration_m_s2": np.asarray(m.gravity_acceleration_m_s2, dtype=float),
+            "actuator q_coefficients": np.asarray(self.actuator.q_coefficients, dtype=float),
+        }
+        for name, values in numeric_arrays.items():
+            if not np.all(np.isfinite(values)):
+                raise ValueError(f"{name} must contain only finite values")
         if not np.allclose(m.M0, np.asarray(m.M0).T, atol=1e-10, rtol=1e-10):
             raise ValueError("M0 must be symmetric")
         if np.min(np.linalg.eigvalsh(m.M0)) <= 0.0:
@@ -182,6 +203,22 @@ class GantryJointDriveModel:
             raise ValueError("gravity_acceleration_m_s2 must be a 3-vector")
         if self.actuator.q_coefficients.shape != (n,):
             raise ValueError("actuator q_coefficients must have one entry per q coordinate")
+        mechanical_scalars = np.array([
+            m.payload_mass_kg, m.axis_equivalent_mass_kg,
+            m.axis_viscous_Ns_m, m.axis_coulomb_N,
+            m.friction_smoothing_speed_m_s,
+        ], dtype=float)
+        electrical_scalars = np.array([
+            e.resistance_ohm, e.inductance_h, e.back_emf_V_per_m_s,
+            e.force_constant_N_per_A, e.current_limit_A, e.voltage_min_V,
+            e.voltage_max_V, e.kp_V_per_A, e.ki_V_per_A_s,
+            e.antiwindup_gain_per_s,
+            self.actuator.s_coefficient, self.actuator.offset_m,
+        ], dtype=float)
+        if not np.all(np.isfinite(mechanical_scalars)):
+            raise ValueError("mechanical scalar parameters must be finite")
+        if not np.all(np.isfinite(electrical_scalars)):
+            raise ValueError("electrical and actuator scalar parameters must be finite")
         if m.payload_mass_kg < 0.0 or m.axis_equivalent_mass_kg <= 0.0:
             raise ValueError("payload mass must be nonnegative and axis equivalent mass positive")
         if m.axis_viscous_Ns_m < 0.0 or m.axis_coulomb_N < 0.0:
@@ -200,10 +237,13 @@ class GantryJointDriveModel:
     def pack(self, state: JointState) -> FloatArray:
         if state.q.shape != (self.nq,) or state.q_dot.shape != (self.nq,):
             raise ValueError("state q and q_dot dimensions do not match M0")
-        return np.concatenate((
+        packed = np.concatenate((
             state.q, state.q_dot,
             np.array([state.s, state.s_dot, state.current_A, state.current_integrator_V])
         )).astype(float)
+        if not np.all(np.isfinite(packed)):
+            raise ValueError("state values must all be finite")
+        return packed
 
     def unpack(self, vector: FloatArray) -> JointState:
         y = np.asarray(vector, dtype=float)
@@ -365,6 +405,8 @@ class GantryJointDriveModel:
         The current command is evaluated at each RK4 stage. This is a
         continuous-command model; it does not emulate a sampled drive task.
         """
+        if not np.all(np.isfinite([duration_s, step_s])):
+            raise ValueError("duration_s and step_s must be finite")
         if duration_s <= 0.0 or step_s <= 0.0:
             raise ValueError("duration_s and step_s must be positive")
         count = int(round(duration_s / step_s))
