@@ -279,6 +279,17 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             float(model.mechanical.gravity_acceleration_m_s2[2]), -9.80665
         )
         self.assertAlmostEqual(float(model.actuator.q_coefficients[0]), 0.0)
+        protected_arrays = (
+            model.mechanical.M0,
+            model.mechanical.D0,
+            model.mechanical.K0,
+            model.mechanical.gravity_acceleration_m_s2,
+            model.actuator.q_coefficients,
+        )
+        for values in protected_arrays:
+            with self.subTest(shape=values.shape):
+                with self.assertRaises(ValueError):
+                    values.setflags(write=True)
         with self.assertRaises(ValueError):
             model.mechanical.M0[0, 0] = 1.0
         with self.assertRaises(ValueError):

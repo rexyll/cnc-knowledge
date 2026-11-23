@@ -30,3 +30,14 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **边界：** 该CI没有执行 `resouces/` 下的13项求解器测试。
 - **遗留事项：** 运行13项资源测试；补做RK4步长收敛、机械/电气能量平衡独立核验、规定轨迹与自由轴模型交叉比较；真实驱动器参数辨识和HIL/实机验证仍未完成。
 - **任务状态：** CH12-T003保持 `IN_PROGRESS`。
+
+
+## 参数数组只读契约再次加固（2026-11-23）
+
+- **实际完成时间：** 2026-11-23T14:30:00+08:00（Asia/Shanghai）
+- **分支：** `main`
+- **问题：** NumPy 对自有内存的只读数组可允许调用方通过 `setflags(write=True)` 重新开启写权限，前一提交的 `write=False` 只能防止直接赋值，不能充分保证只读。
+- **处理：** `_readonly_float_array` 改为将浮点快照序列化为不可变 `bytes` 缓冲区，再以 `np.frombuffer` 生成数组视图；资源测试逐一检查 `M0/D0/K0`、重力向量和执行器系数数组无法恢复写权限。
+- **交付文件：** `resouces/12-control-and-machining-algorithms/gantry_joint_drive_solver.py`、`resouces/12-control-and-machining-algorithms/test_gantry_joint_drive_solver.py`、`docs/12-control-and-machining-algorithms/gantry-continuous-moving-load-and-multiloop-disk-margin.md`、本章 TaskPlan 与本历史记录。
+- **验收边界：** 本轮静态修订尚待提交及CI；13项资源测试仍未运行。仓库CI不运行资源级测试，不能用CI成功替代该测试结果。
+- **遗留事项：** 运行13项资源测试、RK4步长收敛和独立能量平衡核验；真实机床参数辨识与HIL/实机验证未完成。CH12-T003保持 `IN_PROGRESS`。

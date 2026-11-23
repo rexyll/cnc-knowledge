@@ -17,10 +17,10 @@ FloatArray = NDArray[np.float64]
 
 
 def _readonly_float_array(values: object) -> FloatArray:
-    """Return a private float copy whose contents cannot be mutated."""
-    result = np.array(values, dtype=float, copy=True)
-    result.setflags(write=False)
-    return result
+    """Return a private float array backed by an immutable bytes buffer."""
+    copied = np.array(values, dtype=np.float64, copy=True, order="C")
+    immutable_buffer = copied.tobytes(order="C")
+    return np.frombuffer(immutable_buffer, dtype=np.float64).reshape(copied.shape)
 
 
 @dataclass(frozen=True)
