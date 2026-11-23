@@ -258,3 +258,12 @@
 
 
 **追加执行切片（2026-11-23）：规定路径降阶参考积分器。** 联合求解器新增 `prescribed_path_derivative()` 与 `simulate_prescribed_path()`：通过调用方提供的确定性 `(s_ref, sdot_ref, sddot_ref)` 路径函数，在RK4阶段只积分结构坐标与电流状态，并按完整质量矩阵分块方程输出约束反力 `lambda`。增加自由方程零反力一致性、约束力符号、路径位置/速度输出、无效初值/非有限路径和回调状态隔离测试，资源测试由18项增至24项。验证矩阵PATH-01由 `BLOCKED` 改为 `NOT_RUN`；积分器实现不代表数值对照通过。资源测试未执行，RK4步长收敛、能量账本和自由/规定路径对照均未运行；CH12-T003继续 `IN_PROGRESS`。
+
+
+### CH12-T003 规定路径参考积分器切片CI验收（2026-11-23）
+
+- 代码提交 `a5c97addf57aa25a88e2f0e45565de371d8883bc` 对应 GitHub Actions [Run 45160152219](https://github.com/rexyll/cnc-knowledge/actions/runs/45160152219) success。
+- 文档/验证矩阵提交 `ecb4639d44e6012ed42ad187c789fe8df2479466` 对应 GitHub Actions [Run 45160363257](https://github.com/rexyll/cnc-knowledge/actions/runs/45160363257) success。
+- 两轮均为仓库 `Knowledge Quality` 工作流成功；该工作流不执行 `resouces/` 下的24项求解器资源测试。
+- PATH-01 参考积分器已实现，验证矩阵8项均为 `NOT_RUN`；未产生数值对照、步长收敛、约束反力/约束功或能量账本结果。
+- CH12-T003继续 `IN_PROGRESS`；真实机床参数辨识与HIL/实机验证未完成。

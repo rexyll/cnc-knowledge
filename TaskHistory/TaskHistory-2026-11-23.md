@@ -142,3 +142,13 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **验证矩阵：** PATH-01 已从 `BLOCKED` 更新为 `NOT_RUN`，但尚无自由轴/规定路径数值对照、步长收敛或约束功结果。
 - **交付文件：** 求解器、资源测试、数值验证协议、验证矩阵、联合移动负载专题、资源README、ASSET-INDEX、CH12 TaskPlan和本历史文件。
 - **验收边界：** 仅完成代码实现、静态方程推导和测试用例编写；未执行资源测试或数值仿真，不代表真实伺服轴跟踪能力、驱动器推力能力、硬限位/接触或HIL/实机验证。CH12-T003继续 `IN_PROGRESS`。
+
+
+## 规定路径降阶参考积分器切片CI验收（2026-11-23）
+
+- **代码提交：** `a5c97addf57aa25a88e2f0e45565de371d8883bc`；GitHub Actions [Run 45160152219](https://github.com/rexyll/cnc-knowledge/actions/runs/45160152219) success。
+- **文档/矩阵提交：** `ecb4639d44e6012ed42ad187c789fe8df2479466`；GitHub Actions [Run 45160363257](https://github.com/rexyll/cnc-knowledge/actions/runs/45160363257) success。
+- **CI边界：** 两轮均为仓库 `Knowledge Quality` 工作流成功；CI不执行 `resouces/` 下的24项求解器资源测试。
+- **实现状态：** 规定路径降阶参考积分器已具备，PATH-01由 `BLOCKED` 变为 `NOT_RUN`；验证矩阵8项全部 `NOT_RUN`。
+- **未完成验证：** 24项资源测试、RK4步长收敛、机电能量预算、自由轴/规定路径数值对照、约束反力与约束功的独立数值验证均未执行；没有真实机床参数辨识或HIL/实机结果。
+- **任务状态：** CH12-T003继续 `IN_PROGRESS`。
