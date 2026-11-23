@@ -254,6 +254,12 @@ class GantryJointDriveModel:
         )
         return float(kinetic), float(potential)
 
+    def total_stored_energy(self, state: JointState) -> float:
+        """Mechanical energy plus the equivalent inductor magnetic energy."""
+        kinetic, potential = self.mechanical_energy(state)
+        magnetic = 0.5 * self.electrical.inductance_h * state.current_A**2
+        return float(kinetic + potential + magnetic)
+
     def electrical_diagnostics(self, state: JointState, current_command_A: float) -> dict[str, float | bool]:
         e = self.electrical
         i_ref = float(np.clip(current_command_A, -e.current_limit_A, e.current_limit_A))

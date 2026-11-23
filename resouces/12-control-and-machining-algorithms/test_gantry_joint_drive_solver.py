@@ -123,5 +123,100 @@ class TestGantryJointDriveSolver(unittest.TestCase):
         self.assertAlmostEqual(float(derivative[2*n+1]), 0.0, places=12)
 
 
+    def test_electromechanical_energy_balance_with_matched_si_constants(self) -> None:
+        base = make_model(payload_mass=5.0)
+        mechanics = MechanicalParameters(
+            M0=base.mechanical.M0.copy(),
+            D0=np.zeros_like(base.mechanical.D0),
+            K0=base.mechanical.K0.copy(),
+            payload_mass_kg=5.0,
+            axis_equivalent_mass_kg=base.mechanical.axis_equivalent_mass_kg,
+            gravity_acceleration_m_s2=np.zeros(3),
+            axis_viscous_Ns_m=0.0,
+            axis_coulomb_N=0.0,
+            friction_smoothing_speed_m_s=0.01,
+        )
+        # Equality of Kf and Ke is the SI reciprocity condition for this
+        # idealized translational actuator port.
+        electrical = CurrentLoopParameters(
+            resistance_ohm=1.5,
+            inductance_h=0.02,
+            back_emf_V_per_m_s=4.0,
+            force_constant_N_per_A=4.0,
+            current_limit_A=8.0,
+            voltage_min_V=-48.0,
+            voltage_max_V=48.0,
+            kp_V_per_A=3.0,
+            ki_V_per_A_s=20.0,
+            antiwindup_gain_per_s=0.0,
+        )
+        actuator = ActuatorKinematics(
+            q_coefficients=np.array([1.0, 0.0, 0.0, 0.0]),
+            s_coefficient=1.0,
+        )
+        model = GantryJointDriveModel(
+            base.geometry, mechanics, electrical, actuator
+        )
+        initial = JointState(
+            q=np.array([1e-4, 2e-4, -1e-5, 1e-4]),
+            q_dot=np.array([0.02, -0.01, 0.003, 0.001]),
+            s=0.7,
+            s_dot=0.01,
+            current_A=0.25,
+            current_integrator_V=0.0,
+        )
+        dt = 1.0e-6
+        energy_before = model.total_stored_energy(initial)
+        _, states = model.simulate(
+            initial,
+            duration_s=dt,
+            step_s=dt,
+            current_command=lambda _time, state: state.current_A,
+        )
+        final = model.unpack(states[-1])
+        observed_rate = (
+            model.total_stored_energy(final) - energy_before
+        ) / dt
+        expected_rate = -electrical.resistance_ohm * initial.current_A**2
+        self.assertAlmostEqual(
+            observed_rate, expected_rate,
+            delta=max(1.0e-5, abs(expected_rate) * 1.0e-3),
+        )
+
+    def test_path_coordinate_is_integrated_as_a_free_state(self) -> None:
+        base = make_model(payload_mass=0.0)
+        mechanics = MechanicalParameters(
+            M0=base.mechanical.M0.copy(),
+            D0=base.mechanical.D0.copy(),
+            K0=base.mechanical.K0.copy(),
+            payload_mass_kg=0.0,
+            axis_equivalent_mass_kg=8.0,
+            gravity_acceleration_m_s2=np.zeros(3),
+            axis_viscous_Ns_m=0.0,
+            axis_coulomb_N=0.0,
+            friction_smoothing_speed_m_s=0.01,
+        )
+        actuator = ActuatorKinematics(
+            q_coefficients=np.zeros(4), s_coefficient=0.0
+        )
+        model = GantryJointDriveModel(
+            base.geometry, mechanics, base.electrical, actuator
+        )
+        initial = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.2,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        duration = 0.01
+        _, states = model.simulate(
+            initial, duration_s=duration, step_s=0.001,
+            current_command=lambda _time, _state: 0.0,
+        )
+        final = model.unpack(states[-1])
+        self.assertAlmostEqual(
+            final.s - initial.s, initial.s_dot * duration, places=10
+        )
+
+
+
 if __name__ == "__main__":
     unittest.main()
