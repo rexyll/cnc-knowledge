@@ -97,6 +97,8 @@ class CurrentLoopParameters:
     """Single-axis equivalent RL current loop.
 
     Force and back-EMF constants must use mutually consistent SI conventions.
+    current_limit_A clips the command reference only; it is not a hard clamp on
+    the state current and does not model hardware overcurrent protection.
     The model is not a complete PMSM dq model or inverter switching model.
     """
 
@@ -330,6 +332,7 @@ class GantryJointDriveModel:
 
     def electrical_diagnostics(self, state: JointState, current_command_A: float) -> dict[str, float | bool]:
         e = self.electrical
+        # This is a command-reference limit, not a clamp on measured/state current.
         i_ref = float(np.clip(current_command_A, -e.current_limit_A, e.current_limit_A))
         error = i_ref - state.current_A
         raw_voltage = e.kp_V_per_A * error + state.current_integrator_V
