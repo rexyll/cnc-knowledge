@@ -30,6 +30,7 @@ from gantry_joint_drive_path_comparison import (
     _saturation_stage_report,
     _source_document_ids,
     composite_simpson_13,
+    trapezoid_integral,
     normalized_state_error,
     quintic_rest_to_rest,
 )
@@ -152,6 +153,22 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
         self.assertAlmostEqual(metrics["residual"], 4.0 / 3.0, places=14)
         self.assertAlmostEqual(metrics["trapezoid_residual"], 1.0, places=14)
         self.assertNotAlmostEqual(metrics["residual"], metrics["trapezoid_residual"])
+
+    def test_energy_metrics_reject_non_finite_ledger_samples(self) -> None:
+        times = np.array([0.0, 1.0, 2.0])
+        ledger = [
+            {"stored": 0.0, "net": 0.0},
+            {"stored": float("inf"), "net": 1.0},
+            {"stored": 2.0, "net": 0.0},
+        ]
+        with self.assertRaisesRegex(FloatingPointError, "non-finite"):
+            _energy_metrics(times, ledger, energy_scale=1.0, energy_floor=1.0)
+
+    def test_trapezoid_integral_rejects_non_finite_and_mismatched_inputs(self) -> None:
+        with self.assertRaisesRegex(ValueError, "finite"):
+            trapezoid_integral(np.array([0.0, 1.0]), np.array([0.0, np.nan]))
+        with self.assertRaisesRegex(ValueError, "equal length"):
+            trapezoid_integral(np.array([0.0, 1.0]), np.array([0.0]))
 
     def test_current_reference_limiter_detects_adjacent_float_clipping(self) -> None:
         requested = np.nextafter(1.0, np.inf)

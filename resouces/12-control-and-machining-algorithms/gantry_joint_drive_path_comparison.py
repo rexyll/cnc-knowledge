@@ -270,13 +270,27 @@ def composite_simpson_13(time_s: np.ndarray, values: np.ndarray) -> float:
         + 4.0 * np.sum(samples[1:-1:2])
         + 2.0 * np.sum(samples[2:-1:2])
     )
+    if not math.isfinite(float(result)):
+        raise FloatingPointError("Simpson integral overflowed or became non-finite")
     return float(result)
 
 
 def trapezoid_integral(time_s: np.ndarray, values: np.ndarray) -> float:
     times = np.asarray(time_s, dtype=float)
     samples = np.asarray(values, dtype=float)
-    return float(np.sum(0.5 * (samples[:-1] + samples[1:]) * np.diff(times)))
+    if times.ndim != 1 or samples.ndim != 1 or times.shape != samples.shape:
+        raise ValueError("trapezoid input arrays must be one-dimensional and equal length")
+    if times.size < 2:
+        raise ValueError("trapezoid integration requires at least two samples")
+    if not np.all(np.isfinite(times)) or not np.all(np.isfinite(samples)):
+        raise ValueError("trapezoid input arrays must be finite")
+    differences = np.diff(times)
+    if np.any(differences <= 0.0):
+        raise ValueError("trapezoid time grid must be strictly increasing")
+    result = np.sum(0.5 * (samples[:-1] + samples[1:]) * differences)
+    if not math.isfinite(float(result)):
+        raise FloatingPointError("trapezoid integral overflowed or became non-finite")
+    return float(result)
 
 
 def normalized_state_error(
@@ -629,7 +643,7 @@ def _energy_ledger(
             terminal - copper - structural_damping - axis_friction
             + external_power + port_mismatch + lambda_power
         )
-        ledger.append({
+        row = {
             "kinetic": float(kinetic),
             "potential": float(potential),
             "magnetic": float(magnetic),
@@ -647,7 +661,18 @@ def _energy_ledger(
             "port_mismatch": float(port_mismatch),
             "lambda_power": lambda_power,
             "net": float(net_power),
-        })
+        }
+        non_finite = [
+            name for name, value in row.items()
+            if not isinstance(value, bool) and isinstance(value, (int, float, np.number))
+            and not math.isfinite(float(value))
+        ]
+        if non_finite:
+            raise FloatingPointError(
+                f"non-finite energy-ledger terms at sample {index}, t={time_s}: "
+                + ", ".join(non_finite)
+            )
+        ledger.append(row)
     return ledger
 
 
@@ -656,19 +681,30 @@ def _energy_metrics(
 ) -> dict[str, float]:
     energy = np.array([row["stored"] for row in ledger], dtype=float)
     power = np.array([row["net"] for row in ledger], dtype=float)
+    if energy.shape != times.shape or power.shape != times.shape or energy.size < 2:
+        raise ValueError("energy ledger must have one finite energy/power row per time sample")
+    if not np.all(np.isfinite(energy)) or not np.all(np.isfinite(power)):
+        raise FloatingPointError("energy ledger contains non-finite stored-energy or power values")
+    if not all(math.isfinite(float(value)) and float(value) > 0.0
+               for value in (energy_scale, energy_floor)):
+        raise ValueError("energy normalization scale and floor must be finite and positive")
     delta_energy = float(energy[-1] - energy[0])
     input_work = composite_simpson_13(times, power)
     absolute_power_work = composite_simpson_13(times, np.abs(power))
     residual = delta_energy - input_work
     normalization = max(energy_scale, absolute_power_work, energy_floor)
-    return {
+    trapezoid_residual = delta_energy - trapezoid_integral(times, power)
+    metrics = {
         "delta_energy": delta_energy,
         "input_work": input_work,
         "absolute_power_work": absolute_power_work,
         "residual": residual,
         "normalized_residual": abs(residual) / normalization,
-        "trapezoid_residual": delta_energy - trapezoid_integral(times, power),
+        "trapezoid_residual": trapezoid_residual,
     }
+    if not all(math.isfinite(float(value)) for value in metrics.values()):
+        raise FloatingPointError("energy metrics overflowed or became non-finite")
+    return metrics
 
 
 def _convergence(

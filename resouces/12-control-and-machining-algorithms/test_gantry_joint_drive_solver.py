@@ -17,6 +17,8 @@ from gantry_joint_drive_solver import (
     JointState,
     MechanicalParameters,
     SinusoidalBeamGeometry,
+    _scaled_spd_condition_number,
+    _scaled_spd_solve,
 )
 
 
@@ -74,6 +76,54 @@ class TestGantryJointDriveSolver(unittest.TestCase):
         self.assertTrue(np.allclose(mass, mass.T, atol=1e-12, rtol=1e-12))
         self.assertGreater(float(np.min(np.linalg.eigvalsh(mass))), 0.0)
 
+    def test_diagonally_scaled_cholesky_solves_mixed_coordinate_scales(self) -> None:
+        base = np.array([
+            [2.0, 0.10, 0.00],
+            [0.10, 1.5, 0.05],
+            [0.00, 0.05, 1.0],
+        ])
+        coordinate_scales = np.array([1.0e-6, 1.0, 1.0e6])
+        mass = coordinate_scales[:, None] * base * coordinate_scales[None, :]
+        expected = np.array([0.5, -0.25, 2.0])
+        rhs = mass @ expected
+        actual = _scaled_spd_solve(mass, rhs, context="test mass matrix")
+        self.assertTrue(np.allclose(actual, expected, rtol=1e-11, atol=1e-11))
+
+    def test_scaled_mass_condition_indicator_is_unit_scale_invariant(self) -> None:
+        base = np.array([
+            [2.0, 0.10, 0.00],
+            [0.10, 1.5, 0.05],
+            [0.00, 0.05, 1.0],
+        ])
+        coordinate_scales = np.array([1.0e-6, 1.0, 1.0e6])
+        rescaled = coordinate_scales[:, None] * base * coordinate_scales[None, :]
+        self.assertAlmostEqual(
+            _scaled_spd_condition_number(base),
+            _scaled_spd_condition_number(rescaled),
+            places=12,
+        )
+
+    def test_scaled_spd_solver_rejects_non_positive_definite_matrix(self) -> None:
+        with self.assertRaisesRegex(np.linalg.LinAlgError, "positive definite"):
+            _scaled_spd_solve(
+                np.array([[1.0, 2.0], [2.0, 1.0]]),
+                np.array([1.0, 1.0]),
+            )
+
+    def test_mechanical_energy_rejects_finite_state_overflow(self) -> None:
+        model = make_model()
+        state = JointState(
+            q=np.array([0.0, 1.0e308, 0.0, 0.0]),
+            q_dot=np.zeros(4),
+            s=0.5,
+            s_dot=0.0,
+            current_A=0.0,
+            current_integrator_V=0.0,
+        )
+        with np.errstate(over="ignore", invalid="ignore"):
+            with self.assertRaisesRegex(FloatingPointError, "mechanical energy"):
+                model.mechanical_energy(state)
+
     def test_zero_payload_reduces_to_block_diagonal_base_mass(self) -> None:
         model = make_model(payload_mass=0.0)
         mass = model.joint_mass_matrix(np.zeros(4), 0.8)
@@ -95,6 +145,14 @@ class TestGantryJointDriveSolver(unittest.TestCase):
         zdot = np.concatenate((state.q_dot, [state.s_dot]))
         actuator_power = force * model.actuator_relative_velocity(state.q_dot, state.s_dot)
         self.assertAlmostEqual(float(generalized @ zdot), actuator_power, places=12)
+
+    def test_scaled_mass_condition_indicator_is_finite_for_model_mass(self) -> None:
+        model = make_model()
+        value = model.scaled_joint_mass_matrix_condition_number(
+            np.array([1e-4, 2e-4, -3e-5, 5e-4]), 0.72
+        )
+        self.assertTrue(np.isfinite(value))
+        self.assertGreaterEqual(value, 1.0)
 
     def test_zero_speed_electrical_decay_matches_rl_limit(self) -> None:
         model = make_model()

@@ -16,6 +16,78 @@ from numpy.typing import NDArray
 FloatArray = NDArray[np.float64]
 
 
+def _diagonal_scaled_symmetric_matrix(matrix: object) -> tuple[FloatArray, FloatArray]:
+    """Return diagonal scales and a unit-diagonal symmetric matrix.
+
+    Diagonal equilibration removes the arbitrary magnitude differences between
+    generalized-coordinate units before an SPD factorization. It does not alter
+    the underlying linear system when used with the corresponding RHS scaling.
+    """
+    values = np.asarray(matrix, dtype=np.float64)
+    if values.ndim != 2 or values.shape[0] != values.shape[1] or values.shape[0] == 0:
+        raise ValueError("SPD matrix must be non-empty and square")
+    if not np.all(np.isfinite(values)):
+        raise FloatingPointError("SPD matrix contains non-finite values")
+    diagonal = np.diag(values)
+    if np.any(diagonal <= 0.0):
+        raise np.linalg.LinAlgError("SPD matrix must have a strictly positive diagonal")
+    scales = np.sqrt(diagonal)
+    scaled = (values / scales[:, None]) / scales[None, :]
+    if not np.all(np.isfinite(scaled)):
+        raise FloatingPointError("diagonally scaled SPD matrix contains non-finite values")
+    asymmetry = float(np.max(np.abs(scaled - scaled.T)))
+    if asymmetry > 1.0e-10:
+        raise ValueError(
+            f"SPD matrix is not symmetric after diagonal scaling (max error={asymmetry})"
+        )
+    scaled = 0.5 * scaled + 0.5 * scaled.T
+    return scales, scaled
+
+
+def _scaled_spd_condition_number(matrix: object) -> float:
+    """Return the condition number of the diagonally normalized SPD matrix.
+
+    This dimensionless coupling indicator is not the raw condition number of a
+    mixed-unit generalized-coordinate matrix, and no universal pass threshold
+    is implied. It is intended for configuration diagnostics and comparison.
+    """
+    _scales, scaled = _diagonal_scaled_symmetric_matrix(matrix)
+    eigenvalues = np.linalg.eigvalsh(scaled)
+    smallest = float(eigenvalues[0])
+    largest = float(eigenvalues[-1])
+    if smallest <= 0.0:
+        return float("inf")
+    return largest / smallest
+
+
+def _scaled_spd_solve(
+    matrix: object, right_hand_side: object, *, context: str = "mass matrix"
+) -> FloatArray:
+    """Solve A x=b using diagonal equilibration and Cholesky factorization."""
+    scales, scaled = _diagonal_scaled_symmetric_matrix(matrix)
+    rhs = np.asarray(right_hand_side, dtype=np.float64)
+    if rhs.shape != (scales.size,):
+        raise ValueError("SPD right-hand side must have one entry per matrix row")
+    if not np.all(np.isfinite(rhs)):
+        raise FloatingPointError(f"{context} right-hand side contains non-finite values")
+    scaled_rhs = rhs / scales
+    if not np.all(np.isfinite(scaled_rhs)):
+        raise FloatingPointError(f"{context} scaled right-hand side is non-finite")
+    try:
+        factor = np.linalg.cholesky(scaled)
+        scaled_solution = np.linalg.solve(
+            factor.T, np.linalg.solve(factor, scaled_rhs)
+        )
+    except np.linalg.LinAlgError as error:
+        raise np.linalg.LinAlgError(
+            f"{context} is not numerically positive definite after diagonal scaling"
+        ) from error
+    solution = scaled_solution / scales
+    if not np.all(np.isfinite(solution)):
+        raise FloatingPointError(f"{context} solution contains non-finite values")
+    return np.asarray(solution, dtype=np.float64)
+
+
 def _readonly_float_array(values: object) -> FloatArray:
     """Return a private float array backed by an immutable bytes buffer."""
     copied = np.array(values, dtype=np.float64, copy=True, order="C")
@@ -302,7 +374,18 @@ class GantryJointDriveModel:
         base = np.zeros((self.nq + 1, self.nq + 1), dtype=float)
         base[:self.nq, :self.nq] = self.mechanical.M0
         base[-1, -1] = self.mechanical.axis_equivalent_mass_kg
-        return base + self.mechanical.payload_mass_kg * (J.T @ J)
+        mass = base + self.mechanical.payload_mass_kg * (J.T @ J)
+        if not np.all(np.isfinite(mass)):
+            raise FloatingPointError("joint mass matrix contains non-finite values")
+        return mass
+
+    def scaled_joint_mass_matrix_condition_number(self, q: FloatArray, s: float) -> float:
+        """Return the diagonal-normalized condition indicator for M(q,s).
+
+        This is dimensionless and useful for spotting strong inertia coupling;
+        it is not a raw mixed-unit matrix condition number or an acceptance test.
+        """
+        return _scaled_spd_condition_number(self.joint_mass_matrix(q, s))
 
     def actuator_relative_velocity(self, q_dot: FloatArray, s_dot: float) -> float:
         velocity = np.concatenate((q_dot, [s_dot]))
@@ -323,13 +406,18 @@ class GantryJointDriveModel:
             - m.payload_mass_kg
             * (m.gravity_acceleration_m_s2 @ g["r"])
         )
+        if not np.all(np.isfinite([kinetic, potential])):
+            raise FloatingPointError("mechanical energy overflowed or became non-finite")
         return float(kinetic), float(potential)
 
     def total_stored_energy(self, state: JointState) -> float:
         """Mechanical energy plus the equivalent inductor magnetic energy."""
         kinetic, potential = self.mechanical_energy(state)
         magnetic = 0.5 * self.electrical.inductance_h * state.current_A**2
-        return float(kinetic + potential + magnetic)
+        stored = kinetic + potential + magnetic
+        if not np.all(np.isfinite([magnetic, stored])):
+            raise FloatingPointError("stored energy overflowed or became non-finite")
+        return float(stored)
 
     def electrical_diagnostics(self, state: JointState, current_command_A: float) -> dict[str, float | bool]:
         """Validate public inputs and return the continuous current-loop diagnostics."""
@@ -353,6 +441,11 @@ class GantryJointDriveModel:
             e.ki_V_per_A_s * error
             + e.antiwindup_gain_per_s * (voltage - raw_voltage)
         )
+        numeric_diagnostics = np.array([
+            i_ref, error, raw_voltage, voltage, ell_dot, current_rate, integrator_rate
+        ], dtype=float)
+        if not np.all(np.isfinite(numeric_diagnostics)):
+            raise FloatingPointError("electrical diagnostics overflowed or became non-finite")
         return {
             "current_reference_A": i_ref,
             "current_error_A": error,
@@ -420,7 +513,7 @@ class GantryJointDriveModel:
             actuator_generalized_force + external
             - bias - damping - potential_gradient
         )
-        acceleration = np.linalg.solve(mass, rhs)
+        acceleration = _scaled_spd_solve(mass, rhs, context="joint mass matrix")
         q_ddot = acceleration[:self.nq]
         s_ddot = float(acceleration[-1])
 
@@ -593,7 +686,9 @@ class GantryJointDriveModel:
             - potential_gradient[:n]
             - mass[:n, n] * path_acceleration_m_s2
         )
-        q_ddot = np.linalg.solve(mass[:n, :n], rhs_q)
+        q_ddot = _scaled_spd_solve(
+            mass[:n, :n], rhs_q, context="prescribed-path structural mass matrix"
+        )
 
         constraint_force_N = float(
             mass[n, :n] @ q_ddot
