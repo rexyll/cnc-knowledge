@@ -89,3 +89,10 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **处理：** 电流指令与外部力回调分别接收从当前RK4阶段向量独立解包得到的状态快照。回调修改不会跨回调共享，也不改变积分状态。新增 test_simulation_callbacks_receive_independent_stage_state_snapshots，专门让两个回调改写坐标数组并检查隔离行为。
 - **资源测试：** 由15项增至16项；**未执行**。仓库知识结构CI不运行 resouces/ 下的资源测试。
 - **验证边界：** 本次仅完成静态代码审查、实现和测试用例编写；没有数值仿真、步长收敛、能量平衡或真实驱动器/HIL验证。CH12-T003继续 IN_PROGRESS。
+
+## RK4阶段回调状态快照隔离切片CI验收（2026-11-23）
+
+- **内容提交：** `61835e5043e32e639f56366ba7a311d660dab03d`，更新求解器、16项资源测试、专题正文、资源README、ASSET-INDEX、本章TaskPlan和历史记录。
+- **GitHub Actions：** [Run 45128932385](https://github.com/rexyll/cnc-knowledge/actions/runs/45128932385) success；单元测试步骤和 strict knowledge lint 步骤均成功。
+- **验收边界：** CI未执行 resouces/ 下的16项求解器测试。该结果不等于新资源测试通过，不代表资源仿真、步长收敛、能量平衡、参数辨识或实机/HIL验证完成。
+- **任务状态：** CH12-T003继续 `IN_PROGRESS`。
