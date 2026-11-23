@@ -219,3 +219,10 @@
 
 
 **追加模型边界澄清（2026-11-23）：电流指令参考限幅不等同实际电流硬限幅。** 当前 `current_limit_A` 只裁剪电流指令参考值，模型没有把状态电流 `current_A` 瞬时裁剪，也没有模拟驱动器硬件过流比较器、关断、故障锁存或热降额。更新参数/接口说明和专题限制，强化原参考限幅测试，并新增超限状态电流按RL动态变化的回归用例；资源测试由14项增至15项。测试尚未执行；CH12-T003继续 IN_PROGRESS。
+
+
+### CH12-T003 电流参考限幅边界切片CI验收（2026-11-23）
+
+- 代码/文档提交 `d9b9afbc2948f7b6f9a1e7a148fca96f67026db3` 对应 GitHub Actions [Run 45126336210](https://github.com/rexyll/cnc-knowledge/actions/runs/45126336210) success；测试文件补正提交 `49e52d14c51fb6d2378fb85254f97d35716ff787` 对应 [Run 45126386640](https://github.com/rexyll/cnc-knowledge/actions/runs/45126386640) success。
+- 两轮仓库既有测试均5/5通过，strict knowledge lint均PASS（0 errors）；CI扫描统计22章、130 Markdown、407内部链接、143实体、240关系、371来源、660处正文引用。
+- 实际资源测试文件包含15个测试方法，但资源级测试未由仓库CI执行；没有验证实际驱动器的硬件过流保护。CH12-T003继续 `IN_PROGRESS`。
