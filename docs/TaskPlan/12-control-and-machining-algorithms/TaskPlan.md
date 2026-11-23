@@ -370,3 +370,16 @@
 - **CI验收：** 内容提交 e063555b9b48104e29f83a25ed8e258f0bc1a734 对应 [Run 45190354624](https://github.com/rexyll/cnc-knowledge/actions/runs/45190354624) success；仓库单元测试步骤与strict knowledge lint均成功，该CI不执行资源级测试。
 - **静态核对：** PATH-01辅助测试方法20项、求解器测试25项，共45项资源测试均未执行；时序/汇总CSV运行器字段均为73列，分别与模板名称及顺序一致；输出发布顺序为移除旧manifest、替换两份CSV、最后发布新manifest。
 - **状态：** CH12-T003继续 IN_PROGRESS；PATH-01与验证矩阵8项维持 NOT_RUN。
+
+
+### CH12-T003 PATH-01独立归档校验与配置/CLI边界强化（2026-11-23）
+
+- **归档校验缺口：** 原manifest虽保存CSV摘要，但没有独立CLI验真入口。新增 `--verify-archive --output-dir <dir>`，无需原配置、不构造模型、不执行仿真。
+- **校验内容：** 固定时序/汇总文件名与manifest映射、manifest schema_version 2/case/status、两份CSV SHA-256/字节数/数据行数/列数、精确表头及每行列宽；拒绝manifest路径覆盖。返回 `VERIFIED` 时同时保留原运行 `recorded_run_status`，明确其只表示归档元数据一致，不代表数值或工程验收有效。
+- **配置边界：** 要求schema_version为整数1（拒绝布尔true）；来源文档/测量ID数组必须显式存在，无ID时填空数组；非null验收profile ID必须为非空字符串并规范化。
+- **异常边界：** 超大整数转float溢出转为配置错误；步长比值必须有限且落在平台索引范围，并确保h/8细化后的区间数可表示。CLI增加无配置归档校验模式，对文件/JSON/配置/溢出/模型运行异常显示 `PATH-01 ERROR` 并返回2。
+- **回归用例：** PATH-01运行器测试由20项增至32项，涵盖归档校验、同尺寸哈希篡改、manifest状态类型、路径覆盖拒绝、配置schema/source ID、数值溢出/细化索引及CLI成功/失败路径；求解器测试25项不变，共57项资源测试全部未执行。
+- **同步文件：** PATH-01运行器/测试、资源README、ASSET-INDEX、数值验证协议5.9节、专题正文7.6.18节与本章TaskPlan/History。
+- **CI验收：** 内容提交 `decf6ce69653d9fb82f5a88fc1c548becd4eb76f` 对应 [Run 45199785490](https://github.com/rexyll/cnc-knowledge/actions/runs/45199785490) success；仓库单元测试和strict knowledge lint均成功。该CI不运行resouces资源测试。
+- **静态核对：** 运行器测试方法32项；验证器拒绝manifest路径覆盖并核对SHA/字节数/表头/行列，CLI独立验证不需要配置；schema/来源ID/数值边界检查在积分前执行。
+- **状态与边界：** PATH-01仍为 `NOT_RUN`，验证矩阵8项仍全部 `NOT_RUN`；没有执行57项资源测试或任何数值仿真，亦无实机/HIL结论。CH12-T003继续 `IN_PROGRESS`。

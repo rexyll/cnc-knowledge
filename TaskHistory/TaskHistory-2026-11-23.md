@@ -278,3 +278,15 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **CI验收：** 内容提交 e063555b9b48104e29f83a25ed8e258f0bc1a734 对应 GitHub Actions [Run 45190354624](https://github.com/rexyll/cnc-knowledge/actions/runs/45190354624) success；仓库单元测试与strict knowledge lint步骤均成功。该CI不执行resouces资源测试。
 - **静态核对：** PATH-01运行器测试方法20项、求解器测试25项，共45项资源测试均未执行；时序CSV和汇总CSV均为73列，字段名及顺序分别与模板一致。代码静态顺序检查确认发布步骤为旧manifest移除→时序CSV→汇总CSV→新manifest。
 - **验证边界：** PATH-01仿真未执行，验证矩阵8项仍全部 NOT_RUN，无数值仿真或HIL结果；CH12-T003继续 IN_PROGRESS。
+
+
+### CH12-T003 PATH-01独立归档校验与配置/CLI异常边界强化（2026-11-23）
+
+- **缺口一：** manifest已保存两份CSV SHA-256，但此前没有独立验证命令；现在新增 `--verify-archive --output-dir`，无需原始配置文件，也不运行模型。
+- **归档校验实现：** 核对manifest schema_version=2、case/status、固定文件名映射；逐个CSV核对SHA-256、字节数、表头、每行列数与数据行数，并防止manifest把校验目标改指向其他路径。输出状态 `VERIFIED` 并额外给出manifest记录的真实运行状态，避免把文件完整性误解为工程PASS。
+- **输入配置修正：** schema_version只接受JSON整数1；明确要求来源ID数组存在，无独立ID使用 `[]`；非null profile ID不允许为空字符串/空白。
+- **CLI/数值错误修正：** 捕获超大整数float转换溢出；拒绝非有限或超出平台范围的duration/base_step比值，并校验h/8细化后区间计数；CLI增加无配置归档校验模式，对已知I/O、JSON、配置、溢出及运行错误返回2并显示原因。
+- **测试用例：** PATH-01运行器测试由20项增加到32项，新增覆盖归档正常验证、同大小文件篡改、manifest状态类型/路径覆盖、配置schema/source-ID要求、数值转换和细化索引边界、CLI verify与缺失配置错误。求解器测试25项保持不变，共57项资源级测试全部未执行。
+- **同步文件：** PATH-01运行器及测试、资源README、ASSET-INDEX、数值验证协议5.9节、专题正文7.6.18节、本章TaskPlan与本历史。
+- **CI验收：** 内容提交 `decf6ce69653d9fb82f5a88fc1c548becd4eb76f` 对应 [Run 45199785490](https://github.com/rexyll/cnc-knowledge/actions/runs/45199785490) success；既有仓库单元测试步骤与strict knowledge lint步骤均成功。Knowledge Quality CI不执行 `resouces/` 资源测试。
+- **验证边界：** 本轮没有执行PATH-01仿真或57项资源测试；验证矩阵8项仍全部 `NOT_RUN`，没有生成轨迹/收敛/能量数值或HIL证据。CH12-T003保持 `IN_PROGRESS`。
