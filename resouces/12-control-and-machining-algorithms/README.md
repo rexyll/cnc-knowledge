@@ -112,3 +112,16 @@
 - gantry-joint-drive-path-comparison-timeseries-template.csv：按统一输出时间栅格记录参考/自由/受约束路径、结构状态、移动负载点、约束力/功率及储能/功率账本的列定义。
 - gantry-joint-drive-path-comparison-summary-template.csv：记录路径误差、混合单位结构差、负载点偏差、约束力峰值/RMS、约束功、能量残差、收敛阶数和验收结论的列定义。
 - 三份文件均为空白模板；所有数值字段尚未填写，PATH-01保持 NOT_RUN，不可当作已执行仿真结果。
+
+
+## PATH-01独立对照运行器（2026-11-23）
+
+- gantry_joint_drive_path_comparison.py：读取已填写的PATH-01配置JSON，构造联合模型、解析五次静止—静止路径、共用确定性PD电流参考回调及恒定外部广义力；依次运行自由轴和规定路径模型的h、h/2、h/4、h/8四档细化。
+- 时序CSV按四档网格合并记录路径/结构/负载点、电气端电压、各项功率和储能；汇总CSV记录逐分量归一化误差、自由轴路径误差、约束力峰值/RMS、约束功、能量残差和RK4观测阶数；同时生成包含配置/求解器/运行器SHA与运行环境的JSON manifest。
+- 能量账本采用实际限幅端电压v*i、铜耗、结构阻尼、路径摩擦、外部广义力功率、(Kf-Ke)*i*ell_dot常数不匹配项；规定路径模型另加lambda*sdot_ref。PI积分器不计入物理储能。
+- 运行器v1仅支持确定性PD电流参考回调、常值前馈电流和常值五维外部广义力；不用前馈或外力时也必须在配置中显式填写数值零，不支持从JSON执行任意代码/用户脚本回调。
+- 首先复制配置模板为独立配置文件，填写全部参数和容差；feedforward_current_A、external_generalized_force_constant不可留空。复合Simpson 1/3要求基准区间数为偶数，路径端点必须位于0至几何跨度内。
+- 运行命令（从仓库根目录执行，配置文件名为示例占位）：
+  python resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comparison.py --config resouces/12-control-and-machining-algorithms/generated/path-01/config.json --output-dir resouces/12-control-and-machining-algorithms/generated/path-01/results
+- 配置中全部工程验收阈值都填写后才会给出PASS/FAIL；任一阈值为空且收敛筛查成功时状态为COMPLETED_REPORT_ONLY，只做描述性输出；步长收敛筛查失败为FAIL。
+- test_gantry_joint_drive_path_comparison.py：7项纯函数资源测试，覆盖五次轨迹端点/中点/越界、Simpson积分和逐分量误差归一化。该测试文件和PATH-01运行器尚未执行；仓库CI不执行资源模块。

@@ -71,3 +71,13 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | gantry-joint-drive-path-comparison-summary-template.csv | CSV汇总模板 | 路径/结构/负载点误差、lambda峰值/RMS、约束功、能量残差、收敛阶数及验收状态字段 | 项目原创 | 2026-11-23 | 原创模板 | 同上 |
 
 以上为未填写模板，不包含参数、结果或验收通过声明。
+
+
+## PATH-01执行器和资源测试（2026-11-23）
+
+| 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
+|---|---|---|---|---|---|---|
+| gantry_joint_drive_path_comparison.py | Python源码 | PATH-01四档步长自由轴/理想规定路径比较运行器；输出逐点时序、归一化误差、约束反力/约束功、机电能量账本和运行manifest | 项目原创 | 2026-11-23 | 原创代码 | 龙门连续移动负载与双向耦合专题 |
+| test_gantry_joint_drive_path_comparison.py | Python测试 | 7项资源级纯函数测试：五次参考路径、端点条件/中点解析值/越界拒绝、Simpson 1/3、混合单位逐分量误差归一化与非法容差拒绝 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
+
+新增7项运行器资源测试尚未执行；加上求解器原有24项，PATH/求解器资源测试合计31项，仓库CI均不执行。
