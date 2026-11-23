@@ -19,6 +19,14 @@ from unittest.mock import patch
 import numpy as np
 
 import gantry_joint_drive_path_comparison as path_runner
+from gantry_joint_drive_solver import (
+    ActuatorKinematics,
+    CurrentLoopParameters,
+    GantryJointDriveModel,
+    JointState,
+    MechanicalParameters,
+    SinusoidalBeamGeometry,
+)
 from gantry_joint_drive_path_comparison import (
     _interval_count,
     _number,
@@ -27,6 +35,7 @@ from gantry_joint_drive_path_comparison import (
     _acceptance_decision,
     _current_reference_was_limited,
     _energy_metrics,
+    _energy_ledger,
     _saturation_stage_report,
     _source_document_ids,
     composite_simpson_13,
@@ -36,6 +45,55 @@ from gantry_joint_drive_path_comparison import (
 )
 
 
+def make_energy_ledger_model(
+    force_constant_N_per_A: float = 4.2,
+    back_emf_V_per_m_s: float = 3.7,
+) -> GantryJointDriveModel:
+    """Build a zero-damping model for exact power-ledger sign checks."""
+    mechanics = MechanicalParameters(
+        M0=np.diag([75.0, 12.0, 9.0, 2.0]),
+        D0=np.zeros((4, 4)),
+        K0=np.zeros((4, 4)),
+        payload_mass_kg=0.0,
+        axis_equivalent_mass_kg=8.0,
+        gravity_acceleration_m_s2=np.zeros(3),
+        axis_viscous_Ns_m=0.0,
+        axis_coulomb_N=0.0,
+        friction_smoothing_speed_m_s=0.01,
+    )
+    electrical = CurrentLoopParameters(
+        resistance_ohm=1.5,
+        inductance_h=0.02,
+        back_emf_V_per_m_s=back_emf_V_per_m_s,
+        force_constant_N_per_A=force_constant_N_per_A,
+        current_limit_A=8.0,
+        voltage_min_V=-48.0,
+        voltage_max_V=48.0,
+        kp_V_per_A=1.0,
+        ki_V_per_A_s=0.0,
+        antiwindup_gain_per_s=0.0,
+    )
+    actuator = ActuatorKinematics(
+        q_coefficients=np.array([1.0, 0.0, 0.0, 0.0]),
+        s_coefficient=1.0,
+    )
+    return GantryJointDriveModel(
+        SinusoidalBeamGeometry(span_m=1.6),
+        mechanics,
+        electrical,
+        actuator,
+    )
+
+
+def make_energy_ledger_state(path_velocity_m_s: float = 0.2) -> JointState:
+    return JointState(
+        q=np.zeros(4),
+        q_dot=np.array([0.4, 0.0, 0.0, 0.0]),
+        s=0.5,
+        s_dot=path_velocity_m_s,
+        current_A=2.0,
+        current_integrator_V=0.0,
+    )
 class TestPathComparisonRunnerHelpers(unittest.TestCase):
     def test_quintic_path_rest_to_rest_endpoint_conditions(self) -> None:
         start = quintic_rest_to_rest(0.0, 0.25, 0.85, 2.0)
@@ -142,6 +200,56 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate identifier"):
             _source_document_ids(["SRC-1", " SRC-1 "])
 
+    def test_energy_ledger_port_mismatch_sign_matches_power_reciprocity(self) -> None:
+        state = make_energy_ledger_state()
+        times = np.array([0.0])
+        external = np.zeros(5)
+        path = np.array([[state.s, state.s_dot, 0.0]])
+        for force_constant, back_emf, expected in (
+            (4.2, 3.7, 0.6),
+            (3.7, 4.2, -0.6),
+            (4.0, 4.0, 0.0),
+        ):
+            with self.subTest(force_constant=force_constant, back_emf=back_emf):
+                model = make_energy_ledger_model(force_constant, back_emf)
+                states = np.array([model.pack(state)])
+                ledger = _energy_ledger(
+                    model, times, states, lambda _time, _state: 0.5,
+                    external, np.zeros(1), path, constrained=False,
+                )
+                self.assertAlmostEqual(ledger[0]["port_mismatch"], expected, places=12)
+                expected_net = (
+                    ledger[0]["terminal"] - ledger[0]["copper"]
+                    - ledger[0]["structural_damping"] - ledger[0]["axis_friction"]
+                    + ledger[0]["external"] + expected
+                )
+                self.assertAlmostEqual(ledger[0]["net"], expected_net, places=12)
+
+    def test_energy_ledger_constraint_power_sign_matches_lambda_times_path_speed(self) -> None:
+        model = make_energy_ledger_model()
+        external = np.zeros(5)
+        for path_speed, reaction, expected_power in ((0.2, 5.0, 1.0), (-0.2, 5.0, -1.0)):
+            state = make_energy_ledger_state(path_speed)
+            ledger = _energy_ledger(
+                model, np.array([0.0]), np.array([model.pack(state)]),
+                lambda _time, _state: 0.5, external,
+                np.array([reaction]),
+                np.array([[state.s, path_speed, 0.0]]),
+                constrained=True,
+            )
+            self.assertAlmostEqual(ledger[0]["lambda_power"], expected_power, places=12)
+
+    def test_free_energy_ledger_excludes_constraint_reaction_power(self) -> None:
+        model = make_energy_ledger_model()
+        state = make_energy_ledger_state()
+        ledger = _energy_ledger(
+            model, np.array([0.0]), np.array([model.pack(state)]),
+            lambda _time, _state: 0.5, np.zeros(5),
+            np.array([1.0e6]),
+            np.array([[state.s, state.s_dot, 0.0]]),
+            constrained=False,
+        )
+        self.assertEqual(ledger[0]["lambda_power"], 0.0)
     def test_energy_metrics_report_trapezoid_residual(self) -> None:
         times = np.array([0.0, 1.0, 2.0])
         ledger = [
