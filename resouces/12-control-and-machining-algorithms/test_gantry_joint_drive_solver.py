@@ -192,6 +192,33 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             delta=max(1.0e-5, abs(expected_rate) * 1.0e-3),
         )
 
+    def test_rk4_stage_times_match_returned_grid_with_rounded_step_count(self) -> None:
+        model = make_model(payload_mass=0.0)
+        initial = JointState(
+            q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
+            current_A=0.0, current_integrator_V=0.0,
+        )
+        stage_times: list[float] = []
+        duration = 1.0
+        requested_step = 0.10000000005
+
+        times, _ = model.simulate(
+            initial,
+            duration_s=duration,
+            step_s=requested_step,
+            current_command=lambda time_s, _state: stage_times.append(time_s) or 0.0,
+        )
+
+        # Per RK4 step, evaluations are k1, k2, k3, k4. The k4
+        # timestamp must coincide with the next returned output-grid point.
+        for index in range(len(times) - 1):
+            k4_time = stage_times[4 * index + 3]
+            next_step_time = stage_times[4 * (index + 1)]
+            self.assertAlmostEqual(
+                k4_time, next_step_time, delta=2.0e-15
+            )
+        self.assertEqual(len(times), 11)
+
     def test_path_coordinate_is_integrated_as_a_free_state(self) -> None:
         base = make_model(payload_mass=0.0)
         mechanics = MechanicalParameters(

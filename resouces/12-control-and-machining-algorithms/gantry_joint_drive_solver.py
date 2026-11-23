@@ -453,13 +453,13 @@ class GantryJointDriveModel:
             force = None if external_force is None else external_force(t, x)
             return self.derivative(t, y, command, force)
 
+        h = duration_s / count
         times = np.linspace(0.0, duration_s, count + 1)
         states = np.empty((count + 1, 2 * self.nq + 4), dtype=float)
         states[0] = self.pack(initial_state)
         y = states[0].copy()
         for index in range(count):
             t = times[index]
-            h = step_s
             k1 = evaluate(t, y)
             k2 = evaluate(t + 0.5*h, y + 0.5*h*k1)
             k3 = evaluate(t + 0.5*h, y + 0.5*h*k2)
