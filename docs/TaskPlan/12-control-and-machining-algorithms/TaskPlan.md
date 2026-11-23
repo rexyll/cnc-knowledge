@@ -279,3 +279,6 @@
 - 修复提交 `0fc31fa0589ce0c8358d2c6e2291817fe1a947a4` 将6条路径统一改为两级上跳；[Run 45170044496](https://github.com/rexyll/cnc-knowledge/actions/runs/45170044496) success，单元测试5/5成功，strict knowledge lint PASS。
 - PATH-01配置/结果模板已归档，参数/阈值保持空值；PATH-01仍为 `NOT_RUN`。仓库CI不运行 `resouces/` 下的24项求解器资源测试。
 - CH12-T003继续 `IN_PROGRESS`。
+
+
+追加执行切片（2026-11-23）：PATH-01独立对照运行器。新增 gantry_joint_drive_path_comparison.py，将填写后的JSON配置转换为自由轴/规定路径两套求解器的同一几何、机械、电气、初始状态、确定性PD电流回调和常值五维外载；自动执行 h/h2/h4/h8 四档并生成时序CSV、汇总CSV及运行manifest。能量账本拆分端电压功率、铜耗、结构阻尼、轴摩擦、外部功率、(Kf-Ke)*i*ell_dot 与约束功 lambda*sdot_ref。明确v1只支持常值前馈与常值外载，不执行任意JSON代码。增加7项辅助资源测试；24项求解器测试与7项运行器测试均未执行。路径配置、步长、容差、能量尺度和工程阈值均保持待填写，PATH-01继续 NOT_RUN。

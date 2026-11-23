@@ -212,7 +212,7 @@ E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{presc
 5. 在资源测试完成后进行 PATH-01；自由轴与规定轨迹两侧各自完成步长收敛后再对照。
 6. 所有完整输出、配置和结果文件保存到 `resouces/12-control-and-machining-algorithms/`，并登记 `ASSET-INDEX.md`。PATH-01配置模板和两份CSV空白模板只定义输入/输出格式，不包含参数或结果；执行后另存带配置SHA/求解器SHA的实际文件，不覆盖模板。
 
-每个结果文件必须记录 `case_id`、参数配置SHA、代码SHA、时间网格、所有状态量单位、容差、求积方法（若适用）、关键指标、运行命令、环境信息、退出码及 `PASS/FAIL/NOT_RUN/BLOCKED` 状态。保留原始输出，不只保存摘要表。
+每个结果文件必须记录 `case_id`、参数配置SHA、代码SHA、时间网格、所有状态量单位、容差、求积方法（若适用）、关键指标、运行命令、环境信息、退出码及 `PASS/FAIL/NOT_RUN/BLOCKED/COMPLETED_REPORT_ONLY` 状态。保留原始输出，不只保存摘要表。
 
 ## 7. 本轮当前状态
 
@@ -220,3 +220,22 @@ E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{presc
 - PATH-01 的参考积分器已实现，但数值对照仍为 `NOT_RUN`。
 - 现有24项资源测试仍未执行；本轮没有新增数值计算。
 - CH12-T003 继续 `IN_PROGRESS`；真实机床参数辨识及HIL/实机验证未完成。
+
+
+### 5.2 PATH-01运行器、输入字段与结果状态
+
+独立运行器为 resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comparison.py，只读取JSON数值配置，不执行任意代码。v1固定支持解析五次静止—静止路径、确定性PD电流参考回调、常值前馈电流和常值五维外部广义力。电流命令为 i_cmd=i_ff+Kp_pos*(s_ref-s)+Kd_vel*(sdot_ref-sdot)。自由与规定路径两侧调用同一回调实现；理想规定路径侧的反馈误差按其受约束状态自然为零。外部力向量顺序必须显式为 [Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]。不启用前馈/外载时分别填写明确数值零，不留空，也不得把执行器力重复计入外载。
+
+运行前必须填写：
+- provenance.parameter_source：说明实测/厂商资料来源或明确的synthetic fixture标识；
+- 几何、M0/D0/K0、负载/轴等效质量、重力、摩擦、电气/PI参数、执行器运动映射和初始状态；
+- prescribed_path.s0_m/s1_m/duration_s 与同值的 integration.duration_s，且路径两端必须位于 [0,geometry_span_m]；
+- controller_and_loads.Kp_pos_A_per_m/Kd_vel_A_s_per_m/feedforward_current_A 和五维 external_generalized_force_constant；
+- q、qdot、s、sdot、电流和PI积分状态各自的绝对/相对容差；正的 energy_normalization_scale_J 与 energy_normalization_floor_J；
+- 若需要工程PASS/FAIL，再预先填写全部7个acceptance阈值；不完整阈值只能报告，不允许事后补阈值改变结论。
+
+基准步长区间数必须是偶数且可整除总时长，运行器自动执行 h、h/2、h/4、h/8。自由与规定路径模型分别计算相邻细化差值 D_h、D_h/2、D_h/4，并检查单调下降及最后两个观测阶数不低于3.0；该规则是数值质量筛查，不是工程精度证明。四档的全部时序行写入同一个CSV，单工况四行汇总另存CSV，另生成manifest保存配置SHA、求解器/运行器文件SHA、Git SHA、Python/NumPy/OS/CPU/BLAS环境、命令行和收敛筛查结果。
+
+能量功率预算显式拆分端电压功率、铜耗、结构阻尼、路径摩擦、外部广义力功率，以及互易常数不匹配项 (Kf-Ke)*i*ell_dot；受约束模型额外计入 lambda*sdot_ref。结果同时提供复合Simpson 1/3和梯形求积的约束功敏感性值。
+
+结果状态定义：数值筛查失败记为FAIL；全部工程阈值已预先填写且全部满足才记为PASS；无完整工程阈值但数值筛查成功记为COMPLETED_REPORT_ONLY。该报告状态不得解释为工程验收通过。资源运行器和新增7项辅助测试目前均未执行，验证矩阵PATH-01仍为NOT_RUN。
