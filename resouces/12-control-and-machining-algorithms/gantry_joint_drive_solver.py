@@ -292,10 +292,15 @@ class GantryJointDriveModel:
         for name, values in numeric_arrays.items():
             if not np.all(np.isfinite(values)):
                 raise ValueError(f"{name} must contain only finite values")
-        if not np.allclose(m.M0, np.asarray(m.M0).T, atol=1e-10, rtol=1e-10):
-            raise ValueError("M0 must be symmetric")
-        if np.min(np.linalg.eigvalsh(m.M0)) <= 0.0:
-            raise ValueError("M0 must be positive definite")
+        # Match the scale used by the runtime SPD solve: the raw M0 mixes
+        # translational and rotational generalized-coordinate units.
+        try:
+            _m0_scales, normalized_m0 = _diagonal_scaled_symmetric_matrix(m.M0)
+            np.linalg.cholesky(normalized_m0)
+        except np.linalg.LinAlgError as error:
+            raise ValueError(
+                "M0 must be positive definite after diagonal scaling"
+            ) from error
         if np.min(np.linalg.eigvalsh(m.D0)) < -1e-10:
             raise ValueError("D0 must be positive semidefinite")
         if np.min(np.linalg.eigvalsh(m.K0)) < -1e-10:

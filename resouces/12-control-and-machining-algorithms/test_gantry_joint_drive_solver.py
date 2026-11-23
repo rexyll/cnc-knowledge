@@ -124,6 +124,55 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             with self.assertRaisesRegex(FloatingPointError, "mechanical energy"):
                 model.mechanical_energy(state)
 
+    def test_model_accepts_positive_definite_M0_across_mixed_coordinate_scales(self) -> None:
+        base = make_model()
+        normalized = np.array([
+            [2.0, 0.10, 0.02, 0.03],
+            [0.10, 1.5, 0.05, 0.02],
+            [0.02, 0.05, 1.2, 0.04],
+            [0.03, 0.02, 0.04, 1.0],
+        ])
+        coordinate_scales = np.array([1.0e-100, 1.0e-30, 1.0e30, 1.0e100])
+        mixed_scale_M0 = (
+            coordinate_scales[:, None] * normalized * coordinate_scales[None, :]
+        )
+        mechanics = MechanicalParameters(
+            M0=mixed_scale_M0,
+            D0=base.mechanical.D0.copy(),
+            K0=base.mechanical.K0.copy(),
+            payload_mass_kg=base.mechanical.payload_mass_kg,
+            axis_equivalent_mass_kg=base.mechanical.axis_equivalent_mass_kg,
+            gravity_acceleration_m_s2=base.mechanical.gravity_acceleration_m_s2.copy(),
+            axis_viscous_Ns_m=base.mechanical.axis_viscous_Ns_m,
+            axis_coulomb_N=base.mechanical.axis_coulomb_N,
+            friction_smoothing_speed_m_s=base.mechanical.friction_smoothing_speed_m_s,
+        )
+        model = GantryJointDriveModel(
+            base.geometry, mechanics, base.electrical, base.actuator
+        )
+        self.assertTrue(np.array_equal(model.mechanical.M0, mixed_scale_M0))
+
+    def test_model_rejects_indefinite_M0_after_diagonal_scaling(self) -> None:
+        base = make_model()
+        normalized = np.eye(4)
+        normalized[0, 1] = normalized[1, 0] = 1.5
+        coordinate_scales = np.array([1.0e-80, 1.0e-20, 1.0e20, 1.0e80])
+        indefinite_M0 = (
+            coordinate_scales[:, None] * normalized * coordinate_scales[None, :]
+        )
+        mechanics = MechanicalParameters(
+            M0=indefinite_M0,
+            D0=base.mechanical.D0.copy(),
+            K0=base.mechanical.K0.copy(),
+            payload_mass_kg=base.mechanical.payload_mass_kg,
+            axis_equivalent_mass_kg=base.mechanical.axis_equivalent_mass_kg,
+            gravity_acceleration_m_s2=base.mechanical.gravity_acceleration_m_s2.copy(),
+        )
+        with self.assertRaisesRegex(ValueError, "M0 must be positive definite"):
+            GantryJointDriveModel(
+                base.geometry, mechanics, base.electrical, base.actuator
+            )
+
     def test_zero_payload_reduces_to_block_diagonal_base_mass(self) -> None:
         model = make_model(payload_mass=0.0)
         mass = model.joint_mass_matrix(np.zeros(4), 0.8)
