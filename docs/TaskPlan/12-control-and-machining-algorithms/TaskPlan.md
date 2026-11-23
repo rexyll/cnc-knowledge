@@ -319,7 +319,7 @@
 - **修改：** 新增 `all_refinements_smooth_unsaturated_regime`，要求四个细化档的自由/规定路径两模型阶段计数全部准确，且所有RK4阶段均无电流参考限幅和电压饱和。最终验收门控与manifest聚合字段均使用全序列标志；逐档标志仍保留在汇总CSV。
 - **测试：** 新增两项验收门控纯函数测试，分别验证粗细档任一处限幅均禁止工程PASS，以及收敛筛查失败仍优先FAIL。运行器辅助资源测试由10项增至12项；连同求解器24项共36项，均未执行。
 - **输出：** 汇总CSV模板新增全序列聚合列；资源README、ASSET-INDEX、协议第5.4节与专题正文第7.6.13节同步说明。
-- **状态：** 此次静态审查修正尚未提交；PATH-01仍为 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+- **CI验收：** 提交 `95cd8b149d8d628f8ab59064aee33ec110d249cc`；GitHub Actions [Run 45183631562](https://github.com/rexyll/cnc-knowledge/actions/runs/45183631562) success，仓库单元测试与strict knowledge lint均成功。此CI不执行资源级测试。
 
 
 ### CH12-T003 PATH-01限幅标志口径一致性（2026-11-23）
@@ -328,7 +328,7 @@
 - **处理：** 新增 `_current_reference_was_limited()` 统一函数，阶段计数和输出网格时序使用同一精确比较：裁剪后参考值与请求电流命令数值不同即为限幅。
 - **测试：** 新增相邻IEEE浮点数裁剪用例，覆盖仅一个可表示浮点间隔的裁剪以及相等值不算裁剪。PATH运行器测试由12项增至13项，连同求解器24项共37项，均未执行。
 - **同步：** 运行器、测试、资源README、ASSET-INDEX、数值验证协议5.5节、专题正文7.6.14节与本章TaskPlan/History。
-- **状态：** 尚待提交与仓库CI；未运行PATH-01或资源测试。CH12-T003继续 `IN_PROGRESS`。
+- **CI验收：** 提交 `a93a9dadf03be2d31d2a8d7124a602cb6a759cf4`；GitHub Actions [Run 45183921384](https://github.com/rexyll/cnc-knowledge/actions/runs/45183921384) success，仓库单元测试与strict knowledge lint均成功。此CI不执行资源级测试。
 
 
 ### CH12-T003 PATH-01输入来源追溯补强（2026-11-23）
@@ -337,4 +337,12 @@
 - **处理：** 新增 `_source_document_ids()`，要求JSON字符串数组、每项非空、trim后不重复；允许空数组（如明确标识合成夹具、无独立来源ID）。manifest保留规范化后的 `source_documents_or_measurement_ids` 数组。
 - **测试：** 新增3项纯函数测试，覆盖非数组、空白/非字符串项，以及去空白与重复值拒绝。运行器辅助测试16项；求解器24项，合计40项资源测试均未执行。
 - **同步：** 运行器、资源测试、README、ASSET-INDEX、数值验证协议5.6节、专题正文7.6.15节与本章TaskPlan/History。
-- **状态：** 尚未提交与运行CI；PATH-01仍 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
+- **CI验收：** 提交 `35b25251666da1ab302f1da9b8771d6e1f58a39b`；GitHub Actions [Run 45184190958](https://github.com/rexyll/cnc-knowledge/actions/runs/45184190958) success，仓库单元测试与strict knowledge lint均成功。此CI不执行资源级测试。
+
+
+### CH12-T003 PATH-01限幅与来源追溯静态审查阶段汇总（2026-11-23）
+
+- **最新代码提交：** `35b25251666da1ab302f1da9b8771d6e1f58a39b`，保留参数来源ID并增加配置输入校验。
+- **相关CI：** `95cd8b1` / [Run 45183631562](https://github.com/rexyll/cnc-knowledge/actions/runs/45183631562)、`a93a9da` / [Run 45183921384](https://github.com/rexyll/cnc-knowledge/actions/runs/45183921384)、`35b2525` / [Run 45184190958](https://github.com/rexyll/cnc-knowledge/actions/runs/45184190958) 均 success；每次仓库既有单元测试步骤与 strict knowledge lint 步骤均成功。
+- **静态核对：** PATH-01时序字段73列、汇总字段71列，均与对应CSV模板字段名/顺序一致；运行器辅助测试16项，求解器测试24项，共40项资源测试均未执行。
+- **验收状态：** 验证矩阵8项全部 `NOT_RUN`；PATH-01没有数值运行结果；真实机床参数辨识、HIL/实机验证未完成。CH12-T003保持 `IN_PROGRESS`。

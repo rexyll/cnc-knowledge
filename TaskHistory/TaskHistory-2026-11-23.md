@@ -223,7 +223,7 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **处理：** 新增 `all_refinements_smooth_unsaturated_regime`，必须四档的自由轴和规定路径模型均有正确RK4阶段回调计数，且所有阶段无电流参考限幅、电压饱和，才可作为光滑工况通过工程验收的前置条件。逐档标志继续保留，manifest顶层标志改为全序列聚合。
 - **回归用例：** 新增两项纯函数测试，验证粗档/任一细化档限幅仍返回 `COMPLETED_REPORT_ONLY`，以及收敛筛查失败优先返回 `FAIL`。运行器测试现为12项；与求解器24项合计36项，全部未执行。
 - **同步文件：** 运行器、运行器测试、汇总CSV模板、资源README、ASSET-INDEX、数值验证协议5.4节、专题正文7.6.13节、TaskPlan与本历史。
-- **验证边界：** 此修正尚未提交，仓库CI待运行；PATH-01模拟和全部36项资源测试均未执行，矩阵8项仍 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
+- **CI验收：** 提交 `95cd8b149d8d628f8ab59064aee33ec110d249cc` 对应 [Run 45183631562](https://github.com/rexyll/cnc-knowledge/actions/runs/45183631562) success；单元测试与strict knowledge lint均成功。PATH-01模拟和全部36项资源测试均未执行，矩阵8项仍 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
 
 
 ## PATH-01电流参考限幅输出口径统一（2026-11-23）
@@ -232,7 +232,7 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **处理：** 新增 `_current_reference_was_limited()` 并同时用于阶段统计和时序能量账本，确保所有数据输出口径一致。
 - **回归测试：** 新增相邻浮点数裁剪判断用例：`nextafter(1,+inf)` 被裁剪回1时仍标记为限幅；相同值不标记限幅。运行器辅助测试由12项增至13项；求解器24项不变，共37项资源测试未执行。
 - **同步：** 运行器、测试、README、ASSET-INDEX、数值验证协议、专题正文、TaskPlan和本历史记录。
-- **验证边界：** 该修正尚未提交，仓库CI待运行；PATH-01仍 `NOT_RUN`，没有新增数值仿真或HIL结果。
+- **CI验收：** 提交 `a93a9dadf03be2d31d2a8d7124a602cb6a759cf4` 对应 [Run 45183921384](https://github.com/rexyll/cnc-knowledge/actions/runs/45183921384) success；单元测试与strict knowledge lint均成功。PATH-01仍 `NOT_RUN`，没有新增数值仿真或HIL结果。
 
 
 ## PATH-01来源文档/测量ID验证与manifest追溯（2026-11-23）
@@ -241,4 +241,14 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **实现：** 新增 `_source_document_ids()`，要求JSON字符串数组、每项为去空白后非空字符串、标识不重复；空数组允许用于没有独立来源ID的明确合成夹具。`parameter_source` 也规范化首尾空白。manifest加入 `source_documents_or_measurement_ids` 同名字段。
 - **测试：** 新增3项纯函数测试：拒绝非数组，拒绝空/非字符串元素，检查去空白与重复检测。运行器资源测试从13项增至16项；求解器24项不变，共40项均未执行。
 - **文档：** 同步资源README、ASSET-INDEX、数值验证协议5.6节、专题正文7.6.15节、TaskPlan与本历史。
-- **验证边界：** 当前只完成静态实现与测试用例编写，尚未提交/CI；PATH-01仍 `NOT_RUN`，没有新增运行结果或实机/HIL结论。
+- **CI验收：** 提交 `35b25251666da1ab302f1da9b8771d6e1f58a39b` 对应 [Run 45184190958](https://github.com/rexyll/cnc-knowledge/actions/runs/45184190958) success；单元测试与strict knowledge lint均成功。PATH-01仍 `NOT_RUN`，没有新增运行结果或实机/HIL结论。
+
+
+## PATH-01限幅/来源追溯阶段CI汇总（2026-11-23）
+
+- **门控修正提交：** `95cd8b149d8d628f8ab59064aee33ec110d249cc`；[Run 45183631562](https://github.com/rexyll/cnc-knowledge/actions/runs/45183631562) success。
+- **限幅标志口径提交：** `a93a9dadf03be2d31d2a8d7124a602cb6a759cf4`；[Run 45183921384](https://github.com/rexyll/cnc-knowledge/actions/runs/45183921384) success。
+- **参数来源ID提交：** `35b25251666da1ab302f1da9b8771d6e1f58a39b`；[Run 45184190958](https://github.com/rexyll/cnc-knowledge/actions/runs/45184190958) success。
+- **CI步骤：** 三轮均为仓库Knowledge Quality工作流成功，既有单元测试步骤与strict knowledge lint步骤均成功；不运行 `resouces/` 下的资源脚本和测试。
+- **静态核对：** 时序CSV 73列、汇总CSV 71列，字段名及顺序分别与运行器一致；PATH-01运行器纯函数测试16项，求解器测试24项，共40项资源测试全部未执行。
+- **状态：** PATH-01仍 `NOT_RUN`；验证矩阵8项全部 `NOT_RUN`；无新增数值仿真、能量残差或实机/HIL结果。CH12-T003继续 `IN_PROGRESS`。
