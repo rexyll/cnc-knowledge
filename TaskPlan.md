@@ -416,3 +416,12 @@
 - 内容提交 c6e7852048d04487d045e5ff05894fdda8051af7 对应 GitHub Actions [Run 45112047320](https://github.com/rexyll/cnc-knowledge/actions/runs/45112047320) success；现有仓库单元测试5/5，strict lint PASS（0 errors）。该CI没有执行resouces目录内新增的资源测试。
 - CI扫描统计：22章、128个Markdown文件、407条内部链接、143条实体、240条关系、371条来源、660处章节正文来源引用。
 - **状态边界：** 没有生成联合仿真CSV或数值能量平衡结果；资源测试待在有NumPy的Python 3.10+环境独立执行；CH12-T003继续 IN_PROGRESS。
+
+
+### CH12-T003 联合求解器实现补录的最终CI验收（2026-11-23）
+
+- 补录提交 37000932735058741172c70fb663f4a854b5b9c7 对应 GitHub Actions [Run 45112280173](https://github.com/rexyll/cnc-knowledge/actions/runs/45112280173) success。
+- 仓库现有测试5/5通过，strict knowledge lint PASS（0 errors）。
+- 补录后最终扫描统计：22章、129个Markdown文件、407条内部链接、143条实体、240条关系、371条来源、660处章节正文来源引用。
+- 本轮已把资源测试补充到8项并修正正文文件名；但仓库CI仍只执行 tests/ 和 scripts/knowledge_lint.py，**8项资源级测试没有在该CI中执行**。没有联合仿真结果、步长收敛结果或实机/HIL证据。
+- CH12-T003继续 IN_PROGRESS；后续验证需独立运行资源测试，并进一步做时间步长收敛、方程交叉核验和真实参数辨识。
