@@ -78,7 +78,7 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
 |---|---|---|---|---|---|---|
 | gantry_joint_drive_path_comparison.py | Python源码 | PATH-01四档步长自由轴/理想规定路径比较运行器；输出逐点时序、归一化误差、约束反力/约束功、机电能量账本、阶段限幅诊断和运行manifest | 项目原创 | 2026-11-23 | 原创代码 | 龙门连续移动负载与双向耦合专题 |
-| test_gantry_joint_drive_path_comparison.py | Python测试 | 13项资源级纯函数测试：五次参考路径、Simpson求积、混合单位归一化、限幅精确比较、阶段计数、末端诊断剔除及全细化序列门控 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
+| test_gantry_joint_drive_path_comparison.py | Python测试 | 20项资源级纯函数测试：五次参考路径、Simpson/梯形求积、混合单位归一化、限幅精确比较、阶段计数、全细化序列门控、CSV哈希绑定与归档失败恢复 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
 
 新增13项运行器资源测试尚未执行；加上求解器原有24项，PATH/求解器资源测试合计37项，仓库CI均不执行。
 
@@ -100,3 +100,8 @@ PATH-01 manifest现额外保留 `source_documents_or_measurement_ids`，与 `par
 ## PATH-01电压饱和精确判定与能量求积复核（2026-11-23）
 
 运行器时序限幅标志沿用求解器 `voltage_saturated`，该标志现以裁剪后的电压与原始PI电压精确比较；上下电压轨一ULP越界均有新增资源测试。汇总CSV新增 `free_energy_residual_trapezoid_J`、`prescribed_energy_residual_trapezoid_J` 两列，保留梯形残差与Simpson残差的差异供数值敏感性判读。求解器测试25项、PATH-01辅助测试17项，共42项资源测试均未执行。
+
+
+## PATH-01输出文件哈希绑定与失败恢复（2026-11-23）
+
+PATH-01运行器的manifest采用 schema_version: 2，并在 output_artifacts 中分别记录时序CSV和汇总CSV的SHA-256、字节数、数据行数与列数。运行器先把完整输出写入输出目录下的暂存子目录，再发布两份CSV，manifest最后发布作为完成标记。暂存失败时保留原归档；发布中断时manifest缺失，该目录不能视为完整结果，须检查后以 --force 重跑整套输出。新增3项资源级测试，运行器辅助测试20项、求解器25项、合计45项，全部未执行。

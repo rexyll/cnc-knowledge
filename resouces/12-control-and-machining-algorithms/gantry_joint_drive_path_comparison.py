@@ -16,6 +16,7 @@ import os
 import platform
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -900,6 +901,83 @@ def _write_csv(path: Path, fields: list[str], rows: list[dict[str, Any]]) -> Non
         writer.writerows(rows)
 
 
+def _artifact_metadata(
+    path: Path, *, data_rows: int, columns: int
+) -> dict[str, Any]:
+    """Return an integrity record for one staged CSV artifact."""
+    return {
+        "file": path.name,
+        "sha256": sha256_file(path),
+        "size_bytes": path.stat().st_size,
+        "data_rows": data_rows,
+        "columns": columns,
+    }
+
+
+def _write_output_bundle(
+    timeseries_path: Path,
+    summary_path: Path,
+    manifest_path: Path,
+    timeseries_rows: list[dict[str, Any]],
+    summary_rows: list[dict[str, Any]],
+    manifest: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Stage the complete output set and publish the manifest as its commit marker.
+
+    Temporary files are created below the destination directory so os.replace()
+    stays on one filesystem. A staging failure leaves any prior output bundle
+    untouched. Once publication starts, the old manifest is removed first; if
+    publication is interrupted, no manifest remains to certify a mixed bundle.
+    """
+    output_dir = timeseries_path.parent
+    if summary_path.parent != output_dir or manifest_path.parent != output_dir:
+        raise ValueError("all PATH-01 output files must share one output directory")
+
+    with tempfile.TemporaryDirectory(
+        prefix=".path01-staging-", dir=str(output_dir)
+    ) as staging_name:
+        staging_dir = Path(staging_name)
+        staged_timeseries = staging_dir / timeseries_path.name
+        staged_summary = staging_dir / summary_path.name
+        staged_manifest = staging_dir / manifest_path.name
+
+        _write_csv(staged_timeseries, TIMESERIES_FIELDS, timeseries_rows)
+        _write_csv(staged_summary, SUMMARY_FIELDS, summary_rows)
+
+        output_artifacts = {
+            "timeseries_csv": _artifact_metadata(
+                staged_timeseries,
+                data_rows=len(timeseries_rows),
+                columns=len(TIMESERIES_FIELDS),
+            ),
+            "summary_csv": _artifact_metadata(
+                staged_summary,
+                data_rows=len(summary_rows),
+                columns=len(SUMMARY_FIELDS),
+            ),
+        }
+        staged_manifest_data = dict(manifest)
+        staged_manifest_data["output_artifacts"] = output_artifacts
+        with staged_manifest.open("w", encoding="utf-8", newline="\n") as stream:
+            json.dump(
+                staged_manifest_data,
+                stream,
+                ensure_ascii=False,
+                indent=2,
+                allow_nan=False,
+            )
+            stream.write("\n")
+
+        # The old manifest must not survive while any new CSV is being published.
+        manifest_path.unlink(missing_ok=True)
+        os.replace(staged_timeseries, timeseries_path)
+        os.replace(staged_summary, summary_path)
+        # Publish this last: its presence certifies that both CSV files were replaced.
+        os.replace(staged_manifest, manifest_path)
+
+    return output_artifacts
+
+
 def _git_sha() -> str | None:
     try:
         result = subprocess.run(
@@ -928,6 +1006,12 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
     if not force:
         existing = [str(path) for path in outputs if path.exists()]
         if existing:
+            if not manifest_path.exists() and any(path.exists() for path in outputs[:2]):
+                raise FileExistsError(
+                    "CSV output(s) exist without a run manifest; the previous run may have "
+                    "been interrupted during publication. Inspect the files and retry with "
+                    "--force or choose a new output directory: " + ", ".join(existing)
+                )
             raise FileExistsError(
                 "output file(s) already exist; choose another directory or pass --force: "
                 + ", ".join(existing)
@@ -1066,11 +1150,9 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         row["status"] = final_status
         summary_rows.append(row)
 
-    _write_csv(timeseries_path, TIMESERIES_FIELDS, all_timeseries_rows)
-    _write_csv(summary_path, SUMMARY_FIELDS, summary_rows)
     completed = datetime.now(timezone.utc).isoformat()
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "case_id": "PATH-01",
         "status": final_status,
         "acceptance_decision": decision,
@@ -1111,14 +1193,21 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
             "Current-reference and voltage saturation are counted at every RK4 stage callback; output-grid diagnostics are also written to the timeseries CSV.",
             "The RK4 observed-order screen is eligible for ordinary smooth-regime PASS only when neither limiter activates in either model at any of the h, h/2, h/4 or h/8 refinements; limiter-active or stage-count-mismatch cases remain report-only.",
             "The prescribed solver's final endpoint diagnostic is excluded from RK4-stage counts.",
+            "CSV artifact SHA-256, byte size, data-row count and column count are recorded in output_artifacts; the manifest is published last as the output-set completion marker.",
+            "CSV and manifest files are staged in a temporary directory under the output directory before publication. If publication is interrupted, the manifest is absent and a retry requires --force or a new output directory.",
             "The constrained energy ledger includes lambda * sdot_ref; the PI integrator is not physical stored energy.",
             "Kf/Ke mismatch power is reported separately as (Kf-Ke)*i*ell_dot.",
             "This runner does not execute resource unit tests or establish machine/HIL validity.",
         ],
     }
-    with manifest_path.open("w", encoding="utf-8", newline="\n") as stream:
-        json.dump(manifest, stream, ensure_ascii=False, indent=2, allow_nan=False)
-        stream.write("\n")
+    output_artifacts = _write_output_bundle(
+        timeseries_path,
+        summary_path,
+        manifest_path,
+        all_timeseries_rows,
+        summary_rows,
+        manifest,
+    )
     return {
         "case_id": "PATH-01",
         "status": final_status,
@@ -1128,6 +1217,7 @@ def run_path_comparison(config_path: Path, output_dir: Path, *, force: bool = Fa
         "timeseries_csv": str(timeseries_path),
         "summary_csv": str(summary_path),
         "manifest_json": str(manifest_path),
+        "output_artifacts": output_artifacts,
         "free_convergence_screen": free_convergence["screen"],
         "prescribed_convergence_screen": prescribed_convergence["screen"],
         "smooth_unsaturated_regime": bool(all_refinements_smooth_unsaturated),

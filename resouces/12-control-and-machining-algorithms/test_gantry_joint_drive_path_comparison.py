@@ -6,11 +6,19 @@ python -m unittest discover -s resouces/12-control-and-machining-algorithms -p '
 """
 from __future__ import annotations
 
+import hashlib
+import json
+import os
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
+import gantry_joint_drive_path_comparison as path_runner
 from gantry_joint_drive_path_comparison import (
+    _write_output_bundle,
     _acceptance_decision,
     _current_reference_was_limited,
     _energy_metrics,
@@ -175,6 +183,98 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
         decision, status = _acceptance_decision(summary, {})
         self.assertEqual(decision, "FAIL")
         self.assertEqual(status, "FAIL")
+
+    def test_output_bundle_manifest_binds_csv_hashes_and_dimensions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            timeseries = root / "timeseries.csv"
+            summary = root / "summary.csv"
+            manifest_path = root / "manifest.json"
+            records = _write_output_bundle(
+                timeseries, summary, manifest_path,
+                timeseries_rows=[{}, {}], summary_rows=[{}],
+                manifest={"schema_version": 2, "case_id": "PATH-01"},
+            )
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["output_artifacts"], records)
+            for key, path, row_count, column_count in (
+                ("timeseries_csv", timeseries, 2, len(path_runner.TIMESERIES_FIELDS)),
+                ("summary_csv", summary, 1, len(path_runner.SUMMARY_FIELDS)),
+            ):
+                artifact = records[key]
+                self.assertEqual(artifact["sha256"], hashlib.sha256(path.read_bytes()).hexdigest())
+                self.assertEqual(artifact["size_bytes"], path.stat().st_size)
+                self.assertEqual(artifact["data_rows"], row_count)
+                self.assertEqual(artifact["columns"], column_count)
+                self.assertEqual(artifact["file"], path.name)
+
+    def test_output_bundle_staging_failure_preserves_previous_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            timeseries = root / "timeseries.csv"
+            summary = root / "summary.csv"
+            manifest_path = root / "manifest.json"
+            previous = {
+                timeseries: b"previous-timeseries",
+                summary: b"previous-summary",
+                manifest_path: b"previous-manifest",
+            }
+            for path, content in previous.items():
+                path.write_bytes(content)
+
+            with self.assertRaises(TypeError):
+                _write_output_bundle(
+                    timeseries, summary, manifest_path,
+                    timeseries_rows=[{}], summary_rows=[{}],
+                    manifest={"not_json_serializable": object()},
+                )
+
+            for path, content in previous.items():
+                self.assertEqual(path.read_bytes(), content)
+            self.assertEqual(sorted(path.name for path in root.iterdir()),
+                             ["manifest.json", "summary.csv", "timeseries.csv"])
+
+    def test_output_bundle_publish_failure_removes_completion_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            timeseries = root / "timeseries.csv"
+            summary = root / "summary.csv"
+            manifest_path = root / "manifest.json"
+            timeseries.write_text("old-timeseries", encoding="utf-8")
+            summary.write_text("old-summary", encoding="utf-8")
+            manifest_path.write_text("old-manifest", encoding="utf-8")
+
+            original_replace = os.replace
+            replace_calls = 0
+
+            def fail_second_replace(source: str, destination: str) -> None:
+                nonlocal replace_calls
+                replace_calls += 1
+                if replace_calls == 2:
+                    raise OSError("injected publication failure")
+                original_replace(source, destination)
+
+            with patch.object(path_runner.os, "replace", side_effect=fail_second_replace):
+                with self.assertRaisesRegex(OSError, "injected publication failure"):
+                    _write_output_bundle(
+                        timeseries, summary, manifest_path,
+                        timeseries_rows=[{}], summary_rows=[{}],
+                        manifest={"schema_version": 2, "case_id": "PATH-01"},
+                    )
+
+            self.assertFalse(manifest_path.exists())
+            # Recovery is explicit: rerun the whole bundle, not just the missing CSV.
+            _write_output_bundle(
+                timeseries, summary, manifest_path,
+                timeseries_rows=[{}], summary_rows=[{}],
+                manifest={"schema_version": 2, "case_id": "PATH-01"},
+            )
+            self.assertTrue(manifest_path.is_file())
+            verified = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                verified["output_artifacts"]["timeseries_csv"]["sha256"],
+                hashlib.sha256(timeseries.read_bytes()).hexdigest(),
+            )
 
     def test_normalized_state_error_rejects_nonpositive_absolute_tolerance(self) -> None:
         values = np.zeros((2, 2))

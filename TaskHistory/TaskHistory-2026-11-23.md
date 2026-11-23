@@ -265,3 +265,14 @@ Python 的 `frozen=True` 不会递归冻结 NumPy 数组。若求解器持有外
 - **CI验收：** 内容提交 `5c24dcbcfeb8be4543dbef44dd81f333c63635d1` 对应 [Run 45188707292](https://github.com/rexyll/cnc-knowledge/actions/runs/45188707292) success，既有仓库单元测试步骤与strict knowledge lint步骤均成功；该CI不运行资源级测试。
 - **静态核对：** 求解器25项、PATH-01辅助测试17项，共42项资源测试均未执行；汇总CSV模板与运行器均为73列，字段顺序一致。
 - **验证边界：** PATH-01依旧 `NOT_RUN`，没有新的数值仿真或HIL结果。
+
+
+### CH12-T003 PATH-01归档哈希绑定与发布中断恢复（2026-11-23）
+
+- **审查发现：** PATH-01此前虽已记录配置、求解器与运行器SHA，但没有绑定最终时序/汇总CSV内容；CSV又直接写入最终路径，失败后可能留下无法区分完整/不完整的归档文件。
+- **实现：** manifest升级到 schema_version 2，新增 output_artifacts，绑定时序CSV与汇总CSV的SHA-256、字节数、数据行数和列数。manifest自身不参与自哈希。
+- **输出发布：** 所有文件先在输出目录内的临时子目录暂存；完整计算两份CSV哈希并序列化暂存manifest后，先移除旧manifest，再发布时序CSV、汇总CSV，最后发布新manifest。暂存阶段失败保持既有结果集不变；发布中断时manifest缺失，避免旧manifest错误背书部分新旧混合文件。
+- **失败恢复：** 运行器发现CSV存在但manifest缺失时明确提示前次发布可能中断；检查目录后使用 --force 重跑完整输出集，或切换新目录。不能仅补写缺失文件，也不能把无manifest目录认作完整结果。
+- **测试用例：** 新增3项PATH-01资源测试，覆盖SHA/大小/行列绑定、暂存失败保留旧归档、发布中断移除完成标记并支持整套重试。运行器测试20项、求解器测试25项，共45项，全部未执行。
+- **同步文件：** PATH-01运行器、运行器测试、资源README、ASSET-INDEX、数值验证协议5.8节、专题正文7.6.17节、本章TaskPlan及本历史。
+- **CI/验证边界：** 本切片仅完成静态实现与文档同步，尚未提交/CI；仓库Knowledge Quality CI不运行resouces资源测试，不能替代上述45项测试。PATH-01仿真未执行，验证矩阵8项仍全部 NOT_RUN，无数值仿真或HIL结果。

@@ -151,3 +151,11 @@ PATH-01输入来源追溯：`provenance.source_documents_or_measurement_ids` 必
 - 求解器新增上下电压轨一ULP越界测试；PATH-01运行器新增能量残差梯形复核值单元测试。
 - 汇总CSV新增自由轴/规定路径两列 `*_energy_residual_trapezoid_J`，与现有Simpson残差并列，作为求积敏感性诊断；工程验收仍使用既定Simpson归一化残差，不新增/放宽阈值。
 - 求解器资源测试由24项增至25项，PATH-01辅助测试由16项增至17项，共42项资源测试，均未执行。
+
+
+## PATH-01归档完整性与失败恢复（2026-11-23）
+
+- PATH-01运行manifest使用 schema_version: 2，output_artifacts 分别记录时序CSV/汇总CSV的文件名、SHA-256、字节数、数据行数和列数；哈希只绑定两份CSV，不对manifest自身做自哈希。
+- 运行器在输出目录的临时子目录完整写出两份CSV、计算哈希并写出暂存manifest，然后才替换最终文件；manifest最后发布，作为本次输出集的完成标记。
+- 暂存失败时不触碰已有输出集；发布阶段中断时manifest缺失，残留CSV不能被视为完整归档。此类目录须检查后用 --force 重跑整套结果，或更换输出目录。
+- 新增3项资源测试；PATH-01运行器辅助测试20项、求解器测试25项，共45项均未执行。Knowledge Quality CI不运行这些资源测试；PATH-01仍为 NOT_RUN。
