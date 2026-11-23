@@ -392,3 +392,11 @@
 - **内容提交与仓库CI：** 7420db400200fd2722445c35a56859f8802bb68e；GitHub Actions [Run 45203091144](https://github.com/rexyll/cnc-knowledge/actions/runs/45203091144) success。CI既有单元测试与strict knowledge lint成功，但不运行resouces资源测试。
 - **验证边界：** 未执行资源测试、PATH-01数值仿真或能量平衡实验；未给出任何实际工况条件数、求解误差或能量残差数值。PATH-01和矩阵8项继续 NOT_RUN，CH12-T003保持 IN_PROGRESS。
 - **文档同步CI：** 协议5.10节、专题7.6.19节、资源README、ASSET-INDEX、TaskPlan与TaskHistory同步提交 `f544a08ee49bc40490e2451ddec6f85617e748e3`；GitHub Actions [Run 45203542953](https://github.com/rexyll/cnc-knowledge/actions/runs/45203542953) success，既有单元测试与strict knowledge lint均成功。该工作流不执行64项资源测试。
+
+
+### CH12-T003 M0构造期正定性预检尺度一致性（2026-11-23）
+
+- **问题：** 动力学方程已采用对角尺度归一化Cholesky，但构造期M0正定性仍基于原始混合单位矩阵的最小特征值，预检和求解算法尺度口径不一致。
+- **修正：** M0正定性检查与实际求解共用对角归一化方法，在归一化矩阵上执行Cholesky。只调整M0严格正定预检，不改变D0/K0半正定要求。
+- **回归用例：** 新增跨多个数量级的合法SPD矩阵接受测试，以及尺度归一化后不定矩阵拒绝测试。求解器测试32项、PATH-01运行器34项，共66项资源测试，全部未执行。
+- **验证边界：** 本轮为代码/测试定义与静态审查，未执行资源测试或PATH-01仿真；验证矩阵8项继续NOT_RUN。
