@@ -212,6 +212,10 @@ def normalized_state_error(
         raise ValueError("tolerance vectors must match the state component count")
     if np.any(atol <= 0.0) or np.any(rtol < 0.0):
         raise ValueError("absolute tolerances must be positive and relative tolerances nonnegative")
+    if not np.all(np.isfinite(a)) or not np.all(np.isfinite(b)):
+        raise ValueError("state arrays must contain only finite values")
+    if not np.all(np.isfinite(atol)) or not np.all(np.isfinite(rtol)):
+        raise ValueError("tolerance vectors must contain only finite values")
     denominator = atol[None, :] + rtol[None, :] * np.maximum(np.abs(a), np.abs(b))
     return (a - b) / denominator
 
@@ -320,6 +324,10 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
     start_m = _number(path_cfg.get("s0_m"), "prescribed_path.s0_m")
     end_m = _number(path_cfg.get("s1_m"), "prescribed_path.s1_m")
     duration = _number(path_cfg.get("duration_s"), "prescribed_path.duration_s", positive=True)
+    mechanical_cfg = _mapping(config, "mechanical", "mechanical")
+    span_m = _number(mechanical_cfg.get("geometry_span_m"), "mechanical.geometry_span_m", positive=True)
+    if not (0.0 <= start_m <= span_m and 0.0 <= end_m <= span_m):
+        raise ConfigurationError("PATH-01 endpoints s0_m and s1_m must lie within [0, geometry_span_m]")
     initial_cfg = _mapping(config, "initial_state", "initial_state")
     initial_s = _number(initial_cfg.get("s_m"), "initial_state.s_m")
     initial_s_dot = _number(initial_cfg.get("s_dot_m_s"), "initial_state.s_dot_m_s")
@@ -352,6 +360,9 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
     feedforward = _number(controller.get("feedforward_current_A"), "controller_and_loads.feedforward_current_A")
     _vector(controller.get("external_generalized_force_constant"),
             "controller_and_loads.external_generalized_force_constant", 5)
+    expected_force_order = ["Q_x_common", "Q_yaw", "Q_bending", "Q_torsion", "Q_s"]
+    if controller.get("external_generalized_force_order") != expected_force_order:
+        raise ConfigurationError("external_generalized_force_order must be [Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]")
 
     absolute_tolerance, relative_tolerance = _load_tolerances(config)
     metrics = _mapping(config, "metrics", "metrics")
@@ -372,7 +383,7 @@ def _validate_config(config: dict[str, Any]) -> dict[str, Any]:
     limits: dict[str, float | None] = {}
     for name in limit_names:
         value = acceptance.get(name)
-        limits[name] = None if value is None else _number(value, f"acceptance.{name}", positive=True)
+        limits[name] = None if value is None else _number(value, f"acceptance.{name}", nonnegative=True)
     profile = acceptance.get("profile_id")
     if profile is not None and not isinstance(profile, str):
         raise ConfigurationError("acceptance.profile_id must be a string or null")
