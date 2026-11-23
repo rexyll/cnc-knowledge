@@ -80,3 +80,11 @@ python -m unittest discover -s resouces/12-control-and-machining-algorithms -p '
 - GitHub Actions Run 45116144419：success；仓库原有测试5/5通过，strict lint PASS（0 errors）。
 - CI扫描：22章、129 Markdown、407内部链接、143实体、240关系、371来源、660处正文来源引用。
 - 无数值仿真、机电能量平衡、时间步长收敛或实机/HIL结果；CH12-T003保持IN_PROGRESS。
+
+
+## 运行时输入校验补录的CI验收
+
+- 补录提交：ac731a7d3e80575930f23f55d2848415cd263111。
+- GitHub Actions Run 45116216363：success；仓库既有测试5/5，strict lint PASS（0 errors）。
+- CI统计：22章、129 Markdown、407内部链接、143实体、240关系、371来源、660正文来源引用。
+- 12项资源测试仍未执行；没有数值仿真、能量平衡、时间步长收敛或实机/HIL验证结果。

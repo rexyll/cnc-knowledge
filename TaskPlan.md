@@ -451,3 +451,11 @@
 - 内容提交 94bc4de18a74270ef593955ba23fc4d02f7d6eff 对应 GitHub Actions [Run 45116144419](https://github.com/rexyll/cnc-knowledge/actions/runs/45116144419) success；仓库原有测试5/5通过，strict lint PASS（0 errors）。
 - 扫描统计：22章、129 Markdown、407内部链接、143实体、240关系、371来源、660处章节正文来源引用。
 - 本轮不产生联合仿真CSV、机电能量平衡数值、步长收敛或实机/HIL结论。CH12-T003继续 IN_PROGRESS。
+
+
+### CH12-T003 运行时输入校验补录最终CI验收（2026-11-23）
+
+- 计划/历史补录提交 ac731a7d3e80575930f23f55d2848415cd263111 对应 GitHub Actions [Run 45116216363](https://github.com/rexyll/cnc-knowledge/actions/runs/45116216363) success。
+- 仓库既有测试5/5通过，strict lint PASS（0 errors）；扫描统计22章、129 Markdown、407内部链接、143实体、240关系、371来源、660处章节正文来源引用。
+- 本轮新增12项资源级测试仍未执行；静态方程符号一致性检查不替代数值机电能量平衡、积分收敛、台架或实机验证。
+- CH12-T003保持 IN_PROGRESS；后续需在获准且可用的Python/NumPy环境运行资源测试，再进入数值验证。
