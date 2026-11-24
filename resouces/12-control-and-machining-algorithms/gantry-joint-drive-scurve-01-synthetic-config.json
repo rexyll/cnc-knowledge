@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "case_id": "SCURVE-01",
+  "status": "NOT_RUN",
+  "description": "Synthetic-only scalar rest-to-rest third-order seven-segment jerk-limited S-curve reference profile. This fixture is for numerical/software verification, not a CNC axis setting or recommended motion parameter.",
+  "provenance": {
+    "parameter_source": "SYNTHETIC_FIXTURE: all numerical values are authored solely for reproducible algorithm verification. SRC-000375 supports the distinction between third-order seven-segment bounded-but-discontinuous jerk and a fourth-order fifteen-segment jerk-continuous profile; SRC-000376 supports distinct axis-space and Cartesian geometric constraints; SRC-000377 and SRC-000378 document LinuxCNC-specific path-blending and look-ahead semantics. No source supplies the numerical values in this fixture.",
+    "source_documents_or_measurement_ids": [
+      "SYNTHETIC:CH12-SCURVE-01:v1",
+      "SRC-000375",
+      "SRC-000376",
+      "SRC-000377",
+      "SRC-000378"
+    ]
+  },
+  "profile": {
+    "type": "third_order_seven_segment_s_curve",
+    "boundary_conditions": "rest_to_rest",
+    "distance_m": 0.25,
+    "max_velocity_m_s": 0.2,
+    "max_acceleration_m_s2": 1,
+    "max_jerk_m_s3": 10,
+    "sample_period_s": 0.001
+  },
+  "interpretation": "Scalar rest-to-rest profile only. The fixture is not a CNC multi-axis inverse-kinematics planner, look-ahead block-chain solver, corner blender, fourth-order jerk-continuous/snap-limited planner, servo simulation, or machine acceptance procedure. All inputs are synthetic."
+}
