@@ -84,6 +84,43 @@ def _git_sha() -> str | None:
         return None
 
 
+EXPECTED_EXTERNAL_FORCE_ORDER = [
+    "Q_x_common", "Q_yaw", "Q_bending", "Q_torsion", "Q_s"
+]
+
+
+def _validate_case_contract(case_id: str, model: Any, external: np.ndarray,
+                            external_order: Any) -> None:
+    if external_order != EXPECTED_EXTERNAL_FORCE_ORDER:
+        raise EnergyClosureError(
+            "controller_and_loads.external_generalized_force_order must exactly match "
+            "[Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]"
+        )
+    mechanical = model.mechanical
+    structural_damping_present = bool(np.any(mechanical.D0 != 0.0))
+    viscous_friction_present = mechanical.axis_viscous_Ns_m > 0.0
+    coulomb_friction_present = mechanical.axis_coulomb_N > 0.0
+    external_load_present = bool(np.any(external != 0.0))
+    if case_id == "ENE-01":
+        if structural_damping_present or viscous_friction_present or coulomb_friction_present:
+            raise EnergyClosureError("ENE-01 requires zero structural damping and axis friction")
+        if external_load_present:
+            raise EnergyClosureError("ENE-01 requires zero external generalized force")
+    elif case_id == "ENE-02":
+        if not structural_damping_present:
+            raise EnergyClosureError("ENE-02 requires nonzero structural damping D0")
+        if not viscous_friction_present or not coulomb_friction_present:
+            raise EnergyClosureError("ENE-02 requires both nonzero axis viscous and Coulomb friction")
+        if external_load_present:
+            raise EnergyClosureError("ENE-02 requires zero external generalized force")
+    elif case_id == "ENE-03":
+        if not structural_damping_present:
+            raise EnergyClosureError("ENE-03 requires nonzero structural damping D0")
+        if not viscous_friction_present or not coulomb_friction_present:
+            raise EnergyClosureError("ENE-03 requires both nonzero axis viscous and Coulomb friction")
+        if not external_load_present:
+            raise EnergyClosureError("ENE-03 requires a nonzero external generalized force")
+
 def _validate(config: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(config, dict) or type(config.get("schema_version")) is not int:
         raise EnergyClosureError("configuration must be an object with integer schema_version")
@@ -107,15 +144,13 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
     e = model.electrical
     if e.force_constant_N_per_A != e.back_emf_V_per_m_s:
         raise EnergyClosureError("ENE-01..03 require reciprocal SI constants: Kf must equal Ke")
-    m = model.mechanical
-    if case_id == "ENE-01":
-        if np.any(m.D0 != 0.0) or m.axis_viscous_Ns_m != 0.0 or m.axis_coulomb_N != 0.0:
-            raise EnergyClosureError("ENE-01 requires zero structural damping and axis friction")
-        if np.any(external != 0.0):
-            raise EnergyClosureError("ENE-01 requires zero external generalized force")
-    elif case_id == "ENE-02":
-        if np.any(external != 0.0):
-            raise EnergyClosureError("ENE-02 requires zero external generalized force")
+    controller = config.get("controller_and_loads")
+    if not isinstance(controller, dict):
+        raise EnergyClosureError("controller_and_loads must be a JSON object")
+    _validate_case_contract(
+        case_id, model, external,
+        controller.get("external_generalized_force_order"),
+    )
     integration = config.get("integration")
     if not isinstance(integration, dict):
         raise EnergyClosureError("integration must be a JSON object")
@@ -124,9 +159,6 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
     intervals = path_support._interval_count(duration, base_step)
     if integration.get("refinement_schedule") != list(LEVELS):
         raise EnergyClosureError("refinement_schedule must be [h,h/2,h/4,h/8]")
-    controller = config.get("controller_and_loads")
-    if not isinstance(controller, dict):
-        raise EnergyClosureError("controller_and_loads must be a JSON object")
     command = path_support._number(controller.get("feedforward_current_A"), "controller_and_loads.feedforward_current_A")
     metrics = config.get("metrics")
     if not isinstance(metrics, dict):
@@ -367,11 +399,10 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
                 "net_power_W": sample["net"],
             })
             all_rows.append(row)
+        # The protocol requires a predeclared residual noise floor and stable,
+        # non-crossing residuals before estimating empirical order. The config
+        # schema has no such floor yet, so suppress the estimate.
         previous_order = None
-        if len(residuals) >= 2 and residuals[-2] > 0.0 and residuals[-1] > 0.0:
-            previous_order = math.log2(residuals[-2] / residuals[-1])
-            if not math.isfinite(previous_order):
-                previous_order = None
         summaries.append({
             "case_id": v["case_id"], "step_level": label, "step_s": step,
             "intervals": intervals, "samples": len(times),
@@ -429,6 +460,8 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "Terminal power uses the actual voltage after PI voltage saturation.",
             "Current reference limiting is not a hard state-current clamp or hardware overcurrent protection.",
             "A VERIFIED archive proves file integrity/schema only, not simulation correctness or physical validity.",
+            "Residual empirical order is intentionally omitted until a predeclared noise floor and stability gate are configured.",
+            "Bundle files are staged first and then published by per-file atomic replacement; the three-file bundle is not a single filesystem transaction.",
             "No hardware, SIL, HIL or machine measurement validation is implied.",
         ],
     }

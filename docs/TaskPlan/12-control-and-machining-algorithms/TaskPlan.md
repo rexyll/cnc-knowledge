@@ -464,3 +464,13 @@
 
 - **仓库CI（运行器代码）：** 提交 `e345fa7c26311ff1029d0b0cc6660ea31e26fac7` 对应 [Run 45320569139](https://github.com/rexyll/cnc-knowledge/actions/runs/45320569139) success。
 - **仓库CI（文档/索引/矩阵）：** 提交 `d0fd57d95a4a66d6077d5c02e74ca54b4ac22264` 对应 [Run 45320847709](https://github.com/rexyll/cnc-knowledge/actions/runs/45320847709) success，`Knowledge structure and data quality` job成功。两次CI均不执行 `resouces/` 下78项资源测试，也不运行ENE数值积分。
+
+
+### CH12-T003 ENE积分运行器静态审查与用例契约加固（2026-11-24）
+
+- **用例退化防护：** ENE-02强制非零结构阻尼、轴黏性摩擦和库仑摩擦，且外力为零；ENE-03沿用上述耗散条件，并强制至少一个外部广义力分量非零。ENE-01继续要求所有耗散/外力为零。
+- **坐标契约：** 强制外部广义力顺序精确为 [Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]，不接受缺失、乱序或别名。
+- **残差阶数：** 当前配置未定义噪声地板与残差稳定性门控，因此经验残差阶数固定不计算；不再仅凭相邻残差绝对值比值给出阶数。
+- **归档语义：** 明确输出先staging、后逐文件原子替换、manifest最后发布；该过程不构成多文件整体事务原子性。
+- **资源测试：** ENE运行器测试定义增至8项；求解器35项、PATH-01运行器39项、ENE运行器8项，共82项资源测试全部未执行。未执行ENE积分。
+- **状态：** CH12-T003保持 IN_PROGRESS；ENE-01～03与PATH-01验证仍为 NOT_RUN。

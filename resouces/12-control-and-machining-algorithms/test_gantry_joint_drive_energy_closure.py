@@ -12,7 +12,9 @@ from gantry_joint_drive_solver import (
     ActuatorKinematics, CurrentLoopParameters, GantryJointDriveModel,
     JointState, MechanicalParameters, SinusoidalBeamGeometry,
 )
-from gantry_joint_drive_energy_closure import _power_sample
+from gantry_joint_drive_energy_closure import (
+    EnergyClosureError, _power_sample, _validate_case_contract,
+)
 
 
 def make_model(*, damping: bool = False, friction: bool = False) -> GantryJointDriveModel:
@@ -82,6 +84,34 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         self.assertAlmostEqual(sample["external"], expected_external, places=12)
         self.assertAlmostEqual(sample["net"], -4.8 - sample["structural"]
                                - sample["friction"] + expected_external, places=12)
+
+    def test_ene02_rejects_degenerate_zero_dissipation_configuration(self) -> None:
+        model = make_model()
+        with self.assertRaisesRegex(EnergyClosureError, "structural damping"):
+            _validate_case_contract("ENE-02", model, np.zeros(5), [
+                "Q_x_common", "Q_yaw", "Q_bending", "Q_torsion", "Q_s"
+            ])
+
+    def test_ene02_requires_both_viscous_and_coulomb_friction(self) -> None:
+        model = make_model(damping=True, friction=False)
+        with self.assertRaisesRegex(EnergyClosureError, "viscous and Coulomb"):
+            _validate_case_contract("ENE-02", model, np.zeros(5), [
+                "Q_x_common", "Q_yaw", "Q_bending", "Q_torsion", "Q_s"
+            ])
+
+    def test_ene03_rejects_zero_external_generalized_force(self) -> None:
+        model = make_model(damping=True, friction=True)
+        with self.assertRaisesRegex(EnergyClosureError, "nonzero external"):
+            _validate_case_contract("ENE-03", model, np.zeros(5), [
+                "Q_x_common", "Q_yaw", "Q_bending", "Q_torsion", "Q_s"
+            ])
+
+    def test_external_generalized_force_order_is_exact(self) -> None:
+        model = make_model(damping=True, friction=True)
+        with self.assertRaisesRegex(EnergyClosureError, "must exactly match"):
+            _validate_case_contract("ENE-03", model, np.ones(5), [
+                "Q_yaw", "Q_x_common", "Q_bending", "Q_torsion", "Q_s"
+            ])
 
     def test_external_power_changes_sign_when_velocity_reverses(self) -> None:
         model = make_model()

@@ -54,3 +54,12 @@
 
 
 - **仓库CI：** 运行器代码提交 `e345fa7c26311ff1029d0b0cc6660ea31e26fac7` 对应 [Run 45320569139](https://github.com/rexyll/cnc-knowledge/actions/runs/45320569139) success；文档/索引/矩阵提交 `d0fd57d95a4a66d6077d5c02e74ca54b4ac22264` 对应 [Run 45320847709](https://github.com/rexyll/cnc-knowledge/actions/runs/45320847709) success，job为Knowledge structure and data quality。CI未执行78项资源测试或ENE积分。
+
+
+## CH12-T003 ENE运行器静态审查与配置边界修正
+
+- 修正ENE用例退化：ENE-02要求非零D0、轴黏性和库仑摩擦；ENE-03要求上述耗散配置并至少一个非零外部广义力分量。
+- 强制外力顺序字段精确匹配 [Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]。
+- 因配置尚无预声明残差噪声地板/稳定性门控，经验残差阶数固定不报告，避免对跨零或噪声主导残差误判。
+- 归档语义明确为staging后逐文件原子替换、manifest最后发布；不宣称三文件整体事务原子性。
+- 新增4项配置契约资源测试，ENE运行器资源测试8项；总计82项资源测试（求解器35、PATH-01 39、ENE 8）均未执行。ENE积分未执行，验证矩阵保持NOT_RUN，CH12-T003保持IN_PROGRESS。

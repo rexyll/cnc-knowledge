@@ -378,12 +378,12 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comp
 输入要求：
 - `provenance.parameter_source` 必须明确为可追溯测量/资料或 `synthetic_fixture`；来源ID显式填写数组，无ID时为 `[]`。
 - 电机力常数与反电势常数必须精确相等（SI互易约定），否则拒绝运行，避免把未纳入主试验协议的互易失配项混入ENE-01～03。
-- ENE-01要求D0、轴黏性/库仑摩擦和外部广义力均为零；ENE-02要求外力为零，允许结构阻尼和路径摩擦；ENE-03允许并积分有符号外部广义力功率。
+- ENE-01要求D0、轴黏性/库仑摩擦和外部广义力均为零；ENE-02强制D0非零且轴黏性、库仑摩擦系数均非零，同时要求外力为零；ENE-03沿用ENE-02的非零耗散配置，并强制五维外部广义力至少一个分量非零，防止用例退化。外力顺序字段必须精确等于 [Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]。
 - 命令采用配置中的常值前馈电流；外部广义力按 `[Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]` 顺序。配置须保持同一四档不变。
 - `energy_normalization_scale_J` 与 `energy_normalization_floor_J` 必须预先给出有限正值。缺少 `normalized_energy_closure_threshold` 时仅可输出 `COMPLETED_REPORT_ONLY`；阈值在运行前登记，四档不得变化。
 
 每个采样点记录实际PI电压限幅后的端电压、端口输入功率、铜耗、结构阻尼、路径摩擦、外部广义力功率、机电互易失配项、储能分量和净功率。每档独立使用自身时间网格积分，输出 `ΔE`、各项功/损耗、Simpson主残差、梯形敏感性残差及归一化残差。RK4四阶段回调统计覆盖电流参考限幅和电压饱和；任一档触发限幅或阶段数不符时，不能按光滑未限幅序列给出常规PASS。
 
-输出为固定名称时序CSV、汇总CSV及manifest。manifest绑定配置/求解器/运行器SHA、运行环境、参数来源、四档限幅计数和结果文件哈希/字节数/行列数。 `--verify-archive` 只验证归档完整性，不重新运行求解器，也不证明仿真正确。
+输出为固定名称时序CSV、汇总CSV及manifest。manifest绑定配置/求解器/运行器SHA、运行环境、参数来源、四档限幅计数和结果文件哈希/字节数/行列数。经验残差阶数目前固定不报告：配置尚未声明残差噪声地板及稳定性门控，不得仅凭相邻残差绝对值比值计算阶数。文件先写入staging目录，再逐文件原子替换；这不是三个文件组成的单一文件系统事务，manifest最后发布。 `--verify-archive` 只验证归档完整性，不重新运行求解器，也不证明仿真正确。
 
-**当前状态：** 运行器、四项资源级功率账本测试和空白配置模板已加入仓库；尚未执行这四项测试或任何ENE积分。Knowledge Quality CI不执行 `resouces/` 下代码/测试。ENE-01～03在验证矩阵中继续 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
+**当前状态：** 运行器、八项资源级测试（其中4项新增配置契约测试）和空白配置模板已加入仓库；尚未执行这八项测试或任何ENE积分。Knowledge Quality CI不执行 `resouces/` 下代码/测试。ENE-01～03在验证矩阵中继续 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。

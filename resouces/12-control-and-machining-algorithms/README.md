@@ -229,6 +229,6 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_cl
   --verify-archive --output-dir resouces/12-control-and-machining-algorithms/generated/ene-01
 ```
 
-- ENE-01要求无阻尼/摩擦/外力；ENE-02允许阻尼/摩擦但无外力；ENE-03允许有符号外力。三者均要求SI互易常数Kf=Ke。命令当前限定为常值前馈电流；阈值缺失或任一档触发限幅时为报告态。
-- 新增4项资源级功率账本测试，当前求解器35项、PATH-01运行器39项、ENE运行器4项，共78项；全部未执行。Knowledge Quality CI不运行资源测试，ENE积分尚未运行。
+- ENE-01要求无阻尼/摩擦/外力；ENE-02强制非零结构阻尼、轴黏性及库仑摩擦且无外力；ENE-03沿用该耗散配置并强制非零五维外力。外力坐标顺序严格校验。三者均要求SI互易常数Kf=Ke。命令当前限定为常值前馈电流；阈值缺失或任一档触发限幅时为报告态。经验残差阶数在未预声明噪声地板和稳定性门控前不计算。输出文件逐个原子替换、manifest最后发布，不构成整包事务原子性。
+- 新增4项资源级功率账本测试及4项配置契约测试，当前求解器35项、PATH-01运行器39项、ENE运行器8项，共82项；全部未执行。Knowledge Quality CI不运行资源测试，ENE积分尚未运行。
 - 独立性只覆盖功率账本/积分实现；动力学状态方程和储能函数复用原联合模型，不是独立物理模型。
