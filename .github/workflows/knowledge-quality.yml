@@ -319,7 +319,7 @@ jobs:
           inputs = ("config_sha256", "solver_file_sha256", "runner_file_sha256")
           changed = previous is None or any(previous.get(key) != current.get(key) for key in inputs)
           with open(__import__("os").environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"changed={'true' if changed else 'false'}\\n")
+              output.write(f"changed={'true' if changed else 'false'}\n")
           print("PATH-01 model/runner/config input changed:", changed)
           PY
       - name: Upload PATH-01 free versus prescribed path results
