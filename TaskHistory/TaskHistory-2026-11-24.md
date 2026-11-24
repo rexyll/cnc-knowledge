@@ -137,3 +137,8 @@
 - **仓库CI（h/16文档记录与计数清理）：** 提交 `93231b47e7d7f848a73a5b2d0373f776cc4033cc` 对应 [Run 45365432150](https://github.com/rexyll/cnc-knowledge/actions/runs/45365432150) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下103项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
 
 - **仓库CI（h/16文档记录收尾）：** 提交 `ffc728dd72a85b1297b26bf3f0bcf63ed175216d` 对应 [Run 45365579897](https://github.com/rexyll/cnc-knowledge/actions/runs/45365579897) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下103项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
+**追加执行切片（2026-11-24）：ENE相邻细化轨迹共同节点对照。** 在同一求解器h/16数值参考的基础上增加四组相邻层级对照：h/h2、h2/h4、h4/h8、h8/h16。所有细/粗轨迹都按每对较粗轨迹的公共节点进行比较；将细轨迹按每两个节点抽样，再计算12维状态逐分量最大绝对差/RMS差、净功率最大绝对差/RMS差、两轨迹在粗网格的Simpson净功积分差、储能变化差和能量残差差。每组还带两条路径均未限幅的标志。
+
+新增诊断不会合并混合单位状态误差，不推导经验阶数、误差上界或PASS；它只提供相邻细化的原始轨迹差异，并将功率求积统一到较粗网格，以免混入不同节点求积影响。若任一轨迹发生限幅，不作经典光滑RK4阶数解释。Manifest schema升级为3，新增相邻细化诊断并由归档验证器重算。新增3项ENE测试定义，ENE32项、求解器35项、PATH-01 39项，总计106项资源测试均未执行；ENE积分未执行，CH12-T003保持IN_PROGRESS。
+

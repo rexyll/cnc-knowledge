@@ -18,7 +18,8 @@ from gantry_joint_drive_energy_closure import (
     EnergyClosureError, _power_sample, _validate_case_contract,
     _validate_manifest_contract, _read_verified_csv,
     _fixed_trajectory_quadrature_diagnostics, _rk4_stage_power_diagnostics,
-    _reference_trajectory_diagnostics, STATE_VECTOR_FIELDS,
+    _reference_trajectory_diagnostics, _adjacent_refinement_diagnostics,
+    STATE_VECTOR_FIELDS,
 )
 
 
@@ -335,9 +336,55 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
                 reference_rows, primary_rows, summaries, 10.0, 1e-6
             )
 
+
+    def test_adjacent_refinement_reports_shared_grid_componentwise_differences(self) -> None:
+        reference_rows, primary_rows, _ = self._make_reference_fixture()
+        offsets = {"h": 0.08, "h/2": 0.04, "h/4": 0.02, "h/8": 0.01}
+        for row in primary_rows:
+            offset = offsets[row["step_level"]]
+            row["net_power_W"] = float(row["net_power_W"]) + offset
+            for field in STATE_VECTOR_FIELDS:
+                row[field] = float(row[field]) + offset
+        smooth = {"h": True, "h/2": True, "h/4": False,
+                  "h/8": True, "reference_h/16": True}
+        result = _adjacent_refinement_diagnostics(primary_rows, reference_rows, smooth)
+        self.assertEqual(result["pair_order"], [
+            ["h", "h/2"], ["h/2", "h/4"], ["h/4", "h/8"],
+            ["h/8", "reference_h/16"],
+        ])
+        self.assertEqual(len(result["pairs"]), 4)
+        expected = (0.04, 0.02, 0.01, 0.01)
+        for row, difference in zip(result["pairs"], expected):
+            self.assertEqual(len(row["state_max_abs_difference"]), 12)
+            self.assertAlmostEqual(row["state_max_abs_difference"][0], difference)
+        self.assertFalse(result["pairs"][1]["both_paths_smooth_unsaturated"])
+        self.assertAlmostEqual(
+            result["pairs"][0]["fine_minus_coarse_net_work_on_shared_grid_J"], -0.04
+        )
+
+    def test_adjacent_refinement_rejects_non_nested_sample_counts(self) -> None:
+        reference_rows, primary_rows, _ = self._make_reference_fixture()
+        broken = [row for row in primary_rows if row["step_level"] != "h/2"]
+        with self.assertRaisesRegex(ValueError, "sample count is not nested"):
+            _adjacent_refinement_diagnostics(
+                broken, reference_rows,
+                {"h": True, "h/2": True, "h/4": True, "h/8": True,
+                 "reference_h/16": True},
+            )
+
+    def test_adjacent_refinement_rejects_non_finite_state_or_power(self) -> None:
+        reference_rows, primary_rows, _ = self._make_reference_fixture()
+        primary_rows[3]["q1_m"] = float("nan")
+        with self.assertRaisesRegex(FloatingPointError, "samples must be finite"):
+            _adjacent_refinement_diagnostics(
+                primary_rows, reference_rows,
+                {"h": True, "h/2": True, "h/4": True, "h/8": True,
+                 "reference_h/16": True},
+            )
+
     def _valid_manifest_contract(self) -> dict:
         return {
-            "schema_version": 2, "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
+            "schema_version": 3, "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
             "numerical_results_present": True, "resource_tests_executed": False,
             "parameter_source": "synthetic test fixture", "source_documents_or_measurement_ids": [],
             "started_at_utc": "2026-01-01T00:00:00+00:00",

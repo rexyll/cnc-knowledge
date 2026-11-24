@@ -33,7 +33,7 @@ SUMMARY_NAME = "gantry-joint-drive-energy-closure-summary.csv"
 MANIFEST_NAME = "gantry-joint-drive-energy-closure-run-manifest.json"
 REFERENCE_TIMESERIES_NAME = "gantry-joint-drive-energy-closure-reference-h16-timeseries.csv"
 REFERENCE_LEVEL = "reference_h/16"
-MANIFEST_SCHEMA_VERSION = 2
+MANIFEST_SCHEMA_VERSION = 3
 LEVELS = ("h", "h/2", "h/4", "h/8")
 # Bound aggregate output rows before allocating RK4 trajectories and row dictionaries.
 MAX_TOTAL_SAMPLES = 50_000
@@ -588,6 +588,122 @@ def _reference_trajectory_diagnostics(
     return {"level": REFERENCE_LEVEL, "finest": finest, "comparisons": comparisons}
 
 
+
+
+def _adjacent_refinement_diagnostics(
+    primary_rows: list[dict[str, Any]],
+    reference_rows: list[dict[str, Any]],
+    smooth_flags: dict[str, bool],
+) -> dict[str, Any]:
+    """Compare each adjacent trajectory pair on their shared coarse time grid.
+
+    The same-model RK4 solutions are compared without collapsing mixed-unit
+    state errors or inferring an error order. This exposes whether the
+    observed trajectory differences shrink through h/16, but is not an
+    independent solver, an error bound, or an automatic acceptance gate.
+    """
+    trajectories = {
+        label: [row for row in primary_rows if row["step_level"] == label]
+        for label in LEVELS
+    }
+    trajectories[REFERENCE_LEVEL] = reference_rows
+    ordered_levels = list(LEVELS) + [REFERENCE_LEVEL]
+    if any(not isinstance(smooth_flags.get(level), bool) for level in ordered_levels):
+        raise ValueError("adjacent-refinement smooth flags must cover all five levels")
+    pairs = []
+    for coarse_level, fine_level in zip(ordered_levels[:-1], ordered_levels[1:]):
+        coarse_rows = trajectories[coarse_level]
+        fine_rows = trajectories[fine_level]
+        if len(coarse_rows) < 3 or (len(coarse_rows) - 1) % 2:
+            raise ValueError(f"coarse trajectory grid must have an even interval count at {coarse_level}")
+        expected_fine_samples = 2 * (len(coarse_rows) - 1) + 1
+        if len(fine_rows) != expected_fine_samples:
+            raise ValueError(
+                f"adjacent trajectory sample count is not nested for {coarse_level}/{fine_level}"
+            )
+        coarse_times = np.asarray([float(row["time_s"]) for row in coarse_rows], dtype=float)
+        fine_times_all = np.asarray([float(row["time_s"]) for row in fine_rows], dtype=float)
+        fine_times = fine_times_all[::2]
+        if not np.all(np.isfinite(coarse_times)) or not np.all(np.isfinite(fine_times_all)):
+            raise FloatingPointError("adjacent trajectory times must be finite")
+        if np.any(np.diff(coarse_times) <= 0) or np.any(np.diff(fine_times_all) <= 0):
+            raise ValueError("adjacent trajectory times must be strictly increasing")
+        if not np.allclose(np.diff(coarse_times),
+                           (coarse_times[-1] - coarse_times[0]) / (len(coarse_times) - 1),
+                           rtol=1e-9, atol=1e-12):
+            raise ValueError(f"coarse trajectory grid must be uniform at {coarse_level}")
+        if not np.allclose(np.diff(fine_times_all),
+                           (fine_times_all[-1] - fine_times_all[0]) / (len(fine_times_all) - 1),
+                           rtol=1e-9, atol=1e-12):
+            raise ValueError(f"fine trajectory grid must be uniform at {fine_level}")
+        if not np.allclose(coarse_times, fine_times, rtol=1e-9, atol=1e-12):
+            raise ValueError(f"adjacent trajectory grids do not align for {coarse_level}/{fine_level}")
+
+        coarse_states = np.asarray([
+            [float(row[field]) for field in STATE_VECTOR_FIELDS] for row in coarse_rows
+        ], dtype=float)
+        fine_states = np.asarray([
+            [float(row[field]) for field in STATE_VECTOR_FIELDS] for row in fine_rows
+        ], dtype=float)[::2]
+        coarse_net = np.asarray([float(row["net_power_W"]) for row in coarse_rows], dtype=float)
+        fine_net = np.asarray([float(row["net_power_W"]) for row in fine_rows], dtype=float)[::2]
+        coarse_stored = np.asarray([float(row["stored_energy_J"]) for row in coarse_rows], dtype=float)
+        fine_stored = np.asarray([float(row["stored_energy_J"]) for row in fine_rows], dtype=float)[::2]
+        arrays = (coarse_states, fine_states, coarse_net, fine_net, coarse_stored, fine_stored)
+        if not all(np.all(np.isfinite(array)) for array in arrays):
+            raise FloatingPointError(f"adjacent trajectory samples must be finite for {coarse_level}/{fine_level}")
+
+        state_difference = fine_states - coarse_states
+        power_difference = fine_net - coarse_net
+        coarse_work = float(path_support.composite_simpson_13(coarse_times, coarse_net))
+        fine_work = float(path_support.composite_simpson_13(coarse_times, fine_net))
+        coarse_delta = float(coarse_stored[-1] - coarse_stored[0])
+        fine_delta = float(fine_stored[-1] - fine_stored[0])
+        coarse_residual = coarse_delta - coarse_work
+        fine_residual = fine_delta - fine_work
+        row = {
+            "coarse_level": coarse_level,
+            "fine_level": fine_level,
+            "shared_samples": int(len(coarse_times)),
+            "both_paths_smooth_unsaturated": bool(
+                smooth_flags[coarse_level] and smooth_flags[fine_level]
+            ),
+            "state_max_abs_difference": np.max(np.abs(state_difference), axis=0).tolist(),
+            "state_rms_difference": np.sqrt(np.mean(state_difference**2, axis=0)).tolist(),
+            "net_power_max_abs_difference_W": float(np.max(np.abs(power_difference))),
+            "net_power_rms_difference_W": float(np.sqrt(np.mean(power_difference**2))),
+            "coarse_net_power_work_on_shared_grid_J": coarse_work,
+            "fine_net_power_work_on_shared_grid_J": fine_work,
+            "fine_minus_coarse_net_work_on_shared_grid_J": fine_work - coarse_work,
+            "coarse_stored_energy_delta_J": coarse_delta,
+            "fine_stored_energy_delta_on_shared_grid_J": fine_delta,
+            "fine_minus_coarse_stored_energy_delta_J": fine_delta - coarse_delta,
+            "coarse_energy_residual_on_shared_grid_J": coarse_residual,
+            "fine_energy_residual_on_shared_grid_J": fine_residual,
+            "fine_minus_coarse_energy_residual_J": fine_residual - coarse_residual,
+        }
+        numeric = [
+            row["net_power_max_abs_difference_W"], row["net_power_rms_difference_W"],
+            row["coarse_net_power_work_on_shared_grid_J"],
+            row["fine_net_power_work_on_shared_grid_J"],
+            row["fine_minus_coarse_net_work_on_shared_grid_J"],
+            row["coarse_stored_energy_delta_J"],
+            row["fine_stored_energy_delta_on_shared_grid_J"],
+            row["fine_minus_coarse_stored_energy_delta_J"],
+            row["coarse_energy_residual_on_shared_grid_J"],
+            row["fine_energy_residual_on_shared_grid_J"],
+            row["fine_minus_coarse_energy_residual_J"],
+            *row["state_max_abs_difference"], *row["state_rms_difference"],
+        ]
+        if not all(math.isfinite(value) for value in numeric):
+            raise FloatingPointError("non-finite adjacent-refinement comparison metric")
+        pairs.append(row)
+    return {
+        "pair_order": [list(pair) for pair in zip(ordered_levels[:-1], ordered_levels[1:])],
+        "pairs": pairs,
+    }
+
+
 def _assert_json_metrics_close(actual: Any, expected: Any, path: str = "reference") -> None:
     """Compare nested manifest diagnostics with independently recomputed values."""
     if isinstance(expected, dict):
@@ -663,7 +779,7 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
 
 def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
     if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != MANIFEST_SCHEMA_VERSION:
-        raise EnergyClosureError("invalid ENE manifest schema; expected version 2 with h/16 reference trajectory")
+        raise EnergyClosureError("invalid ENE manifest schema; expected version 3 with h/16 reference and adjacent-refinement diagnostics")
     if manifest.get("case_id") not in ("ENE-01", "ENE-02", "ENE-03"):
         raise EnergyClosureError("invalid ENE manifest case_id")
     status = manifest.get("status")
@@ -1075,6 +1191,18 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
         manifest.get("reference_trajectory_diagnostics"),
         expected_reference_diagnostics, "reference_trajectory_diagnostics",
     )
+    adjacent_smooth_flags = {
+        report["level"]: report["smooth_unsaturated"]
+        for report in manifest["limiter_stage_reports"]
+    }
+    adjacent_smooth_flags[REFERENCE_LEVEL] = contract["reference_report"]["smooth_unsaturated"]
+    expected_adjacent_diagnostics = _adjacent_refinement_diagnostics(
+        timeseries_rows, reference_rows, adjacent_smooth_flags
+    )
+    _assert_json_metrics_close(
+        manifest.get("adjacent_refinement_diagnostics"),
+        expected_adjacent_diagnostics, "adjacent_refinement_diagnostics",
+    )
 
     stage_rows = parsed["stage_power_csv"]
     stage_cursor = 0
@@ -1394,6 +1522,13 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     reference_trajectory_diagnostics = _reference_trajectory_diagnostics(
         reference_rows, all_rows, summary_by_level, v["scale"], v["floor"]
     )
+    adjacent_smooth_flags = {
+        item["level"]: bool(item["smooth_unsaturated"]) for item in saturation_by_level
+    }
+    adjacent_smooth_flags[REFERENCE_LEVEL] = bool(reference_smooth)
+    adjacent_refinement_diagnostics = _adjacent_refinement_diagnostics(
+        all_rows, reference_rows, adjacent_smooth_flags
+    )
 
     fine_times, fine_arrays = power_samples_by_level[-1]
     fixed_trajectory_diagnostics = _fixed_trajectory_quadrature_diagnostics(
@@ -1433,6 +1568,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "limiter_stage_reports": saturation_by_level,
         "reference_trajectory_report": reference_trajectory_report,
         "reference_trajectory_diagnostics": reference_trajectory_diagnostics,
+        "adjacent_refinement_diagnostics": adjacent_refinement_diagnostics,
         "notes": [
             "Power accounting is implemented independently of PATH-01 energy ledger/metrics.",
             "The same solver state vector field and stored-energy function are reused; this is not an independent physical model.",
@@ -1443,6 +1579,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "Residual empirical order is intentionally omitted until a predeclared noise floor and stability gate are configured.",
             "The h/16 reference path uses the same RK4 solver and constant command/load; it is a finer numerical reference, not an exact or independent physical solution.",
             "The h/16 reference comparison uses nested common time nodes to compare state, net power, stored-energy change and same-grid power work; it is diagnostic and excluded from the four-level primary PASS threshold.",
+            "Adjacent-level trajectory differences are reported on each pair shared coarse grid as raw per-state and power differences; they do not infer convergence order, establish an error bound or alter PASS.",
             "The h/16 reference is excluded from the primary four-level PASS threshold and remains a diagnostic comparison only.",
             "Bundle files are staged first and then published by per-file atomic replacement; the five-file bundle is not a single filesystem transaction.",
             "No hardware, SIL, HIL or machine measurement validation is implied.",
