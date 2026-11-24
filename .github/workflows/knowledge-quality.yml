@@ -361,7 +361,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ch12-scurve-01-scalar-jerk-limited-synthetic-\${{ github.run_id }}
+          name: ch12-scurve-01-scalar-jerk-limited-synthetic-${{ github.run_id }}
           path: resouces/12-control-and-machining-algorithms/generated/scurve-01-synthetic/
           if-no-files-found: warn
           retention-days: 14
