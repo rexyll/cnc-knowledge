@@ -1,0 +1,2 @@
+case_id,distance_m,max_velocity_m_s,max_acceleration_m_s2,max_jerk_m_s3,peak_velocity_m_s,peak_acceleration_m_s2,peak_jerk_m_s3,acceleration_jerk_ramp_s,constant_acceleration_s,cruise_s,total_time_s,sample_period_s,sample_count,phase_count,end_position_m,end_velocity_m_s,end_acceleration_m_s2,status
+SCURVE-01,0.25,0.2,1,10,0.2,1,10,0.1,0.1,0.95,1.55,0.001,1551,7,0.25,0,0,COMPLETED_REPORT_ONLY

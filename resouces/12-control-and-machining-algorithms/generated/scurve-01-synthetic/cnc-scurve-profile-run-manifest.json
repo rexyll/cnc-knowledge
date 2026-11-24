@@ -1,0 +1,61 @@
+{
+  "acceptance_decision": "DESCRIPTIVE_ONLY",
+  "case_id": "SCURVE-01",
+  "config_sha256": "862dde9015d0b292881a6cb0124383020b27cf9b5490ba59306648b429132edf",
+  "duration_s": 1.55,
+  "interpretation": "Scalar rest-to-rest profile only. The fixture is not a CNC multi-axis inverse-kinematics planner, look-ahead block-chain solver, corner blender, fourth-order jerk-continuous/snap-limited planner, servo simulation, or machine acceptance procedure. All inputs are synthetic.",
+  "notes": [
+    "All fixture inputs are synthetic, not machine specifications or recommended settings.",
+    "Third-order seven-segment profile has bounded piecewise-constant jerk with jumps at phase boundaries.",
+    "No multi-axis inverse kinematics, block-chain look-ahead, corner blending, snap limit, servo dynamics or machine acceptance is implemented.",
+    "COMPLETED_REPORT_ONLY and DESCRIPTIVE_ONLY do not mean machine or application acceptance."
+  ],
+  "operating_system": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+  "output_artifacts": {
+    "segments_csv": {
+      "columns": 12,
+      "data_rows": 7,
+      "file": "cnc-scurve-profile-segments.csv",
+      "sha256": "60f8f6b0bccdc8ec06f9a09581c52738258a00060549c10fc8ef3d2c8e21404e",
+      "size_bytes": 763
+    },
+    "summary_csv": {
+      "columns": 19,
+      "data_rows": 1,
+      "file": "cnc-scurve-profile-summary.csv",
+      "sha256": "9c7605df345c42fb9d505d62edeeda650f3b8b06a30dc613ea4205dc77f7dc15",
+      "size_bytes": 398
+    },
+    "timeseries_csv": {
+      "columns": 8,
+      "data_rows": 1551,
+      "file": "cnc-scurve-profile-timeseries.csv",
+      "sha256": "2c25d447a6da34ef1b177fa170a4322cfa3a2ccdde542db50c3842aaed3a55e1",
+      "size_bytes": 87964
+    }
+  },
+  "profile_parameters": {
+    "acceleration_jerk_ramp_s": 0.1,
+    "constant_acceleration_s": 0.1,
+    "cruise_s": 0.95,
+    "distance_m": 0.25,
+    "max_acceleration_m_s2": 1.0,
+    "max_jerk_m_s3": 10.0,
+    "max_velocity_m_s": 0.2,
+    "peak_acceleration_m_s2": 1.0,
+    "peak_jerk_m_s3": 10.0,
+    "peak_velocity_m_s": 0.2
+  },
+  "profile_type": "third_order_seven_segment_s_curve",
+  "python_version": "3.12.16",
+  "runner_sha256": "1bbbf864be03c670a94888d4d81b52e16d25961a29ee3907e72d045c62fbc3db",
+  "schema_version": 1,
+  "source_documents_or_measurement_ids": [
+    "SYNTHETIC:CH12-SCURVE-01:v1",
+    "SRC-000375",
+    "SRC-000376",
+    "SRC-000377",
+    "SRC-000378"
+  ],
+  "status": "COMPLETED_REPORT_ONLY"
+}

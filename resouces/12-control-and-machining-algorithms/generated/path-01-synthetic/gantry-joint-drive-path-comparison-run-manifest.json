@@ -6,8 +6,8 @@
   "smooth_unsaturated_regime": true,
   "numerical_results_present": true,
   "resource_tests_executed": false,
-  "started_at_utc": "2026-11-24T14:54:58.158063+00:00",
-  "completed_at_utc": "2026-11-24T14:54:59.731406+00:00",
+  "started_at_utc": "2026-11-24T15:17:04.724615+00:00",
+  "completed_at_utc": "2026-11-24T15:17:05.666190+00:00",
   "parameter_source": "SYNTHETIC_FIXTURE: PATH-01 borrows the synthetic electromechanical/structural/dissipation fixture from ENE-03, and adds an explicitly synthetic rest-to-rest path and common deterministic PD current callback. SRC-000369/SRC-000370 identify generic feed-drive modelling context; SRC-000372 supports RK4; SRC-000373 supports the generic quintic rest-to-rest time-scaling law. None of these sources supplies the numeric fixture values or application acceptance limits.",
   "source_documents_or_measurement_ids": [
     "SYNTHETIC:CH12-PATH-01:v1",
@@ -18,7 +18,7 @@
   ],
   "config_path": "/home/runner/work/cnc-knowledge/cnc-knowledge/resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-01-synthetic-config.json",
   "config_sha256": "6a7223941ee29ba97d0860f4dabb6bc030783ded1d9018d812d803979f6512e2",
-  "solver_git_sha": "126f95c996600265ff85247beeb0aa5676a9b3e6",
+  "solver_git_sha": "0b6f031d5c02108e36c9b88cb42f215df18f6e23",
   "solver_file_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
   "runner_file_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
@@ -42,7 +42,7 @@
       "distances": [
         0.00015671631669916084,
         6.568847698807224e-06,
-        3.3525964232379817e-07
+        3.352596423237981e-07
       ],
       "peaks": [
         0.00241835917620159,
@@ -99,15 +99,15 @@
   "output_artifacts": {
     "timeseries_csv": {
       "file": "gantry-joint-drive-path-comparison-timeseries.csv",
-      "sha256": "1468ad8aaf5a919b9838c5aeb233730ee22cd67a2f3d9816ac3c72a4cc829039",
-      "size_bytes": 797614,
+      "sha256": "07170422e3da7fa8f721540ffb6d191a2b56d0028f6c66603a6092da1b210f23",
+      "size_bytes": 797672,
       "data_rows": 604,
       "columns": 73
     },
     "summary_csv": {
       "file": "gantry-joint-drive-path-comparison-summary.csv",
-      "sha256": "a7c0bba763e066afeb2a91639cf7bb6506a30afe2ea613885b36577670ddd58f",
-      "size_bytes": 6737,
+      "sha256": "5d9c47c97694a3541a78fc5641502c0417be9e8894d6de8e11eea82a41a9a0bf",
+      "size_bytes": 6734,
       "data_rows": 4,
       "columns": 73
     }
