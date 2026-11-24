@@ -564,3 +564,13 @@
 - **仓库CI（相邻轨迹测试夹具修正）：** 提交 `775e7f37197552dc115f6bc8e45f3288d82c570d` 对应 [Run 45366553735](https://github.com/rexyll/cnc-knowledge/actions/runs/45366553735) success；该改动仅修正资源测试夹具的层级偏移构造。CI不执行 `resouces/` 下106项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
 
 - **仓库CI（相邻细化诊断版本沿革修正）：** 提交 `db166a00a4dbc7f460b50099fc0b9ee3d3b00f83` 对应 [Run 45366754776](https://github.com/rexyll/cnc-knowledge/actions/runs/45366754776) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下106项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
+## CH12-T003 ENE逐分量状态特征尺度（2026-11-24）
+
+- **配置契约：** ENE配置schema从1升级为2。`metrics.state_comparison_scales` 必须精确包含状态向量12字段，全部有限且大于0；`state_comparison_scale_source` 必须非空，`state_comparison_scale_source_ids` 必须至少包含一个非空且唯一来源ID。
+- **状态顺序/单位：** `q1_m,q2_rad,q3_m,q4_rad,qdot1_m_s,qdot2_rad_s,qdot3_m_s,qdot4_rad_s,s_m,s_dot_m_s,current_A,current_integrator_V`，对应m、rad、m、rad、m/s、rad/s、m/s、rad/s、m、m/s、A、V。manifest同时记录顺序和单位，归档验证器检查一致性。
+- **尺度选取原则：** 在运行前从规格、设计行程/速度包络、驱动控制器定义、批准工况范围或可追溯测量选取各状态分量的代表幅值；禁止从本次轨迹差/最大观测值/能量残差反推。积分器电压状态需使用控制器定义的积分器有效包络，不得未经论证拿母线电压或饱和值代替。
+- **输出：** 保留原始单位的逐分量最大绝对差/RMS差；新增两项12元素无量纲数组 `state_max_abs_difference_normalized` 与 `state_rms_difference_normalized`，各自分量除以固定的特征尺度。绝不合并为单一范数/综合评分。特征尺度不是验收容差、硬限位、安全限值或PASS门槛；不改变原ENE能量阈值。
+- **归档：** Manifest schema从3升级为4；保存尺度、来源、来源ID、状态向量顺序和单位，`--verify-archive`重算无量纲相邻诊断。配置schema从1升级为2，旧配置/归档须用对应旧版本工具处理；模板中的尺度与来源保持空白。
+- **测试定义：** 新增3项ENE资源测试，ENE35项、求解器35项、PATH-01 39项，共109项资源测试均未执行。ENE积分未执行，矩阵仍 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+

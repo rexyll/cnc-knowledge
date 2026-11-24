@@ -33,7 +33,8 @@ SUMMARY_NAME = "gantry-joint-drive-energy-closure-summary.csv"
 MANIFEST_NAME = "gantry-joint-drive-energy-closure-run-manifest.json"
 REFERENCE_TIMESERIES_NAME = "gantry-joint-drive-energy-closure-reference-h16-timeseries.csv"
 REFERENCE_LEVEL = "reference_h/16"
-MANIFEST_SCHEMA_VERSION = 3
+CONFIG_SCHEMA_VERSION = 2
+MANIFEST_SCHEMA_VERSION = 4
 LEVELS = ("h", "h/2", "h/4", "h/8")
 # Bound aggregate output rows before allocating RK4 trajectories and row dictionaries.
 MAX_TOTAL_SAMPLES = 50_000
@@ -43,6 +44,13 @@ STATE_VECTOR_FIELDS = [
     "qdot1_m_s", "qdot2_rad_s", "qdot3_m_s", "qdot4_rad_s",
     "s_m", "s_dot_m_s", "current_A", "current_integrator_V",
 ]
+STATE_COMPARISON_UNITS = {
+    "q1_m": "m", "q2_rad": "rad", "q3_m": "m", "q4_rad": "rad",
+    "qdot1_m_s": "m/s", "qdot2_rad_s": "rad/s",
+    "qdot3_m_s": "m/s", "qdot4_rad_s": "rad/s",
+    "s_m": "m", "s_dot_m_s": "m/s",
+    "current_A": "A", "current_integrator_V": "V",
+}
 TIME_FIELDS = [
     "case_id", "step_level", "step_s", "time_s",
     "q1_m", "q2_rad", "q3_m", "q4_rad",
@@ -161,11 +169,46 @@ def _validate_case_contract(case_id: str, model: Any, external: np.ndarray,
         if not external_load_present:
             raise EnergyClosureError("ENE-03 requires a nonzero external generalized force")
 
+def _validate_state_comparison_scale_contract(
+    raw_scales: Any, source: Any, source_ids: Any, *, context: str,
+) -> tuple[dict[str, float], str, list[str]]:
+    """Validate sourced characteristic scales for the 12 state-vector components.
+
+    These scales only nondimensionalize componentwise trajectory differences;
+    they are not acceptance tolerances, state bounds, or an aggregate score.
+    """
+    if not isinstance(raw_scales, dict) or set(raw_scales) != set(STATE_VECTOR_FIELDS):
+        raise EnergyClosureError(
+            f"{context}.state_comparison_scales must define exactly all 12 state-vector fields"
+        )
+    scales = {
+        field: path_support._number(
+            raw_scales[field], f"{context}.state_comparison_scales.{field}", positive=True
+        )
+        for field in STATE_VECTOR_FIELDS
+    }
+    if not isinstance(source, str) or not source.strip():
+        raise EnergyClosureError(f"{context}.state_comparison_scale_source is required")
+    if not isinstance(source_ids, list) or not source_ids or any(
+        not isinstance(item, str) or not item.strip() for item in source_ids
+    ):
+        raise EnergyClosureError(
+            f"{context}.state_comparison_scale_source_ids must be a non-empty string array"
+        )
+    normalized_ids = [item.strip() for item in source_ids]
+    if len(set(normalized_ids)) != len(normalized_ids):
+        raise EnergyClosureError(f"{context}.state_comparison_scale_source_ids must be unique")
+    return scales, source.strip(), normalized_ids
+
+
 def _validate(config: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(config, dict) or type(config.get("schema_version")) is not int:
         raise EnergyClosureError("configuration must be an object with integer schema_version")
-    if config["schema_version"] != 1:
-        raise EnergyClosureError("unsupported schema_version; expected integer 1")
+    if config["schema_version"] != CONFIG_SCHEMA_VERSION:
+        raise EnergyClosureError(
+            f"unsupported schema_version; expected integer {CONFIG_SCHEMA_VERSION} "
+            "with sourced state-comparison characteristic scales"
+        )
     case_id = config.get("case_id")
     if case_id not in ("ENE-01", "ENE-02", "ENE-03"):
         raise EnergyClosureError("case_id must be ENE-01, ENE-02 or ENE-03")
@@ -221,12 +264,23 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
     threshold = None if threshold_value is None else path_support._number(
         threshold_value, "metrics.normalized_energy_closure_threshold", positive=True
     )
+    state_comparison_scales, state_comparison_scale_source, state_comparison_scale_source_ids = (
+        _validate_state_comparison_scale_contract(
+            metrics.get("state_comparison_scales"),
+            metrics.get("state_comparison_scale_source"),
+            metrics.get("state_comparison_scale_source_ids"),
+            context="metrics",
+        )
+    )
     return {
         "case_id": case_id, "model": model, "initial": initial,
         "external": external, "duration": duration, "base_step": base_step,
         "intervals": intervals, "command": command, "scale": scale,
         "floor": floor, "threshold": threshold, "source": source.strip(),
         "source_ids": [x.strip() for x in ids],
+        "state_comparison_scales": state_comparison_scales,
+        "state_comparison_scale_source": state_comparison_scale_source,
+        "state_comparison_scale_source_ids": state_comparison_scale_source_ids,
     }
 
 
@@ -594,13 +648,14 @@ def _adjacent_refinement_diagnostics(
     primary_rows: list[dict[str, Any]],
     reference_rows: list[dict[str, Any]],
     smooth_flags: dict[str, bool],
+    state_comparison_scales: dict[str, float],
 ) -> dict[str, Any]:
-    """Compare each adjacent trajectory pair on their shared coarse time grid.
+    """Compare adjacent trajectories on a common grid and normalize each component.
 
     The same-model RK4 solutions are compared without collapsing mixed-unit
-    state errors or inferring an error order. This exposes whether the
-    observed trajectory differences shrink through h/16, but is not an
-    independent solver, an error bound, or an automatic acceptance gate.
+    state errors or inferring an error order. Sourced characteristic scales only
+    nondimensionalize each of the 12 component differences; they are not
+    tolerances or an aggregate score. This is not an error bound or acceptance gate.
     """
     trajectories = {
         label: [row for row in primary_rows if row["step_level"] == label]
@@ -654,6 +709,13 @@ def _adjacent_refinement_diagnostics(
             raise FloatingPointError(f"adjacent trajectory samples must be finite for {coarse_level}/{fine_level}")
 
         state_difference = fine_states - coarse_states
+        scale_vector = np.asarray(
+            [state_comparison_scales[field] for field in STATE_VECTOR_FIELDS], dtype=float
+        )
+        if scale_vector.shape != (len(STATE_VECTOR_FIELDS),) or not np.all(
+            np.isfinite(scale_vector) & (scale_vector > 0.0)
+        ):
+            raise ValueError("state comparison scales must be finite and positive for all fields")
         power_difference = fine_net - coarse_net
         coarse_work = float(path_support.composite_simpson_13(coarse_times, coarse_net))
         fine_work = float(path_support.composite_simpson_13(coarse_times, fine_net))
@@ -670,6 +732,10 @@ def _adjacent_refinement_diagnostics(
             ),
             "state_max_abs_difference": np.max(np.abs(state_difference), axis=0).tolist(),
             "state_rms_difference": np.sqrt(np.mean(state_difference**2, axis=0)).tolist(),
+            "state_max_abs_difference_normalized":
+                (np.max(np.abs(state_difference), axis=0) / scale_vector).tolist(),
+            "state_rms_difference_normalized":
+                (np.sqrt(np.mean(state_difference**2, axis=0)) / scale_vector).tolist(),
             "net_power_max_abs_difference_W": float(np.max(np.abs(power_difference))),
             "net_power_rms_difference_W": float(np.sqrt(np.mean(power_difference**2))),
             "coarse_net_power_work_on_shared_grid_J": coarse_work,
@@ -694,6 +760,8 @@ def _adjacent_refinement_diagnostics(
             row["fine_energy_residual_on_shared_grid_J"],
             row["fine_minus_coarse_energy_residual_J"],
             *row["state_max_abs_difference"], *row["state_rms_difference"],
+            *row["state_max_abs_difference_normalized"],
+            *row["state_rms_difference_normalized"],
         ]
         if not all(math.isfinite(value) for value in numeric):
             raise FloatingPointError("non-finite adjacent-refinement comparison metric")
@@ -779,7 +847,11 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
 
 def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
     if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != MANIFEST_SCHEMA_VERSION:
-        raise EnergyClosureError("invalid ENE manifest schema; expected version 3 with h/16 reference and adjacent-refinement diagnostics")
+        raise EnergyClosureError(
+            "invalid ENE manifest schema; expected version 4 with sourced state-comparison scales"
+        )
+    if type(manifest.get("config_schema_version")) is not int or manifest["config_schema_version"] != CONFIG_SCHEMA_VERSION:
+        raise EnergyClosureError("manifest config_schema_version must be 2")
     if manifest.get("case_id") not in ("ENE-01", "ENE-02", "ENE-03"):
         raise EnergyClosureError("invalid ENE manifest case_id")
     status = manifest.get("status")
@@ -789,6 +861,18 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         raise EnergyClosureError("manifest numerical_results_present must be true")
     if manifest.get("resource_tests_executed") is not False:
         raise EnergyClosureError("manifest resource_tests_executed must be false")
+    state_comparison_scales, state_comparison_scale_source, state_comparison_scale_source_ids = (
+        _validate_state_comparison_scale_contract(
+            manifest.get("state_comparison_scales"),
+            manifest.get("state_comparison_scale_source"),
+            manifest.get("state_comparison_scale_source_ids"),
+            context="manifest",
+        )
+    )
+    if manifest.get("state_vector_order") != STATE_VECTOR_FIELDS:
+        raise EnergyClosureError("manifest state_vector_order is inconsistent")
+    if manifest.get("state_comparison_units") != STATE_COMPARISON_UNITS:
+        raise EnergyClosureError("manifest state_comparison_units are inconsistent")
     source = manifest.get("parameter_source")
     source_ids = manifest.get("source_documents_or_measurement_ids")
     if not isinstance(source, str) or not source.strip():
@@ -919,6 +1003,9 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         "all_smooth": all_smooth,
         "all_stage_counts_match": all(stage_match_flags),
         "reference_report": reference_report,
+        "state_comparison_scales": state_comparison_scales,
+        "state_comparison_scale_source": state_comparison_scale_source,
+        "state_comparison_scale_source_ids": state_comparison_scale_source_ids,
     }
 
 
@@ -1197,7 +1284,8 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
     }
     adjacent_smooth_flags[REFERENCE_LEVEL] = contract["reference_report"]["smooth_unsaturated"]
     expected_adjacent_diagnostics = _adjacent_refinement_diagnostics(
-        timeseries_rows, reference_rows, adjacent_smooth_flags
+        timeseries_rows, reference_rows, adjacent_smooth_flags,
+        contract["state_comparison_scales"],
     )
     _assert_json_metrics_close(
         manifest.get("adjacent_refinement_diagnostics"),
@@ -1527,7 +1615,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     }
     adjacent_smooth_flags[REFERENCE_LEVEL] = bool(reference_smooth)
     adjacent_refinement_diagnostics = _adjacent_refinement_diagnostics(
-        all_rows, reference_rows, adjacent_smooth_flags
+        all_rows, reference_rows, adjacent_smooth_flags, v["state_comparison_scales"]
     )
 
     fine_times, fine_arrays = power_samples_by_level[-1]
@@ -1552,7 +1640,9 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         row["status"] = status
     completed = datetime.now(timezone.utc).isoformat()
     manifest = {
-        "schema_version": MANIFEST_SCHEMA_VERSION, "case_id": v["case_id"], "status": status,
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "config_schema_version": CONFIG_SCHEMA_VERSION,
+        "case_id": v["case_id"], "status": status,
         "numerical_results_present": True, "resource_tests_executed": False,
         "started_at_utc": started, "completed_at_utc": completed,
         "parameter_source": v["source"], "source_documents_or_measurement_ids": v["source_ids"],
@@ -1569,6 +1659,11 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "reference_trajectory_report": reference_trajectory_report,
         "reference_trajectory_diagnostics": reference_trajectory_diagnostics,
         "adjacent_refinement_diagnostics": adjacent_refinement_diagnostics,
+        "state_comparison_scales": v["state_comparison_scales"],
+        "state_comparison_scale_source": v["state_comparison_scale_source"],
+        "state_comparison_scale_source_ids": v["state_comparison_scale_source_ids"],
+        "state_vector_order": STATE_VECTOR_FIELDS,
+        "state_comparison_units": STATE_COMPARISON_UNITS,
         "notes": [
             "Power accounting is implemented independently of PATH-01 energy ledger/metrics.",
             "The same solver state vector field and stored-energy function are reused; this is not an independent physical model.",
@@ -1581,6 +1676,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "The h/16 reference comparison uses nested common time nodes to compare state, net power, stored-energy change and same-grid power work; it is diagnostic and excluded from the four-level primary PASS threshold.",
             "Adjacent-level trajectory differences are reported on each pair shared coarse grid as raw per-state and power differences; they do not infer convergence order, establish an error bound or alter PASS.",
             "The h/16 reference is excluded from the primary four-level PASS threshold and remains a diagnostic comparison only.",
+            "State-comparison characteristic scales are sourced and predeclared per component; normalized component differences are not tolerances, state bounds, or aggregate scores.",
             "Bundle files are staged first and then published by per-file atomic replacement; the five-file bundle is not a single filesystem transaction.",
             "No hardware, SIL, HIL or machine measurement validation is implied.",
         ],

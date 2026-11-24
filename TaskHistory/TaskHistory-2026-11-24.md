@@ -149,3 +149,8 @@
 - **仓库CI（相邻轨迹测试夹具修正）：** 提交 `775e7f37197552dc115f6bc8e45f3288d82c570d` 对应 [Run 45366553735](https://github.com/rexyll/cnc-knowledge/actions/runs/45366553735) success；该改动仅修正资源测试夹具的层级偏移构造。CI不执行 `resouces/` 下106项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
 
 - **仓库CI（相邻细化诊断版本沿革修正）：** 提交 `db166a00a4dbc7f460b50099fc0b9ee3d3b00f83` 对应 [Run 45366754776](https://github.com/rexyll/cnc-knowledge/actions/runs/45366754776) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下106项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
+**追加执行切片（2026-11-24）：ENE逐分量状态特征尺度。** 相邻轨迹差异的12个状态分量具有不同单位，现要求配置schema v2显式提供每个状态字段的正/有限特征尺度、来源说明和至少一个唯一来源ID。尺度应在运行前基于机床规格、轴行程/速度包络、驱动/控制器设计或批准工况包络确定；不得从本次轨迹观测结果反向拟合。对PI积分器电压状态，需要控制器设计/调试包络专门支撑。
+
+每对相邻轨迹继续保留原始单位下的最大绝对差/RMS差，并新增按12个固定尺度逐项归一化后的最大差/RMS差数组。无量纲结果仅帮助比较各分量相对于其工程特征幅值的大小，不是验收容差、安全限值或PASS门槛；禁止将12维混合单位结果进一步合并为综合分数。Manifest升级至schema v4，记录12个尺度、来源信息、顺序及单位，归档验证时重新计算这些数值。新增3项资源测试定义；ENE35项、求解器35项、PATH-01 39项，总计109项资源测试均未执行；ENE积分未执行，CH12-T003保持IN_PROGRESS。
+

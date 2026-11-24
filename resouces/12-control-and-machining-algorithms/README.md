@@ -294,3 +294,11 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_cl
 - Manifest schema升级为3，`--verify-archive`按主/参考端点CSV重算相邻轨迹诊断。
 - 新增3项ENE测试定义；ENE32项、solver35项、PATH-01 39项，总计106项资源测试均未执行，ENE积分未运行。
 
+## ENE逐分量状态特征尺度与无量纲差异（2026-11-24）
+
+- 配置schema升级为2，要求12个状态字段各自提供有限正的 `state_comparison_scales`，并登记 `state_comparison_scale_source` 与非空唯一 `state_comparison_scale_source_ids`。
+- 12个尺度分别对应m、rad、m/s、rad/s、A、V；从规格/设计包络/控制器定义/批准工况/可追溯测量预先选择，不能从本次仿真结果反推。PI积分器电压状态应使用有来源的积分器工作包络。
+- 相邻轨迹诊断新增 `state_max_abs_difference_normalized`、`state_rms_difference_normalized`，均为12分量无量纲数组；原始单位差异仍保留。禁止跨状态量合并成范数、综合评分或PASS阈值。
+- 特征尺度仅用于逐分量数量级解释，不是容差、安全限值或验收阈值；在一个比较配置的h～h/16各层级中固定。跨ENE案例比较须保持同一尺度版本。
+- Manifest schema升级为4，保存尺度、来源、来源ID、状态顺序和单位并在归档验证时校验；配置模板仍全空。新增3项测试定义；ENE35项、solver35项、PATH-01 39项，总计109项资源测试未执行，ENE积分未运行。
+

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "case_id": "ENE-01",
   "status": "NOT_RUN",
   "description": "Blank ENE-01/02/03 input template. Copy and set case_id; populate only sourced machine data or explicitly labelled synthetic fixtures. No default machine parameters are provided.",
@@ -174,6 +174,22 @@
     "energy_normalization_scale_J": null,
     "energy_normalization_floor_J": null,
     "normalized_energy_closure_threshold": null,
-    "note": "Scale and floor must be finite, positive, predeclared and unchanged across all four primary levels. The runner also computes a same-model h/16 reference trajectory and adjacent-level same-grid trajectory differences; both are diagnostic only and do not change the primary PASS threshold. The archive manifest schema is version 3. Null threshold yields COMPLETED_REPORT_ONLY."
+    "note": "Energy scale/floor must be finite, positive, predeclared and unchanged across the four primary levels. State comparison scales must be finite, positive, sourced engineering characteristic magnitudes (SI units as named) and unchanged across all five trajectory levels; they only nondimensionalize each component and are not tolerances, state bounds, or an aggregate score. The runner computes h/16 and adjacent-level diagnostics; none changes the primary PASS threshold. Config schema v2; manifest schema v4. Null energy threshold yields COMPLETED_REPORT_ONLY.",
+    "state_comparison_scales": {
+      "q1_m": null,
+      "q2_rad": null,
+      "q3_m": null,
+      "q4_rad": null,
+      "qdot1_m_s": null,
+      "qdot2_rad_s": null,
+      "qdot3_m_s": null,
+      "qdot4_rad_s": null,
+      "s_m": null,
+      "s_dot_m_s": null,
+      "current_A": null,
+      "current_integrator_V": null
+    },
+    "state_comparison_scale_source": null,
+    "state_comparison_scale_source_ids": []
   }
 }

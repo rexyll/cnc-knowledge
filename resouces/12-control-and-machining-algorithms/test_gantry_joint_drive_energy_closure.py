@@ -19,7 +19,8 @@ from gantry_joint_drive_energy_closure import (
     _validate_manifest_contract, _read_verified_csv,
     _fixed_trajectory_quadrature_diagnostics, _rk4_stage_power_diagnostics,
     _reference_trajectory_diagnostics, _adjacent_refinement_diagnostics,
-    STATE_VECTOR_FIELDS,
+    _validate_state_comparison_scale_contract, STATE_VECTOR_FIELDS,
+    STATE_COMPARISON_UNITS,
 )
 
 
@@ -261,6 +262,9 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             _rk4_stage_power_diagnostics(rows, 0.0, 0.0)
 
 
+    def _state_comparison_scales(self) -> dict[str, float]:
+        return {field: float(index + 1) for index, field in enumerate(STATE_VECTOR_FIELDS)}
+
     def _make_reference_fixture(self, intervals: int = 32):
         times = np.linspace(0.0, 1.0, intervals + 1)
         reference_rows = []
@@ -349,7 +353,8 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
                 row[field] = float(base[field]) + offset
         smooth = {"h": True, "h/2": True, "h/4": False,
                   "h/8": True, "reference_h/16": True}
-        result = _adjacent_refinement_diagnostics(primary_rows, reference_rows, smooth)
+        scales = self._state_comparison_scales()
+        result = _adjacent_refinement_diagnostics(primary_rows, reference_rows, smooth, scales)
         self.assertEqual(result["pair_order"], [
             ["h", "h/2"], ["h/2", "h/4"], ["h/4", "h/8"],
             ["h/8", "reference_h/16"],
@@ -359,6 +364,9 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         for row, difference in zip(result["pairs"], expected):
             self.assertEqual(len(row["state_max_abs_difference"]), 12)
             self.assertAlmostEqual(row["state_max_abs_difference"][0], difference)
+        self.assertAlmostEqual(result["pairs"][0]["state_max_abs_difference_normalized"][0], 0.04)
+        self.assertAlmostEqual(result["pairs"][0]["state_max_abs_difference_normalized"][1], 0.02)
+        self.assertEqual(len(result["pairs"][0]["state_rms_difference_normalized"]), 12)
         self.assertFalse(result["pairs"][1]["both_paths_smooth_unsaturated"])
         self.assertAlmostEqual(
             result["pairs"][0]["fine_minus_coarse_net_work_on_shared_grid_J"], -0.04
@@ -371,7 +379,7 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             _adjacent_refinement_diagnostics(
                 broken, reference_rows,
                 {"h": True, "h/2": True, "h/4": True, "h/8": True,
-                 "reference_h/16": True},
+                 "reference_h/16": True}, self._state_comparison_scales(),
             )
 
     def test_adjacent_refinement_rejects_non_finite_state_or_power(self) -> None:
@@ -381,18 +389,24 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             _adjacent_refinement_diagnostics(
                 primary_rows, reference_rows,
                 {"h": True, "h/2": True, "h/4": True, "h/8": True,
-                 "reference_h/16": True},
+                 "reference_h/16": True}, self._state_comparison_scales(),
             )
 
     def _valid_manifest_contract(self) -> dict:
         return {
-            "schema_version": 3, "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
+            "schema_version": 4, "config_schema_version": 2,
+            "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
             "numerical_results_present": True, "resource_tests_executed": False,
             "parameter_source": "synthetic test fixture", "source_documents_or_measurement_ids": [],
             "started_at_utc": "2026-01-01T00:00:00+00:00",
             "completed_at_utc": "2026-01-01T00:00:01+00:00",
             "duration_s": 1.0, "base_step_s": 0.25,
             "energy_normalization_scale_J": 1.0, "energy_normalization_floor_J": 1.0,
+            "state_comparison_scales": {field: float(index + 1) for index, field in enumerate(STATE_VECTOR_FIELDS)},
+            "state_comparison_scale_source": "synthetic unit-test characteristic scales",
+            "state_comparison_scale_source_ids": ["test-fixture:state-scales-v1"],
+            "state_vector_order": list(STATE_VECTOR_FIELDS),
+            "state_comparison_units": dict(STATE_COMPARISON_UNITS),
             "normalized_energy_closure_threshold": None,
             "refinement_schedule": ["h", "h/2", "h/4", "h/8"],
             "limiter_stage_reports": [
@@ -415,6 +429,61 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             },
         }
 
+
+
+    def test_state_comparison_scale_validation_requires_exact_positive_components(self) -> None:
+        scales = self._state_comparison_scales()
+        validated, source, source_ids = _validate_state_comparison_scale_contract(
+            scales, "machine specification and commissioning envelope",
+            ["spec:gantry-axis-envelope-v1", "commissioning:stroke-velocity-envelope-v2"],
+            context="metrics",
+        )
+        self.assertEqual(list(validated), STATE_VECTOR_FIELDS)
+        self.assertEqual(source, "machine specification and commissioning envelope")
+        self.assertEqual(len(source_ids), 2)
+        with self.assertRaisesRegex(EnergyClosureError, "exactly all 12"):
+            _validate_state_comparison_scale_contract(
+                {key: value for key, value in scales.items() if key != "current_A"},
+                "source", ["doc:scale"], context="metrics",
+            )
+        scales["q1_m"] = 0.0
+        with self.assertRaises(ValueError):
+            _validate_state_comparison_scale_contract(
+                scales, "source", ["doc:scale"], context="metrics",
+            )
+
+    def test_state_comparison_scale_validation_requires_traceable_source_ids(self) -> None:
+        with self.assertRaisesRegex(EnergyClosureError, "scale_source is required"):
+            _validate_state_comparison_scale_contract(
+                self._state_comparison_scales(), " ", ["doc:scale"], context="metrics",
+            )
+        with self.assertRaisesRegex(EnergyClosureError, "non-empty string array"):
+            _validate_state_comparison_scale_contract(
+                self._state_comparison_scales(), "engineering envelope", [], context="metrics",
+            )
+        with self.assertRaisesRegex(EnergyClosureError, "must be unique"):
+            _validate_state_comparison_scale_contract(
+                self._state_comparison_scales(), "engineering envelope",
+                ["doc:scale", "doc:scale"], context="metrics",
+            )
+
+    def test_manifest_rejects_nonpositive_or_incomplete_state_comparison_scales(self) -> None:
+        manifest = self._valid_manifest_contract()
+        manifest["state_comparison_scales"]["current_A"] = -1.0
+        with self.assertRaises(ValueError):
+            _validate_manifest_contract(manifest)
+        manifest = self._valid_manifest_contract()
+        del manifest["state_comparison_scales"]["q1_m"]
+        with self.assertRaisesRegex(EnergyClosureError, "exactly all 12"):
+            _validate_manifest_contract(manifest)
+        manifest = self._valid_manifest_contract()
+        manifest["state_vector_order"].reverse()
+        with self.assertRaisesRegex(EnergyClosureError, "state_vector_order"):
+            _validate_manifest_contract(manifest)
+        manifest = self._valid_manifest_contract()
+        manifest["state_comparison_units"]["q1_m"] = "mm"
+        with self.assertRaisesRegex(EnergyClosureError, "state_comparison_units"):
+            _validate_manifest_contract(manifest)
 
     def test_manifest_rejects_inconsistent_h16_reference_stage_count(self) -> None:
         manifest = self._valid_manifest_contract()

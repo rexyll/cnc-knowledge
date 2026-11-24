@@ -508,3 +508,20 @@ W_{coupled,l}-W_{fixed,8}
 
 Manifest schema从2升级为3，新增 `adjacent_refinement_diagnostics`；归档验证器根据主轨迹与h/16 CSV重新计算四对共同节点差值并严格核对manifest。新增3项ENE资源测试定义（共同节点分量差/同网格净功、非嵌套样本数拒绝、非有限状态/功率拒绝）。当前ENE运行器测试32项、求解器35项、PATH-01运行器39项，总计106项资源测试全部未执行；ENE积分仍为NOT_RUN。
 
+### 5.23 有来源的逐分量状态特征尺度（2026-11-24）
+
+相邻轨迹差异包含m、rad、m/s、rad/s、A和V等不同量纲。为了便于逐项观察数量级，ENE配置schema升级到2，要求在 `metrics` 中为状态向量12个字段逐一提供正且有限的 `state_comparison_scales`，并提供非空 `state_comparison_scale_source` 及至少一个唯一的 `state_comparison_scale_source_ids`。字段键与时序CSV状态顺序严格相同：`q1_m,q2_rad,q3_m,q4_rad,qdot1_m_s,qdot2_rad_s,qdot3_m_s,qdot4_rad_s,s_m,s_dot_m_s,current_A,current_integrator_V`；单位分别为m、rad、m/s、rad/s、A、V，具体字段名与单位映射登记在manifest。
+
+尺度应是运行前从机床规格、轴行程/速度设计包络、驱动与控制器规格、经批准的工况包络或可追溯测量中选定的**特征幅值**，例如对应状态量在目标验证工况中的代表性幅值/设计范围。每个值、单位及其来源标识应能追溯；不能从当前待比较轨迹的观测最大值、差值或能量残差反向拟合，也不能直接把安全限位、机械硬限位或验收容差冒充特征尺度。对于 `current_integrator_V`，应从控制器设计/调试定义的积分器状态有效工作包络选取，不能未经论证直接拿母线电压或电压饱和值代替。
+
+对每一相邻轨迹对，继续保留12个原始单位的最大绝对差和RMS差；另外逐分量计算：
+\[
+ d_{j,\max}^{*}=\frac{\max_k|x_{j,k}^{fine}-x_{j,k}^{coarse}|}{S_j},\qquad
+ d_{j,\mathrm{RMS}}^{*}=\frac{\sqrt{\frac{1}{N}\sum_k(x_{j,k}^{fine}-x_{j,k}^{coarse})^2}}{S_j}
+\]
+其中 \(S_j\) 是配置中预先声明且有来源的第j个特征尺度。输出字段 `state_max_abs_difference_normalized` 与 `state_rms_difference_normalized` 都保留12元素顺序，且均为无量纲。**不跨分量求最大值、加权和、欧氏范数或综合评分**，避免把不同状态量折叠为未经批准的单一指标。
+
+这些无量纲量仅用于展示该分量相对于预先声明特征幅值的差异大小，不是相对误差容差、允许误差、安全限值、统计置信区间或PASS门槛；它们也不改变ENE能量闭合阈值及相邻轨迹的非验收性质。相同对比系列的尺度必须在所有五档轨迹中保持不变；跨ENE-01/02/03比较时如需横向比较，也必须使用同一套已批准尺度和来源版本，否则应分组解释。
+
+运行器拒绝缺项、多项、零/负值、非有限尺度、空来源、空来源ID或重复来源ID。Manifest schema从3升级为4，记录状态向量顺序、单位、12个特征尺度及其来源；归档验证器校验字段/单位契约，并用manifest尺度重算无量纲相邻诊断。配置模板仍保留全部空值，不填入任何虚构机床量级。新增3项ENE资源测试定义；ENE资源测试定义35项，求解器35项、PATH-01 39项，总计109项均未执行；ENE积分仍为 `NOT_RUN`。
+
