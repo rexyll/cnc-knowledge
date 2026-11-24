@@ -1483,6 +1483,7 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
         expected_step = contract["duration"] / intervals
         if row["case_id"] != manifest["case_id"] or row["step_level"] != label:
             raise EnergyClosureError(f"summary row identity/order mismatch at {label}")
+        summary_by_level[label] = row
         interval_value = float(row["intervals"])
         sample_value = float(row["samples"])
         if not interval_value.is_integer() or not sample_value.is_integer():
