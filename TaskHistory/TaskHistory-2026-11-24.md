@@ -9,3 +9,15 @@
 - **测试提交：** `451ca951ff54b8eb9377f09e44f08abb8fa9ecb4`。
 - **CI：** GitHub Actions [Run 45307608288](https://github.com/rexyll/cnc-knowledge/actions/runs/45307608288) success；仓库Knowledge Quality工作流通过。该CI不执行 `resouces/` 下资源测试。
 - **本轮边界：** 资源测试仍未执行；未执行ENE-02/03积分或PATH-01仿真，没有新增数值能量残差或HIL/实机结论。验证矩阵8项继续 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+
+
+## CH12-T003 ENE-01～03独立瞬时能量率基准
+
+- 方法：新增中心差分方向导数基准。先由状态方程求 f(x)，再计算储能函数 E(x±epsilon*f(x))，估计 dE/dt；参考功率由电气端口、机械阻尼/摩擦本构、外部广义力虚功显式构造，不调用PATH-01能量账本函数。
+- ENE-01：在 Kf=Ke、无阻尼/摩擦/外力条件下，检查机电端口功率相消，剩余储能率为铜耗。
+- ENE-02：增加结构阻尼与轴向平滑摩擦，核对耗散项。
+- ENE-03：增加五维外部广义力，核对有符号外部功率。
+- 独立性边界：该方法独立于运行器账本实现，但仍使用同一求解器状态方程与储能函数，属于局部能量率一致性核验，不是独立物理模型或实测。
+- 资源测试：求解器35项、PATH-01运行器39项，共74项；全部未执行。
+- 代码提交/CI：371b22c402ab54dd7f579fc5fceb629dd2b51142；GitHub Actions Run 45310814342 success。该CI不执行 resouces/ 资源测试。
+- 验证边界：ENE-01～03数值积分及PATH-01四级步长收敛仍未运行，验证矩阵继续 NOT_RUN，CH12-T003保持 IN_PROGRESS。
