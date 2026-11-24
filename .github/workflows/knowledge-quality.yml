@@ -64,7 +64,7 @@ jobs:
         run: python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-04-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-04-synthetic
       - name: Run ENE-01 synthetic ideal one-port energy-closure integration
         id: ene_01_screen
-        run: python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_closure.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-ene-01-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/ene-01-synthetic
+        run: rm -rf resouces/12-control-and-machining-algorithms/generated/ene-01-synthetic && python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_closure.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-ene-01-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/ene-01-synthetic
       - name: Check whether RK4-03 source inputs changed
         id: rk4_03_archive_check
         run: |
