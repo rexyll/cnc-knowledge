@@ -7,6 +7,7 @@ python -m unittest discover -s resouces/12-control-and-machining-algorithms -p '
 from __future__ import annotations
 
 import contextlib
+import csv
 import hashlib
 import io
 import json
