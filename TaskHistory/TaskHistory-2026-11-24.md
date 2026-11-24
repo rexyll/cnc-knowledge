@@ -29,3 +29,5 @@
 - 同时保留细步长估计并独立与解析功率预算比较，避免仅依赖一个任意差分尺度。
 - 此改动只增强局部差分截断误差控制，不代表时间积分收敛或物理独立验证。
 - 资源测试仍为求解器35项、PATH-01运行器39项，共74项，均未执行；ENE积分、RK4细化、PATH-01均NOT_RUN。
+
+- **提交/CI：** `17448b6e7d82df433a74fa186c1761abd5b7ae0c`；GitHub Actions [Run 45316278632](https://github.com/rexyll/cnc-knowledge/actions/runs/45316278632) success，Knowledge structure and data quality job成功。CI不执行 `resouces/` 下74项资源测试。

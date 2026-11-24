@@ -437,3 +437,5 @@
 - **修订：** 每个用例现分别以1e-5 s和5e-6 s计算中心差分方向导数，使用二阶Richardson外推 (4*D(h/2)-D(h))/3 作为主观测值，同时保留细步长估计并分别对照解析功率预算。
 - **边界：** 这是局部方向导数截断误差敏感性增强，不是时间积分收敛、外部物理模型或实测验证；未执行资源测试。
 - **状态：** 求解器35项、PATH-01运行器39项，共74项资源测试仍全部未执行；ENE-01～03积分、RK4四级细化及PATH-01继续NOT_RUN，CH12-T003保持IN_PROGRESS。
+
+- **仓库CI：** 代码/测试/协议更新提交 `17448b6e7d82df433a74fa186c1761abd5b7ae0c` 对应 [Run 45316278632](https://github.com/rexyll/cnc-knowledge/actions/runs/45316278632) success；`Knowledge structure and data quality` job成功。该工作流不执行 `resouces/` 下74项资源测试。
