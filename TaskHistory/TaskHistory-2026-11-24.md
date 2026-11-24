@@ -220,3 +220,15 @@ ENE归档null一致性补充（2026-11-24）：runner比较器支持严格JSON n
 - **实际完成时间：** 2026-11-24T19:26:36+08:00（GitHub Actions完成日志，Asia/Shanghai）
 - **交付文件：** `.github/workflows/knowledge-quality.yml`；`resouces/12-control-and-machining-algorithms/test_gantry_joint_drive_solver.py`；`resouces/12-control-and-machining-algorithms/test_gantry_joint_drive_energy_closure.py`。
 - **所在分支：** `main`
+## CH12-T003 RK4-01低速平滑工况四级步长收敛筛查（2026-11-24）
+
+- **新增方法来源：** SRC-000372，Mississippi State University数学系《Numerical Analysis using Matlab and Maple》Chapter 5 §5.3.2，记录经典RK4更新及局部/全局误差阶数；该来源仅支持通用数值方法，不证明机床对象参数或物理有效性。
+- **新增实现：** `resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py`；配置`gantry-joint-drive-rk4-01-synthetic-config.json`；资源回归测试`test_gantry_joint_drive_rk4_screen.py`（5项）。CI已将该测试计入CH12资源测试，并在单测通过后运行RK4-01及上传结果。
+- **参数边界：** 完全合成SYNTHETIC_FIXTURE，不包含真实机床/驱动器参数；工况为低速平滑耦合状态、恒定电流参考和零外部广义力。时长0.2 s，步长h/h2/h4/h8分别0.005/0.0025/0.00125/0.000625 s，对应区间数40/80/160/320。12个状态特征尺度预先声明用于不同单位归一化，不是工程容差或机床限值。
+- **CI首次调用问题：** Run [45385287387](https://github.com/rexyll/cnc-knowledge/actions/runs/45385287387)中的121项资源测试通过，但RK4运行步骤因YAML shell换行参数未正确传递`--output-dir`而退出2；不是模型积分失败。已将CLI调用改为单行命令，后续Run完成实际积分。
+- **实际结果：** Run [45385379794](https://github.com/rexyll/cnc-knowledge/actions/runs/45385379794) success；两个Job均success，资源测试121/121通过（含solver35、PATH-01 39、ENE42、RK4 runner 5），仓库单元测试和strict knowledge lint通过。四档状态有限、阶段回调计数与理论值匹配，电流参考限幅及电压饱和计数均为0。
+- **相邻差异：** 归一化RMS差（h/h2、h2/h4、h4/h8）=2.4669535331394685e-05、9.795609168099331e-07、4.832443317361703e-08，严格下降；两组可计算观测阶数=4.654451518041637、4.341310498009402，均超过预设数值筛查下限3.0。该有限层级比值不证明渐近误差界。
+- **状态与边界：** RK4-01=`COMPLETED_REPORT_ONLY`，没有设置或检验任何应用级容差/定位精度指标；非机床性能认证。RK4-02～04、ENE-01～03积分和PATH-01自由/规定路径对照继续`NOT_RUN`。真实参数辨识、台架、HIL和实机均未进行。
+- **归档：** 结果包`generated/rk4-01-synthetic/rk4-01-synthetic-results-45385379794.zip`包含604行时序、4行步长汇总、3组相邻差异和manifest；SHA-256=`6bfd6a2c51b05fe38f8abd5ef526110985e62e0e6c2d991eb3921bc6451b1c02`。CI归档步骤正在写入main，提交SHA待该Actions运行完成后补录。
+- **代码/文档提交：** SRC-000372 `c27dc76e4c6a4c2a36645fc77f848ff703de3f89`；runner `09976e335f9922cc32e9fd573093e143bfd49af4`；fixture `1ed5c0ed33466ec7438c1bb4042c18514c1a6357`；tests `7a8ddfbf881f12c2e17cbe14ae5f56c48323081d`；workflow调用更正 `8fde470984328eec30c004f401fd70798cbe4d6b`；矩阵 `50c7bdf36ecad9211746356593c0bfb56ecd2087`；协议 `4fbd8cdbf813c1dcf65fbfc2ffe35bbea31247ae`；资源README `86978b201850c4b4d411114e8d60ce1bf34a52db`；ASSET-INDEX `805b9e10f58ccd277bf19390200d0daf165138af`；自动结果归档工作流提交`6fe753ddf841df6af296be3ca8c3dfe70ac33e4c`。
+- **分支：** 全部操作只在`main`。
