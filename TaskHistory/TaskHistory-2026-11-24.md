@@ -64,3 +64,11 @@
 - 归档语义明确为staging后逐文件原子替换、manifest最后发布；不宣称三文件整体事务原子性。
 - 新增4项配置契约资源测试，ENE运行器资源测试8项；总计82项资源测试（求解器35、PATH-01 39、ENE 8）均未执行。ENE积分未执行，验证矩阵保持NOT_RUN，CH12-T003保持IN_PROGRESS。
 - **仓库CI：** `ce86d8d75afca8bc00497f80377e16bc52e17a3e` 对应 [Run 45326460371](https://github.com/rexyll/cnc-knowledge/actions/runs/45326460371) success，单元测试与repository knowledge lint成功；CI不执行 `resouces/` 下82项资源测试，也不运行ENE积分。
+
+
+## CH12-T003 ENE归档语义校验加固
+
+- `--verify-archive` 新增manifest语义、RK4阶段统计、CSV数值有限性、布尔字段、四档时序网格、汇总/manifest验收状态一致性校验。
+- 新增4项归档语义资源测试定义；ENE资源测试12项，资源测试总计86项，全部未执行。未执行ENE积分。
+
+- 静态复核补充：归档校验同时约束电流参考/电压限幅计数与任一限幅计数的集合关系，并强制经验残差阶数列保持空值。

@@ -386,4 +386,11 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comp
 
 输出为固定名称时序CSV、汇总CSV及manifest。manifest绑定配置/求解器/运行器SHA、运行环境、参数来源、四档限幅计数和结果文件哈希/字节数/行列数。经验残差阶数目前固定不报告：配置尚未声明残差噪声地板及稳定性门控，不得仅凭相邻残差绝对值比值计算阶数。文件先写入staging目录，再逐文件原子替换；这不是三个文件组成的单一文件系统事务，manifest最后发布。 `--verify-archive` 只验证归档完整性，不重新运行求解器，也不证明仿真正确。
 
-**当前状态：** 运行器、八项资源级测试（其中4项新增配置契约测试）和空白配置模板已加入仓库；尚未执行这八项测试或任何ENE积分。Knowledge Quality CI不执行 `resouces/` 下代码/测试。ENE-01～03在验证矩阵中继续 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
+**当前状态：** 运行器、十二项资源级测试（其中4项新增配置契约测试、4项新增归档语义测试）和空白配置模板已加入仓库；尚未执行这十二项测试或任何ENE积分。Knowledge Quality CI不执行 `resouces/` 下代码/测试。ENE-01～03在验证矩阵中继续 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。
+
+### ENE归档语义校验加固（2026-11-24）
+
+- `--verify-archive` 除哈希/字节数/CSV结构外，进一步核对manifest运行状态、数值结果/资源测试标志、参数来源、时间戳、归一化尺度、阈值及四档限幅阶段报告。
+- 对CSV所有数值字段拒绝NaN/Inf/非数值，布尔字段只接受True/False；核对汇总状态与manifest一致、四档区间数/步长/样本数正确、时序网格严格递增且匹配配置时长。
+- 根据manifest阈值、限幅门控和最细两档归一化残差重新推导预期状态，拒绝PASS/FAIL/REPORT_ONLY语义不一致的归档。`VERIFIED`仍只表示归档自洽，不表示仿真或物理正确。
+- 新增4项归档语义资源测试定义；ENE运行器测试由8项增至12项。

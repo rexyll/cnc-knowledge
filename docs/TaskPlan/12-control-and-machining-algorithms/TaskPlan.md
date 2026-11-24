@@ -475,3 +475,11 @@
 - **资源测试：** ENE运行器测试定义增至8项；求解器35项、PATH-01运行器39项、ENE运行器8项，共82项资源测试全部未执行。未执行ENE积分。
 - **状态：** CH12-T003保持 IN_PROGRESS；ENE-01～03与PATH-01验证仍为 NOT_RUN。
 - **仓库CI：** 修正提交 `ce86d8d75afca8bc00497f80377e16bc52e17a3e` 对应 [Run 45326460371](https://github.com/rexyll/cnc-knowledge/actions/runs/45326460371) success；`Knowledge structure and data quality` job中的单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下82项资源测试，也不运行ENE积分。
+
+
+### CH12-T003 ENE归档语义校验加固（2026-11-24）
+
+- `--verify-archive` 扩展为语义一致性校验：检查manifest运行状态/结果标志/参数来源/时间戳/尺度阈值/四档限幅阶段报告；CSV拒绝NaN/Inf及非法布尔值。
+- 核对四档RK4区间数、步长、样本数、时间网格递增性、汇总与时序行数，以及manifest状态与阈值/限幅门控/最细两档残差是否一致。
+- 新增4项归档语义资源测试定义；ENE运行器资源测试12项，总资源测试86项（求解器35、PATH-01 39、ENE 12）均未执行；ENE积分未执行。
+- `VERIFIED`仍仅表示归档文件与记录自洽，不代表仿真正确或物理有效；CH12-T003保持 `IN_PROGRESS`。

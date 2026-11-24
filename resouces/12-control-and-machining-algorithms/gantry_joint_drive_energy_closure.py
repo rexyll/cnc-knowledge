@@ -266,43 +266,278 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
     return artifacts
 
 
+def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
+        raise EnergyClosureError("invalid ENE manifest schema")
+    if manifest.get("case_id") not in ("ENE-01", "ENE-02", "ENE-03"):
+        raise EnergyClosureError("invalid ENE manifest case_id")
+    status = manifest.get("status")
+    if status not in ("PASS", "FAIL", "COMPLETED_REPORT_ONLY"):
+        raise EnergyClosureError("manifest status is missing or invalid")
+    if manifest.get("numerical_results_present") is not True:
+        raise EnergyClosureError("manifest numerical_results_present must be true")
+    if manifest.get("resource_tests_executed") is not False:
+        raise EnergyClosureError("manifest resource_tests_executed must be false")
+    source = manifest.get("parameter_source")
+    source_ids = manifest.get("source_documents_or_measurement_ids")
+    if not isinstance(source, str) or not source.strip():
+        raise EnergyClosureError("manifest parameter_source is missing")
+    if not isinstance(source_ids, list) or any(
+        not isinstance(item, str) or not item.strip() for item in source_ids
+    ) or len(set(source_ids)) != len(source_ids):
+        raise EnergyClosureError("manifest source document/measurement IDs are invalid")
+    try:
+        started = datetime.fromisoformat(manifest["started_at_utc"])
+        completed = datetime.fromisoformat(manifest["completed_at_utc"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise EnergyClosureError("manifest UTC timestamps are missing or invalid") from error
+    if started.tzinfo is None or completed.tzinfo is None:
+        raise EnergyClosureError("manifest timestamps must include an explicit UTC offset")
+    if completed < started:
+        raise EnergyClosureError("manifest completion timestamp precedes start")
+    numeric_positive = (
+        "duration_s", "base_step_s", "energy_normalization_scale_J",
+        "energy_normalization_floor_J",
+    )
+    for key in numeric_positive:
+        value = manifest.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or value <= 0:
+            raise EnergyClosureError(f"manifest {key} must be finite and positive")
+    duration = float(manifest["duration_s"])
+    base_step = float(manifest["base_step_s"])
+    base_intervals = int(round(duration / base_step))
+    if base_intervals < 2 or base_intervals % 2 or not math.isclose(
+        base_intervals * base_step, duration, rel_tol=1e-9, abs_tol=1e-12
+    ):
+        raise EnergyClosureError("manifest duration/base_step does not define an even integer interval count")
+    threshold = manifest.get("normalized_energy_closure_threshold")
+    if threshold is not None and (
+        isinstance(threshold, bool) or not isinstance(threshold, (int, float))
+        or not math.isfinite(float(threshold)) or threshold <= 0
+    ):
+        raise EnergyClosureError("manifest normalized energy threshold is invalid")
+    if manifest.get("refinement_schedule") != list(LEVELS):
+        raise EnergyClosureError("manifest refinement_schedule is invalid")
+    reports = manifest.get("limiter_stage_reports")
+    if not isinstance(reports, list) or len(reports) != len(LEVELS):
+        raise EnergyClosureError("manifest limiter_stage_reports must contain four levels")
+    smooth_flags = []
+    for index, (report, label) in enumerate(zip(reports, LEVELS)):
+        if not isinstance(report, dict) or report.get("level") != label:
+            raise EnergyClosureError(f"manifest limiter report {label} is invalid")
+        expected = 4 * base_intervals * (2 ** index)
+        for key in (
+            "stage_evaluations", "expected_stage_evaluations",
+            "current_reference_saturated_stages", "voltage_saturated_stages",
+            "any_limiter_active_stages",
+        ):
+            value = report.get(key)
+            if type(value) is not int or value < 0:
+                raise EnergyClosureError(f"manifest limiter report {label}.{key} is invalid")
+        if report["expected_stage_evaluations"] != expected:
+            raise EnergyClosureError(f"manifest expected RK4 stage count is invalid at {label}")
+        reference_count = report["current_reference_saturated_stages"]
+        voltage_count = report["voltage_saturated_stages"]
+        any_count = report["any_limiter_active_stages"]
+        if any(value > report["stage_evaluations"] for value in (
+            reference_count, voltage_count, any_count
+        )) or any_count < max(reference_count, voltage_count) or any_count > reference_count + voltage_count:
+            raise EnergyClosureError(f"manifest limiter counts are inconsistent at {label}")
+        stage_match = report["stage_evaluations"] == expected
+        smooth = stage_match and report["any_limiter_active_stages"] == 0
+        if report.get("stage_count_matches_expected") is not stage_match:
+            raise EnergyClosureError(f"manifest stage-count flag is inconsistent at {label}")
+        if report.get("smooth_unsaturated") is not smooth:
+            raise EnergyClosureError(f"manifest smooth-unsaturated flag is inconsistent at {label}")
+        smooth_flags.append(smooth)
+    all_smooth = all(smooth_flags)
+    if manifest.get("all_refinements_smooth_unsaturated") is not all_smooth:
+        raise EnergyClosureError("manifest aggregate smooth-unsaturated flag is inconsistent")
+    return {
+        "status": status, "threshold": None if threshold is None else float(threshold),
+        "duration": duration, "base_intervals": base_intervals,
+        "all_smooth": all_smooth,
+    }
+
+
+def _read_verified_csv(
+    path: Path, fields: list[str], name: str, *,
+    boolean_fields: tuple[str, ...] = (), blank_fields: tuple[str, ...] = (),
+) -> list[dict[str, str]]:
+    try:
+        with path.open("r", encoding="utf-8", newline="") as stream:
+            reader = csv.DictReader(stream)
+            if reader.fieldnames != fields:
+                raise EnergyClosureError(f"CSV schema mismatch for {name}")
+            records = []
+            categorical = {"case_id", "step_level", "status", *boolean_fields}
+            for row_number, row in enumerate(reader, start=2):
+                if None in row or any(value is None for value in row.values()):
+                    raise EnergyClosureError(f"CSV row width mismatch for {name} at row {row_number}")
+                for key, value in row.items():
+                    if key in categorical:
+                        if key in boolean_fields and value not in ("True", "False"):
+                            raise EnergyClosureError(f"invalid boolean {key} in {name} row {row_number}")
+                        continue
+                    if value == "" and key in blank_fields:
+                        continue
+                    try:
+                        number = float(value)
+                    except (TypeError, ValueError) as error:
+                        raise EnergyClosureError(
+                            f"non-numeric value {key} in {name} row {row_number}"
+                        ) from error
+                    if not math.isfinite(number):
+                        raise EnergyClosureError(
+                            f"non-finite value {key} in {name} row {row_number}"
+                        )
+                records.append(row)
+            return records
+    except (csv.Error, UnicodeError) as error:
+        raise EnergyClosureError(f"CSV parse/encoding failure for {name}: {error}") from error
+
+
 def verify_archive(output_dir: Path) -> dict[str, Any]:
     output = output_dir.resolve()
     manifest_path = output / MANIFEST_NAME
     if not manifest_path.is_file():
         raise EnergyClosureError("ENE run manifest is missing")
-    with manifest_path.open("r", encoding="utf-8") as stream:
-        manifest = json.load(stream)
-    if not isinstance(manifest, dict) or type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
-        raise EnergyClosureError("invalid ENE manifest schema")
-    if manifest.get("case_id") not in ("ENE-01", "ENE-02", "ENE-03"):
-        raise EnergyClosureError("invalid ENE manifest case_id")
+    try:
+        with manifest_path.open("r", encoding="utf-8") as stream:
+            manifest = json.load(stream)
+    except (OSError, ValueError, UnicodeError) as error:
+        raise EnergyClosureError(f"cannot read ENE manifest: {error}") from error
+    if not isinstance(manifest, dict):
+        raise EnergyClosureError("ENE manifest root must be a JSON object")
+    contract = _validate_manifest_contract(manifest)
     artifacts = manifest.get("output_artifacts")
-    if not isinstance(artifacts, dict):
-        raise EnergyClosureError("manifest output_artifacts must be an object")
-    for key, name, fields in (
-        ("timeseries_csv", TIMESERIES_NAME, TIME_FIELDS),
-        ("summary_csv", SUMMARY_NAME, SUMMARY_FIELDS),
+    if not isinstance(artifacts, dict) or set(artifacts) != {"timeseries_csv", "summary_csv"}:
+        raise EnergyClosureError("manifest output_artifacts must contain exactly the two CSV artifacts")
+    verified: dict[str, dict[str, Any]] = {}
+    parsed: dict[str, list[dict[str, str]]] = {}
+    for key, name, fields, bool_fields, blank_fields in (
+        ("timeseries_csv", TIMESERIES_NAME, TIME_FIELDS,
+         ("current_reference_saturated", "voltage_saturated"), ()),
+        ("summary_csv", SUMMARY_NAME, SUMMARY_FIELDS, (), ("empirical_residual_order_from_previous",)),
     ):
         record = artifacts.get(key)
         path = output / name
         if not isinstance(record, dict) or record.get("file") != name or not path.is_file():
             raise EnergyClosureError(f"missing or invalid artifact {name}")
-        if record.get("sha256") != _sha256(path) or record.get("size_bytes") != path.stat().st_size:
+        digest = record.get("sha256")
+        if not isinstance(digest, str) or len(digest) != 64 or any(
+            character not in "0123456789abcdef" for character in digest
+        ):
+            raise EnergyClosureError(f"invalid SHA-256 metadata for {name}")
+        size_bytes, data_rows, columns = (
+            record.get("size_bytes"), record.get("data_rows"), record.get("columns")
+        )
+        if type(size_bytes) is not int or size_bytes < 0:
+            raise EnergyClosureError(f"invalid byte-size metadata for {name}")
+        if type(data_rows) is not int or data_rows < 0:
+            raise EnergyClosureError(f"invalid row-count metadata for {name}")
+        if type(columns) is not int or columns != len(fields):
+            raise EnergyClosureError(f"invalid column-count metadata for {name}")
+        if size_bytes != path.stat().st_size or digest != _sha256(path):
             raise EnergyClosureError(f"integrity mismatch for {name}")
-        with path.open("r", encoding="utf-8", newline="") as stream:
-            reader = csv.reader(stream)
-            if next(reader, None) != fields:
-                raise EnergyClosureError(f"CSV schema mismatch for {name}")
-            count = 0
-            for row in reader:
-                if len(row) != len(fields):
-                    raise EnergyClosureError(f"CSV row width mismatch for {name}")
-                count += 1
-        if count != record.get("data_rows") or record.get("columns") != len(fields):
-            raise EnergyClosureError(f"CSV dimensions mismatch for {name}")
-    return {"case_id": manifest["case_id"], "status": "VERIFIED",
-            "recorded_status": manifest.get("status"), "manifest_json": str(manifest_path)}
+        records = _read_verified_csv(
+            path, fields, name, boolean_fields=bool_fields, blank_fields=blank_fields
+        )
+        if len(records) != data_rows:
+            raise EnergyClosureError(f"CSV row-count mismatch for {name}")
+        parsed[key] = records
+        verified[key] = {
+            "file": name, "sha256": digest, "size_bytes": size_bytes,
+            "data_rows": data_rows, "columns": columns,
+        }
+
+    summary_rows = parsed["summary_csv"]
+    if len(summary_rows) != len(LEVELS):
+        raise EnergyClosureError("summary CSV must contain exactly four refinement rows")
+    summary_by_level = {}
+    for index, (row, label) in enumerate(zip(summary_rows, LEVELS)):
+        intervals = contract["base_intervals"] * (2 ** index)
+        expected_step = contract["duration"] / intervals
+        if row["case_id"] != manifest["case_id"] or row["step_level"] != label:
+            raise EnergyClosureError(f"summary row identity/order mismatch at {label}")
+        interval_value = float(row["intervals"])
+        sample_value = float(row["samples"])
+        if not interval_value.is_integer() or not sample_value.is_integer():
+            raise EnergyClosureError(f"summary interval/sample fields must be integers at {label}")
+        if int(interval_value) != intervals or int(sample_value) != intervals + 1:
+            raise EnergyClosureError(f"summary interval/sample count mismatch at {label}")
+        if not math.isclose(float(row["step_s"]), expected_step, rel_tol=1e-9, abs_tol=1e-12):
+            raise EnergyClosureError(f"summary step size mismatch at {label}")
+        if row["status"] != contract["status"]:
+            raise EnergyClosureError(f"summary status disagrees with manifest at {label}")
+        if row["empirical_residual_order_from_previous"] != "":
+            raise EnergyClosureError(f"empirical residual order must remain unreported at {label}")
+        threshold_text = row["energy_closure_threshold"]
+        if contract["threshold"] is None:
+            if threshold_text != "":
+                raise EnergyClosureError(f"summary threshold should be blank at {label}")
+        elif not math.isclose(float(threshold_text), contract["threshold"], rel_tol=1e-12, abs_tol=0.0):
+            raise EnergyClosureError(f"summary threshold disagrees with manifest at {label}")
+        if float(row["normalized_energy_residual"]) < 0 or float(row["normalized_energy_residual_trapezoid"]) < 0:
+            raise EnergyClosureError(f"negative normalized residual at {label}")
+        report = manifest["limiter_stage_reports"][index]
+        summary_counts = {
+            "expected_rk4_stage_evaluations": report["expected_stage_evaluations"],
+            "observed_rk4_stage_evaluations": report["stage_evaluations"],
+            "current_reference_saturated_stages": report["current_reference_saturated_stages"],
+            "voltage_saturated_stages": report["voltage_saturated_stages"],
+            "any_limiter_active_stages": report["any_limiter_active_stages"],
+        }
+        for field, expected_value in summary_counts.items():
+            if not float(row[field]).is_integer() or int(float(row[field])) != expected_value:
+                raise EnergyClosureError(f"summary {field} disagrees with manifest at {label}")
+        if row["stage_count_matches_expected"] != str(report["stage_count_matches_expected"]):
+            raise EnergyClosureError(f"summary stage-count flag disagrees with manifest at {label}")
+        if row["smooth_unsaturated"] != str(report["smooth_unsaturated"]):
+            raise EnergyClosureError(f"summary smooth-unsaturated flag disagrees with manifest at {label}")
+        summary_by_level[label] = row
+    timeseries_rows = parsed["timeseries_csv"]
+    cursor = 0
+    for index, label in enumerate(LEVELS):
+        intervals = contract["base_intervals"] * (2 ** index)
+        samples = intervals + 1
+        step = contract["duration"] / intervals
+        block = timeseries_rows[cursor:cursor + samples]
+        if len(block) != samples:
+            raise EnergyClosureError(f"timeseries sample count mismatch at {label}")
+        previous_time = None
+        for sample_index, row in enumerate(block):
+            expected_time = sample_index * step
+            if row["case_id"] != manifest["case_id"] or row["step_level"] != label:
+                raise EnergyClosureError(f"timeseries row identity/order mismatch at {label}")
+            if not math.isclose(float(row["step_s"]), step, rel_tol=1e-9, abs_tol=1e-12):
+                raise EnergyClosureError(f"timeseries step size mismatch at {label}")
+            time_s = float(row["time_s"])
+            if previous_time is not None and time_s <= previous_time:
+                raise EnergyClosureError(f"timeseries time is not strictly increasing at {label}")
+            if not math.isclose(time_s, expected_time, rel_tol=1e-9, abs_tol=1e-12):
+                raise EnergyClosureError(f"timeseries time grid mismatch at {label}")
+            previous_time = time_s
+        if int(float(summary_by_level[label]["samples"])) != len(block):
+            raise EnergyClosureError(f"timeseries/summary row count mismatch at {label}")
+        cursor += samples
+    if cursor != len(timeseries_rows):
+        raise EnergyClosureError("timeseries contains unexpected extra rows")
+    threshold = contract["threshold"]
+    if threshold is None or not contract["all_smooth"]:
+        expected_status = "COMPLETED_REPORT_ONLY"
+    elif all(float(summary_by_level[level]["normalized_energy_residual"]) <= threshold
+             for level in ("h/4", "h/8")):
+        expected_status = "PASS"
+    else:
+        expected_status = "FAIL"
+    if contract["status"] != expected_status:
+        raise EnergyClosureError("manifest status is inconsistent with threshold/limiter/summary results")
+    return {
+        "case_id": manifest["case_id"], "status": "VERIFIED",
+        "recorded_status": contract["status"], "manifest_json": str(manifest_path),
+        "artifacts": verified,
+    }
 
 
 def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
@@ -315,7 +550,6 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     external = v["external"]
     all_rows: list[dict[str, Any]] = []
     summaries: list[dict[str, Any]] = []
-    residuals: list[float] = []
     saturation_by_level = []
     started = datetime.now(timezone.utc).isoformat()
     for level, label in enumerate(LEVELS):
@@ -371,7 +605,6 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         trap_rho = abs(trap_residual) / denominator
         if not all(math.isfinite(x) for x in (delta, net_work, residual, rho, trap_residual, trap_rho)):
             raise FloatingPointError(f"non-finite ENE closure metric at {label}")
-        residuals.append(abs(residual))
         for index, (time_s, vector, sample) in enumerate(zip(times, states, samples)):
             row = {
                 "case_id": v["case_id"], "step_level": label, "step_s": step,

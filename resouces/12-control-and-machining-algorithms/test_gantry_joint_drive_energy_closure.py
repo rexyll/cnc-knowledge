@@ -14,6 +14,7 @@ from gantry_joint_drive_solver import (
 )
 from gantry_joint_drive_energy_closure import (
     EnergyClosureError, _power_sample, _validate_case_contract,
+    _validate_manifest_contract, _read_verified_csv,
 )
 
 
@@ -112,6 +113,64 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             _validate_case_contract("ENE-03", model, np.ones(5), [
                 "Q_yaw", "Q_x_common", "Q_bending", "Q_torsion", "Q_s"
             ])
+
+    def _valid_manifest_contract(self) -> dict:
+        return {
+            "schema_version": 1, "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
+            "numerical_results_present": True, "resource_tests_executed": False,
+            "parameter_source": "synthetic test fixture", "source_documents_or_measurement_ids": [],
+            "started_at_utc": "2026-01-01T00:00:00+00:00",
+            "completed_at_utc": "2026-01-01T00:00:01+00:00",
+            "duration_s": 1.0, "base_step_s": 0.25,
+            "energy_normalization_scale_J": 1.0, "energy_normalization_floor_J": 1.0,
+            "normalized_energy_closure_threshold": None,
+            "refinement_schedule": ["h", "h/2", "h/4", "h/8"],
+            "limiter_stage_reports": [
+                {"level": label, "stage_evaluations": 4 * 4 * (2 ** i),
+                 "expected_stage_evaluations": 4 * 4 * (2 ** i),
+                 "current_reference_saturated_stages": 0, "voltage_saturated_stages": 0,
+                 "any_limiter_active_stages": 0, "stage_count_matches_expected": True,
+                 "smooth_unsaturated": True}
+                for i, label in enumerate(("h", "h/2", "h/4", "h/8"))
+            ],
+            "all_refinements_smooth_unsaturated": True,
+        }
+
+    def test_archive_manifest_rejects_invalid_or_unsubstantiated_status(self) -> None:
+        manifest = self._valid_manifest_contract()
+        manifest["status"] = "VERIFIED"
+        with self.assertRaisesRegex(EnergyClosureError, "status"):
+            _validate_manifest_contract(manifest)
+        manifest = self._valid_manifest_contract()
+        manifest["resource_tests_executed"] = True
+        with self.assertRaisesRegex(EnergyClosureError, "resource_tests_executed"):
+            _validate_manifest_contract(manifest)
+
+    def test_archive_manifest_rejects_inconsistent_rk4_stage_count(self) -> None:
+        manifest = self._valid_manifest_contract()
+        manifest["limiter_stage_reports"][2]["stage_evaluations"] -= 1
+        with self.assertRaisesRegex(EnergyClosureError, "stage-count flag"):
+            _validate_manifest_contract(manifest)
+
+    def test_archive_csv_rejects_non_finite_numeric_values(self) -> None:
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.csv"
+            path.write_text("value,flag\nNaN,True\n", encoding="utf-8")
+            with self.assertRaisesRegex(EnergyClosureError, "non-finite"):
+                _read_verified_csv(path, ["value", "flag"], path.name,
+                                   boolean_fields=("flag",))
+
+    def test_archive_csv_rejects_invalid_boolean_tokens(self) -> None:
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.csv"
+            path.write_text("value,flag\n1,yes\n", encoding="utf-8")
+            with self.assertRaisesRegex(EnergyClosureError, "invalid boolean"):
+                _read_verified_csv(path, ["value", "flag"], path.name,
+                                   boolean_fields=("flag",))
 
     def test_external_power_changes_sign_when_velocity_reverses(self) -> None:
         model = make_model()
