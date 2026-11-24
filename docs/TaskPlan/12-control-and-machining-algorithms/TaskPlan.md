@@ -612,3 +612,13 @@
 - **归档比较加固：** 噪声预算报告及残差阶数诊断使用精确数值比较，不使用通用1e-12绝对容差；新增对应小量级预算篡改拒绝测试定义。
 
 - **仓库CI（ENE预算运行时舍入模式门控）：** 实现修正提交 `b4d70c68009cabc058383deae9e8644117ab5670` 对应 [Run 45381515561](https://github.com/rexyll/cnc-knowledge/actions/runs/45381515561) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下116项资源测试，也不运行ENE积分或数值仿真。ENE-01/02/03验证矩阵继续 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+## CH12-T003 资源测试接入、首次执行与复验通过（2026-11-24）
+
+- **CI接入：** `.github/workflows/knowledge-quality.yml`新增`CH12 numerical resource tests`独立Job；Python 3.12安装NumPy并执行`test_gantry_joint_drive_*.py`。
+- **首次执行发现：** 116项中出现2 FAIL、2 ERROR。经日志和源码逐项分析，均定位到测试构造/断言：极端混合尺度下测试解未在均衡坐标中构造；零电流命令产生PI比例电压却按零端电压预期；RK4阶段测试错误访问末步之后的k1；ENE非法h/16网格夹具先在Simpson求积处失败。
+- **修正提交：** `6862981116ee0eefdc9cbb18049d604df9b32e4a`修正求解器资源测试中的三个测试问题；`ce0ea5a68234efc1d325b3ee78822f4f548ee40b`修正ENE参考网格拒绝测试夹具。未改生产求解器/运行器方程或降低数值断言。
+- **复验结果：** GitHub Actions [Run 45384191326](https://github.com/rexyll/cnc-knowledge/actions/runs/45384191326)两个Job均success；Python 3.12.16 / NumPy 2.5.5，ENE42/42、PATH-01 39/39、solver35/35，总计116/116通过（日志`Ran 116 tests in 0.082s`、`OK`）。原仓库tests与strict knowledge lint也通过。
+- **资源测试状态：** 已接入CI并通过当前运行环境的单元测试验收。后续代码更新仍由该Job自动回归。
+- **未完成数值验证：** RK4-01～04、ENE-01～03、PATH-01均继续`NOT_RUN`。资源单测不等于四档积分、能量闭合或自由/约束轨迹仿真；真实机床参数辨识、台架、HIL和实机仍未完成。没有完整工程验收阈值时，不得标记工程PASS。
+- **相关每日记录：** [TaskHistory-2026-11-24.md](../../../TaskHistory/TaskHistory-2026-11-24.md)。
+- **当前任务状态：** CH12-T003保持`IN_PROGRESS`。
