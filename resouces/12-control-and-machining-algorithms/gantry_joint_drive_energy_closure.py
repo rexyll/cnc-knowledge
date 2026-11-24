@@ -33,8 +33,8 @@ SUMMARY_NAME = "gantry-joint-drive-energy-closure-summary.csv"
 MANIFEST_NAME = "gantry-joint-drive-energy-closure-run-manifest.json"
 REFERENCE_TIMESERIES_NAME = "gantry-joint-drive-energy-closure-reference-h16-timeseries.csv"
 REFERENCE_LEVEL = "reference_h/16"
-CONFIG_SCHEMA_VERSION = 2
-MANIFEST_SCHEMA_VERSION = 4
+CONFIG_SCHEMA_VERSION = 3
+MANIFEST_SCHEMA_VERSION = 5
 LEVELS = ("h", "h/2", "h/4", "h/8")
 # Bound aggregate output rows before allocating RK4 trajectories and row dictionaries.
 MAX_TOTAL_SAMPLES = 50_000
@@ -104,7 +104,8 @@ SUMMARY_FIELDS = [
     "current_reference_saturated_stages", "voltage_saturated_stages",
     "any_limiter_active_stages", "expected_rk4_stage_evaluations",
     "observed_rk4_stage_evaluations", "stage_count_matches_expected",
-    "smooth_unsaturated", "empirical_residual_order_from_previous",
+    "smooth_unsaturated", "residual_order_gate_status",
+    "residual_order_noise_floor_J", "empirical_residual_order_from_previous",
     "energy_closure_threshold", "status",
 ]
 
@@ -201,13 +202,98 @@ def _validate_state_comparison_scale_contract(
     return scales, source.strip(), normalized_ids
 
 
+def _validate_residual_noise_floor_contract(
+    value: Any, method: Any, source: Any, source_ids: Any, *, context: str,
+) -> tuple[float, str, str, list[str]]:
+    """Validate a pre-run, sourced bound for residual numerical noise.
+
+    This is not derived from energy scales or this run's observed residuals.
+    The source method must justify a conservative bound for the residual
+    evaluation path and execution environment.
+    """
+    floor = path_support._number(
+        value, f"{context}.energy_residual_noise_floor_J", positive=True
+    )
+    if not isinstance(method, str) or not method.strip():
+        raise EnergyClosureError(f"{context}.energy_residual_noise_floor_method is required")
+    if not isinstance(source, str) or not source.strip():
+        raise EnergyClosureError(f"{context}.energy_residual_noise_floor_source is required")
+    if not isinstance(source_ids, list) or not source_ids or any(
+        not isinstance(item, str) or not item.strip() for item in source_ids
+    ):
+        raise EnergyClosureError(
+            f"{context}.energy_residual_noise_floor_source_ids must be a non-empty string array"
+        )
+    normalized_ids = [item.strip() for item in source_ids]
+    if len(set(normalized_ids)) != len(normalized_ids):
+        raise EnergyClosureError(
+            f"{context}.energy_residual_noise_floor_source_ids must be unique"
+        )
+    return floor, method.strip(), source.strip(), normalized_ids
+
+
+def _residual_order_diagnostics(
+    summaries: list[dict[str, Any]],
+    reference_diagnostics: dict[str, Any],
+    smooth_flags: list[bool],
+    noise_floor_J: float,
+) -> dict[str, Any]:
+    """Gate energy-residual exponents against a predeclared floor and trend.
+
+    Orders are emitted only when all five levels are smooth, all residuals
+    exceed the floor, signs do not cross, and absolute residuals decrease
+    strictly under refinement. This is a diagnostic gate, not a proof of
+    asymptotic convergence or an error bound.
+    """
+    if len(summaries) != len(LEVELS) or len(smooth_flags) != len(LEVELS) + 1:
+        raise ValueError("residual-order diagnostics require four primary and one reference level")
+    finest = reference_diagnostics.get("finest") if isinstance(reference_diagnostics, dict) else None
+    if not isinstance(finest, dict):
+        raise ValueError("h/16 reference energy diagnostics are missing")
+    residuals = [float(row["energy_residual_simpson_J"]) for row in summaries]
+    residuals.append(float(finest["energy_residual_simpson_J"]))
+    if not all(math.isfinite(value) for value in residuals):
+        raise FloatingPointError("residual-order inputs must be finite")
+    floor = float(noise_floor_J)
+    if not math.isfinite(floor) or floor <= 0.0:
+        raise ValueError("residual noise floor must be finite and positive")
+
+    magnitudes = [abs(value) for value in residuals]
+    if not all(smooth_flags):
+        gate_status = "NONSMOOTH_OR_LIMITER_ACTIVE"
+    elif any(value <= floor for value in magnitudes):
+        gate_status = "AT_OR_BELOW_NOISE_FLOOR"
+    elif any((value > 0.0) != (residuals[0] > 0.0) for value in residuals[1:]):
+        gate_status = "SIGN_CROSSING"
+    elif not all(fine < coarse for coarse, fine in zip(magnitudes, magnitudes[1:])):
+        gate_status = "NON_MONOTONIC_MAGNITUDE"
+    else:
+        gate_status = "ELIGIBLE"
+
+    orders: list[float | None] = [None] * len(LEVELS)
+    if gate_status == "ELIGIBLE":
+        log_two = math.log(2.0)
+        for index, (coarse, fine) in enumerate(zip(magnitudes, magnitudes[1:])):
+            order = (math.log(coarse) - math.log(fine)) / log_two
+            if not math.isfinite(order):
+                raise FloatingPointError("empirical residual order is non-finite")
+            orders[index] = order
+    return {
+        "levels": [*LEVELS, REFERENCE_LEVEL],
+        "energy_residual_simpson_J": residuals,
+        "noise_floor_J": floor,
+        "gate_status": gate_status,
+        "pairwise_empirical_orders": orders,
+    }
+
+
 def _validate(config: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(config, dict) or type(config.get("schema_version")) is not int:
         raise EnergyClosureError("configuration must be an object with integer schema_version")
     if config["schema_version"] != CONFIG_SCHEMA_VERSION:
         raise EnergyClosureError(
             f"unsupported schema_version; expected integer {CONFIG_SCHEMA_VERSION} "
-            "with sourced state-comparison characteristic scales"
+            "with sourced state scales and residual noise-floor contract"
         )
     case_id = config.get("case_id")
     if case_id not in ("ENE-01", "ENE-02", "ENE-03"):
@@ -272,6 +358,15 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
             context="metrics",
         )
     )
+    residual_noise_floor, residual_noise_method, residual_noise_source, residual_noise_source_ids = (
+        _validate_residual_noise_floor_contract(
+            metrics.get("energy_residual_noise_floor_J"),
+            metrics.get("energy_residual_noise_floor_method"),
+            metrics.get("energy_residual_noise_floor_source"),
+            metrics.get("energy_residual_noise_floor_source_ids"),
+            context="metrics",
+        )
+    )
     return {
         "case_id": case_id, "model": model, "initial": initial,
         "external": external, "duration": duration, "base_step": base_step,
@@ -281,6 +376,10 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
         "state_comparison_scales": state_comparison_scales,
         "state_comparison_scale_source": state_comparison_scale_source,
         "state_comparison_scale_source_ids": state_comparison_scale_source_ids,
+        "energy_residual_noise_floor_J": residual_noise_floor,
+        "energy_residual_noise_floor_method": residual_noise_method,
+        "energy_residual_noise_floor_source": residual_noise_source,
+        "energy_residual_noise_floor_source_ids": residual_noise_source_ids,
     }
 
 
@@ -848,10 +947,10 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
 def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
     if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != MANIFEST_SCHEMA_VERSION:
         raise EnergyClosureError(
-            "invalid ENE manifest schema; expected version 4 with sourced state-comparison scales"
+            "invalid ENE manifest schema; expected version 5 with residual noise-floor diagnostics"
         )
     if type(manifest.get("config_schema_version")) is not int or manifest["config_schema_version"] != CONFIG_SCHEMA_VERSION:
-        raise EnergyClosureError("manifest config_schema_version must be 2")
+        raise EnergyClosureError("manifest config_schema_version must be 3")
     if manifest.get("case_id") not in ("ENE-01", "ENE-02", "ENE-03"):
         raise EnergyClosureError("invalid ENE manifest case_id")
     status = manifest.get("status")
@@ -873,6 +972,15 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         raise EnergyClosureError("manifest state_vector_order is inconsistent")
     if manifest.get("state_comparison_units") != STATE_COMPARISON_UNITS:
         raise EnergyClosureError("manifest state_comparison_units are inconsistent")
+    residual_noise_floor, residual_noise_method, residual_noise_source, residual_noise_source_ids = (
+        _validate_residual_noise_floor_contract(
+            manifest.get("energy_residual_noise_floor_J"),
+            manifest.get("energy_residual_noise_floor_method"),
+            manifest.get("energy_residual_noise_floor_source"),
+            manifest.get("energy_residual_noise_floor_source_ids"),
+            context="manifest",
+        )
+    )
     source = manifest.get("parameter_source")
     source_ids = manifest.get("source_documents_or_measurement_ids")
     if not isinstance(source, str) or not source.strip():
@@ -1003,6 +1111,11 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         "all_smooth": all_smooth,
         "all_stage_counts_match": all(stage_match_flags),
         "reference_report": reference_report,
+        "smooth_flags": [*smooth_flags, reference_report["smooth_unsaturated"]],
+        "energy_residual_noise_floor_J": residual_noise_floor,
+        "energy_residual_noise_floor_method": residual_noise_method,
+        "energy_residual_noise_floor_source": residual_noise_source,
+        "energy_residual_noise_floor_source_ids": residual_noise_source_ids,
         "state_comparison_scales": state_comparison_scales,
         "state_comparison_scale_source": state_comparison_scale_source,
         "state_comparison_scale_source_ids": state_comparison_scale_source_ids,
@@ -1019,7 +1132,9 @@ def _read_verified_csv(
             if reader.fieldnames != fields:
                 raise EnergyClosureError(f"CSV schema mismatch for {name}")
             records = []
-            categorical = {"case_id", "step_level", "status", *boolean_fields}
+            categorical = {
+                "case_id", "step_level", "status", "residual_order_gate_status", *boolean_fields
+            }
             for row_number, row in enumerate(reader, start=2):
                 if None in row or any(value is None for value in row.values()):
                     raise EnergyClosureError(f"CSV row width mismatch for {name} at row {row_number}")
@@ -1107,6 +1222,14 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
     summary_rows = parsed["summary_csv"]
     if len(summary_rows) != len(LEVELS):
         raise EnergyClosureError("summary CSV must contain exactly four refinement rows")
+    expected_residual_order = _residual_order_diagnostics(
+        summary_rows, manifest.get("reference_trajectory_diagnostics"),
+        contract["smooth_flags"], contract["energy_residual_noise_floor_J"],
+    )
+    _assert_json_metrics_close(
+        manifest.get("residual_order_diagnostic"), expected_residual_order,
+        "residual_order_diagnostic",
+    )
     summary_by_level = {}
     for index, (row, label) in enumerate(zip(summary_rows, LEVELS)):
         intervals = contract["base_intervals"] * (2 ** index)
@@ -1123,8 +1246,25 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
             raise EnergyClosureError(f"summary step size mismatch at {label}")
         if row["status"] != contract["status"]:
             raise EnergyClosureError(f"summary status disagrees with manifest at {label}")
-        if row["empirical_residual_order_from_previous"] != "":
-            raise EnergyClosureError(f"empirical residual order must remain unreported at {label}")
+        expected_order = (
+            None if index == 0
+            else expected_residual_order["pairwise_empirical_orders"][index - 1]
+        )
+        order_text = row["empirical_residual_order_from_previous"]
+        if expected_order is None:
+            if order_text != "":
+                raise EnergyClosureError(f"empirical residual order must be blank at {label}")
+        elif not order_text or not math.isclose(
+            float(order_text), expected_order, rel_tol=1e-9, abs_tol=1e-12
+        ):
+            raise EnergyClosureError(f"empirical residual order is inconsistent at {label}")
+        if row["residual_order_gate_status"] != expected_residual_order["gate_status"]:
+            raise EnergyClosureError(f"residual-order gate status is inconsistent at {label}")
+        if not math.isclose(
+            float(row["residual_order_noise_floor_J"]),
+            contract["energy_residual_noise_floor_J"], rel_tol=1e-12, abs_tol=0.0,
+        ):
+            raise EnergyClosureError(f"residual noise floor is inconsistent at {label}")
         threshold_text = row["energy_closure_threshold"]
         if contract["threshold"] is None:
             if threshold_text != "":
@@ -1495,10 +1635,6 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             all_rows.append(_timeseries_row(
                 v["case_id"], label, step, float(time_s), vector, sample, command
             ))
-        # The protocol requires a predeclared residual noise floor and stable,
-        # non-crossing residuals before estimating empirical order. The config
-        # schema has no such floor yet, so suppress the estimate.
-        previous_order = None
         stage_diagnostics = _rk4_stage_power_diagnostics(
             all_stage_rows[stage_row_start:], delta, net_work
         )
@@ -1526,7 +1662,9 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "observed_rk4_stage_evaluations": stage_count,
             "stage_count_matches_expected": stage_match,
             "smooth_unsaturated": smooth,
-            "empirical_residual_order_from_previous": previous_order,
+            "residual_order_gate_status": "PENDING",
+            "residual_order_noise_floor_J": v["energy_residual_noise_floor_J"],
+            "empirical_residual_order_from_previous": None,
             "energy_closure_threshold": v["threshold"],
             "status": "PENDING",
         })
@@ -1626,6 +1764,17 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     )
     for summary, diagnostic in zip(summaries, fixed_trajectory_diagnostics):
         summary.update(diagnostic)
+    residual_order_diagnostic = _residual_order_diagnostics(
+        summaries, reference_trajectory_diagnostics,
+        [*[bool(item["smooth_unsaturated"]) for item in saturation_by_level], bool(reference_smooth)],
+        v["energy_residual_noise_floor_J"],
+    )
+    for index, summary in enumerate(summaries):
+        summary["residual_order_gate_status"] = residual_order_diagnostic["gate_status"]
+        summary["empirical_residual_order_from_previous"] = (
+            None if index == 0
+            else residual_order_diagnostic["pairwise_empirical_orders"][index - 1]
+        )
     all_smooth = all(item["smooth_unsaturated"] for item in saturation_by_level)
     all_stage_counts_match = all(item["stage_count_matches_expected"] for item in saturation_by_level)
     if not all_stage_counts_match:
@@ -1654,6 +1803,11 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "refinement_schedule": list(LEVELS), "energy_normalization_scale_J": v["scale"],
         "energy_normalization_floor_J": v["floor"],
         "normalized_energy_closure_threshold": v["threshold"],
+        "energy_residual_noise_floor_J": v["energy_residual_noise_floor_J"],
+        "energy_residual_noise_floor_method": v["energy_residual_noise_floor_method"],
+        "energy_residual_noise_floor_source": v["energy_residual_noise_floor_source"],
+        "energy_residual_noise_floor_source_ids": v["energy_residual_noise_floor_source_ids"],
+        "residual_order_diagnostic": residual_order_diagnostic,
         "all_refinements_smooth_unsaturated": all_smooth,
         "limiter_stage_reports": saturation_by_level,
         "reference_trajectory_report": reference_trajectory_report,
@@ -1671,7 +1825,8 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "Current reference limiting is not a hard state-current clamp or hardware overcurrent protection.",
             "RK4-stage power uses the classical 1:2:2:1 stage weights and is a solver-coupled sampling diagnostic, not an independent quadrature oracle or error bound.",
             "A VERIFIED archive proves file integrity/schema only, not simulation correctness or physical validity.",
-            "Residual empirical order is intentionally omitted until a predeclared noise floor and stability gate are configured.",
+            "Residual empirical order is reported only when all five levels are smooth, above the predeclared sourced noise floor, same-sign and strictly decreasing in magnitude; it is diagnostic, not an error bound.",
+            "The residual noise floor is a pre-run sourced numerical-analysis bound; it is not inferred from this run, the energy normalization floor, or machine epsilon alone.",
             "The h/16 reference path uses the same RK4 solver and constant command/load; it is a finer numerical reference, not an exact or independent physical solution.",
             "The h/16 reference comparison uses nested common time nodes to compare state, net power, stored-energy change and same-grid power work; it is diagnostic and excluded from the four-level primary PASS threshold.",
             "Adjacent-level trajectory differences are reported on each pair shared coarse grid as raw per-state and power differences; they do not infer convergence order, establish an error bound or alter PASS.",

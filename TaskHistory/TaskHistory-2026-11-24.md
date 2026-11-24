@@ -161,3 +161,12 @@
 - **仓库CI（状态特征尺度文档最终同步）：** 提交 `bdd0c36bd20da8db270ecac8b45ef7b081885143` 对应 [Run 45372748872](https://github.com/rexyll/cnc-knowledge/actions/runs/45372748872) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下109项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
 
 - **仓库CI（状态特征尺度最终文档记录）：** 文档提交 `8afb88f0c9e868f2cb20c1149eb734ec7405a3ee` 对应 [Run 45372844907](https://github.com/rexyll/cnc-knowledge/actions/runs/45372844907) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下109项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
+
+## CH12-T003 ENE残差数值噪声底与经验阶数门控（2026-11-24）
+
+- ENE运行器新增预运行残差噪声底契约：要求正有限J值、方法、来源说明及唯一来源ID。噪声底针对储能端点差、净功Simpson求积和残差相减的完整数值路径；要求来源材料说明浮点格式、操作/累加路径、求积节点与权重、数值范围/抵消和执行环境。明确与能量归一化分母地板分离；不允许仅用machine epsilon乘能量尺度或本次仿真残差倒推。
+- 对h、h/2、h/4、h/8、h/16五层残差实施条件门控：五档阶段完整无任何限幅、残差均高于噪声底、同号且绝对值严格递减时才输出四组相邻经验指数；否则输出具体门控状态并抑制全部指数。
+- 前三个经验指数分别写入h/2、h/4、h/8 summary行；h/8→h/16指数与五层残差/门控写入manifest。归档校验从summary残差、h/16参考残差、限幅报告与预声明噪声底重新计算门控和指数。
+- 新增3项ENE资源测试定义：噪声底值/来源契约；高于噪声底同号单调序列与噪声/跨零/非单调/限幅门控；manifest噪声底来源完整性。ENE资源测试38项、求解器35项、PATH-01 39项，共112项资源测试均未执行。
+- 配置schema升至3，manifest schema升至5；配置模板中的噪声底及来源字段全部留空。仅完成代码/文档/测试定义与静态检查；未执行任何resouces测试、ENE积分或数值仿真。验证矩阵保持NOT_RUN，CH12-T003保持IN_PROGRESS。

@@ -581,3 +581,12 @@
 - **仓库CI（状态特征尺度文档最终同步）：** 提交 `bdd0c36bd20da8db270ecac8b45ef7b081885143` 对应 [Run 45372748872](https://github.com/rexyll/cnc-knowledge/actions/runs/45372748872) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下109项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
 
 - **仓库CI（状态特征尺度最终文档记录）：** 文档提交 `8afb88f0c9e868f2cb20c1149eb734ec7405a3ee` 对应 [Run 45372844907](https://github.com/rexyll/cnc-knowledge/actions/runs/45372844907) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下109项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
+
+## CH12-T003 ENE残差数值噪声底与经验阶数门控（2026-11-24）
+
+- **配置契约：** ENE配置schema升至3，新增正且有限的 `energy_residual_noise_floor_J`、`energy_residual_noise_floor_method`、`energy_residual_noise_floor_source` 与非空唯一来源ID数组。该噪声底是储能端点变化、净功Simpson求积及二者相减的完整算术路径的预运行保守数值界；不允许由本次结果反推，也不能简单用machine epsilon乘能量尺度代替。
+- **噪声底论证：** 方法说明需覆盖执行平台浮点格式/精度、储能与功率分项的数值范围、Simpson权重/节点和累加路径、正负大项抵消及Python/NumPy/运行环境。它与归一化分母中的 `energy_normalization_floor_J` 完全分离。
+- **判读算法：** 以h、h/2、h/4、h/8、h/16五档Simpson残差作为序列。五档阶段完整且未限幅、所有残差均高于预声明噪声底、符号一致、绝对值严格递减，才报告四个相邻经验指数；否则按 `NONSMOOTH_OR_LIMITER_ACTIVE`、`AT_OR_BELOW_NOISE_FLOOR`、`SIGN_CROSSING` 或 `NON_MONOTONIC_MAGNITUDE` 明确标记并抑制全部阶数值。
+- **语义边界：** 经验指数仅为有限层级比值，不证明渐近阶数或误差界，不自动套用p≥3，也不修改原ENE PASS阈值。前三个指数写入summary，h/8→h/16指数与五档完整诊断保存在manifest；归档校验从summary及manifest重算。
+- **版本/测试：** 配置schema v3、manifest schema v5。新增3项ENE资源测试定义；ENE38项、求解器35项、PATH-01 39项，总计112项资源测试均未执行；ENE积分未执行。验证矩阵仍NOT_RUN，CH12-T003保持IN_PROGRESS。

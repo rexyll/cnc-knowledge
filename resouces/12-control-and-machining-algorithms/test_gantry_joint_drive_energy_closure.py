@@ -19,8 +19,8 @@ from gantry_joint_drive_energy_closure import (
     _validate_manifest_contract, _read_verified_csv,
     _fixed_trajectory_quadrature_diagnostics, _rk4_stage_power_diagnostics,
     _reference_trajectory_diagnostics, _adjacent_refinement_diagnostics,
-    _validate_state_comparison_scale_contract, STATE_VECTOR_FIELDS,
-    STATE_COMPARISON_UNITS,
+    _validate_state_comparison_scale_contract, _validate_residual_noise_floor_contract,
+    _residual_order_diagnostics, STATE_VECTOR_FIELDS, STATE_COMPARISON_UNITS,
 )
 
 
@@ -394,7 +394,7 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
 
     def _valid_manifest_contract(self) -> dict:
         return {
-            "schema_version": 4, "config_schema_version": 2,
+            "schema_version": 5, "config_schema_version": 3,
             "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
             "numerical_results_present": True, "resource_tests_executed": False,
             "parameter_source": "synthetic test fixture", "source_documents_or_measurement_ids": [],
@@ -407,6 +407,10 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             "state_comparison_scale_source_ids": ["test-fixture:state-scales-v1"],
             "state_vector_order": list(STATE_VECTOR_FIELDS),
             "state_comparison_units": dict(STATE_COMPARISON_UNITS),
+            "energy_residual_noise_floor_J": 1e-12,
+            "energy_residual_noise_floor_method": "pre-run operation-bound fixture",
+            "energy_residual_noise_floor_source": "synthetic test evidence",
+            "energy_residual_noise_floor_source_ids": ["test-fixture:noise-floor-v1"],
             "normalized_energy_closure_threshold": None,
             "refinement_schedule": ["h", "h/2", "h/4", "h/8"],
             "limiter_stage_reports": [
@@ -483,6 +487,76 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         manifest = self._valid_manifest_contract()
         manifest["state_comparison_units"]["q1_m"] = "mm"
         with self.assertRaisesRegex(EnergyClosureError, "state_comparison_units"):
+            _validate_manifest_contract(manifest)
+
+    def test_residual_noise_floor_validation_requires_positive_sourced_contract(self) -> None:
+        floor, method, source, ids = _validate_residual_noise_floor_contract(
+            1e-12, "operation-bound numerical analysis", "numerical method note",
+            ["test-fixture:noise-bound-v1"], context="metrics",
+        )
+        self.assertEqual(floor, 1e-12)
+        self.assertEqual(method, "operation-bound numerical analysis")
+        self.assertEqual(source, "numerical method note")
+        self.assertEqual(ids, ["test-fixture:noise-bound-v1"])
+        with self.assertRaises(ValueError):
+            _validate_residual_noise_floor_contract(
+                0.0, "method", "source", ["doc:noise"], context="metrics",
+            )
+        with self.assertRaisesRegex(EnergyClosureError, "method is required"):
+            _validate_residual_noise_floor_contract(
+                1e-12, " ", "source", ["doc:noise"], context="metrics",
+            )
+        with self.assertRaisesRegex(EnergyClosureError, "must be unique"):
+            _validate_residual_noise_floor_contract(
+                1e-12, "method", "source", ["doc:noise", "doc:noise"], context="metrics",
+            )
+
+    def test_residual_order_requires_above_floor_same_sign_monotone_smooth_series(self) -> None:
+        summaries = [
+            {"energy_residual_simpson_J": value}
+            for value in (16.0, 8.0, 4.0, 2.0)
+        ]
+        reference = {"finest": {"energy_residual_simpson_J": 1.0}}
+        eligible = _residual_order_diagnostics(
+            summaries, reference, [True, True, True, True, True], 0.5,
+        )
+        self.assertEqual(eligible["gate_status"], "ELIGIBLE")
+        for order in eligible["pairwise_empirical_orders"]:
+            self.assertAlmostEqual(order, 1.0)
+
+        below_floor = _residual_order_diagnostics(
+            summaries, reference, [True, True, True, True, True], 1.0,
+        )
+        self.assertEqual(below_floor["gate_status"], "AT_OR_BELOW_NOISE_FLOOR")
+        self.assertTrue(all(order is None for order in below_floor["pairwise_empirical_orders"]))
+
+        sign_crossing = [dict(row) for row in summaries]
+        sign_crossing[1]["energy_residual_simpson_J"] *= -1.0
+        crossed = _residual_order_diagnostics(
+            sign_crossing, reference, [True, True, True, True, True], 0.5,
+        )
+        self.assertEqual(crossed["gate_status"], "SIGN_CROSSING")
+
+        non_monotone = [dict(row) for row in summaries]
+        non_monotone[2]["energy_residual_simpson_J"] = 9.0
+        unstable = _residual_order_diagnostics(
+            non_monotone, reference, [True, True, True, True, True], 0.5,
+        )
+        self.assertEqual(unstable["gate_status"], "NON_MONOTONIC_MAGNITUDE")
+
+        limited = _residual_order_diagnostics(
+            summaries, reference, [True, True, False, True, True], 0.5,
+        )
+        self.assertEqual(limited["gate_status"], "NONSMOOTH_OR_LIMITER_ACTIVE")
+
+    def test_manifest_rejects_missing_residual_noise_floor_provenance(self) -> None:
+        manifest = self._valid_manifest_contract()
+        manifest["energy_residual_noise_floor_source_ids"] = []
+        with self.assertRaisesRegex(EnergyClosureError, "non-empty string array"):
+            _validate_manifest_contract(manifest)
+        manifest = self._valid_manifest_contract()
+        manifest["energy_residual_noise_floor_J"] = 0.0
+        with self.assertRaises(ValueError):
             _validate_manifest_contract(manifest)
 
     def test_manifest_rejects_inconsistent_h16_reference_stage_count(self) -> None:
