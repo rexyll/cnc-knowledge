@@ -59,7 +59,7 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
 |---|---|---|---|---|---|---|
 | `gantry-joint-drive-numerical-verification-protocol.md` | Markdown验证规范 | RK4步长收敛、机电功率/能量预算、自由轴与规定轨迹约束参考模型比较、验收与归档口径 | 项目原创 | 2026-11-23 | 原创文档 | 龙门连续移动负载与双向耦合专题 |
-| `gantry-joint-drive-verification-matrix.csv` | CSV测试矩阵 | RK4-01～04、ENE-01～03、PATH-01的输入/参考/指标/判据模板；8项均未执行，规定路径参考积分器已实现 | 项目原创 | 2026-11-23 | 原创模板 | 同上 |
+| `gantry-joint-drive-verification-matrix.csv` | CSV测试矩阵 | RK4-01～04、ENE-01～03、PATH-01的输入/参考/指标/判据；RK4-01为合成报告态完成，其余7项仍NOT_RUN | 项目原创 | 2026-11-23 | 原创模板/状态记录 | 同上 |
 
 
 ## PATH-01自由轴/规定轨迹对照模板（2026-11-23）
