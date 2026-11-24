@@ -145,7 +145,7 @@ PATH-01运行器测试新增2项，验证结构阻尼与平滑轴摩擦在正反
 | 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
 |---|---|---|---|---|---|---|
 | `gantry_joint_drive_energy_closure.py` | Python源码 | ENE-01～03单用例四档RK4积分；独立功率账本、Simpson/梯形能量残差、限幅阶段统计、CSV/manifest哈希归档与归档校验 | 项目原创 | 2026-11-24 | 原创代码 | 龙门连续移动负载与双向耦合专题 |
-| `test_gantry_joint_drive_energy_closure.py` | Python测试 | 12项ENE资源测试：4项功率账本、4项用例/坐标契约、4项归档语义校验 | 项目原创 | 2026-11-24 | 原创代码 | 同上 |
+| `test_gantry_joint_drive_energy_closure.py` | Python测试 | 45项ENE运行器资源测试，覆盖功率账本、输入/坐标契约、归档语义、嵌套求积、阶段功率、h/16参考、状态尺度、噪声预算与ENE-01集成/归档回归 | 项目原创 | 2026-11-24 | 原创代码 | 同上 |
 | `gantry-joint-drive-energy-closure-config-template.json` | JSON配置模板 | ENE-01/02/03参数/来源/初值/积分/能量尺度和阈值模板；不含默认机床参数 | 项目原创 | 2026-11-24 | 原创模板 | 同上 |
 
 当前求解器35项、PATH-01运行器39项、ENE运行器4项，共78项资源测试均未执行。该运行器尚未执行任何ENE积分；Knowledge Quality CI不覆盖资源代码/测试。
@@ -270,7 +270,7 @@ ENE运行器测试定义42项（自动预算测试包括预算报告精确数值
 | `generated/rk4-01-synthetic/rk4-01-adjacent-differences.csv` | CSV差异 | 三组相邻细化网格的12状态分量最大/RMS差、归一化差异和有限层级观测阶数 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
 | `generated/rk4-01-synthetic/rk4-01-run-manifest.json` | JSON运行清单 | 配置/源码SHA-256、执行环境、数值筛查、限幅和阶段统计、三个CSV文件校验元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
-运行状态：RK4-01、RK4-02、RK4-03和RK4-04均为`COMPLETED_REPORT_ONLY`；均为合成模型数值收敛筛查，不是机床实测或性能验收。ENE-01～03、PATH-01仍`NOT_RUN`。
+运行状态：RK4-01、RK4-02、RK4-03和RK4-04均为`COMPLETED_REPORT_ONLY`；ENE-01为`COMPLETED_REPORT_ONLY`；ENE-02/03与PATH-01仍`NOT_RUN`。上述完成状态仅表示合成模型数值/软件筛查，不是机床实测或性能验收。
 
 
 ## RK4-02正向自由路径数值筛查资源（2026-11-24）
@@ -309,4 +309,19 @@ RK4-03为`COMPLETED_REPORT_ONLY`。最细档实际负向移动约5.451mm，较0.
 | `generated/rk4-04-synthetic/rk4-04-adjacent-differences.csv` | CSV差异 | 3行/58列，12状态逐分量最大/RMS绝对差和归一化差，以及相邻层级有限网格观测阶数 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
 | `generated/rk4-04-synthetic/rk4-04-run-manifest.json` | JSON运行清单 | 运行参数/环境、输入SHA-256、四档数值指标、12分量门槛及CSV SHA-256/尺寸/行列校验元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
-RK4-04为`COMPLETED_REPORT_ONLY`。相邻归一化RMS差=1.5932818829959823e-05、6.326497700114816e-07、3.121036304213065e-08；观测阶数=4.654450664538402、4.341310011850346；12个状态分量的h/4到h/8最大归一化差均低于预声明的1e-3合成回归门槛。h/8实际路径净位移约-1.448mm，未设置路径参考；不得将其解读为轨迹跟踪结果。GitHub Actions Run 45408964085通过127/127项资源测试并归档结果，归档提交为`96bdbb3c89ad0b38783b5c6679400f7755425e0f`。ENE-01～03与PATH-01仍`NOT_RUN`。
+RK4-04为`COMPLETED_REPORT_ONLY`。相邻归一化RMS差=1.5932818829959823e-05、6.326497700114816e-07、3.121036304213065e-08；观测阶数=4.654450664538402、4.341310011850346；12个状态分量的h/4到h/8最大归一化差均低于预声明的1e-3合成回归门槛。h/8实际路径净位移约-1.448mm，未设置路径参考；不得将其解读为轨迹跟踪结果。GitHub Actions Run 45408964085通过127/127项资源测试并归档结果，归档提交为`96bdbb3c89ad0b38783b5c6679400f7755425e0f`。ENE-01为`COMPLETED_REPORT_ONLY`；ENE-02/03与PATH-01仍`NOT_RUN`。
+
+
+## ENE-01理想单端口机电能量闭合运行资源（2026-11-24）
+
+| 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
+|---|---|---|---|---|---|---|
+| `gantry-joint-drive-ene-01-synthetic-config.json` | JSON配置 | ENE-01理想单端口合成夹具；零结构阻尼/轴摩擦/外力、Kf=Ke；机械、电气、初始状态、积分参数、12维特征尺度与能量噪声界均预先声明 | 项目原创 | 2026-11-24 | 原创合成配置 | 龙门连续移动轴—电流环联合模型能量验证协议 |
+| `generated/ene-01-synthetic/gantry-joint-drive-energy-closure-timeseries.csv` | CSV时序 | 604行/33列，四档积分12维状态、能量、各项功率/积分、残差与电气诊断 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/ene-01-synthetic/gantry-joint-drive-energy-closure-stage-power-timeseries.csv` | CSV阶段功率 | 4960行/20列，h～h/8及h/16参考的RK4阶段功率快照 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/ene-01-synthetic/gantry-joint-drive-energy-closure-reference-h16-timeseries.csv` | CSV参考时序 | 641行/33列，h/16更细网格参考轨迹及状态/储能/功率诊断 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/ene-01-synthetic/gantry-joint-drive-energy-closure-summary.csv` | CSV汇总 | 4行/58列，四级积分能量预算、Simpson/梯形残差、分项功、阶段完整性和归一化诊断 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/ene-01-synthetic/gantry-joint-drive-energy-closure-run-manifest.json` | JSON运行清单 | config/solver/PATH support/runner SHA-256、噪声底和浮点预算、h/16参考、四档限幅/阶段报告及CSV校验元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
+| `docs/data/sources/SRC-000374.json` | JSON来源记录 | Higham与Mary (2019) 对常规gamma_n浮点舍入误差界的来源记录；不支持ENE配置中的外部储能/功率传播假设 | 学术出版物 | 2026-11-24 | 仅记录链接/引用信息 | 同上 |
+
+ENE-01为`COMPLETED_REPORT_ONLY`。四档Simpson残差h～h/8为2.2950317094e-5/1.1152803970e-6/6.2608904835e-8/3.7119108308e-9J；h/16参考残差2.2588146978e-10J。有限网格观测阶数4.36304/4.15489/4.07613/4.03852；残差高于预声明1e-11J噪声地板，噪声预算自动推导底线5.71379e-12J。工程阈值为null，不判定PASS。GitHub Actions Run 45412967222通过130/130项资源测试并归档五件套，归档提交9e9371c83be66b35b476b29407972f220bb1976a。ENE-02/03与PATH-01仍`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。
