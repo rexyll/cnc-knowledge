@@ -459,3 +459,8 @@
 - 仓库既有测试5/5通过，strict lint PASS（0 errors）；扫描统计22章、129 Markdown、407内部链接、143实体、240关系、371来源、660处章节正文来源引用。
 - 本轮新增12项资源级测试仍未执行；静态方程符号一致性检查不替代数值机电能量平衡、积分收敛、台架或实机验证。
 - CH12-T003保持 IN_PROGRESS；后续需在获准且可用的Python/NumPy环境运行资源测试，再进入数值验证。
+## CH12-T003 最新里程碑（2026-11-24）
+
+- CH12资源测试已接入GitHub Actions独立Job；首轮失败经测试夹具/断言归因修正后，Run [45384191326](https://github.com/rexyll/cnc-knowledge/actions/runs/45384191326)通过ENE42项、PATH-01 39项、求解器35项，共116/116项资源测试。
+- 该里程碑只覆盖资源级单元测试与CI质量检查；RK4-01～04、ENE-01～03积分和PATH-01数值比较仍为`NOT_RUN`，CH12-T003仍为`IN_PROGRESS`。
+- 详细修正、版本、运行环境和验收证据见[2026-11-24任务历史](TaskHistory/TaskHistory-2026-11-24.md)及[CH12章节任务计划](docs/TaskPlan/12-control-and-machining-algorithms/TaskPlan.md)。
