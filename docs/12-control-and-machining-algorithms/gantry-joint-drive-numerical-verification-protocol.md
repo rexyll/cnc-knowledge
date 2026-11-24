@@ -89,8 +89,8 @@ p_h=\log_2(D_h/D_{h/2})
 - **合成输入：** \(s_0=0.72\,m\)、\(s_1=0.735\,m\)、\(T=0.2\,s\)，初始 \(\dot{s}=0\)。电流回调为 \(i^*=i_{ff}+K_p(s_{ref}-s)+K_d(\dot{s}_{ref}-\dot{s})\)，其中 \(i_{ff}=0.08\,A\)、\(K_p=200\,A/m\)、\(K_d=30\,A\cdot s/m\)。所有值均为合成夹具，不得用作机床/驱动器设定。回调在各RK4阶段根据该阶段时间和状态计算，是连续时间命令模型，不是离散采样伺服实现。
 - **步长结果：** 四档区间数40/80/160/320，阶段回调计数160/320/640/1280且全部匹配。状态均有限，四档电流参考限幅和电压饱和计数均为0。相邻归一化RMS差分别为1.401131964624969e-04、6.750725089870764e-06、3.690347602559821e-07，严格下降；观测阶数为4.375406561974051、4.193213850529427，均高于3.0的数值筛查下限。
 - **自由轴运动判读：** 最细步长下参考路径误差RMS=0.007321842561068045m、峰值=0.010953049796999736m；实际 \(s(T)=0.7254507489963524\,m\)，相对初值的净正向位移约0.00545074899635245m；参考终点为0.735m，带符号端点跟踪误差 \(s(T)-s_{ref}(T)=-0.0095492510036476\,m\)。这些误差必须如实保留；本案例未预设路径误差容差，因此不判断跟踪精度合格或完整到达终点。运行器额外将参考路径RMS/峰值/端点误差写入步长汇总CSV，但这些字段不参与RK4收敛screen pass门控。
-- **执行与归档：** GitHub Actions [Run 45387608094](https://github.com/rexyll/cnc-knowledge/actions/runs/45387608094)完成RK4-01/02初始积分、123/123资源测试并归档结果。其后加入路径误差诊断字段并修正来源schema与资产索引，[Run 45388357235](https://github.com/rexyll/cnc-knowledge/actions/runs/45388357235)最终success：123/123资源测试、RK4-01/02运行、仓库单元测试和strict knowledge lint全部success；源码/配置输入SHA未变化，归档步骤按预期跳过。路径误差字段对应结果由提交74812389cf5a8b73d1246265448004eb34788603写入main，四个结果文件位于 \`resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic/\`。
-- **判读边界：** \`COMPLETED_REPORT_ONLY\`仅表示本合成连续时间模型四档数值筛查通过，并不代表正向轨迹跟踪验收、实际轴性能或机床精度。尚未建模采样任务、PWM、通信延迟、硬限位、接触和硬件保护；无真实设备参数、台架、HIL或实机证据。
+- **执行与归档：** GitHub Actions [Run 45387608094](https://github.com/rexyll/cnc-knowledge/actions/runs/45387608094)完成RK4-01/02初始积分、123/123资源测试并归档结果。其后加入路径误差诊断字段并修正来源schema与资产索引，[Run 45388357235](https://github.com/rexyll/cnc-knowledge/actions/runs/45388357235)最终success：123/123资源测试、RK4-01/02运行、仓库单元测试和strict knowledge lint全部success；源码/配置输入SHA未变化，归档步骤按预期跳过。路径误差字段对应结果由提交74812389cf5a8b73d1246265448004eb34788603写入main，四个结果文件位于 `resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic/`。
+- **判读边界：** `COMPLETED_REPORT_ONLY`仅表示本合成连续时间模型四档数值筛查通过，并不代表正向轨迹跟踪验收、实际轴性能或机床精度。尚未建模采样任务、PWM、通信延迟、硬限位、接触和硬件保护；无真实设备参数、台架、HIL或实机证据。
 
 ## 4. 机电能量平衡验证（ENE）
 
@@ -463,20 +463,20 @@ r_{components}=\frac{|R_E|}{\max(S_W,E_{\rm floor})}.
 具体做法：把 \(h/8\) 轨迹的 \(N_8+1\) 个端点状态和净功率样本冻结；由于 \(N_8=8N\)，且基础区间数 \(N\) 为偶数，可按步长 \(8,4,2,1\) 对同一组快照做嵌套抽取，分别形成 \(h,h/2,h/4,h/8\) 的四套求积节点。每套节点独立计算复合Simpson净功积分及绝对净功积分。所有级别的积分状态快照来源相同，故相邻固定轨迹积分差仅反映该冻结轨迹上的求积网格敏感性。
 
 每个级别新增下列诊断：
-- \`fixed_trajectory_net_power_work_J\`：冻结 \(h/8\) 轨迹、当前级别嵌套节点上的净功积分。
-- \`fixed_trajectory_absolute_net_power_work_J\`：同一节点上的绝对净功积分。
-- \`fixed_trajectory_quadrature_delta_from_finest_J\`：该级别固定轨迹净功积分减去 \(h/8\) 固定轨迹净功积分。
-- \`coupled_vs_fixed_trajectory_net_work_delta_J\`：当前级别自身轨迹的净功积分减去同级别固定轨迹积分。
-- \`coupled_stored_energy_delta_vs_finest_J\`：当前级别自身储能变化减去 \(h/8\) 储能变化。
-- \`coupled_net_work_delta_vs_finest_J\`：当前级别自身净功积分减去 \(h/8\) 固定轨迹净功积分。
-- \`coupled_energy_residual_delta_vs_finest_J\`：当前级别能量残差减去 \(h/8\) 能量残差，按“储能变化差 - 净功积分差”计算。
+- `fixed_trajectory_net_power_work_J`：冻结 \(h/8\) 轨迹、当前级别嵌套节点上的净功积分。
+- `fixed_trajectory_absolute_net_power_work_J`：同一节点上的绝对净功积分。
+- `fixed_trajectory_quadrature_delta_from_finest_J`：该级别固定轨迹净功积分减去 \(h/8\) 固定轨迹净功积分。
+- `coupled_vs_fixed_trajectory_net_work_delta_J`：当前级别自身轨迹的净功积分减去同级别固定轨迹积分。
+- `coupled_stored_energy_delta_vs_finest_J`：当前级别自身储能变化减去 \(h/8\) 储能变化。
+- `coupled_net_work_delta_vs_finest_J`：当前级别自身净功积分减去 \(h/8\) 固定轨迹净功积分。
+- `coupled_energy_residual_delta_vs_finest_J`：当前级别能量残差减去 \(h/8\) 能量残差，按“储能变化差 - 净功积分差”计算。
 
 净功积分差满足代数分解：
 \[
 W_{coupled,l}-W_{fixed,8}
 =(W_{fixed,l}-W_{fixed,8})+(W_{coupled,l}-W_{fixed,l}).
 \]
-第一项为冻结轨迹上的求积网格变化；第二项为同网格下不同状态轨迹带来的净功变化。残差相对最细档的变化还包含储能端点差，必须结合 \`coupled_stored_energy_delta_vs_finest_J\` 一并判读。原有各档独立轨迹的主残差、归一化指标及验收阈值完全不变。
+第一项为冻结轨迹上的求积网格变化；第二项为同网格下不同状态轨迹带来的净功变化。残差相对最细档的变化还包含储能端点差，必须结合 `coupled_stored_energy_delta_vs_finest_J` 一并判读。原有各档独立轨迹的主残差、归一化指标及验收阈值完全不变。
 
 该方法是条件式数值分解，不是严格误差上界：参考轨迹本身仍是 \(h/8\) RK4近似，冻结后只对已有端点功率样本求积，无法发现 \(h/8\) 步内功率的未采样高频变化；也不构成独立物理模型或实机验证。若需要进一步验证参考轨迹本身，应另行预声明更细参考步长/高精度积分器和资源预算。新增诊断由归档校验器从时序CSV最细档样本重算，检查所有摘要字段一致性；不执行任何ENE积分或资源测试。
 
