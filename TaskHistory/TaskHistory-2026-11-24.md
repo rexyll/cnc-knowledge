@@ -155,3 +155,5 @@
 每对相邻轨迹继续保留原始单位下的最大绝对差/RMS差，并新增按12个固定尺度逐项归一化后的最大差/RMS差数组。无量纲结果仅帮助比较各分量相对于其工程特征幅值的大小，不是验收容差、安全限值或PASS门槛；禁止将12维混合单位结果进一步合并为综合分数。Manifest升级至schema v4，记录12个尺度、来源信息、顺序及单位，归档验证时重新计算这些数值。新增3项资源测试定义；ENE35项、求解器35项、PATH-01 39项，总计109项资源测试均未执行；ENE积分未执行，CH12-T003保持IN_PROGRESS。
 
 - **仓库CI（有来源的状态特征尺度）：** 实现提交 `2bfa53fc9c8bfc14a3849748581d934dd4220152` 对应 [Run 45372572329](https://github.com/rexyll/cnc-knowledge/actions/runs/45372572329) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下109项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
+- **仓库CI（状态特征尺度文档同步）：** 文档提交 `ac8eb8c8c8f63fb0ff0ca5fc3d194b35ee263bf3` 对应 [Run 45372659983](https://github.com/rexyll/cnc-knowledge/actions/runs/45372659983) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下109项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
