@@ -580,7 +580,12 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
 
 def verify_archive(output_dir: Path) -> dict[str, Any]:
     output = output_dir.resolve()
-    manifest_path = output / MANIFEST_NAME
+    candidates = sorted(output.glob("rk4-??-run-manifest.json"))
+    if len(candidates) != 1:
+        raise RK4ScreenError(
+            "RK4 archive must contain exactly one case-specific run manifest"
+        )
+    manifest_path = candidates[0]
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
