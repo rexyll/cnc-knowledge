@@ -1,6 +1,11 @@
 {
   "schema_version": 1,
   "case_id": "RK4-01",
+  "current_command_model": "constant_current",
+  "current_command_profile": {
+    "model": "constant_current",
+    "feedforward_current_A": 0.08
+  },
   "status": "COMPLETED_REPORT_ONLY",
   "numerical_results_present": true,
   "engineering_acceptance_applied": false,
@@ -54,8 +59,8 @@
     "current_A": 1.0,
     "current_integrator_V": 10.0
   },
-  "started_at_utc": "2026-11-24T11:40:12.637357+00:00",
-  "completed_at_utc": "2026-11-24T11:40:12.978735+00:00",
+  "started_at_utc": "2026-11-24T11:49:01.217382+00:00",
+  "completed_at_utc": "2026-11-24T11:49:01.629201+00:00",
   "duration_s": 0.2,
   "base_step_s": 0.005,
   "base_intervals": 40,
@@ -79,7 +84,14 @@
       "any_limiter_active_stages": 0,
       "stage_count_matches_expected": "True",
       "smooth_unsaturated": "True",
-      "all_states_finite": "True"
+      "all_states_finite": "True",
+      "requested_current_min_A": 0.08,
+      "requested_current_max_A": 0.08,
+      "initial_s_m": 0.72,
+      "final_s_m": 0.7215581865789333,
+      "net_s_displacement_m": 0.0015581865789333627,
+      "reference_start_m": "",
+      "reference_end_m": ""
     },
     {
       "case_id": "RK4-01",
@@ -94,7 +106,14 @@
       "any_limiter_active_stages": 0,
       "stage_count_matches_expected": "True",
       "smooth_unsaturated": "True",
-      "all_states_finite": "True"
+      "all_states_finite": "True",
+      "requested_current_min_A": 0.08,
+      "requested_current_max_A": 0.08,
+      "initial_s_m": 0.72,
+      "final_s_m": 0.7215581865770747,
+      "net_s_displacement_m": 0.0015581865770747383,
+      "reference_start_m": "",
+      "reference_end_m": ""
     },
     {
       "case_id": "RK4-01",
@@ -109,7 +128,14 @@
       "any_limiter_active_stages": 0,
       "stage_count_matches_expected": "True",
       "smooth_unsaturated": "True",
-      "all_states_finite": "True"
+      "all_states_finite": "True",
+      "requested_current_min_A": 0.08,
+      "requested_current_max_A": 0.08,
+      "initial_s_m": 0.72,
+      "final_s_m": 0.7215581865770113,
+      "net_s_displacement_m": 0.0015581865770113446,
+      "reference_start_m": "",
+      "reference_end_m": ""
     },
     {
       "case_id": "RK4-01",
@@ -124,7 +150,14 @@
       "any_limiter_active_stages": 0,
       "stage_count_matches_expected": "True",
       "smooth_unsaturated": "True",
-      "all_states_finite": "True"
+      "all_states_finite": "True",
+      "requested_current_min_A": 0.08,
+      "requested_current_max_A": 0.08,
+      "initial_s_m": 0.72,
+      "final_s_m": 0.7215581865770098,
+      "net_s_displacement_m": 0.0015581865770097902,
+      "reference_start_m": "",
+      "reference_end_m": ""
     }
   ],
   "adjacent_pair_normalized_rms_differences": [
@@ -154,26 +187,26 @@
   "config_sha256": "0a2ea925c39c9ddd1a6567c5fa05cf354e5d04e310258375d80cf3dc3df51c36",
   "solver_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
   "path_support_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
-  "runner_sha256": "a75759fa6ef0e3fa1a026156616f15804105b2049a1e886d2465ba0b606f071b",
-  "git_sha": "9541ce0f3bb24c7f83dbf66d52f9d928e80034c7",
+  "runner_sha256": "8a45423a4ec925ef1ae64d111f0bb9e4ac3d4f8edeff62d98c966590e90ca7d8",
+  "git_sha": "5940adb2e7e1d957205d1e24a26c422b019a2268",
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
   "numpy_version": "2.5.5",
-  "operating_system": "Linux-7.0.0-1016-aws-x86_64-with-glibc2.43",
+  "operating_system": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
   "command_line": "resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic",
   "output_artifacts": {
     "rk4-01-synthetic-timeseries.csv": {
       "file_name": "rk4-01-synthetic-timeseries.csv",
-      "sha256": "15416293fc8d24ec3234c8d7ba5754b7e3c4b982381c453fb7bd84b016b45932",
-      "size_bytes": 173615,
+      "sha256": "ef1753c06e768302c368263971ed4f80ce8cad5f3b0c1ec95f6ad16e6fe3bd2c",
+      "size_bytes": 184600,
       "data_rows": 604,
-      "columns": 17
+      "columns": 22
     },
     "rk4-01-level-summary.csv": {
       "file_name": "rk4-01-level-summary.csv",
-      "sha256": "fb9066a3ac0b29ee0692c09938f994188a1804012e2f7f5dc7f804adf29d9749",
-      "size_bytes": 459,
+      "sha256": "b1d2b1ec2330bccd356b75af5bd4b4fa39d883be1cc676ddd74df6c4edc4de18",
+      "size_bytes": 816,
       "data_rows": 4,
-      "columns": 13
+      "columns": 20
     },
     "rk4-01-adjacent-differences.csv": {
       "file_name": "rk4-01-adjacent-differences.csv",
