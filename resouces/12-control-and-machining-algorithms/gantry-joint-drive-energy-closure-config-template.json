@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "case_id": "ENE-01",
+  "status": "NOT_RUN",
+  "description": "Blank ENE-01/02/03 input template. Copy and set case_id; populate only sourced machine data or explicitly labelled synthetic fixtures. No default machine parameters are provided.",
+  "provenance": {
+    "parameter_source": null,
+    "source_documents_or_measurement_ids": []
+  },
+  "mechanical": {
+    "geometry_span_m": null,
+    "torsion_x_offset_m": null,
+    "torsion_z_offset_m": null,
+    "M0": [
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "D0": [
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "K0": [
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "payload_mass_kg": null,
+    "axis_equivalent_mass_kg": null,
+    "gravity_acceleration_m_s2": [
+      null,
+      null,
+      null
+    ],
+    "axis_viscous_Ns_m": null,
+    "axis_coulomb_N": null,
+    "friction_smoothing_speed_m_s": null
+  },
+  "electrical": {
+    "resistance_ohm": null,
+    "inductance_h": null,
+    "back_emf_V_per_m_s": null,
+    "force_constant_N_per_A": null,
+    "current_limit_A": null,
+    "voltage_min_V": null,
+    "voltage_max_V": null,
+    "kp_V_per_A": null,
+    "ki_V_per_A_s": null,
+    "antiwindup_gain_per_s": null,
+    "note": "ENE-01..03 require force_constant_N_per_A exactly equal to back_emf_V_per_m_s (reciprocal SI convention)."
+  },
+  "actuator": {
+    "q_coefficients": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "s_coefficient": null,
+    "offset_m": null,
+    "displacement_definition_and_sign": null
+  },
+  "initial_state": {
+    "q": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "q_dot": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "s_m": null,
+    "s_dot_m_s": null,
+    "current_A": null,
+    "current_integrator_V": null
+  },
+  "controller_and_loads": {
+    "feedforward_current_A": null,
+    "external_generalized_force_order": [
+      "Q_x_common",
+      "Q_yaw",
+      "Q_bending",
+      "Q_torsion",
+      "Q_s"
+    ],
+    "external_generalized_force_constant": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "note": "Runner uses a constant feedforward current command. ENE-01/02 require zero external force; ENE-03 includes signed external generalized power."
+  },
+  "integration": {
+    "duration_s": null,
+    "base_step_s": null,
+    "refinement_schedule": [
+      "h",
+      "h/2",
+      "h/4",
+      "h/8"
+    ]
+  },
+  "metrics": {
+    "energy_normalization_scale_J": null,
+    "energy_normalization_floor_J": null,
+    "normalized_energy_closure_threshold": null,
+    "note": "Scale and floor must be finite, positive, predeclared and unchanged across all four levels. Null threshold yields COMPLETED_REPORT_ONLY."
+  }
+}
