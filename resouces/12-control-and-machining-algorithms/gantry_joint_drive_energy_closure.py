@@ -63,6 +63,12 @@ SUMMARY_FIELDS = [
     "energy_residual_over_scale", "energy_residual_over_absolute_net_power_work",
     "energy_residual_over_absolute_component_work",
     "simpson_trapezoid_net_work_difference_J",
+    "fixed_trajectory_net_power_work_J", "fixed_trajectory_absolute_net_power_work_J",
+    "fixed_trajectory_quadrature_delta_from_finest_J",
+    "coupled_vs_fixed_trajectory_net_work_delta_J",
+    "coupled_stored_energy_delta_vs_finest_J",
+    "coupled_net_work_delta_vs_finest_J",
+    "coupled_energy_residual_delta_vs_finest_J",
     "current_reference_saturated_stages", "voltage_saturated_stages",
     "any_limiter_active_stages", "expected_rk4_stage_evaluations",
     "observed_rk4_stage_evaluations", "stage_count_matches_expected",
@@ -221,6 +227,80 @@ def _energy_diagnostics(integrals: dict[str, float], residual: float,
     }
     if not all(math.isfinite(value) for value in result.values()):
         raise FloatingPointError("non-finite ENE component/residual diagnostic")
+    return result
+
+
+def _fixed_trajectory_quadrature_diagnostics(
+    fine_times: np.ndarray,
+    fine_net_power: np.ndarray,
+    coupled_net_works: list[float],
+    coupled_stored_energy_deltas: list[float],
+) -> list[dict[str, float]]:
+    """Compare nested Simpson grids on one frozen finest-level state trajectory.
+
+    The finest h/8 trajectory is sampled once. Coarser quadrature grids are
+    exact nested subsets of those same time/state snapshots. This isolates
+    quadrature-grid sensitivity conditional on that frozen trajectory; it
+    does not bound the h/8 trajectory's own integration error.
+    """
+    times = np.asarray(fine_times, dtype=float)
+    power = np.asarray(fine_net_power, dtype=float)
+    if times.ndim != 1 or power.ndim != 1 or times.size != power.size:
+        raise ValueError("fixed-trajectory time and power arrays must be matching vectors")
+    if times.size < 17 or (times.size - 1) % 16:
+        raise ValueError("fixed-trajectory grid must contain at least sixteen intervals divisible by sixteen")
+    if not np.all(np.isfinite(times)) or not np.all(np.isfinite(power)):
+        raise FloatingPointError("fixed-trajectory grid and power samples must be finite")
+    if np.any(np.diff(times) <= 0):
+        raise ValueError("fixed-trajectory times must be strictly increasing")
+    if len(coupled_net_works) != len(LEVELS) or len(coupled_stored_energy_deltas) != len(LEVELS):
+        raise ValueError("coupled comparison arrays must contain four refinement levels")
+    if not all(math.isfinite(float(x)) for x in (*coupled_net_works, *coupled_stored_energy_deltas)):
+        raise FloatingPointError("coupled comparison metrics must be finite")
+    intervals = times.size - 1
+    if not np.allclose(np.diff(times), (times[-1] - times[0]) / intervals,
+                       rtol=1e-9, atol=1e-12):
+        raise ValueError("fixed-trajectory time grid must be uniformly spaced")
+
+    fixed_work = []
+    fixed_abs_work = []
+    for level_index in range(len(LEVELS)):
+        stride = 2 ** (len(LEVELS) - 1 - level_index)
+        selected_times = times[::stride]
+        selected_power = power[::stride]
+        if selected_times[-1] != times[-1]:
+            raise ValueError("nested fixed-trajectory grid does not retain terminal sample")
+        fixed_work.append(float(path_support.composite_simpson_13(selected_times, selected_power)))
+        fixed_abs_work.append(float(path_support.composite_simpson_13(selected_times, np.abs(selected_power))))
+    fine_reference_work = fixed_work[-1]
+    fine_reference_delta = float(coupled_stored_energy_deltas[-1])
+    result = []
+    for index in range(len(LEVELS)):
+        coupled_work = float(coupled_net_works[index])
+        coupled_delta = float(coupled_stored_energy_deltas[index])
+        fixed = fixed_work[index]
+        quadrature_delta = fixed - fine_reference_work
+        trajectory_delta = coupled_work - fixed
+        total_work_delta = coupled_work - fine_reference_work
+        stored_delta = coupled_delta - fine_reference_delta
+        residual_delta = stored_delta - total_work_delta
+        row = {
+            "fixed_trajectory_net_power_work_J": fixed,
+            "fixed_trajectory_absolute_net_power_work_J": fixed_abs_work[index],
+            "fixed_trajectory_quadrature_delta_from_finest_J": quadrature_delta,
+            "coupled_vs_fixed_trajectory_net_work_delta_J": trajectory_delta,
+            "coupled_stored_energy_delta_vs_finest_J": stored_delta,
+            "coupled_net_work_delta_vs_finest_J": total_work_delta,
+            "coupled_energy_residual_delta_vs_finest_J": residual_delta,
+        }
+        if not all(math.isfinite(value) for value in row.values()):
+            raise FloatingPointError("non-finite fixed-trajectory quadrature diagnostic")
+        if not math.isclose(
+            total_work_delta, quadrature_delta + trajectory_delta,
+            rel_tol=1e-9, abs_tol=1e-12,
+        ):
+            raise ArithmeticError("fixed-trajectory quadrature/trajectory work decomposition failed")
+        result.append(row)
     return result
 
 
@@ -606,6 +686,23 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
         cursor += samples
     if cursor != len(timeseries_rows):
         raise EnergyClosureError("timeseries contains unexpected extra rows")
+    fine_block_start = sum(contract["base_intervals"] * (2 ** index) + 1
+                           for index in range(len(LEVELS) - 1))
+    fine_block = timeseries_rows[fine_block_start:]
+    fine_times = np.asarray([float(row["time_s"]) for row in fine_block], dtype=float)
+    fine_net = np.asarray([float(row["net_power_W"]) for row in fine_block], dtype=float)
+    expected_fixed = _fixed_trajectory_quadrature_diagnostics(
+        fine_times, fine_net,
+        [float(summary_by_level[level]["net_power_work_J"]) for level in LEVELS],
+        [float(summary_by_level[level]["delta_stored_energy_J"]) for level in LEVELS],
+    )
+    for label, expected_row in zip(LEVELS, expected_fixed):
+        row = summary_by_level[label]
+        for field, expected_value in expected_row.items():
+            if not math.isclose(float(row[field]), expected_value, rel_tol=1e-9, abs_tol=1e-12):
+                raise EnergyClosureError(
+                    f"fixed-trajectory diagnostic {field} is inconsistent at {label}"
+                )
     threshold = contract["threshold"]
     if not contract["all_stage_counts_match"]:
         expected_status = "FAIL"
@@ -636,6 +733,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     all_rows: list[dict[str, Any]] = []
     summaries: list[dict[str, Any]] = []
     saturation_by_level = []
+    power_samples_by_level: list[tuple[np.ndarray, dict[str, np.ndarray]]] = []
     started = datetime.now(timezone.utc).isoformat()
     for level, label in enumerate(LEVELS):
         intervals = v["intervals"] * (2 ** level)
@@ -675,6 +773,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         arrays = {key: np.asarray([sample[key] for sample in samples], dtype=float)
                   for key in ("stored", "terminal_input", "copper", "structural",
                               "friction", "external", "mismatch", "net")}
+        power_samples_by_level.append((np.asarray(times, dtype=float).copy(), arrays))
         delta = float(arrays["stored"][-1] - arrays["stored"][0])
         integrals = {
             key: path_support.composite_simpson_13(times, values)
@@ -753,6 +852,14 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "energy_closure_threshold": v["threshold"],
             "status": "PENDING",
         })
+    fine_times, fine_arrays = power_samples_by_level[-1]
+    fixed_trajectory_diagnostics = _fixed_trajectory_quadrature_diagnostics(
+        fine_times, fine_arrays["net"],
+        [float(row["net_power_work_J"]) for row in summaries],
+        [float(row["delta_stored_energy_J"]) for row in summaries],
+    )
+    for summary, diagnostic in zip(summaries, fixed_trajectory_diagnostics):
+        summary.update(diagnostic)
     all_smooth = all(item["smooth_unsaturated"] for item in saturation_by_level)
     all_stage_counts_match = all(item["stage_count_matches_expected"] for item in saturation_by_level)
     if not all_stage_counts_match:

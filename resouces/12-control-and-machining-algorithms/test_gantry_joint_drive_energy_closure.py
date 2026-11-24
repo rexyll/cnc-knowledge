@@ -15,6 +15,7 @@ from gantry_joint_drive_solver import (
 from gantry_joint_drive_energy_closure import (
     EnergyClosureError, _power_sample, _validate_case_contract,
     _validate_manifest_contract, _read_verified_csv,
+    _fixed_trajectory_quadrature_diagnostics,
 )
 
 
@@ -148,6 +149,65 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         }
         result = _energy_diagnostics(integrals, 0.25, 1.0, 1e-9, 1.0, -0.75)
         self.assertEqual(result["simpson_trapezoid_net_work_difference_J"], 1.0)
+
+    def test_fixed_trajectory_quadrature_uses_nested_samples_and_decomposes_work_delta(self) -> None:
+        times = np.linspace(0.0, 1.0, 17)
+        power = 1.0 + times ** 4
+
+        def simpson(values: np.ndarray, step: float) -> float:
+            return float(step / 3.0 * (
+                values[0] + values[-1]
+                + 4.0 * np.sum(values[1:-1:2])
+                + 2.0 * np.sum(values[2:-1:2])
+            ))
+
+        expected_fixed = [
+            simpson(power[::8], 0.5),
+            simpson(power[::4], 0.25),
+            simpson(power[::2], 0.125),
+            simpson(power, 0.0625),
+        ]
+        coupled_work = [11.0, 9.0, 8.0, expected_fixed[-1]]
+        stored_delta = [7.0, 5.0, 3.0, 2.0]
+        result = _fixed_trajectory_quadrature_diagnostics(
+            times, power, coupled_work, stored_delta
+        )
+        for row, expected in zip(result, expected_fixed):
+            self.assertAlmostEqual(row["fixed_trajectory_net_power_work_J"], expected)
+        self.assertAlmostEqual(
+            result[0]["fixed_trajectory_quadrature_delta_from_finest_J"],
+            expected_fixed[0] - expected_fixed[-1],
+        )
+        self.assertAlmostEqual(
+            result[0]["coupled_vs_fixed_trajectory_net_work_delta_J"],
+            coupled_work[0] - expected_fixed[0],
+        )
+        self.assertAlmostEqual(
+            result[0]["coupled_net_work_delta_vs_finest_J"],
+            result[0]["fixed_trajectory_quadrature_delta_from_finest_J"]
+            + result[0]["coupled_vs_fixed_trajectory_net_work_delta_J"],
+        )
+        self.assertAlmostEqual(
+            result[0]["coupled_energy_residual_delta_vs_finest_J"],
+            (stored_delta[0] - stored_delta[-1])
+            - (coupled_work[0] - coupled_work[-1]),
+        )
+
+    def test_fixed_trajectory_quadrature_rejects_non_nested_interval_count(self) -> None:
+        with self.assertRaisesRegex(ValueError, "divisible by sixteen"):
+            _fixed_trajectory_quadrature_diagnostics(
+                np.linspace(0.0, 1.0, 7), np.ones(7),
+                [1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0],
+            )
+
+    def test_fixed_trajectory_quadrature_rejects_non_finite_samples(self) -> None:
+        power = np.ones(17)
+        power[8] = np.nan
+        with self.assertRaisesRegex(FloatingPointError, "must be finite"):
+            _fixed_trajectory_quadrature_diagnostics(
+                np.linspace(0.0, 1.0, 17), power,
+                [1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0],
+            )
 
     def _valid_manifest_contract(self) -> dict:
         return {
