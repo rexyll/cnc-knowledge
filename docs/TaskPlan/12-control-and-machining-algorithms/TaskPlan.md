@@ -540,3 +540,4 @@
 - **资源保护：** 四档+参考端点总数 `31N+5`、RK4阶段总数 `124N`，限制分别为50,000和200,000，对应最大基础N为1612（N仍为偶数）。
 - **测试定义：** 新增4项资源测试，ENE测试29项、求解器35项、PATH-01 39项，共103项全部未执行。未执行ENE积分或资源脚本；验证矩阵继续 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
 
+\n\n- **仓库CI（h/16参考轨迹与共同节点误差对照）：** 实现提交 `ff2a9e7cb66c6dc72286ce3806b2f8b9e4eb9063` 对应 [Run 45365141994](https://github.com/rexyll/cnc-knowledge/actions/runs/45365141994) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下103项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。\n

@@ -130,3 +130,4 @@
 
 资源预算改为端点总样本 `31N+5`、RK4阶段总数 `124N`，分别受50,000和200,000限制，基础区间数最大1612且仍须为偶数。归档manifest schema升为2，新增h/16端点文件元数据、阶段报告及共同节点诊断；归档验证器从参考和主轨迹CSV重算指标。h/16参考复用相同状态方程/参数/命令负载，不是精确解或独立物理模型；参考限幅单独报告，所有h/16参考诊断均不改变原四档主PASS判据。新增4项ENE测试定义，ENE 29项、求解器35项、PATH-01 39项，共103项资源测试全部未执行。ENE积分未执行，CH12-T003保持IN_PROGRESS。
 
+\n\n- **仓库CI（h/16参考轨迹与共同节点误差对照）：** 实现提交 `ff2a9e7cb66c6dc72286ce3806b2f8b9e4eb9063` 对应 [Run 45365141994](https://github.com/rexyll/cnc-knowledge/actions/runs/45365141994) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下103项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。\n
