@@ -610,3 +610,5 @@
 - **测试定义：** 新增3项ENE资源测试：自动预算分项与网格尺度关系（包含小量级manifest数字精确比较）、未确认/缺字段预算拒绝、低于自动噪声下界拒绝。ENE42项、求解器35项、PATH-01 39项，总计116项资源测试均未执行；ENE积分未执行。验证矩阵维持NOT_RUN，CH12-T003保持IN_PROGRESS。
 
 - **归档比较加固：** 噪声预算报告及残差阶数诊断使用精确数值比较，不使用通用1e-12绝对容差；新增对应小量级预算篡改拒绝测试定义。
+
+- **仓库CI（ENE预算运行时舍入模式门控）：** 实现修正提交 `b4d70c68009cabc058383deae9e8644117ab5670` 对应 [Run 45381515561](https://github.com/rexyll/cnc-knowledge/actions/runs/45381515561) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下116项资源测试，也不运行ENE积分或数值仿真。ENE-01/02/03验证矩阵继续 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
