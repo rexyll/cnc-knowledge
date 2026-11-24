@@ -84,7 +84,12 @@ class TestGantryJointDriveSolver(unittest.TestCase):
         ])
         coordinate_scales = np.array([1.0e-6, 1.0, 1.0e6])
         mass = coordinate_scales[:, None] * base * coordinate_scales[None, :]
-        expected = np.array([0.5, -0.25, 2.0])
+        # Exercise the equilibrated coordinates with a balanced transformed
+        # solution. Requiring recovery of similarly sized physical coordinates
+        # would make the smallest component depend on information lost when
+        # the highly disparate matrix is multiplied by the test vector.
+        expected_scaled = np.array([0.5, -0.25, 2.0])
+        expected = expected_scaled / coordinate_scales
         rhs = mass @ expected
         actual = _scaled_spd_solve(mass, rhs, context="test mass matrix")
         self.assertTrue(np.allclose(actual, expected, rtol=1e-11, atol=1e-11))
@@ -209,8 +214,20 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             q=np.zeros(4), q_dot=np.zeros(4), s=0.5, s_dot=0.0,
             current_A=2.0, current_integrator_V=0.0,
         )
-        derivative = model.derivative(0.0, model.pack(state), current_command_A=0.0)
-        expected = -model.electrical.resistance_ohm * state.current_A / model.electrical.inductance_h
+        # Match the current reference to the present so the PI error and
+        # terminal voltage are exactly zero. A zero current command would
+        # introduce proportional PI voltage and is not the passive RL limit.
+        diagnostics = model.electrical_diagnostics(
+            state, current_command_A=state.current_A
+        )
+        derivative = model.derivative(
+            0.0, model.pack(state), current_command_A=state.current_A
+        )
+        expected = (
+            -model.electrical.resistance_ohm * state.current_A
+            / model.electrical.inductance_h
+        )
+        self.assertEqual(diagnostics["voltage_V"], 0.0)
         self.assertAlmostEqual(float(derivative[2*model.nq + 2]), expected, places=12)
 
     def test_current_reference_and_voltage_limits_are_enforced(self) -> None:
@@ -461,14 +478,17 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             current_command=lambda time_s, _state: stage_times.append(time_s) or 0.0,
         )
 
-        # Per RK4 step, evaluations are k1, k2, k3, k4. The k4
-        # timestamp must coincide with the next returned output-grid point.
-        for index in range(len(times) - 1):
+        # Per RK4 step, evaluations are k1, k2, k3, k4. Each
+        # nonterminal k4 timestamp must coincide with the next k1 timestamp;
+        # the final k4 must coincide with the final returned grid point.
+        self.assertEqual(len(stage_times), 4 * (len(times) - 1))
+        for index in range(len(times) - 2):
             k4_time = stage_times[4 * index + 3]
             next_step_time = stage_times[4 * (index + 1)]
             self.assertAlmostEqual(
                 k4_time, next_step_time, delta=2.0e-15
             )
+        self.assertAlmostEqual(stage_times[-1], times[-1], delta=2.0e-15)
         self.assertEqual(len(times), 11)
 
     def test_path_coordinate_is_integrated_as_a_free_state(self) -> None:
