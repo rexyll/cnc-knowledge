@@ -241,3 +241,17 @@ ENE归档null一致性补充（2026-11-24）：runner比较器支持严格JSON n
 - **最终复验：** Run [45386401202](https://github.com/rexyll/cnc-knowledge/actions/runs/45386401202)和Run [45386439266](https://github.com/rexyll/cnc-knowledge/actions/runs/45386439266)均success；最近一次运行确认两个Job完成，121项资源测试通过、RK4-01数值筛查步骤通过、知识结构测试和Strict Lint通过。由于当前模型/配置/运行器SHA未变化，最近运行的持久化步骤按预期跳过，不产生重复提交。
 - **main归档复核：** `generated/rk4-01-synthetic/`下存在`rk4-01-synthetic-timeseries.csv`、`rk4-01-level-summary.csv`、`rk4-01-adjacent-differences.csv`和`rk4-01-run-manifest.json`四个文件；matrix的RK4-01状态为`COMPLETED_REPORT_ONLY`，其他7项仍`NOT_RUN`。分支列表仅有`main`。
 - **验收边界：** 该工作流证明测试与合成RK4筛查可重复执行，不能代替ENE误差预算/积分、RK4-02～04、PATH-01、真实参数辨识、台架/HIL/实机。
+
+
+## CH12-T003 RK4-02正向自由路径工况四级步长收敛筛查（2026-11-24）
+
+- **方法来源：** 新增SRC-000373，Modern Robotics / NxRLab Chapter 9 `QuinticTimeScaling.m`。用于五次静止—静止时间标度 (10τ^3-15τ^4+6τ^5) 及其端点速度/加速度约束。该源只支持通用运动学参考函数，不涉及CNC参数、伺服增益、限值或性能保证。
+- **运行器扩展：** `gantry_joint_drive_rk4_screen.py`增加RK4-01～04工况ID白名单、多工况输出命名、五次路径/PD电流命令支持、参考轨迹和电流诊断时序字段、自由路径跟踪误差RMS/峰值/端点统计。运行器可分别处理恒定电流与五次参考PD两种连续时间命令。
+- **RK4-02输入：** 全部为合成夹具；(s_0=0.72m)、(s_1=0.735m)、(T=0.2s)、初始(dot s=0)、(i_{ff}=0.08A)、(K_p=200A/m)、(K_d=30A·s/m)、零外部广义力。所有值不代表目标机床/驱动器设置。
+- **首次回归问题：** Run [45387474002](https://github.com/rexyll/cnc-knowledge/actions/runs/45387474002)中RK4-02实际积分及数值筛查通过，但archive verifier仍读取固定的`rk4-01-run-manifest.json`，导致123项资源测试中的1项ERROR；非积分/收敛失败。修复提交`5940adb2e7e1d957205d1e24a26c422b019a2268`后，归档验证器按单一工况manifest文件读取。
+- **CI复验：** GitHub Actions [Run 45387608094](https://github.com/rexyll/cnc-knowledge/actions/runs/45387608094)最终success。123/123项资源测试通过；RK4-01与RK4-02运行步骤success；归档push success；工作流最终success。
+- **四档结果：** 区间数40/80/160/320，步长0.005/0.0025/0.00125/0.000625s，阶段评估次数160/320/640/1280。所有状态有限，阶段数匹配；电流参考限幅及电压饱和计数均为0。
+- **收敛指标：** 相邻归一化RMS差（h/h2、h2/h4、h4/h8）为1.401131964624969e-04、6.750725089870764e-06、3.690347602559821e-07；两组有限层级观测阶数为4.375406561974051、4.193213850529427，均超过3.0数值筛查下限。
+- **自由轴实际运动：** 最细档实际终点(s(T)=0.7254507489963524m)，相对初值净正向位移约0.00545074899635245m；参考终点0.735m，带符号端点误差为-0.0095492510036476m。路径误差RMS/峰值/端点均仅作为描述字段，未设置应用误差限，因此不宣称跟踪精度通过或完整到达目标终点。
+- **结果归档：** 四个CSV/JSON文件由Actions提交至`generated/rk4-02-synthetic/`，归档提交`44a386005f8fb73835265c31492236c92b020d71`。时序604行/22列；层级汇总4行/23列；相邻差异3行/58列；manifest记录每份CSV的SHA-256、字节数、行数/列数及源码/config SHA。RK4-01亦由同一CI重新生成并更新输出列结构。
+- **提交与边界：** runner与配置/测试/workflow提交`8c9c5ac79f3baf58b2d3ebfe0f1f39a3d60fc6e8`；归档校验修复提交`5940adb2e7e1d957205d1e24a26c422b019a2268`；结果归档提交`44a386005f8fb73835265c31492236c92b020d71`。全部仅在`main`。RK4-02为`COMPLETED_REPORT_ONLY`；RK4-03/04、ENE-01/02/03积分和PATH-01仍`NOT_RUN`；无真实设备参数、台架、HIL或实机验证，CH12-T003保持`IN_PROGRESS`。

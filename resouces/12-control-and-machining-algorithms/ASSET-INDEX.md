@@ -271,3 +271,17 @@ ENE运行器测试定义42项（自动预算测试包括预算报告精确数值
 | `generated/rk4-01-synthetic/rk4-01-run-manifest.json` | JSON运行清单 | 配置/源码SHA-256、执行环境、数值筛查、限幅和阶段统计、三个CSV文件校验元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
 运行状态：RK4-01为`COMPLETED_REPORT_ONLY`。该包不是机床实测或性能验收结果；RK4-02～04、ENE-01～03、PATH-01仍`NOT_RUN`。
+
+
+## RK4-02正向自由路径数值筛查资源（2026-11-24）
+
+| 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
+|---|---|---|---|---|---|---|
+| `gantry-joint-drive-rk4-02-synthetic-config.json` | JSON配置 | RK4-02正向自由坐标合成工况；五次静止—静止参考0.72m→0.735m，连续PD电流回调；对象参数、增益和状态尺度均为合成夹具 | 项目原创 | 2026-11-24 | 原创合成配置 | 龙门连续移动轴—电流环联合模型数值验证协议 |
+| `generated/rk4-02-synthetic/rk4-02-synthetic-timeseries.csv` | CSV时序 | 604行四级积分状态、参考位置/速度、电流需求及限幅/饱和诊断 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/rk4-02-synthetic/rk4-02-level-summary.csv` | CSV汇总 | 四档积分区间/阶段数、实际净位移、参考路径误差RMS/峰值/端点和饱和统计 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/rk4-02-synthetic/rk4-02-adjacent-differences.csv` | CSV差异 | 三组相邻网格的12状态分量最大/RMS差、归一化差异和有限层级观测阶数 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/rk4-02-synthetic/rk4-02-run-manifest.json` | JSON运行清单 | 运行参数、12维状态单位/特征尺度、四档诊断、相邻差/观测阶数及三个CSV的SHA-256/尺寸/行列数 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
+| `docs/data/sources/SRC-000373.json` | JSON来源记录 | Modern Robotics开源软件实现对五次静止—静止时间标度公式及端点速度/加速度条件的来源说明 | NxRLab / Modern Robotics | 2026-11-24 | 仅记录链接 | 同上 |
+
+RK4-01和RK4-02均为`COMPLETED_REPORT_ONLY`。RK4-02的自由轴在模拟时长内仅向正方向移动约5.45mm，最细档终点比0.735m参考终点低约9.55mm；没有预设跟踪容差，因此不属于轨迹跟踪验收。RK4-03/04、ENE-01/02/03和PATH-01仍`NOT_RUN`。

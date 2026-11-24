@@ -104,6 +104,15 @@ class TestRK4SyntheticConvergenceScreen(unittest.TestCase):
             self.assertTrue(all(int(row["voltage_saturated_stages"]) == 0 for row in rows))
             self.assertTrue(all(float(row["net_s_displacement_m"]) > 0.0 for row in rows))
             self.assertTrue(all(float(row["requested_current_max_A"]) > 0.0 for row in rows))
+            finest = rows[-1]
+            self.assertGreater(float(finest["reference_path_error_rms_m"]), 0.0)
+            self.assertGreater(float(finest["reference_path_error_peak_m"]), 0.0)
+            self.assertLess(float(finest["reference_endpoint_error_m"]), 0.0)
+            self.assertAlmostEqual(
+                float(finest["reference_endpoint_error_m"]),
+                -0.0095492510036476,
+                places=9,
+            )
             archive = rk4_runner.verify_archive(output_dir)
             self.assertEqual(archive["recorded_numerical_status"], "COMPLETED_REPORT_ONLY")
 

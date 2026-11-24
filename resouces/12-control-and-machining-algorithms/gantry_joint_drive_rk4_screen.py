@@ -58,6 +58,8 @@ LEVEL_FIELDS = [
     "requested_current_min_A", "requested_current_max_A",
     "initial_s_m", "final_s_m", "net_s_displacement_m",
     "reference_start_m", "reference_end_m",
+    "reference_path_error_rms_m", "reference_path_error_peak_m",
+    "reference_endpoint_error_m",
 ]
 PAIR_FIELDS = [
     "case_id", "coarse_level", "fine_level",
@@ -407,6 +409,18 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             raise FloatingPointError(f"non-finite state values at {label}")
         reference_start = reference_at(0.0)
         reference_end = reference_at(v["duration"])
+        if reference_start is None or reference_end is None:
+            reference_path_error_rms = ""
+            reference_path_error_peak = ""
+            reference_endpoint_error = ""
+        else:
+            reference_positions = np.asarray(
+                [reference_at(float(time_s))[0] for time_s in times], dtype=float
+            )
+            path_error = np.asarray(states[:, 8], dtype=float) - reference_positions
+            reference_path_error_rms = float(np.sqrt(np.mean(path_error**2)))
+            reference_path_error_peak = float(np.max(np.abs(path_error)))
+            reference_endpoint_error = float(path_error[-1])
         level_rows.append({
             "case_id": v["case_id"], "level": label,
             "intervals": intervals, "step_s": step, "samples": int(times.size),
@@ -425,6 +439,9 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "net_s_displacement_m": float(states[-1, 8] - states[0, 8]),
             "reference_start_m": "" if reference_start is None else reference_start[0],
             "reference_end_m": "" if reference_end is None else reference_end[0],
+            "reference_path_error_rms_m": reference_path_error_rms,
+            "reference_path_error_peak_m": reference_path_error_peak,
+            "reference_endpoint_error_m": reference_endpoint_error,
         })
         times_by_level.append(np.asarray(times, dtype=float))
         states_by_level.append(np.asarray(states, dtype=float))
@@ -543,7 +560,12 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "This is a synthetic continuous-time model run, not a machine parameter set or machine performance result.",
             "The reported pairwise orders are finite-grid diagnostics based on adjacent solution differences, not a proof of an asymptotic error bound.",
             "COMPLETED_REPORT_ONLY means the numerical convergence screen passed; no application accuracy limits or machine acceptance criteria were applied.",
-            "The solver command is a constant current reference and the model does not include sampled drive scheduling, PWM, communication delay, hard stops, contact, or hardware protection.",
+            (
+                "The solver uses a constant current reference."
+                if command_spec["model"] == "constant_current"
+                else "The solver uses a continuous quintic-reference PD current command evaluated at every RK4 stage; reported path tracking errors are descriptive only and have no application acceptance limit."
+            ),
+            "The model does not include sampled drive scheduling, PWM, communication delay, hard stops, contact, or hardware protection.",
         ],
         "config_sha256": _sha256(config_bytes),
         "solver_sha256": _file_sha256(SOLVER_PATH),

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000373",
+  "source_type": "software_documentation",
+  "title": "Modern Robotics — QuinticTimeScaling",
+  "publisher": "NxRLab / Modern Robotics project",
+  "author": null,
+  "url": "https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/QuinticTimeScaling.m",
+  "version": "Chapter 9: Trajectory Generation; accessed 2026-11-24",
+  "published_on": null,
+  "accessed_on": "2026-11-24",
+  "locator": "QuinticTimeScaling.m; normalized time polynomial 10(t/T)^3 - 15(t/T)^4 + 6(t/T)^5; rest-to-rest endpoints with zero velocity and zero acceleration",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports the generic quintic time-scaling law and zero endpoint velocity/acceleration only. It does not provide CNC machine parameters, servo gains, motion limits, current ratings, or application acceptance criteria; all RK4-02 numerical values remain synthetic fixture declarations.",
+  "authority_tier": "C",
+  "evidence_kind": "software_documentation"
+}

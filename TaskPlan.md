@@ -469,3 +469,10 @@
 - CH12数值资源回归已扩展到121项并在GitHub Actions [Run 45385379794](https://github.com/rexyll/cnc-knowledge/actions/runs/45385379794)全部通过；原仓库测试及strict knowledge lint也通过。
 - 新增RK4-01合成低速平滑工况四级固定步长数值筛查，归一化相邻差单调下降，两组观测阶数4.6545/4.3413；状态仅为`COMPLETED_REPORT_ONLY`，不等于工程/实机验收。
 - RK4-02～04、ENE-01～03积分、PATH-01仍为`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。完整细节、SHA和边界见当日TaskHistory与CH12数值验证协议。
+
+## CH12-T003最新数值验证里程碑（2026-11-24）：RK4-02
+
+- 新增RK4-02正向自由轴工况，以合成五次静止—静止参考（0.72m→0.735m/0.2s）和连续PD电流命令执行四级RK4筛查；RK4 runner现支持RK4-01～04的配置化工况及独立输出归档。
+- GitHub Actions [Run 45387608094](https://github.com/rexyll/cnc-knowledge/actions/runs/45387608094)最终success；CH12资源测试123/123、RK4-01/RK4-02运行、仓库单元测试和strict lint均通过。RK4-02四档状态有限、阶段数匹配、无参考限幅/电压饱和。
+- RK4-02归一化相邻RMS差1.40113e-4/6.75073e-6/3.69035e-7，观测阶数4.3754/4.1932；最细档实际s(T)=0.725450748996m，参考终点0.735m，存在约-9.55mm端点偏差，未设置应用容差，因此仅报告、不作轨迹跟踪合格判定。结果4文件已归档于`resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic/`。
+- RK4-01和RK4-02状态均为`COMPLETED_REPORT_ONLY`；RK4-03/04、ENE-01/02/03积分、PATH-01保持`NOT_RUN`，CH12-T003保持`IN_PROGRESS`。
