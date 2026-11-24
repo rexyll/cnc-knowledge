@@ -1,6 +1,6 @@
 {
   "source_id": "SRC-000373",
-  "source_type": "software_documentation",
+  "source_type": "other",
   "title": "Modern Robotics — QuinticTimeScaling",
   "publisher": "NxRLab / Modern Robotics project",
   "author": null,
@@ -14,5 +14,5 @@
   "license_or_permission": null,
   "notes": "Supports the generic quintic time-scaling law and zero endpoint velocity/acceleration only. It does not provide CNC machine parameters, servo gains, motion limits, current ratings, or application acceptance criteria; all RK4-02 numerical values remain synthetic fixture declarations.",
   "authority_tier": "C",
-  "evidence_kind": "software_documentation"
+  "evidence_kind": "official_documentation"
 }
