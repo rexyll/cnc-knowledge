@@ -192,3 +192,15 @@ ENE归档null一致性补充（2026-11-24）：runner比较器支持严格JSON n
 - 归档预算报告和残差阶数诊断改用递归精确JSON数值比较，避免1e-12通用绝对容差掩盖小量级舍入界差异；该检查已包含在自动预算资源测试中（ENE42项）。
 
 - **仓库CI（ENE预算运行时舍入模式门控）：** 实现修正提交 `b4d70c68009cabc058383deae9e8644117ab5670` 对应 [Run 45381515561](https://github.com/rexyll/cnc-knowledge/actions/runs/45381515561) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下116项资源测试，也不运行ENE积分或数值仿真。ENE-01/02/03验证矩阵继续 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+
+## CH12资源级测试接入GitHub Actions（2026-11-24）
+
+- **目标：** 让CH12核心数值资源测试在CI中实际执行，避免仅凭仓库知识结构检查推断求解器、路径比较和能量闭合模块可运行。
+- **工作流变更：** 更新 `.github/workflows/knowledge-quality.yml`，保留原 `Knowledge structure and data quality` job，新增独立 `CH12 numerical resource tests` job；使用Python 3.12，安装 `numpy>=1.26,<3`，执行 `python -m unittest discover -s resouces/12-control-and-machining-algorithms -p 'test_gantry_joint_drive_*.py' -v`。
+- **覆盖范围：** 当前匹配三组资源测试文件：联合求解器35项、PATH-01运行器39项、ENE能量闭合运行器42项，共116项。该Job不执行ENE积分、RK4步长收敛或PATH-01数值对照；这些仍需使用完整且来源可追溯的配置单独运行。
+- **分支与提交：** 仅更新 `main`；提交 `556d603ae3543cd455b6b8060b76e6fcfd937beb`（`ci(ch12): run numerical resource tests`）。
+- **验收状态：** 已核对工作流差异、测试文件命名和NumPy依赖。当前GitHub连接可读取提交，但可用的提交状态接口对该SHA返回空状态列表，不能据此确认Actions Job成功或失败；当前运行环境也无法解析github.com，未在本地克隆仓库执行测试。因此116项测试结果仍为待CI核验，不得标记通过。
+- **遗留事项：** 核验本次Actions运行的两个Job结果；如资源测试失败，按具体失败定位修正并复跑。通过资源测试后，再依据数值验证协议准备经来源确认的参数/误差预算，分开运行ENE-01～03、RK4和PATH-01；没有工程阈值或真实设备数据时，只允许标注合成回归或 `COMPLETED_REPORT_ONLY`，不得生成实机通过结论。
+- **实际完成时间：** 2026-11-24T19:13:15+08:00（GitHub提交时间，Asia/Shanghai）
+- **交付文件：** `.github/workflows/knowledge-quality.yml`；本记录文件。
+- **验收证据：** GitHub提交 [556d603ae3543cd455b6b8060b76e6fcfd937beb](https://github.com/rexyll/cnc-knowledge/commit/556d603ae3543cd455b6b8060b76e6fcfd937beb)；CI运行结果尚待核验。
