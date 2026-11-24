@@ -328,8 +328,11 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
                 - row["reference_net_power_work_J"],
             )
 
-    def test_h16_reference_comparison_rejects_non_nested_interval_count(self) -> None:
-        reference_rows, primary_rows, summaries = self._make_reference_fixture(intervals=16)
+    def test_h16_reference_comparison_rejects_fewer_than_32_intervals(self) -> None:
+        reference_rows, primary_rows, summaries = self._make_reference_fixture()
+        # Keep all other fixture data valid, then reduce only the reference
+        # grid so the target precondition rejects it before any comparison.
+        reference_rows = reference_rows[::2]
         with self.assertRaisesRegex(ValueError, "at least 32 intervals"):
             _reference_trajectory_diagnostics(
                 reference_rows, primary_rows, summaries, 10.0, 1e-6
