@@ -367,3 +367,23 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comp
 最终状态必须区分：预声明阈值满足且有效性/适用域检查通过，才可标记该能量用例PASS；阈值缺失只能COMPLETED_REPORT_ONLY；数据/数值筛查失败为FAIL；缺参数来源或缺少必要配置为BLOCKED；未运行仍为NOT_RUN。任何单个瞬时方向导数测试通过，都不能替代四档积分闭合。若任一档发生电流参考限幅或电压饱和，仍须报告积分结果，但不得将其解释为全程光滑未限幅工况的经典RK4阶数验证。
 
 本节只定义执行和判读协议，不表示已执行ENE积分或得到能量闭合结果。当前74项资源测试仍未执行，ENE-01～03积分、RK4细化和PATH-01仍为NOT_RUN。
+
+
+### 5.16 ENE-01～03独立积分运行器接口与执行门控
+
+新增资源入口 `resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_closure.py`，一次运行只接受一个 `case_id`（ENE-01、ENE-02或ENE-03），并对同一配置、初值、命令和载荷分别执行 `h/h/2/h/4/h/8` 四档自由路径RK4积分。配置模板为 `gantry-joint-drive-energy-closure-config-template.json`；模板所有机床参数为空，不得把空值替换为未经来源确认的“典型值”。
+
+运行器复用联合求解器状态方程、储能定义及PATH-01已审阅的配置构造/Simpson/梯形基础函数，但独立实现逐点功率账本和闭合残差计算，不调用PATH-01的 `_energy_ledger()` 或 `_energy_metrics()`。因此其功率账本实现与PATH-01分离，但状态方程与储能函数仍为同一实现；它不是独立物理模型或外部实验oracle。
+
+输入要求：
+- `provenance.parameter_source` 必须明确为可追溯测量/资料或 `synthetic_fixture`；来源ID显式填写数组，无ID时为 `[]`。
+- 电机力常数与反电势常数必须精确相等（SI互易约定），否则拒绝运行，避免把未纳入主试验协议的互易失配项混入ENE-01～03。
+- ENE-01要求D0、轴黏性/库仑摩擦和外部广义力均为零；ENE-02要求外力为零，允许结构阻尼和路径摩擦；ENE-03允许并积分有符号外部广义力功率。
+- 命令采用配置中的常值前馈电流；外部广义力按 `[Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]` 顺序。配置须保持同一四档不变。
+- `energy_normalization_scale_J` 与 `energy_normalization_floor_J` 必须预先给出有限正值。缺少 `normalized_energy_closure_threshold` 时仅可输出 `COMPLETED_REPORT_ONLY`；阈值在运行前登记，四档不得变化。
+
+每个采样点记录实际PI电压限幅后的端电压、端口输入功率、铜耗、结构阻尼、路径摩擦、外部广义力功率、机电互易失配项、储能分量和净功率。每档独立使用自身时间网格积分，输出 `ΔE`、各项功/损耗、Simpson主残差、梯形敏感性残差及归一化残差。RK4四阶段回调统计覆盖电流参考限幅和电压饱和；任一档触发限幅或阶段数不符时，不能按光滑未限幅序列给出常规PASS。
+
+输出为固定名称时序CSV、汇总CSV及manifest。manifest绑定配置/求解器/运行器SHA、运行环境、参数来源、四档限幅计数和结果文件哈希/字节数/行列数。 `--verify-archive` 只验证归档完整性，不重新运行求解器，也不证明仿真正确。
+
+**当前状态：** 运行器、四项资源级功率账本测试和空白配置模板已加入仓库；尚未执行这四项测试或任何ENE积分。Knowledge Quality CI不执行 `resouces/` 下代码/测试。ENE-01～03在验证矩阵中继续 `NOT_RUN`，CH12-T003继续 `IN_PROGRESS`。

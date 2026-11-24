@@ -42,3 +42,12 @@
 - 本轮仅定义协议，没有运行资源测试或数值积分；74项资源测试、RK4、ENE、PATH-01仍未完成。
 
 - **仓库CI：** 文档/矩阵更新提交 `d505bf2b485627d71c654ea5a99a8ba1a5559e8d` 对应 [Run 45317927852](https://github.com/rexyll/cnc-knowledge/actions/runs/45317927852) success；`Knowledge structure and data quality` job成功。该工作流不执行 `resouces/` 下74项资源测试，也不运行ENE积分。
+
+
+## CH12-T003 ENE独立积分运行器初版（2026-11-24）
+
+- 新增 `gantry_joint_drive_energy_closure.py`，按ENE-01/02/03单用例配置分别执行h、h/2、h/4、h/8四档自由路径RK4积分。
+- 能量功率账本独立于PATH-01的 `_energy_ledger()` / `_energy_metrics()`，逐点记录实际限幅后端电压、端口功率、铜耗、结构阻尼、轴摩擦、外部广义力功率、机电失配项、储能和净功率；每档输出Simpson主残差与梯形敏感性残差。
+- 配置模板无任何机床默认数值；要求参数来源、Kf=Ke、ENE用例约束和预声明归一化尺度/地板/阈值。未填写阈值只产生COMPLETED_REPORT_ONLY；限幅阶段阻止常规光滑未限幅PASS。
+- 增加4项功率账本资源测试。资源测试总计78项：求解器35、PATH-01运行器39、ENE运行器4；全部未执行。未运行任何ENE积分。
+- 独立性边界：仅功率账本与积分核算独立，状态方程和储能函数仍复用同一联合模型；不代表独立物理模型、实机或HIL验证。

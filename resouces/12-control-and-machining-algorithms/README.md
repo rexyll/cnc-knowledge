@@ -208,3 +208,27 @@ PATH-01输入来源追溯：`provenance.source_documents_or_measurement_ids` 必
 ## ENE多步积分闭合判据（2026-11-24）
 
 ENE-01～03积分结果需按h、h/2、h/4、h/8四档分别计算储能变化、净功率积分、J单位能量残差和归一化残差。归一化定义为 abs(R_E)/max(E_scale, integral(abs(P_net)), E_floor)，能量尺度/地板必须预先声明并在各档保持不变。Simpson 1/3作为主积分，梯形残差仅作求积敏感性诊断。分项功率及实际限幅端电压必须保留；ENE-01为端电压功减铜耗，ENE-02再扣阻尼/摩擦，ENE-03再加有符号外力功。瞬时方向导数通过不代表积分闭合完成；本协议不包含任何预置机床数值或已执行结果。
+
+
+## ENE-01～03独立积分运行器（2026-11-24）
+
+- 入口：`gantry_joint_drive_energy_closure.py`；配置模板：`gantry-joint-drive-energy-closure-config-template.json`。
+- 每次只运行一个ENE用例，自动按h/h/2/h/4/h/8四档从同一初始状态积分。配置采用本目录PATH-01相同的机械/电气/执行器/初始状态字段，另含 `integration`、`controller_and_loads.feedforward_current_A` 与 `metrics`。
+- 示例（请先复制模板并填入有来源的参数；当前空白模板不能直接运行）：
+
+```bash
+python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_closure.py \
+  --config path/to/completed-ene-config.json \
+  --output-dir resouces/12-control-and-machining-algorithms/generated/ene-01
+```
+
+- 归档校验不运行模型：
+
+```bash
+python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_closure.py \
+  --verify-archive --output-dir resouces/12-control-and-machining-algorithms/generated/ene-01
+```
+
+- ENE-01要求无阻尼/摩擦/外力；ENE-02允许阻尼/摩擦但无外力；ENE-03允许有符号外力。三者均要求SI互易常数Kf=Ke。命令当前限定为常值前馈电流；阈值缺失或任一档触发限幅时为报告态。
+- 新增4项资源级功率账本测试，当前求解器35项、PATH-01运行器39项、ENE运行器4项，共78项；全部未执行。Knowledge Quality CI不运行资源测试，ENE积分尚未运行。
+- 独立性只覆盖功率账本/积分实现；动力学状态方程和储能函数复用原联合模型，不是独立物理模型。
