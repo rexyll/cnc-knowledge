@@ -1,6 +1,6 @@
 # 龙门移动轴—电流环联合求解器数值验证协议
 
-> **状态：** 验证方案已编写；尚未执行本协议中的数值实验。本文不包含实机参数、仿真结果或通过结论。
+> **状态：** RK4-01已执行合成模型四级步长筛查，结果为`COMPLETED_REPORT_ONLY`；RK4-02～04、ENE-01～03及PATH-01仍未执行。本文不包含真实机床参数、实机/HIL结果或工程验收通过结论。
 >
 > **适用对象：** `resouces/12-control-and-machining-algorithms/gantry_joint_drive_solver.py` 中的四结构坐标、自由路径坐标、单点移动载荷和单轴等效RL/连续PI联合模型。
 
@@ -226,7 +226,7 @@ E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{presc
 
 ## 7. 本轮当前状态
 
-- 本协议与矩阵模板已归档；RK4-01～04、ENE-01～03 均为 `NOT_RUN`。
+- 本协议与矩阵模板已归档；RK4-01为`COMPLETED_REPORT_ONLY`；RK4-02～04、ENE-01～03及PATH-01仍为`NOT_RUN`。
 - PATH-01 的参考积分器已实现，但数值对照仍为 `NOT_RUN`。
 - 求解器35项与PATH-01运行器39项资源测试共74项，仍未执行；本轮没有新增数值计算。
 - CH12-T003 继续 `IN_PROGRESS`；真实机床参数辨识及HIL/实机验证未完成。
