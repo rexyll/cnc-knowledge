@@ -40,3 +40,5 @@
 - 功率项：ENE-01端电压输入功减铜耗；ENE-02再扣结构阻尼与路径摩擦；ENE-03再加有符号外部广义力。要求分项归档，不以命令电压替代限幅后端电压。
 - 判读：最细两档满足预声明阈值才可称达到闭合容差；跨零或噪声地板主导时不强行给出残差阶数，不机械套用状态误差p>=3。
 - 本轮仅定义协议，没有运行资源测试或数值积分；74项资源测试、RK4、ENE、PATH-01仍未完成。
+
+- **仓库CI：** 文档/矩阵更新提交 `d505bf2b485627d71c654ea5a99a8ba1a5559e8d` 对应 [Run 45317927852](https://github.com/rexyll/cnc-knowledge/actions/runs/45317927852) success；`Knowledge structure and data quality` job成功。该工作流不执行 `resouces/` 下74项资源测试，也不运行ENE积分。

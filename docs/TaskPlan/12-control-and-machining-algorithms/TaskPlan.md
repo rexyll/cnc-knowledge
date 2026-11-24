@@ -448,3 +448,5 @@
 - **功率项：** ENE-01使用端电压输入功减铜耗；ENE-02增加结构阻尼与路径摩擦耗散；ENE-03再增加有符号外部广义力功。各项分开记录，使用实际限幅后端电压。
 - **判读：** 最细两档满足预声明ρ_E阈值方可声称达到容差；只有残差远离数值噪声且趋势稳定时报告经验阶数，不机械套用状态误差p≥3。跨零或落入噪声地板时标记阶数不可判定。
 - **状态：** 该轮只定义协议，没有运行资源测试或数值积分。74项资源测试未执行；ENE/RK4/PATH-01保持NOT_RUN，CH12-T003保持IN_PROGRESS。
+
+- **仓库CI：** 文档/矩阵更新提交 `d505bf2b485627d71c654ea5a99a8ba1a5559e8d` 对应 [Run 45317927852](https://github.com/rexyll/cnc-knowledge/actions/runs/45317927852) success；`Knowledge structure and data quality` job成功。该工作流不执行 `resouces/` 下74项资源测试，也不运行ENE积分。
