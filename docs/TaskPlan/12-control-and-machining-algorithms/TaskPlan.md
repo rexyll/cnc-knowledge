@@ -529,3 +529,5 @@
 - **测试定义：** 新增3项资源测试：RK4权重/正负抵消/端点差、阶段组数量与顺序拒绝、非有限阶段功率拒绝。ENE测试25项，求解器35项、PATH-01运行器39项，总计99项资源测试全部未执行。
 - **解释边界：** 阶段功率加权积分与状态求解器共享同一RK4阶段状态，不是独立高精度求积oracle、严格误差上界或独立物理模型。它仅辅助观察步内功率采样敏感性，不改变原ENE主残差、归一化指标或PASS门槛。未执行ENE积分、资源测试或实机验证；CH12-T003保持 IN_PROGRESS，ENE验证矩阵仍为 NOT_RUN。
 
+- **仓库CI（RK4阶段功率快照与归档语义）：** 实现提交 `40c65ac9eaa593effa584896f13d6af146ed7f59` 对应 [Run 45357974206](https://github.com/rexyll/cnc-knowledge/actions/runs/45357974206) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下99项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
