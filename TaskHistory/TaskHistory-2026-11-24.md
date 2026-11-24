@@ -107,3 +107,6 @@
 - 新增3项资源测试定义：分项贡献率和残差尺度、零分母地板保护、Simpson/梯形差的敏感性语义。ENE资源测试19项，求解器35项、PATH-01运行器39项，共93项资源测试。
 - 误差解释边界：当前四档细化同时改变RK4状态轨迹与功率求积网格，残差不能独立归因；Simpson/梯形差不是严格误差上界。固定参考轨迹功率求积细化尚未实现。
 - 本轮只做代码/文档/测试定义和静态审查；未执行 resouces/ 资源测试或ENE积分。Knowledge Quality CI不覆盖资源测试。CH12-T003保持 IN_PROGRESS，ENE验证矩阵保持 NOT_RUN。
+
+
+- **仓库CI：** `544221f583457cd17039380c7800ce86c32ed235` 对应 GitHub Actions [Run 45345390717](https://github.com/rexyll/cnc-knowledge/actions/runs/45345390717) success；Knowledge structure and data quality job成功。该CI不执行 `resouces/` 下93项资源测试，也不运行ENE积分。
