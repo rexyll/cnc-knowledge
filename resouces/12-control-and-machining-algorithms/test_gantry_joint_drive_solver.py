@@ -393,14 +393,21 @@ class TestGantryJointDriveSolver(unittest.TestCase):
         derivative = model.derivative(
             0.0, vector, state.current_A, external_generalized_force=external
         )
-        epsilon = 1.0e-5
-        energy_plus = model.total_stored_energy(
-            model.unpack(vector + epsilon * derivative)
-        )
-        energy_minus = model.total_stored_energy(
-            model.unpack(vector - epsilon * derivative)
-        )
-        observed_rate = (energy_plus - energy_minus) / (2.0 * epsilon)
+        def directional_energy_rate(step_s: float) -> float:
+            energy_plus = model.total_stored_energy(
+                model.unpack(vector + step_s * derivative)
+            )
+            energy_minus = model.total_stored_energy(
+                model.unpack(vector - step_s * derivative)
+            )
+            return (energy_plus - energy_minus) / (2.0 * step_s)
+
+        # Central-difference truncation is O(step_s**2). Evaluate two
+        # directional steps and form a Richardson estimate rather than
+        # relying on one arbitrary finite-difference scale.
+        coarse_rate = directional_energy_rate(1.0e-5)
+        fine_rate = directional_energy_rate(5.0e-6)
+        observed_rate = (4.0 * fine_rate - coarse_rate) / 3.0
 
         z_dot = np.concatenate((state.q_dot, [state.s_dot]))
         structural_loss = float(state.q_dot @ mechanics.D0 @ state.q_dot)
@@ -416,6 +423,7 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             - structural_loss - axis_loss
             + float(np.asarray(external, dtype=float) @ z_dot)
         )
+        self.assertAlmostEqual(fine_rate, expected_rate, delta=4.0e-5)
         self.assertAlmostEqual(observed_rate, expected_rate, delta=2.0e-5)
 
     def test_ene01_independent_energy_rate_oracle_with_reciprocal_port(self) -> None:
