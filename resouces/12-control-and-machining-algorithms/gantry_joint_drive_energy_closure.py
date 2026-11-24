@@ -1431,7 +1431,9 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
          ("current_reference_saturated", "voltage_saturated"), ()),
         ("reference_timeseries_csv", REFERENCE_TIMESERIES_NAME, TIME_FIELDS,
          ("current_reference_saturated", "voltage_saturated"), ()),
-        ("summary_csv", SUMMARY_NAME, SUMMARY_FIELDS, (), ("empirical_residual_order_from_previous",)),
+        ("summary_csv", SUMMARY_NAME, SUMMARY_FIELDS,
+         ("stage_count_matches_expected", "smooth_unsaturated"),
+         ("empirical_residual_order_from_previous",)),
     ):
         record = artifacts.get(key)
         path = output / name
