@@ -48,18 +48,22 @@ from gantry_joint_drive_path_comparison import (
 def make_energy_ledger_model(
     force_constant_N_per_A: float = 4.2,
     back_emf_V_per_m_s: float = 3.7,
+    structural_damping: np.ndarray | None = None,
+    axis_viscous_Ns_m: float = 0.0,
+    axis_coulomb_N: float = 0.0,
 ) -> GantryJointDriveModel:
-    """Build a zero-damping model for exact power-ledger sign checks."""
+    """Build a configurable model for exact energy-ledger sign checks."""
     mechanics = MechanicalParameters(
         M0=np.diag([75.0, 12.0, 9.0, 2.0]),
-        D0=np.zeros((4, 4)),
+        D0=(np.zeros((4, 4)) if structural_damping is None
+            else np.asarray(structural_damping, dtype=float)),
         K0=np.zeros((4, 4)),
         payload_mass_kg=0.0,
         axis_equivalent_mass_kg=8.0,
         gravity_acceleration_m_s2=np.zeros(3),
-        axis_viscous_Ns_m=0.0,
-        axis_coulomb_N=0.0,
-        friction_smoothing_speed_m_s=0.01,
+        axis_viscous_Ns_m=axis_viscous_Ns_m,
+        axis_coulomb_N=axis_coulomb_N,
+        friction_smoothing_speed_m_s=0.1,
     )
     electrical = CurrentLoopParameters(
         resistance_ohm=1.5,
@@ -250,6 +254,56 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
             constrained=False,
         )
         self.assertEqual(ledger[0]["lambda_power"], 0.0)
+
+    def test_energy_ledger_dissipation_is_nonnegative_in_both_path_directions(self) -> None:
+        model = make_energy_ledger_model(
+            structural_damping=np.diag([2.0, 0.0, 0.0, 0.0]),
+            axis_viscous_Ns_m=3.0,
+            axis_coulomb_N=1.0,
+        )
+        external = np.zeros(5)
+        for direction in (1.0, -1.0):
+            base = make_energy_ledger_state(direction * 0.2)
+            state = JointState(
+                q=base.q.copy(),
+                q_dot=np.array([direction * 0.4, 0.0, 0.0, 0.0]),
+                s=base.s, s_dot=base.s_dot,
+                current_A=base.current_A,
+                current_integrator_V=base.current_integrator_V,
+            )
+            ledger = _energy_ledger(
+                model, np.array([0.0]), np.array([model.pack(state)]),
+                lambda _time, _state: 0.5, external, np.zeros(1),
+                np.array([[state.s, state.s_dot, 0.0]]), constrained=False,
+            )[0]
+            expected_structural = 2.0 * (0.4 ** 2)
+            expected_axis = (
+                3.0 * (0.2 ** 2)
+                + 1.0 * np.tanh(0.2 / 0.1) * 0.2
+            )
+            self.assertAlmostEqual(ledger["structural_damping"], expected_structural, places=12)
+            self.assertAlmostEqual(ledger["axis_friction"], expected_axis, places=12)
+            self.assertGreaterEqual(ledger["structural_damping"], 0.0)
+            self.assertGreaterEqual(ledger["axis_friction"], 0.0)
+
+    def test_energy_ledger_external_generalized_power_tracks_force_velocity_sign(self) -> None:
+        model = make_energy_ledger_model()
+        external = np.array([3.0, 0.0, 0.0, 0.0, 4.0])
+        for direction, expected_power in ((1.0, 2.0), (-1.0, -2.0), (0.0, 0.0)):
+            base = make_energy_ledger_state(direction * 0.2)
+            state = JointState(
+                q=base.q.copy(),
+                q_dot=np.array([direction * 0.4, 0.0, 0.0, 0.0]),
+                s=base.s, s_dot=base.s_dot,
+                current_A=base.current_A,
+                current_integrator_V=base.current_integrator_V,
+            )
+            ledger = _energy_ledger(
+                model, np.array([0.0]), np.array([model.pack(state)]),
+                lambda _time, _state: 0.5, external, np.zeros(1),
+                np.array([[state.s, state.s_dot, 0.0]]), constrained=False,
+            )[0]
+            self.assertAlmostEqual(ledger["external"], expected_power, places=12)
     def test_energy_metrics_report_trapezoid_residual(self) -> None:
         times = np.array([0.0, 1.0, 2.0])
         ledger = [
