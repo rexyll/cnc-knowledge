@@ -1,6 +1,6 @@
 # 龙门移动轴—电流环联合求解器数值验证协议
 
-> **状态：** RK4-01～04、ENE-01和ENE-02均已完成合成模型积分，统一标记`COMPLETED_REPORT_ONLY`；ENE-03与PATH-01仍未运行。本文不包含真实机床参数、实机/HIL结果或工程验收通过结论。
+> **状态：** RK4-01～04、ENE-01～03均已完成合成模型积分，统一标记`COMPLETED_REPORT_ONLY`；PATH-01仍未运行。本文不包含真实机床参数、实机/HIL结果或工程验收通过结论。
 >
 > **适用对象：** `resouces/12-control-and-machining-algorithms/gantry_joint_drive_solver.py` 中的四结构坐标、自由路径坐标、单点移动载荷和单轴等效RL/连续PI联合模型。
 
@@ -191,6 +191,16 @@ P_{\rm net}=v i-R_e i^2
 - **报告状态：** `normalized_energy_closure_threshold`保持null，因此即便耗散项正、残差随网格细化下降，也仅记录`COMPLETED_REPORT_ONLY`，不生成工程PASS/FAIL。端电压使用PI及限幅后的实际值；PI积分器不计入物理储能。
 - **CI及归档：** GitHub Actions [Run 45416172656](https://github.com/rexyll/cnc-knowledge/actions/runs/45416172656)两个Job均success；资源测试132/132、RK4-01～04与ENE-01/02运行、仓库单元测试、strict lint和归档步骤均成功。时序604行/33列、阶段功率4960行/20列、h/16参考641行/33列、汇总4行/58列和manifest五件套归档至`resouces/12-control-and-machining-algorithms/generated/ene-02-synthetic/`；归档提交`97e4f43785902ec32ec682f7003c36ef64347ff1`。
 - **限制：** 这是给定合成连续时间模型的分项耗散/能量账本数值结果；未包含实际摩擦辨识、驱动采样/PWM、通信、硬件保护、台架、HIL或实机验证。ENE-03和PATH-01仍待执行。
+### 4.5 ENE-03外部广义力输入功率与耗散联合合成积分结果（2026-11-24）
+
+- **配置身份与外载符号：** 使用`gantry-joint-drive-ene-03-synthetic-config.json`。继承ENE-02合成正定结构阻尼D0=diag(10,2,4,0.5)、轴黏性摩擦10 Ns/m、正则化库仑摩擦1.5 N、平滑速度0.02 m/s；增加常值五维广义外力 `[0.25,0.01,-0.02,0.005,0.20]`，分量顺序严格为 `[Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]`。所用外力、机械/电气参数、初值和尺度均为SYNTHETIC_FIXTURE，不能解释为实际切削/加工载荷。
+- **四档与h/16参考：** 四档区间数40/80/160/320、RK4阶段数160/320/640/1280；h/16参考640区间、641节点、2560阶段。全部层级状态有限、阶段计数匹配、电流参考限幅和电压饱和阶段数均为0。
+- **h/8能量预算：** 储能变化ΔE=0.005452965433540638 J；端电压输入功=0.12534331186023634 J；铜耗=0.09953397953756876 J；结构阻尼损失=0.0036791157486021193 J；路径轴摩擦损失=0.020885147979556574 J；外部广义力有符号输入功=+0.0042078931032226855 J；净功=0.005452961697731583 J；Simpson残差=3.7358090553343826e-9 J，归一化残差同为3.7358090553343826e-9。外部输入功与阻尼/摩擦耗散单独列示，不合并。
+- **残差细化：** h/h2/h4/h8 Simpson残差=2.3101603200137606e-5/1.1224940887214277e-6/6.301292382760587e-8/3.7358090553343826e-9 J；h/16参考残差=2.273332242938575e-10 J。有限网格观测阶数=4.363213222380475/4.154916284344783/4.076155129877157/4.038540266247525。五层级均高于预声明1e-11 J噪声地板，门控ELIGIBLE；该诊断不是误差上界或物理模型准确度证明。
+- **噪声预算边界：** 运行器按IEEE-754 binary64/gamma_n形式自动推导Simpson/残差减法链路最低浮点项5.713793286296372e-12 J。外部最大能量/净功率/状态传播影响界是分析者输入的合成假设，尚未由代码或独立试验证明；SRC-000374仅支持常规gamma_n舍入界形式。
+- **结果状态：** `normalized_energy_closure_threshold`保持null，状态为`COMPLETED_REPORT_ONLY`，不产生工程PASS/FAIL。当前结果只检查该合成模型对外部广义力功率的符号、分项积分与数值闭合。
+- **CI与归档：** GitHub Actions [Run 45417667115](https://github.com/rexyll/cnc-knowledge/actions/runs/45417667115)两个Job均success；CH12资源测试134/134，RK4-01～04及ENE-01～03运行、仓库测试、strict lint和归档均通过。时序604行/33列、阶段功率4960行/20列、h/16参考641行/33列、汇总4行/58列和manifest五件套归档至`resouces/12-control-and-machining-algorithms/generated/ene-03-synthetic/`；归档提交`de53f2f57c6afca75c62e4bdc980bd6927e2b19b`。
+- **限制：** 外部广义力为人为构造的常值向量，不包含真实工件接触/切削力、时变载荷或测量噪声。无参数辨识、台架、HIL、硬件保护或真实机床验证。PATH-01仍待执行。
 ## 5. 自由路径轴与规定轨迹模型对照（PATH）
 
 此对照不是要求两种模型的轨迹自然相同，而是量化“轴为自由动力学状态”与“路径被理想约束”的差异，并核对约束反力及其能量输入。
@@ -268,7 +278,7 @@ E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{presc
 1. 执行CH12全部资源级测试并保存完整stdout/stderr、退出码、Python/NumPy版本和源码SHA；本次Actions Run 45412967222已执行130/130项资源测试。
 2. 处理失败项并复跑全部74项；不得以仓库知识质量CI替代该步骤。
 3. 完成 RK4-01～04 的细化试验，记录每档状态输出和误差。
-4. ENE-01和ENE-02已完成合成报告态积分；后续完成ENE-03外力功率账本及残差细化。
+4. ENE-01～03均已完成合成报告态积分；下一步执行PATH-01自由/规定轨迹数值对照。
 5. 在资源测试完成后进行 PATH-01；自由轴与规定轨迹两侧各自完成步长收敛后再对照。
 6. 所有完整输出、配置和结果文件保存到 `resouces/12-control-and-machining-algorithms/`，并登记 `ASSET-INDEX.md`。PATH-01配置模板和两份CSV空白模板只定义输入/输出格式，不包含参数或结果；执行后另存带配置SHA/求解器SHA的实际文件，不覆盖模板。
 
@@ -276,9 +286,9 @@ E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{presc
 
 ## 7. 本轮当前状态
 
-- 本协议与矩阵及资源归档已同步；RK4-01～04、ENE-01和ENE-02均为`COMPLETED_REPORT_ONLY`；ENE-03和PATH-01仍为`NOT_RUN`。
+- 本协议与矩阵及资源归档已同步；RK4-01～04、ENE-01～03均为`COMPLETED_REPORT_ONLY`；PATH-01仍为`NOT_RUN`。
 - PATH-01参考积分器已实现，但自由/规定轨迹数值对照仍为`NOT_RUN`。
-- GitHub Actions Run 45416172656执行132/132项CH12资源测试，RK4-01～04、ENE-01/02运行成功；仓库单元测试、strict lint及结果持久化均成功。
+- GitHub Actions Run 45417667115执行134/134项CH12资源测试，RK4-01～04、ENE-01～03运行成功；仓库单元测试、strict lint及结果持久化均成功。
 - CH12-T003继续`IN_PROGRESS`；真实机床参数辨识、台架、HIL和实机验证未完成。
 
 

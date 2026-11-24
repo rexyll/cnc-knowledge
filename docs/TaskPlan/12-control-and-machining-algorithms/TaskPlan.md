@@ -619,7 +619,7 @@
 - **修正提交：** `6862981116ee0eefdc9cbb18049d604df9b32e4a`修正求解器资源测试中的三个测试问题；`ce0ea5a68234efc1d325b3ee78822f4f548ee40b`修正ENE参考网格拒绝测试夹具。未改生产求解器/运行器方程或降低数值断言。
 - **复验结果：** GitHub Actions [Run 45384191326](https://github.com/rexyll/cnc-knowledge/actions/runs/45384191326)两个Job均success；Python 3.12.16 / NumPy 2.5.5，ENE42/42、PATH-01 39/39、solver35/35，总计116/116通过（日志`Ran 116 tests in 0.082s`、`OK`）。原仓库tests与strict knowledge lint也通过。
 - **资源测试状态：** 已接入CI并通过当前运行环境的单元测试验收。后续代码更新仍由该Job自动回归。
-- **当前未完成验证：** ENE-01和ENE-02均已完成合成积分并标记`COMPLETED_REPORT_ONLY`；ENE-03积分与PATH-01数值对照继续`NOT_RUN`。RK4-01～04亦为合成模型`COMPLETED_REPORT_ONLY`。资源测试和报告态能量闭合不等于真实机床适用性或自由/约束轨迹验收；真实参数辨识、台架、HIL和实机仍未完成。没有完整工程验收阈值时，不得标记工程PASS。
+- **当前未完成验证：** ENE-01～03均已完成合成积分并标记`COMPLETED_REPORT_ONLY`；仅PATH-01自由/规定轨迹数值对照仍`NOT_RUN`。RK4-01～04亦为合成模型`COMPLETED_REPORT_ONLY`。资源测试和报告态能量闭合不等于真实机床适用性或轨迹验收；真实参数辨识、台架、HIL和实机仍未完成。没有完整工程验收阈值时，不得标记工程PASS。
 - **相关每日记录：** [TaskHistory-2026-11-24.md](../../../TaskHistory/TaskHistory-2026-11-24.md)。
 - **当前任务状态：** CH12-T003保持`IN_PROGRESS`。
 ## CH12-T003 RK4-01合成数值积分收敛筛查（2026-11-24）
@@ -695,3 +695,14 @@
 - `normalized_energy_closure_threshold=null`，结果状态只为`COMPLETED_REPORT_ONLY`。分析者提供的外部能量/功率传播界依然是未经独立证明的合成假设；不得把结果解释为真实机床摩擦或阻尼验证。
 - GitHub Actions [Run 45416172656](https://github.com/rexyll/cnc-knowledge/actions/runs/45416172656)两个Job success：132/132项资源测试、RK4-01～04及ENE-01/02运行、仓库单元测试、strict lint和归档成功；五件套归档提交`97e4f43785902ec32ec682f7003c36ef64347ff1`。
 - ENE-03和PATH-01仍`NOT_RUN`；真实参数辨识、台架、HIL和实机验证未完成；CH12-T003保持`IN_PROGRESS`。
+
+## CH12-T003 ENE-03外部广义力输入功率与耗散联合积分（2026-11-24）
+
+- 新增 `gantry-joint-drive-ene-03-synthetic-config.json`：沿用ENE-02正定结构阻尼D0=diag(10,2,4,0.5)、轴黏性摩擦10 Ns/m、正则化库仑摩擦1.5N、平滑速度0.02m/s；增加五维外部广义力 `[0.25,0.01,-0.02,0.005,0.20]`，顺序 `[Q_x_common,Q_yaw,Q_bending,Q_torsion,Q_s]`。所有数值是合成加载夹具，外部功在账本中带符号单独记录。
+- 新增2项ENE-03外载契约/四档积分与归档测试；ENE运行器资源测试总数49项，CH12总资源测试134/134通过。
+- 主档区间数40/80/160/320，RK4阶段数160/320/640/1280；h/16参考640区间/2560阶段。四档均有限、阶段数匹配，无电流参考限幅与电压饱和。
+- h/8储能变化0.005452965433541J，端电压输入功0.125343311860236J，铜耗0.099533979537569J，结构阻尼损失0.003679115748602J，轴摩擦损失0.020885147979557J，有符号外部广义力功+0.004207893103223J，净功0.005452961697732J，Simpson残差3.735809055334383e-9J。
+- h～h/8残差2.3101603200e-5/1.1224940887e-6/6.3012923828e-8/3.7358090553e-9J；h/16参考2.2733322429e-10J；有限网格观测阶数4.36321/4.15492/4.07616/4.03854。预声明噪声地板1e-11J，自动浮点底线5.7137932863e-12J。
+- 工程能量阈值保持null，结果只为`COMPLETED_REPORT_ONLY`。外载和误差界都是合成分析输入，未独立证明；不代表真实加工载荷或机床能量验证。
+- GitHub Actions [Run 45417667115](https://github.com/rexyll/cnc-knowledge/actions/runs/45417667115)两个Job success：资源测试134/134、RK4-01～04、ENE-01～03运行、仓库测试、strict lint及归档均成功；五件套归档提交`de53f2f57c6afca75c62e4bdc980bd6927e2b19b`。
+- ENE-01～03均为`COMPLETED_REPORT_ONLY`；PATH-01仍`NOT_RUN`；真实参数辨识、台架、HIL和实机验证未完成；CH12-T003保持`IN_PROGRESS`。
