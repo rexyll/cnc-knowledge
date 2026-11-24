@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000372",
+  "source_type": "other",
+  "title": "Numerical Analysis using Matlab and Maple — Fourth-order Runge-Kutta method",
+  "publisher": "Department of Mathematics and Statistics, Mississippi State University",
+  "author": null,
+  "url": "https://skim.math.msstate.edu/LectureNotes/Numerical_Analysis_Lecture.pdf",
+  "version": "Lecture notes, Chapter 5 §5.3.2, fourth-order Runge-Kutta method; accessed 2026-11-24",
+  "published_on": null,
+  "accessed_on": "2026-11-24",
+  "locator": "Chapter 5, §5.3.2: classical RK4 update, local truncation error O(h^5), and global error O(h^4)",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Academic lecture notes used only to support the standard classical RK4 formula and local/global error orders. The project simulation still requires its own finite-grid convergence checks; this source does not establish accuracy for a CNC machine model.",
+  "authority_tier": "C",
+  "evidence_kind": "academic_research"
+}
