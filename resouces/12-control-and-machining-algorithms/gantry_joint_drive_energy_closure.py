@@ -34,6 +34,7 @@ MANIFEST_NAME = "gantry-joint-drive-energy-closure-run-manifest.json"
 LEVELS = ("h", "h/2", "h/4", "h/8")
 # Bound aggregate output rows before allocating RK4 trajectories and row dictionaries.
 MAX_TOTAL_SAMPLES = 50_000
+MAX_TOTAL_STAGE_SAMPLES = 200_000
 TIME_FIELDS = [
     "case_id", "step_level", "step_s", "time_s",
     "q1_m", "q2_rad", "q3_m", "q4_rad",
@@ -46,6 +47,14 @@ TIME_FIELDS = [
     "structural_damping_loss_W", "axis_friction_loss_W",
     "external_generalized_power_W", "electromechanical_mismatch_power_W",
     "net_power_W",
+]
+STAGE_TIMESERIES_NAME = "gantry-joint-drive-energy-closure-stage-power-timeseries.csv"
+STAGE_FIELDS = [
+    "case_id", "step_level", "interval_index", "stage_index", "stage_time_s", "step_s",
+    "terminal_input_power_W", "copper_loss_W", "structural_damping_loss_W",
+    "axis_friction_loss_W", "external_generalized_power_W",
+    "electromechanical_mismatch_power_W", "net_power_W",
+    "current_reference_saturated", "voltage_saturated",
 ]
 SUMMARY_FIELDS = [
     "case_id", "step_level", "step_s", "intervals", "samples",
@@ -69,6 +78,11 @@ SUMMARY_FIELDS = [
     "coupled_stored_energy_delta_vs_finest_J",
     "coupled_net_work_delta_vs_finest_J",
     "coupled_energy_residual_delta_vs_finest_J",
+    "rk4_stage_terminal_input_work_J", "rk4_stage_copper_loss_J",
+    "rk4_stage_structural_damping_loss_J", "rk4_stage_axis_friction_loss_J",
+    "rk4_stage_external_generalized_work_J", "rk4_stage_electromechanical_mismatch_work_J",
+    "rk4_stage_net_power_work_J", "rk4_stage_absolute_net_power_work_J",
+    "rk4_stage_energy_residual_J", "rk4_stage_vs_endpoint_simpson_net_work_delta_J",
     "current_reference_saturated_stages", "voltage_saturated_stages",
     "any_limiter_active_stages", "expected_rk4_stage_evaluations",
     "observed_rk4_stage_evaluations", "stage_count_matches_expected",
@@ -174,6 +188,12 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
     base_step = path_support._number(integration.get("base_step_s"), "integration.base_step_s", positive=True)
     intervals = path_support._interval_count(duration, base_step)
     total_samples = sum(intervals * (2 ** level) + 1 for level in range(len(LEVELS)))
+    total_stage_samples = sum(4 * intervals * (2 ** level) for level in range(len(LEVELS)))
+    if total_stage_samples > MAX_TOTAL_STAGE_SAMPLES:
+        raise EnergyClosureError(
+            f"refinement schedule requires {total_stage_samples} RK4 stage rows; "
+            f"configured safety limit is {MAX_TOTAL_STAGE_SAMPLES}"
+        )
     if total_samples > MAX_TOTAL_SAMPLES:
         raise EnergyClosureError(
             f"refinement schedule requires {total_samples} samples; "
@@ -304,6 +324,68 @@ def _fixed_trajectory_quadrature_diagnostics(
     return result
 
 
+
+def _rk4_stage_power_diagnostics(
+    stage_rows: list[dict[str, Any]],
+    delta_stored_energy: float,
+    endpoint_simpson_net_work: float,
+) -> dict[str, float]:
+    """Integrate persisted RK4-stage power snapshots with classical RK4 weights.
+
+    This is an in-step sampling diagnostic tied to the solver's own RK4 stages.
+    It is not an independent high-order quadrature oracle or an error bound.
+    """
+    if len(stage_rows) == 0 or len(stage_rows) % 4:
+        raise ValueError("RK4 stage power trace must contain complete groups of four")
+    component_fields = {
+        "terminal_input": "terminal_input_power_W",
+        "copper": "copper_loss_W",
+        "structural": "structural_damping_loss_W",
+        "friction": "axis_friction_loss_W",
+        "external": "external_generalized_power_W",
+        "mismatch": "electromechanical_mismatch_power_W",
+        "net": "net_power_W",
+    }
+    totals = {key: 0.0 for key in component_fields}
+    absolute_net = 0.0
+    weights = (1.0, 2.0, 2.0, 1.0)
+    for offset in range(0, len(stage_rows), 4):
+        block = stage_rows[offset:offset + 4]
+        if [int(float(row["stage_index"])) for row in block] != [0, 1, 2, 3]:
+            raise ValueError("RK4 stage power trace order must be k1,k2,k3,k4 per interval")
+        step = float(block[0]["step_s"])
+        if not math.isfinite(step) or step <= 0.0 or any(
+            not math.isclose(float(row["step_s"]), step, rel_tol=1e-12, abs_tol=0.0)
+            for row in block
+        ):
+            raise ValueError("RK4 stage power trace has inconsistent step size")
+        for key, field in component_fields.items():
+            values = [float(row[field]) for row in block]
+            if not all(math.isfinite(value) for value in values):
+                raise FloatingPointError("RK4 stage power trace contains non-finite power")
+            totals[key] += step / 6.0 * math.fsum(w * value for w, value in zip(weights, values))
+        net_values = [float(row["net_power_W"]) for row in block]
+        absolute_net += step / 6.0 * math.fsum(
+            w * abs(value) for w, value in zip(weights, net_values)
+        )
+    result = {
+        "rk4_stage_terminal_input_work_J": totals["terminal_input"],
+        "rk4_stage_copper_loss_J": totals["copper"],
+        "rk4_stage_structural_damping_loss_J": totals["structural"],
+        "rk4_stage_axis_friction_loss_J": totals["friction"],
+        "rk4_stage_external_generalized_work_J": totals["external"],
+        "rk4_stage_electromechanical_mismatch_work_J": totals["mismatch"],
+        "rk4_stage_net_power_work_J": totals["net"],
+        "rk4_stage_absolute_net_power_work_J": absolute_net,
+        "rk4_stage_energy_residual_J": float(delta_stored_energy) - totals["net"],
+        "rk4_stage_vs_endpoint_simpson_net_work_delta_J":
+            totals["net"] - float(endpoint_simpson_net_work),
+    }
+    if not all(math.isfinite(value) for value in result.values()):
+        raise FloatingPointError("non-finite RK4-stage power diagnostic")
+    return result
+
+
 def _power_sample(model: Any, vector: np.ndarray, command: float,
                   external: np.ndarray, case_id: str) -> dict[str, float | bool]:
     vector = np.asarray(vector, dtype=float)
@@ -354,21 +436,25 @@ def _power_sample(model: Any, vector: np.ndarray, command: float,
 
 
 def _atomic_bundle(output: Path, times: list[dict[str, Any]],
-                   summaries: list[dict[str, Any]], manifest: dict[str, Any]) -> dict[str, Any]:
+                   stage_rows: list[dict[str, Any]], summaries: list[dict[str, Any]],
+                   manifest: dict[str, Any]) -> dict[str, Any]:
     output.mkdir(parents=True, exist_ok=True)
-    time_path, summary_path, manifest_path = (
-        output / TIMESERIES_NAME, output / SUMMARY_NAME, output / MANIFEST_NAME
+    time_path, stage_path, summary_path, manifest_path = (
+        output / TIMESERIES_NAME, output / STAGE_TIMESERIES_NAME,
+        output / SUMMARY_NAME, output / MANIFEST_NAME
     )
-    targets = (time_path, summary_path, manifest_path)
+    targets = (time_path, stage_path, summary_path, manifest_path)
     if any(p.exists() for p in targets):
         raise FileExistsError("ENE output bundle already exists; choose a new directory")
     with tempfile.TemporaryDirectory(prefix=".ene-staging-", dir=output) as tmp:
         stage = Path(tmp)
-        staged_time, staged_summary, staged_manifest = (
-            stage / TIMESERIES_NAME, stage / SUMMARY_NAME, stage / MANIFEST_NAME
+        staged_time, staged_stage, staged_summary, staged_manifest = (
+            stage / TIMESERIES_NAME, stage / STAGE_TIMESERIES_NAME,
+            stage / SUMMARY_NAME, stage / MANIFEST_NAME
         )
         for path, fields, rows in (
             (staged_time, TIME_FIELDS, times),
+            (staged_stage, STAGE_FIELDS, stage_rows),
             (staged_summary, SUMMARY_FIELDS, summaries),
         ):
             with path.open("w", encoding="utf-8", newline="") as stream:
@@ -378,6 +464,7 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
         artifacts = {}
         for key, path, rows, fields in (
             ("timeseries_csv", staged_time, times, TIME_FIELDS),
+            ("stage_power_csv", staged_stage, stage_rows, STAGE_FIELDS),
             ("summary_csv", staged_summary, summaries, SUMMARY_FIELDS),
         ):
             artifacts[key] = {
@@ -390,6 +477,7 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
             json.dump(manifest, stream, ensure_ascii=False, indent=2, allow_nan=False)
             stream.write("\n")
         os.replace(staged_time, time_path)
+        os.replace(staged_stage, stage_path)
         os.replace(staged_summary, summary_path)
         os.replace(staged_manifest, manifest_path)
     return artifacts
@@ -446,6 +534,12 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
     ):
         raise EnergyClosureError("manifest duration/base_step does not define an even integer interval count")
     total_samples = sum(base_intervals * (2 ** level) + 1 for level in range(len(LEVELS)))
+    total_stage_samples = sum(4 * base_intervals * (2 ** level) for level in range(len(LEVELS)))
+    if total_stage_samples > MAX_TOTAL_STAGE_SAMPLES:
+        raise EnergyClosureError(
+            f"manifest refinement schedule requires {total_stage_samples} RK4 stage rows; "
+            f"supported limit is {MAX_TOTAL_STAGE_SAMPLES}"
+        )
     if total_samples > MAX_TOTAL_SAMPLES:
         raise EnergyClosureError(
             f"manifest refinement schedule requires {total_samples} samples; "
@@ -555,12 +649,14 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
         raise EnergyClosureError("ENE manifest root must be a JSON object")
     contract = _validate_manifest_contract(manifest)
     artifacts = manifest.get("output_artifacts")
-    if not isinstance(artifacts, dict) or set(artifacts) != {"timeseries_csv", "summary_csv"}:
-        raise EnergyClosureError("manifest output_artifacts must contain exactly the two CSV artifacts")
+    if not isinstance(artifacts, dict) or set(artifacts) != {"timeseries_csv", "stage_power_csv", "summary_csv"}:
+        raise EnergyClosureError("manifest output_artifacts must contain exactly three CSV artifacts")
     verified: dict[str, dict[str, Any]] = {}
     parsed: dict[str, list[dict[str, str]]] = {}
     for key, name, fields, bool_fields, blank_fields in (
         ("timeseries_csv", TIMESERIES_NAME, TIME_FIELDS,
+         ("current_reference_saturated", "voltage_saturated"), ()),
+        ("stage_power_csv", STAGE_TIMESERIES_NAME, STAGE_FIELDS,
          ("current_reference_saturated", "voltage_saturated"), ()),
         ("summary_csv", SUMMARY_NAME, SUMMARY_FIELDS, (), ("empirical_residual_order_from_previous",)),
     ):
@@ -703,6 +799,41 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
                 raise EnergyClosureError(
                     f"fixed-trajectory diagnostic {field} is inconsistent at {label}"
                 )
+    stage_rows = parsed["stage_power_csv"]
+    stage_cursor = 0
+    stage_abscissae = (0.0, 0.5, 0.5, 1.0)
+    for index, label in enumerate(LEVELS):
+        intervals = contract["base_intervals"] * (2 ** index)
+        step = contract["duration"] / intervals
+        count = intervals * 4
+        block = stage_rows[stage_cursor:stage_cursor + count]
+        if len(block) != count:
+            raise EnergyClosureError(f"RK4 stage trace row count mismatch at {label}")
+        for row_index, row in enumerate(block):
+            expected_interval, expected_stage = divmod(row_index, 4)
+            expected_time = (expected_interval + stage_abscissae[expected_stage]) * step
+            if row["case_id"] != manifest["case_id"] or row["step_level"] != label:
+                raise EnergyClosureError(f"RK4 stage trace identity/order mismatch at {label}")
+            interval_value = float(row["interval_index"])
+            stage_value = float(row["stage_index"])
+            if (not interval_value.is_integer() or not stage_value.is_integer()
+                    or int(interval_value) != expected_interval or int(stage_value) != expected_stage):
+                raise EnergyClosureError(f"RK4 stage trace index mismatch at {label}")
+            if not math.isclose(float(row["step_s"]), step, rel_tol=1e-9, abs_tol=1e-12):
+                raise EnergyClosureError(f"RK4 stage trace step mismatch at {label}")
+            if not math.isclose(float(row["stage_time_s"]), expected_time, rel_tol=1e-9, abs_tol=1e-12):
+                raise EnergyClosureError(f"RK4 stage trace time mismatch at {label}")
+        summary = summary_by_level[label]
+        stage_metrics = _rk4_stage_power_diagnostics(
+            block, float(summary["delta_stored_energy_J"]),
+            float(summary["net_power_work_J"]),
+        )
+        for field, expected_value in stage_metrics.items():
+            if not math.isclose(float(summary[field]), expected_value, rel_tol=1e-9, abs_tol=1e-12):
+                raise EnergyClosureError(f"RK4 stage diagnostic {field} is inconsistent at {label}")
+        stage_cursor += count
+    if stage_cursor != len(stage_rows):
+        raise EnergyClosureError("RK4 stage trace contains unexpected extra rows")
     threshold = contract["threshold"]
     if not contract["all_stage_counts_match"]:
         expected_status = "FAIL"
@@ -731,6 +862,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     command = v["command"]
     external = v["external"]
     all_rows: list[dict[str, Any]] = []
+    all_stage_rows: list[dict[str, Any]] = []
     summaries: list[dict[str, Any]] = []
     saturation_by_level = []
     power_samples_by_level: list[tuple[np.ndarray, dict[str, np.ndarray]]] = []
@@ -740,10 +872,28 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         step = v["duration"] / intervals
         observations = {"count": 0, "reference": 0, "voltage": 0, "any": 0}
 
+        stage_row_start = len(all_stage_rows)
         def tracked(_time: float, state: Any) -> float:
-            diag = model.electrical_diagnostics(state.copy(), command)
-            ref = float(diag["current_reference_A"]) != float(command)
-            volt = bool(diag["voltage_saturated"])
+            stage_number = observations["count"]
+            stage_index = stage_number % 4
+            interval_index = stage_number // 4
+            power = _power_sample(model, model.pack(state), command, external, v["case_id"])
+            all_stage_rows.append({
+                "case_id": v["case_id"], "step_level": label,
+                "interval_index": interval_index, "stage_index": stage_index,
+                "stage_time_s": float(_time), "step_s": step,
+                "terminal_input_power_W": power["terminal_input"],
+                "copper_loss_W": power["copper"],
+                "structural_damping_loss_W": power["structural"],
+                "axis_friction_loss_W": power["friction"],
+                "external_generalized_power_W": power["external"],
+                "electromechanical_mismatch_power_W": power["mismatch"],
+                "net_power_W": power["net"],
+                "current_reference_saturated": bool(power["current_reference_saturated"]),
+                "voltage_saturated": bool(power["voltage_saturated"]),
+            })
+            ref = bool(power["current_reference_saturated"])
+            volt = bool(power["voltage_saturated"])
             observations["count"] += 1
             observations["reference"] += int(ref)
             observations["voltage"] += int(volt)
@@ -825,6 +975,9 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         # non-crossing residuals before estimating empirical order. The config
         # schema has no such floor yet, so suppress the estimate.
         previous_order = None
+        stage_diagnostics = _rk4_stage_power_diagnostics(
+            all_stage_rows[stage_row_start:], delta, net_work
+        )
         summaries.append({
             "case_id": v["case_id"], "step_level": label, "step_s": step,
             "intervals": intervals, "samples": len(times),
@@ -841,6 +994,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "normalized_energy_residual": rho,
             "normalized_energy_residual_trapezoid": trap_rho,
             **diagnostics,
+            **stage_diagnostics,
             "current_reference_saturated_stages": observations["reference"],
             "voltage_saturated_stages": observations["voltage"],
             "any_limiter_active_stages": observations["any"],
@@ -893,14 +1047,16 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "The same solver state vector field and stored-energy function are reused; this is not an independent physical model.",
             "Terminal power uses the actual voltage after PI voltage saturation.",
             "Current reference limiting is not a hard state-current clamp or hardware overcurrent protection.",
+            "RK4-stage power uses the classical 1:2:2:1 stage weights and is a solver-coupled sampling diagnostic, not an independent quadrature oracle or error bound.",
             "A VERIFIED archive proves file integrity/schema only, not simulation correctness or physical validity.",
             "Residual empirical order is intentionally omitted until a predeclared noise floor and stability gate are configured.",
-            "Bundle files are staged first and then published by per-file atomic replacement; the three-file bundle is not a single filesystem transaction.",
+            "Bundle files are staged first and then published by per-file atomic replacement; the four-file bundle is not a single filesystem transaction.",
             "No hardware, SIL, HIL or machine measurement validation is implied.",
         ],
     }
-    artifacts = _atomic_bundle(output_dir.resolve(), all_rows, summaries, manifest)
+    artifacts = _atomic_bundle(output_dir.resolve(), all_rows, all_stage_rows, summaries, manifest)
     return {"case_id": v["case_id"], "status": status,
+            "stage_power_csv": str(output_dir.resolve() / STAGE_TIMESERIES_NAME),
             "summary_csv": str(output_dir.resolve() / SUMMARY_NAME),
             "timeseries_csv": str(output_dir.resolve() / TIMESERIES_NAME),
             "manifest_json": str(output_dir.resolve() / MANIFEST_NAME),

@@ -15,7 +15,7 @@ from gantry_joint_drive_solver import (
 from gantry_joint_drive_energy_closure import (
     EnergyClosureError, _power_sample, _validate_case_contract,
     _validate_manifest_contract, _read_verified_csv,
-    _fixed_trajectory_quadrature_diagnostics,
+    _fixed_trajectory_quadrature_diagnostics, _rk4_stage_power_diagnostics,
 )
 
 
@@ -208,6 +208,53 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
                 np.linspace(0.0, 1.0, 17), power,
                 [1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0],
             )
+
+
+    def test_rk4_stage_power_uses_classical_weights_and_reports_endpoint_gap(self) -> None:
+        rows = []
+        for index, net in enumerate((1.0, -1.0, 1.0, -1.0)):
+            rows.append({
+                "stage_index": index, "step_s": 0.1,
+                "terminal_input_power_W": 6.0, "copper_loss_W": 2.0,
+                "structural_damping_loss_W": 1.0, "axis_friction_loss_W": 0.5,
+                "external_generalized_power_W": 0.0,
+                "electromechanical_mismatch_power_W": 0.0,
+                "net_power_W": net,
+            })
+        result = _rk4_stage_power_diagnostics(rows, 0.3, 0.02)
+        self.assertAlmostEqual(result["rk4_stage_terminal_input_work_J"], 0.6)
+        self.assertAlmostEqual(result["rk4_stage_copper_loss_J"], 0.2)
+        self.assertAlmostEqual(result["rk4_stage_net_power_work_J"], 0.0)
+        self.assertAlmostEqual(result["rk4_stage_absolute_net_power_work_J"], 0.1)
+        self.assertAlmostEqual(result["rk4_stage_energy_residual_J"], 0.3)
+        self.assertAlmostEqual(
+            result["rk4_stage_vs_endpoint_simpson_net_work_delta_J"], -0.02
+        )
+
+    def test_rk4_stage_power_rejects_incomplete_or_misordered_groups(self) -> None:
+        base = {
+            "step_s": 0.1, "terminal_input_power_W": 1.0,
+            "copper_loss_W": 0.0, "structural_damping_loss_W": 0.0,
+            "axis_friction_loss_W": 0.0, "external_generalized_power_W": 0.0,
+            "electromechanical_mismatch_power_W": 0.0, "net_power_W": 1.0,
+        }
+        rows = [{**base, "stage_index": i} for i in (0, 1, 3, 2)]
+        with self.assertRaisesRegex(ValueError, "k1,k2,k3,k4"):
+            _rk4_stage_power_diagnostics(rows, 0.0, 0.0)
+        with self.assertRaisesRegex(ValueError, "groups of four"):
+            _rk4_stage_power_diagnostics(rows[:3], 0.0, 0.0)
+
+    def test_rk4_stage_power_rejects_non_finite_samples(self) -> None:
+        rows = [{
+            "stage_index": i, "step_s": 0.1,
+            "terminal_input_power_W": 1.0, "copper_loss_W": 0.0,
+            "structural_damping_loss_W": 0.0, "axis_friction_loss_W": 0.0,
+            "external_generalized_power_W": 0.0,
+            "electromechanical_mismatch_power_W": 0.0,
+            "net_power_W": float("nan") if i == 2 else 1.0,
+        } for i in range(4)]
+        with self.assertRaisesRegex(FloatingPointError, "non-finite power"):
+            _rk4_stage_power_diagnostics(rows, 0.0, 0.0)
 
     def _valid_manifest_contract(self) -> dict:
         return {

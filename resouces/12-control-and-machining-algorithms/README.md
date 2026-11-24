@@ -269,3 +269,12 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_cl
 - 报告固定轨迹求积网格变化、同网格状态轨迹差、储能端点差及残差差，归档校验器从最细档CSV重算。
 - 该分解是条件式数值诊断，不是误差上界；`h/8` 轨迹仍有积分误差，端点采样不能检测步内功率变化。
 - 新增3项ENE资源测试定义；总计96项资源测试（求解器35、PATH-01 39、ENE 22）全部未执行，ENE积分未运行。
+
+## ENE RK4阶段功率采样诊断（2026-11-24）
+
+- 新增 gantry-joint-drive-energy-closure-stage-power-timeseries.csv 归档：每个RK4积分区间保存k1/k2/k3/k4阶段功率快照及限幅标志。
+- 使用经典RK4权重 (1,2,2,1)h/6 累计分项功、净功和绝对净功，summary增加阶段能量残差及阶段加权净功与端点Simpson净功差。
+- --verify-archive 检查阶段行数、阶段索引/顺序、阶段时刻和步长，并重算阶段积分摘要；manifest记录新增CSV哈希、字节数和行列数。
+- 新增阶段快照总行数上限200,000；端点样本上限仍为50,000。
+- 该诊断使用求解器自身RK4阶段状态，不是独立高精度求积oracle或误差上界。新增3项ENE资源测试定义；总计99项资源测试（求解器35、PATH-01 39、ENE 25）全部未执行，ENE积分未运行。
+
