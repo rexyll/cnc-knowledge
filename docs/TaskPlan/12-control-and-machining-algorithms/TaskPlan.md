@@ -598,3 +598,15 @@
 
 - **仓库CI（噪声底门控文档记录同步）：** 提交 `7bb780bb6f28d598ee2f379a913ab341021a36cf` 对应 [Run 45377481837](https://github.com/rexyll/cnc-knowledge/actions/runs/45377481837) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下112项资源测试，也不运行ENE积分。
 - **仓库CI（门控阶数null归档比较修正）：** 实现/文档修正提交 `554ac5116d87c43c5bddab60b8ae8cc310e1920e` 对应 [Run 45377757508](https://github.com/rexyll/cnc-knowledge/actions/runs/45377757508) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下113项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`，ENE验证矩阵保持 `NOT_RUN`。
+
+
+
+## CH12-T003 ENE残差噪声底的可复算前向误差预算（2026-11-24）
+
+- **配置/归档版本：** ENE配置schema升至4，manifest schema升至6。新增 `metrics.energy_residual_noise_budget`，采用固定字段契约：IEEE-754 binary64格式、算术假设确认、无中间溢出/subnormal确认，以及五档最大储能绝对值、单端点储能评估舍入界、RK4状态舍入对端点储能的传播影响界、五档最大净功率绝对值、单样本净功率评估舍入界、RK4状态舍入对净功率的传播影响界、时间栅格舍入积分影响界。
+- **自动浮点预算：** runner以单位舍入误差 (u=2^{-53}) 和 (gamma_k=ku/(1-ku)) 建立binary64前向误差界。对最细h/16的Simpson奇数/偶数内部样本两组 `np.sum` 分别采用最坏顺序求和上界；增加4/2权重、外层三次加法、h/3除法和最终乘法误差；再计算两端储能评估/状态传播、净功率样本评估/状态传播、时间栅格影响、储能差减法、最终残差减法及正数合并向上舍入保护。
+- **硬门控：** manifest记录原始输入预算和完整自动分项报告，归档验证器根据duration/基础区间数重新计算；用户配置的 `energy_residual_noise_floor_J` 必须不低于自动 `minimum_noise_floor_J`，不足时在积分前拒绝。
+- **不确定性边界：** 最大储能/净功率上界须来自五档统一工况包络，函数评估界要覆盖几何三角函数、矩阵/向量运算、摩擦函数和电气诊断；RK4状态传播界和时间栅格界须由单独分析提供。运行器只核对这些外部数字与自动算术预算的一致性，不证明外部上界真实有效。该预算不含RK4截断误差、参数/模型不确定度、PWM/离散控制或HIL差异；Simpson连续积分截断误差是步长细化对象，不是浮点舍入噪声。
+- **测试定义：** 新增3项ENE资源测试：自动预算分项与网格尺度关系（包含小量级manifest数字精确比较）、未确认/缺字段预算拒绝、低于自动噪声下界拒绝。ENE42项、求解器35项、PATH-01 39项，总计116项资源测试均未执行；ENE积分未执行。验证矩阵维持NOT_RUN，CH12-T003保持IN_PROGRESS。
+
+- **归档比较加固：** 噪声预算报告及残差阶数诊断使用精确数值比较，不使用通用1e-12绝对容差；新增对应小量级预算篡改拒绝测试定义。

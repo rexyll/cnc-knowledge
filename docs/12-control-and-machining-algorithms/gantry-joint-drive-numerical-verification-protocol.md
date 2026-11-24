@@ -546,3 +546,66 @@ Manifest schema从2升级为3，新增 `adjacent_refinement_diagnostics`；归�
 
 
 归档比较器补充修正（2026-11-24）：对被门控抑制的经验阶数，manifest以JSON null保留四个“不可报告”占位。归档嵌套诊断比较器现显式支持null且要求双方严格一致，新增1项资源测试定义，ENE运行器测试39项，总资源测试数更新为113项；仍未执行资源测试或ENE积分。
+
+
+
+### 5.25 ENE残差噪声底的可复算前向误差预算（2026-11-24）
+
+本节将“噪声底”拆成运行器可重算的二进制浮点舍入项，以及必须由工况包络/数值传播分析提供的输入界。目标是给出一个**条件式、保守的残差后处理算术界**，而不是声称已证明整个机床模型或RK4积分的全局误差。运行器配置schema升至4、manifest schema升至6；模板中的所有误差预算数字和确认标志保持空白/未确认。
+
+**输入界（必须在运行前、对五档轨迹统一给出）：**
+- `max_abs_stored_energy_J`：覆盖h至h/16全部路径端点的真实数学储能绝对值上界；不能从本次输出CSV最大值反推。
+- `stored_energy_evaluation_error_bound_J`：对同一已存储binary64状态和参数执行当前 `mechanical_energy()` / 磁能组合时的单端点绝对舍入误差界；方法应覆盖几何函数、三角函数、矩阵/向量点积和能量加法。
+- `trajectory_energy_roundoff_effect_bound_J`：RK4阶段/状态更新的浮点传播误差在单个端点储能评估上的影响界，取五档路径/所有节点中的保守最大值；不包含RK4截断误差。
+- `max_abs_net_power_W`：五档全部时刻、已批准运行包络内真实净功率绝对值上界。
+- `net_power_evaluation_error_bound_W`：对已存储binary64状态调用当前 `_power_sample()` 得到净功率时的单样本绝对舍入误差界，覆盖电气诊断、矩阵/向量点积、摩擦函数及各功率项组合。
+- `trajectory_power_roundoff_effect_bound_W`：RK4阶段/状态更新浮点传播误差通过净功率函数产生的单样本功率影响界，覆盖五档所有节点；不包含积分截断误差。
+- `time_grid_roundoff_effect_bound_J`：覆盖 `duration/count`、RK4步长、`numpy.linspace` 时间节点以及Simpson函数以首个 `diff(time)` 为统一步长所造成时间栅格偏差的积分影响界。
+
+前两个 envelope 上界必须由参数和批准工况范围推导；函数评估界需覆盖当前运行环境的 `sin/cos/tanh` 实现及中间运算范围；轨迹传播界需依据RK4阶段运算路径及五档区间数给出；时间栅格界需覆盖当前时间向量构造与实际首差分步长的差异。来源/来源ID应指向计算表、分析脚本、数学证明、平台库精度材料或经批准的数值分析报告。若无法建立这些上界，字段留空并阻止运行/阶数判读，不可用经验噪声值替代。
+
+**运行器自动计算的项：** 当前平台限定为IEEE-754 binary64，单位舍入误差 \(u=2^{-53}\)，配置字段 `rounding_mode` 固定为 `roundTiesToEven`，并由运行者确认 `arithmetic_assumptions_confirmed=true` 与 `no_overflow_or_subnormal_intermediates=true`。定义
+\[
+\gamma_k=\frac{ku}{1-ku},\quad ku<1.
+\]
+采用最细h/16区间数 \(N=16N_0\)，奇数样本数 \(n_o=N/2\)，偶数内部样本数 \(n_e=N/2-1\)。以预声明的功率界形成
+\[
+B_P=B_{P,eval}+B_{P,traj},\qquad
+\bar P=P_{max}+B_P.
+\]
+对当前Simpson实现中两个独立 `numpy.sum` 分组，使用最坏顺序求和的 \(\gamma_{n-1}\) 上界（对任意不超过n−1层加法路径保守）；外层端点/加权和有3次浮点加法：
+\[
+\bar A=\bar P\{2+4n_o(1+\gamma_{n_o-1})+2n_e(1+\gamma_{n_e-1})\},
+\]
+\[
+B_A=4\gamma_{n_o-1}n_o\bar P+2\gamma_{n_e-1}n_e\bar P+\gamma_3\bar A.
+\]
+令当前参考层使用的 \(h=duration/N\)，并把 `h/3` 除法与最终乘法的两次舍入计入，则Simpson加权和的浮点执行误差上界由运行器计算为
+\[
+B_S=\frac h3\left[(1+u)^2 B_A+((1+u)^2-1)\bar A\right].
+\]
+实现对正的误差预算中间结果向上取到下一个binary64数，避免把预算运算本身向下舍入。\(B_S\) 仅针对离散样本的Simpson**算术执行误差**，不是Simpson对连续积分的截断/求积误差；后者属于步长细化要观察的数值误差，不能塞进roundoff地板。
+
+设 \(E_{max}\) 为上述储能上界，\(B_E=B_{E,eval}+B_{E,traj}\)，\(\bar T\) 为覆盖时间长度浮点表示的保守上界，\(B_t\) 为输入时间栅格界。运行器按以下分项构造残差下界检查所需的最低噪声界：
+\[
+B_{\Delta E,sub}=u\,2(E_{max}+B_E),\quad
+\overline{\Delta E}=2(E_{max}+B_E)+B_{\Delta E,sub},
+\]
+\[
+B_{W,sample}=\bar T B_P,\quad
+\overline W=\bar T\bar P+B_S+B_t,
+\]
+\[
+B_{R,sub}=u(\overline{\Delta E}+\overline W),
+\]
+\[
+R_{\rm round,min}=2B_E+B_{\Delta E,sub}+B_{W,sample}+B_S+B_t+B_{R,sub}+B_{sumguard}.
+\]
+其中 \(B_{sumguard}\) 是正数分项合并的额外向上舍入保护。配置中的 `energy_residual_noise_floor_J` 必须大于或等于该最低值；可再乘预先批准的安全裕量，但不得在看到残差序列后调整。manifest记录所有输入界、浮点假设、gamma项、样本计数、Simpson加权和界、各误差贡献和最终最低值，归档校验使用相同配置与网格重新计算并比对。
+
+**范围限制：** 该预算是有来源输入界之上的条件式前向误差预算。代码只能重算Simpson累加/加权、端点差及最终残差减法部分，不能证明使用者提供的能量/功率包络、函数评估、RK4状态传播或时间栅格界真实有效。它不覆盖模型参数测量不确定度、物理模型形式误差、RK4截断误差、控制离散化误差或HIL差异；不把Simpson求积截断误差误认作舍入噪声。若这些边界未被独立来源支撑，噪声底虽然可计算，但不得宣称其为严格认证界，也不得据此做可靠的渐近阶数结论。
+
+新增3项ENE资源测试定义：自动预算的网格尺度/分项正值（其中包含小量级预算报告的精确归档比较）；不完整/未确认浮点预算拒绝；低于自动下界的噪声底拒绝。ENE运行器测试42项、求解器35项、PATH-01运行器39项，共116项资源测试均未执行；ENE积分未执行，验证矩阵仍为 `NOT_RUN`。
+
+
+**预算归档精确比较补充（2026-11-24）：** 噪声预算报告中的浮点分项和残差阶数门控报告不再使用通用 `abs_tol=1e-12` 比较，而是对JSON层级结构和数值执行精确一致性比较，避免小量级预算（例如低于1e-12 J）被过宽绝对容差掩盖。精确比较回归已纳入上述自动预算测试，ENE运行器测试42项，三类资源测试总计116项均未执行；未运行ENE积分。

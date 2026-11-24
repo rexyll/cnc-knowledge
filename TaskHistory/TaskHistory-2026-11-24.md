@@ -178,3 +178,15 @@ ENE归档null一致性补充（2026-11-24）：runner比较器支持严格JSON n
 
 - **仓库CI（噪声底门控文档记录同步）：** 提交 `7bb780bb6f28d598ee2f379a913ab341021a36cf` 对应 [Run 45377481837](https://github.com/rexyll/cnc-knowledge/actions/runs/45377481837) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下112项资源测试，也不运行ENE积分。
 - **仓库CI（门控阶数null归档比较修正）：** 实现/文档修正提交 `554ac5116d87c43c5bddab60b8ae8cc310e1920e` 对应 [Run 45377757508](https://github.com/rexyll/cnc-knowledge/actions/runs/45377757508) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下113项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`，ENE验证矩阵保持 `NOT_RUN`。
+
+
+
+## CH12-T003 ENE残差噪声底的可复算前向误差预算（2026-11-24）
+
+- 对当前实现做算术路径核对：`composite_simpson_13()` 从首个时间差取h，对奇数与偶数内部样本分别调用`np.sum`，再以端点项、4/2权重、三次外层加法以及h/3缩放形成净功；储能残差随后执行端点储能相减和储能变化减净功。
+- ENE配置schema升级为4、manifest schema升级为6。增加误差预算输入：最大储能/最大净功率包络、储能/净功率单次函数评估误差界、RK4状态舍入传播对能量/功率输出的影响界、时间栅格积分影响界，以及binary64算术/无溢出和无subnormal前提确认。
+- runner自动以binary64 (u=2^{-53}) 及 (gamma_k=ku/(1-ku)) 计算最细h/16奇/偶分组求和、外层加法、Simpson乘除、端点能量差、最终残差减法与正数预算汇总保护；把自动最低界写入manifest，并要求用户预声明噪声底不低于该值。归档验证器重算并逐项比对输入预算与报告。
+- 重要边界：代码只自动推导当前Simpson/减法链路的浮点执行项；外部给出的函数评估、RK4状态传播、工况包络和时间栅格影响界必须由独立分析/资料支撑。该自动核算不证明外部界、平台libm精度或浮点运行假设真实成立；不涵盖RK4截断误差、模型参数不确定性和物理模型误差。
+- 新增3项ENE资源测试定义（预算计算/网格尺度且包含manifest小量级数字精确比较、算术假设或预算缺项拒绝、噪声底低于预算界拒绝）。ENE资源测试定义42项，求解器35项、PATH-01 39项，总计116项资源测试仍全部未执行；ENE积分/仿真未执行，验证矩阵NOT_RUN，CH12-T003保持IN_PROGRESS。
+
+- 归档预算报告和残差阶数诊断改用递归精确JSON数值比较，避免1e-12通用绝对容差掩盖小量级舍入界差异；该检查已包含在自动预算资源测试中（ENE42项）。

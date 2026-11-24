@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "case_id": "ENE-01",
   "status": "NOT_RUN",
   "description": "Blank ENE-01/02/03 input template. Copy and set case_id; populate only sourced machine data or explicitly labelled synthetic fixtures. No default machine parameters are provided.",
@@ -178,7 +178,20 @@
     "energy_residual_noise_floor_method": null,
     "energy_residual_noise_floor_source": null,
     "energy_residual_noise_floor_source_ids": [],
-    "note": "Energy scale/floor and closure threshold must be finite, positive, predeclared and unchanged across the four primary levels (threshold may be null for report-only). The residual noise floor is a separate conservative pre-run bound for the complete residual arithmetic path; document floating-point format, operation/accumulation bounds, quadrature and execution environment in its method/source. Do not infer it from this run, the energy normalization floor, or machine_epsilon multiplied by an energy scale alone. State comparison scales must be finite, positive, sourced engineering characteristic magnitudes (SI units as named) and unchanged across all five trajectory levels; they only nondimensionalize each component and are not tolerances, state bounds, or an aggregate score. Residual empirical order is emitted only when all five paths are smooth, residuals are above the sourced noise floor, signs agree and absolute residuals strictly decrease; it does not affect PASS. Config schema v3; manifest schema v5. Null energy threshold yields COMPLETED_REPORT_ONLY.",
+    "energy_residual_noise_budget": {
+      "floating_point_format": "IEEE-754 binary64",
+      "rounding_mode": "roundTiesToEven",
+      "arithmetic_assumptions_confirmed": null,
+      "no_overflow_or_subnormal_intermediates": null,
+      "max_abs_stored_energy_J": null,
+      "stored_energy_evaluation_error_bound_J": null,
+      "trajectory_energy_roundoff_effect_bound_J": null,
+      "max_abs_net_power_W": null,
+      "net_power_evaluation_error_bound_W": null,
+      "trajectory_power_roundoff_effect_bound_W": null,
+      "time_grid_roundoff_effect_bound_J": null
+    },
+    "note": "Energy scale/floor and closure threshold must be finite, positive, predeclared and unchanged across the four primary levels (threshold may be null for report-only). The residual noise floor must be >= the automatically derived binary64 post-processing bound. The budget supplies sourced envelope/error bounds for stored energy, net power, RK4 state-roundoff propagation and time-grid effects; the runner calculates Simpson summation and residual-subtraction roundoff using a conservative gamma_k bound. This does not cover RK4 truncation or model/parameter uncertainty and does not prove analyst-supplied bounds. Do not infer any bound from this run or machine_epsilon multiplied by an energy scale. Config schema v4; manifest schema v6. Null energy threshold yields COMPLETED_REPORT_ONLY.",
     "state_comparison_scales": {
       "q1_m": null,
       "q2_rad": null,

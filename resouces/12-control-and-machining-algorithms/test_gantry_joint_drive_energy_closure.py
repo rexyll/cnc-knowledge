@@ -20,7 +20,8 @@ from gantry_joint_drive_energy_closure import (
     _fixed_trajectory_quadrature_diagnostics, _rk4_stage_power_diagnostics,
     _reference_trajectory_diagnostics, _adjacent_refinement_diagnostics,
     _validate_state_comparison_scale_contract, _validate_residual_noise_floor_contract,
-    _residual_order_diagnostics, _assert_json_metrics_close,
+    _residual_order_diagnostics, _assert_json_metrics_close, _assert_json_metrics_exact,
+    _derive_energy_residual_noise_budget, _validate_noise_floor_not_below_derived_minimum,
     STATE_VECTOR_FIELDS, STATE_COMPARISON_UNITS,
 )
 
@@ -393,9 +394,28 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
                  "reference_h/16": True}, self._state_comparison_scales(),
             )
 
-    def _valid_manifest_contract(self) -> dict:
+    def _valid_noise_budget(self) -> dict:
         return {
-            "schema_version": 5, "config_schema_version": 3,
+            "floating_point_format": "IEEE-754 binary64",
+            "rounding_mode": "roundTiesToEven",
+            "arithmetic_assumptions_confirmed": True,
+            "no_overflow_or_subnormal_intermediates": True,
+            "max_abs_stored_energy_J": 100.0,
+            "stored_energy_evaluation_error_bound_J": 1e-12,
+            "trajectory_energy_roundoff_effect_bound_J": 2e-12,
+            "max_abs_net_power_W": 10.0,
+            "net_power_evaluation_error_bound_W": 1e-13,
+            "trajectory_power_roundoff_effect_bound_W": 2e-13,
+            "time_grid_roundoff_effect_bound_J": 1e-12,
+        }
+
+    def _valid_manifest_contract(self) -> dict:
+        noise_budget = self._valid_noise_budget()
+        noise_budget_report = _derive_energy_residual_noise_budget(
+            noise_budget, 1.0, 4, context="manifest",
+        )[1]
+        return {
+            "schema_version": 6, "config_schema_version": 4,
             "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
             "numerical_results_present": True, "resource_tests_executed": False,
             "parameter_source": "synthetic test fixture", "source_documents_or_measurement_ids": [],
@@ -408,7 +428,9 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             "state_comparison_scale_source_ids": ["test-fixture:state-scales-v1"],
             "state_vector_order": list(STATE_VECTOR_FIELDS),
             "state_comparison_units": dict(STATE_COMPARISON_UNITS),
-            "energy_residual_noise_floor_J": 1e-12,
+            "energy_residual_noise_floor_J": noise_budget_report["minimum_noise_floor_J"] * 1.25,
+            "energy_residual_noise_budget": noise_budget,
+            "energy_residual_noise_budget_report": noise_budget_report,
             "energy_residual_noise_floor_method": "pre-run operation-bound fixture",
             "energy_residual_noise_floor_source": "synthetic test evidence",
             "energy_residual_noise_floor_source_ids": ["test-fixture:noise-floor-v1"],
@@ -435,6 +457,59 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         }
 
 
+
+    def test_derived_noise_budget_accounts_for_simpson_reduction_and_residual_subtractions(self) -> None:
+        budget = self._valid_noise_budget()
+        normalized, report = _derive_energy_residual_noise_budget(
+            budget, 1.0, 4, context="metrics",
+        )
+        self.assertEqual(normalized["floating_point_format"], "IEEE-754 binary64")
+        self.assertEqual(report["finest_interval_count"], 64)
+        self.assertEqual(report["odd_sample_count"], 32)
+        self.assertEqual(report["even_interior_sample_count"], 31)
+        self.assertGreater(report["composite_simpson_accumulation_roundoff_J"], 0.0)
+        self.assertGreater(report["delta_energy_subtraction_roundoff_J"], 0.0)
+        self.assertGreater(report["final_energy_residual_subtraction_roundoff_J"], 0.0)
+        self.assertGreater(report["minimum_noise_floor_J"], report["component_subtotal_J"])
+        _assert_json_metrics_exact(report, dict(report))
+        tampered_report = dict(report)
+        tampered_report["composite_simpson_accumulation_roundoff_J"] += 1e-13
+        with self.assertRaisesRegex(EnergyClosureError, "composite_simpson_accumulation_roundoff_J"):
+            _assert_json_metrics_exact(tampered_report, report)
+
+        _, finer_report = _derive_energy_residual_noise_budget(
+            budget, 1.0, 8, context="metrics",
+        )
+        self.assertGreater(
+            finer_report["composite_simpson_accumulation_roundoff_J"],
+            report["composite_simpson_accumulation_roundoff_J"],
+        )
+
+    def test_derived_noise_budget_rejects_unconfirmed_arithmetic_and_missing_bounds(self) -> None:
+        budget = self._valid_noise_budget()
+        budget["arithmetic_assumptions_confirmed"] = False
+        with self.assertRaisesRegex(EnergyClosureError, "must be true"):
+            _derive_energy_residual_noise_budget(budget, 1.0, 4, context="metrics")
+        budget = self._valid_noise_budget()
+        budget["rounding_mode"] = "roundTowardZero"
+        with self.assertRaisesRegex(EnergyClosureError, "rounding_mode"):
+            _derive_energy_residual_noise_budget(budget, 1.0, 4, context="metrics")
+        budget = self._valid_noise_budget()
+        del budget["trajectory_power_roundoff_effect_bound_W"]
+        with self.assertRaisesRegex(EnergyClosureError, "exact required fields"):
+            _derive_energy_residual_noise_budget(budget, 1.0, 4, context="metrics")
+
+    def test_noise_floor_must_not_be_below_derived_arithmetic_bound(self) -> None:
+        _, report = _derive_energy_residual_noise_budget(
+            self._valid_noise_budget(), 1.0, 4, context="metrics",
+        )
+        _validate_noise_floor_not_below_derived_minimum(
+            report["minimum_noise_floor_J"], report, context="metrics",
+        )
+        with self.assertRaisesRegex(EnergyClosureError, "below the derived minimum"):
+            _validate_noise_floor_not_below_derived_minimum(
+                report["minimum_noise_floor_J"] * 0.5, report, context="metrics",
+            )
 
     def test_state_comparison_scale_validation_requires_exact_positive_components(self) -> None:
         scales = self._state_comparison_scales()

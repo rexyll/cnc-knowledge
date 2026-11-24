@@ -33,8 +33,8 @@ SUMMARY_NAME = "gantry-joint-drive-energy-closure-summary.csv"
 MANIFEST_NAME = "gantry-joint-drive-energy-closure-run-manifest.json"
 REFERENCE_TIMESERIES_NAME = "gantry-joint-drive-energy-closure-reference-h16-timeseries.csv"
 REFERENCE_LEVEL = "reference_h/16"
-CONFIG_SCHEMA_VERSION = 3
-MANIFEST_SCHEMA_VERSION = 5
+CONFIG_SCHEMA_VERSION = 4
+MANIFEST_SCHEMA_VERSION = 6
 LEVELS = ("h", "h/2", "h/4", "h/8")
 # Bound aggregate output rows before allocating RK4 trajectories and row dictionaries.
 MAX_TOTAL_SAMPLES = 50_000
@@ -202,6 +202,195 @@ def _validate_state_comparison_scale_contract(
     return scales, source.strip(), normalized_ids
 
 
+FLOAT64_UNIT_ROUNDOFF = 2.0 ** -53
+FLOAT64_FORMAT_NAME = "IEEE-754 binary64"
+NOISE_BUDGET_NUMERIC_FIELDS = (
+    "max_abs_stored_energy_J",
+    "stored_energy_evaluation_error_bound_J",
+    "trajectory_energy_roundoff_effect_bound_J",
+    "max_abs_net_power_W",
+    "net_power_evaluation_error_bound_W",
+    "trajectory_power_roundoff_effect_bound_W",
+    "time_grid_roundoff_effect_bound_J",
+)
+NOISE_BUDGET_FIELDS = {
+    "floating_point_format", "rounding_mode", "arithmetic_assumptions_confirmed",
+    "no_overflow_or_subnormal_intermediates", *NOISE_BUDGET_NUMERIC_FIELDS,
+}
+
+
+def _gamma(operation_count: int, unit_roundoff: float = FLOAT64_UNIT_ROUNDOFF) -> float:
+    """Higham-style gamma_k bound for k rounded operations, when k*u < 1."""
+    if type(operation_count) is not int or operation_count < 0:
+        raise ValueError("floating-point operation count must be a nonnegative integer")
+    if operation_count == 0:
+        return 0.0
+    product = operation_count * unit_roundoff
+    if product >= 1.0:
+        raise ValueError("gamma_k is undefined for operation_count * unit_roundoff >= 1")
+    denominator_lower = math.nextafter(1.0 - product, -math.inf)
+    return math.nextafter(product / denominator_lower, math.inf)
+
+
+def _derive_energy_residual_noise_budget(
+    raw_budget: Any, duration_s: float, base_intervals: int, *, context: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Derive a conservative post-processing roundoff floor for all five levels.
+
+    The supplied endpoint/sample/trajectory/time-grid bounds remain analyst
+    inputs. The code derives the composite-Simpson accumulation and residual
+    subtraction terms for the runner's current binary64 operation sequence.
+    This is not a proof of the supplied physical-envelope or RK4 propagation
+    bounds, nor does it include model-parameter uncertainty or RK4 truncation.
+    """
+    if not isinstance(raw_budget, dict) or set(raw_budget) != NOISE_BUDGET_FIELDS:
+        raise EnergyClosureError(
+            f"{context}.energy_residual_noise_budget must define the exact required fields"
+        )
+    if raw_budget.get("floating_point_format") != FLOAT64_FORMAT_NAME:
+        raise EnergyClosureError(
+            f"{context}.energy_residual_noise_budget.floating_point_format must be {FLOAT64_FORMAT_NAME}"
+        )
+    if raw_budget.get("rounding_mode") != "roundTiesToEven":
+        raise EnergyClosureError(
+            f"{context}.energy_residual_noise_budget.rounding_mode must be roundTiesToEven"
+        )
+    if raw_budget.get("arithmetic_assumptions_confirmed") is not True:
+        raise EnergyClosureError(
+            f"{context}.energy_residual_noise_budget.arithmetic_assumptions_confirmed must be true"
+        )
+    if raw_budget.get("no_overflow_or_subnormal_intermediates") is not True:
+        raise EnergyClosureError(
+            f"{context}.energy_residual_noise_budget.no_overflow_or_subnormal_intermediates must be true"
+        )
+    if (sys.float_info.radix != 2 or sys.float_info.mant_dig != 53
+            or np.dtype(np.float64).itemsize != 8):
+        raise EnergyClosureError("runtime does not satisfy the required IEEE-754 binary64 assumptions")
+    budget = {
+        "floating_point_format": FLOAT64_FORMAT_NAME,
+        "rounding_mode": "roundTiesToEven",
+        "arithmetic_assumptions_confirmed": True,
+        "no_overflow_or_subnormal_intermediates": True,
+    }
+    for field in NOISE_BUDGET_NUMERIC_FIELDS:
+        budget[field] = path_support._number(
+            raw_budget.get(field), f"{context}.energy_residual_noise_budget.{field}", positive=True
+        )
+
+    if type(base_intervals) is not int or base_intervals < 2 or base_intervals % 2:
+        raise ValueError("noise budget requires an even base interval count >= 2")
+    finest_intervals = 16 * base_intervals
+    unit_roundoff = FLOAT64_UNIT_ROUNDOFF
+    gamma_one = _gamma(1)
+    gamma_three = _gamma(3)
+    odd_count = finest_intervals // 2
+    even_count = odd_count - 1
+    gamma_odd = _gamma(max(odd_count - 1, 0))
+    gamma_even = _gamma(max(even_count - 1, 0))
+
+    def up(value: float) -> float:
+        return math.nextafter(float(value), math.inf)
+
+    endpoint_energy_error = up(
+        budget["stored_energy_evaluation_error_bound_J"]
+        + budget["trajectory_energy_roundoff_effect_bound_J"]
+    )
+    sample_power_error = up(
+        budget["net_power_evaluation_error_bound_W"]
+        + budget["trajectory_power_roundoff_effect_bound_W"]
+    )
+    computed_power_abs_bound = up(budget["max_abs_net_power_W"] + sample_power_error)
+    odd_weighted_abs_bound = up(odd_count * (1.0 + gamma_odd))
+    even_weighted_abs_bound = up(even_count * (1.0 + gamma_even))
+    weighted_abs_coefficient = up(
+        2.0 + up(4.0 * odd_weighted_abs_bound) + up(2.0 * even_weighted_abs_bound)
+    )
+    weighted_abs_sum_bound = up(computed_power_abs_bound * weighted_abs_coefficient)
+    odd_sum_roundoff = up(up(gamma_odd * odd_count) * computed_power_abs_bound)
+    even_sum_roundoff = up(up(gamma_even * even_count) * computed_power_abs_bound)
+    weighted_sum_roundoff = up(
+        up(up(4.0 * odd_sum_roundoff) + up(2.0 * even_sum_roundoff))
+        + up(gamma_three * weighted_abs_sum_bound)
+    )
+
+    reference_step = duration_s / finest_intervals
+    alpha = reference_step / 3.0
+    if not math.isfinite(alpha) or alpha <= sys.float_info.min:
+        raise EnergyClosureError("reference Simpson h/3 is outside the normal binary64 range")
+    alpha_upper = up(alpha)
+    one_plus_u_upper = math.nextafter(1.0, math.inf)
+    product_factor_upper = up(one_plus_u_upper * one_plus_u_upper)
+    product_error_factor_upper = up(product_factor_upper - 1.0)
+    simpson_accumulation_error = up(alpha_upper * up(
+        product_factor_upper * weighted_sum_roundoff
+        + product_error_factor_upper * weighted_abs_sum_bound
+    ))
+    time_factor_upper = up(1.0 + _gamma(2))
+    time_bound = up(duration_s * time_factor_upper)
+    sample_power_work_error = up(time_bound * sample_power_error)
+    delta_energy_subtraction_error = up(
+        gamma_one * 2.0 * up(budget["max_abs_stored_energy_J"] + endpoint_energy_error)
+    )
+    delta_energy_abs_bound = up(
+        2.0 * up(budget["max_abs_stored_energy_J"] + endpoint_energy_error)
+        + delta_energy_subtraction_error
+    )
+    net_work_abs_bound = up(
+        time_bound * computed_power_abs_bound
+        + simpson_accumulation_error
+        + budget["time_grid_roundoff_effect_bound_J"]
+    )
+    residual_subtraction_error = up(
+        gamma_one * up(delta_energy_abs_bound + net_work_abs_bound)
+    )
+    components = {
+        "two_endpoint_energy_evaluation_and_trajectory_error_J": up(2.0 * endpoint_energy_error),
+        "delta_energy_subtraction_roundoff_J": delta_energy_subtraction_error,
+        "net_power_sample_evaluation_and_trajectory_error_J": sample_power_work_error,
+        "composite_simpson_accumulation_roundoff_J": simpson_accumulation_error,
+        "time_grid_roundoff_effect_J": budget["time_grid_roundoff_effect_bound_J"],
+        "final_energy_residual_subtraction_roundoff_J": residual_subtraction_error,
+    }
+    subtotal = math.fsum(components.values())
+    gamma_positive_sum = _gamma(len(components) - 1)
+    aggregation_guard = up((gamma_positive_sum / (1.0 - gamma_positive_sum)) * subtotal)
+    minimum_floor = math.nextafter(up(subtotal + aggregation_guard), math.inf)
+    derived = {
+        "floating_point_format": FLOAT64_FORMAT_NAME,
+        "unit_roundoff": unit_roundoff,
+        "duration_bound_s": time_bound,
+        "finest_interval_count": finest_intervals,
+        "reference_step_s": reference_step,
+        "odd_sample_count": odd_count,
+        "even_interior_sample_count": even_count,
+        "gamma_odd_sum": gamma_odd,
+        "gamma_even_sum": gamma_even,
+        "gamma_outer_weighted_sum": gamma_three,
+        "computed_net_power_sample_abs_bound_W": computed_power_abs_bound,
+        "weighted_power_abs_sum_bound_W": weighted_abs_sum_bound,
+        "weighted_sum_roundoff_bound_W": weighted_sum_roundoff,
+        **components,
+        "component_subtotal_J": subtotal,
+        "positive_sum_aggregation_guard_J": aggregation_guard,
+        "minimum_noise_floor_J": minimum_floor,
+    }
+    if not all(math.isfinite(float(value)) and float(value) >= 0.0
+               for value in derived.values() if isinstance(value, (int, float))):
+        raise FloatingPointError("derived ENE residual noise budget is non-finite or negative")
+    return budget, derived
+
+
+def _validate_noise_floor_not_below_derived_minimum(
+    noise_floor_J: float, budget_report: dict[str, Any], *, context: str,
+) -> None:
+    minimum = float(budget_report["minimum_noise_floor_J"])
+    if float(noise_floor_J) < minimum:
+        raise EnergyClosureError(
+            f"{context}.energy_residual_noise_floor_J is below the derived minimum "
+            f"({minimum:.17g} J)"
+        )
+
+
 def _validate_residual_noise_floor_contract(
     value: Any, method: Any, source: Any, source_ids: Any, *, context: str,
 ) -> tuple[float, str, str, list[str]]:
@@ -293,7 +482,7 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
     if config["schema_version"] != CONFIG_SCHEMA_VERSION:
         raise EnergyClosureError(
             f"unsupported schema_version; expected integer {CONFIG_SCHEMA_VERSION} "
-            "with sourced state scales and residual noise-floor contract"
+            "with sourced state scales and a derived residual noise budget"
         )
     case_id = config.get("case_id")
     if case_id not in ("ENE-01", "ENE-02", "ENE-03"):
@@ -367,6 +556,12 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
             context="metrics",
         )
     )
+    residual_noise_budget, residual_noise_budget_report = _derive_energy_residual_noise_budget(
+        metrics.get("energy_residual_noise_budget"), duration, intervals, context="metrics",
+    )
+    _validate_noise_floor_not_below_derived_minimum(
+        residual_noise_floor, residual_noise_budget_report, context="metrics",
+    )
     return {
         "case_id": case_id, "model": model, "initial": initial,
         "external": external, "duration": duration, "base_step": base_step,
@@ -380,6 +575,8 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
         "energy_residual_noise_floor_method": residual_noise_method,
         "energy_residual_noise_floor_source": residual_noise_source,
         "energy_residual_noise_floor_source_ids": residual_noise_source_ids,
+        "energy_residual_noise_budget": residual_noise_budget,
+        "energy_residual_noise_budget_report": residual_noise_budget_report,
     }
 
 
@@ -896,6 +1093,31 @@ def _assert_json_metrics_close(actual: Any, expected: Any, path: str = "referenc
             raise EnergyClosureError(f"{path} numeric value is inconsistent")
 
 
+def _assert_json_metrics_exact(actual: Any, expected: Any, path: str = "reference") -> None:
+    """Require exact JSON value equality for the deterministic noise-budget contract."""
+    if isinstance(expected, dict):
+        if not isinstance(actual, dict) or set(actual) != set(expected):
+            raise EnergyClosureError(f"{path} structure is inconsistent")
+        for key in expected:
+            _assert_json_metrics_exact(actual[key], expected[key], f"{path}.{key}")
+    elif isinstance(expected, list):
+        if not isinstance(actual, list) or len(actual) != len(expected):
+            raise EnergyClosureError(f"{path} array length is inconsistent")
+        for index, (actual_item, expected_item) in enumerate(zip(actual, expected)):
+            _assert_json_metrics_exact(actual_item, expected_item, f"{path}[{index}]")
+    elif isinstance(expected, bool):
+        if actual is not expected:
+            raise EnergyClosureError(f"{path} value is inconsistent")
+    elif expected is None:
+        if actual is not None:
+            raise EnergyClosureError(f"{path} value is inconsistent")
+    elif isinstance(expected, (int, float)):
+        if isinstance(actual, bool) or not isinstance(actual, (int, float)) or actual != expected:
+            raise EnergyClosureError(f"{path} value is inconsistent")
+    elif actual != expected:
+        raise EnergyClosureError(f"{path} value is inconsistent")
+
+
 def _atomic_bundle(output: Path, times: list[dict[str, Any]],
                    stage_rows: list[dict[str, Any]], reference_rows: list[dict[str, Any]],
                    summaries: list[dict[str, Any]], manifest: dict[str, Any]) -> dict[str, Any]:
@@ -950,10 +1172,10 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
 def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
     if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != MANIFEST_SCHEMA_VERSION:
         raise EnergyClosureError(
-            "invalid ENE manifest schema; expected version 5 with residual noise-floor diagnostics"
+            "invalid ENE manifest schema; expected version 6 with derived residual-noise budget"
         )
     if type(manifest.get("config_schema_version")) is not int or manifest["config_schema_version"] != CONFIG_SCHEMA_VERSION:
-        raise EnergyClosureError("manifest config_schema_version must be 3")
+        raise EnergyClosureError("manifest config_schema_version must be 4")
     if manifest.get("case_id") not in ("ENE-01", "ENE-02", "ENE-03"):
         raise EnergyClosureError("invalid ENE manifest case_id")
     status = manifest.get("status")
@@ -1034,6 +1256,17 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
             f"manifest refinement schedule requires {total_samples} samples; "
             f"supported limit is {MAX_TOTAL_SAMPLES}"
         )
+    noise_budget, noise_budget_report = _derive_energy_residual_noise_budget(
+        manifest.get("energy_residual_noise_budget"), duration, base_intervals,
+        context="manifest",
+    )
+    _validate_noise_floor_not_below_derived_minimum(
+        residual_noise_floor, noise_budget_report, context="manifest",
+    )
+    _assert_json_metrics_exact(
+        manifest.get("energy_residual_noise_budget_report"), noise_budget_report,
+        "energy_residual_noise_budget_report",
+    )
     threshold = manifest.get("normalized_energy_closure_threshold")
     if threshold is not None and (
         isinstance(threshold, bool) or not isinstance(threshold, (int, float))
@@ -1119,6 +1352,8 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         "energy_residual_noise_floor_method": residual_noise_method,
         "energy_residual_noise_floor_source": residual_noise_source,
         "energy_residual_noise_floor_source_ids": residual_noise_source_ids,
+        "energy_residual_noise_budget": noise_budget,
+        "energy_residual_noise_budget_report": noise_budget_report,
         "state_comparison_scales": state_comparison_scales,
         "state_comparison_scale_source": state_comparison_scale_source,
         "state_comparison_scale_source_ids": state_comparison_scale_source_ids,
@@ -1229,7 +1464,7 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
         summary_rows, manifest.get("reference_trajectory_diagnostics"),
         contract["smooth_flags"], contract["energy_residual_noise_floor_J"],
     )
-    _assert_json_metrics_close(
+    _assert_json_metrics_exact(
         manifest.get("residual_order_diagnostic"), expected_residual_order,
         "residual_order_diagnostic",
     )
@@ -1810,6 +2045,8 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "energy_residual_noise_floor_method": v["energy_residual_noise_floor_method"],
         "energy_residual_noise_floor_source": v["energy_residual_noise_floor_source"],
         "energy_residual_noise_floor_source_ids": v["energy_residual_noise_floor_source_ids"],
+        "energy_residual_noise_budget": v["energy_residual_noise_budget"],
+        "energy_residual_noise_budget_report": v["energy_residual_noise_budget_report"],
         "residual_order_diagnostic": residual_order_diagnostic,
         "all_refinements_smooth_unsaturated": all_smooth,
         "limiter_stage_reports": saturation_by_level,
@@ -1829,7 +2066,8 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "RK4-stage power uses the classical 1:2:2:1 stage weights and is a solver-coupled sampling diagnostic, not an independent quadrature oracle or error bound.",
             "A VERIFIED archive proves file integrity/schema only, not simulation correctness or physical validity.",
             "Residual empirical order is reported only when all five levels are smooth, above the predeclared sourced noise floor, same-sign and strictly decreasing in magnitude; it is diagnostic, not an error bound.",
-            "The residual noise floor is a pre-run sourced numerical-analysis bound; it is not inferred from this run, the energy normalization floor, or machine epsilon alone.",
+            "The residual noise floor must be at least the automatically derived binary64 post-processing bound; analyst-supplied stored-energy, net-power, RK4-state-propagation and time-grid bounds are recorded separately.",
+            "The derived binary64 bound does not cover parameter/model uncertainty or RK4 truncation error, and does not prove the supplied envelope and state-propagation bounds.",
             "The h/16 reference path uses the same RK4 solver and constant command/load; it is a finer numerical reference, not an exact or independent physical solution.",
             "The h/16 reference comparison uses nested common time nodes to compare state, net power, stored-energy change and same-grid power work; it is diagnostic and excluded from the four-level primary PASS threshold.",
             "Adjacent-level trajectory differences are reported on each pair shared coarse grid as raw per-state and power differences; they do not infer convergence order, establish an error bound or alter PASS.",
