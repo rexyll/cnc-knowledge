@@ -53,6 +53,41 @@ jobs:
       - name: Run RK4-01 synthetic convergence screen
         id: rk4_screen
         run: python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic
+      - name: Run RK4-02 positive free-path synthetic convergence screen
+        id: rk4_02_screen
+        run: python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-02-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic
+      - name: Check whether RK4-02 source inputs changed
+        id: rk4_02_archive_check
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          manifest_path = "resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic/rk4-02-run-manifest.json"
+          try:
+              previous_text = subprocess.check_output(
+                  ["git", "show", f"HEAD:{manifest_path}"], text=True
+              )
+              previous = json.loads(previous_text)
+          except (subprocess.CalledProcessError, json.JSONDecodeError):
+              previous = None
+
+          current = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+          inputs = ("config_sha256", "solver_sha256", "path_support_sha256", "runner_sha256")
+          changed = previous is None or any(previous.get(key) != current.get(key) for key in inputs)
+          with open(__import__("os").environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"changed={'true' if changed else 'false'}\\n")
+          print("RK4-02 model/runner/config input changed:", changed)
+          PY
+      - name: Upload RK4-02 numerical results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch12-rk4-02-positive-free-path-synthetic-${{ github.run_id }}
+          path: resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Check whether RK4-01 source inputs changed
         id: rk4_archive_check
         run: |
@@ -85,15 +120,15 @@ jobs:
           path: resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/
           if-no-files-found: warn
           retention-days: 14
-      - name: Persist RK4-01 results to main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.rk4_archive_check.outputs.changed == 'true'
+      - name: Persist RK4 synthetic results to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (steps.rk4_archive_check.outputs.changed == 'true' || steps.rk4_02_archive_check.outputs.changed == 'true')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/
+          git add resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/ resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic/
           if git diff --cached --quiet; then
             echo "No new RK4-01 result files to archive."
             exit 0
           fi
-          git commit -m "chore(ch12): archive RK4-01 synthetic results [skip ci]"
+          git commit -m "chore(ch12): archive RK4 synthetic results [skip ci]"
           git push origin HEAD:main

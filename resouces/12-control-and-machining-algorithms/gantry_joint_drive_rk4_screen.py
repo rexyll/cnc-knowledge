@@ -44,7 +44,10 @@ STATE_UNITS = {
     "current_A": "A", "current_integrator_V": "V",
 }
 TIMESERIES_FIELDS = [
-    "case_id", "level", "interval_index", "time_s", "step_s", *STATE_FIELDS,
+    "case_id", "level", "interval_index", "time_s", "step_s",
+    "s_reference_m", "s_reference_velocity_m_s",
+    "requested_current_command_A", "limited_current_reference_A", "voltage_saturated",
+    *STATE_FIELDS,
 ]
 LEVEL_FIELDS = [
     "case_id", "level", "intervals", "step_s", "samples",
@@ -52,6 +55,9 @@ LEVEL_FIELDS = [
     "current_reference_saturated_stages", "voltage_saturated_stages",
     "any_limiter_active_stages", "stage_count_matches_expected",
     "smooth_unsaturated", "all_states_finite",
+    "requested_current_min_A", "requested_current_max_A",
+    "initial_s_m", "final_s_m", "net_s_displacement_m",
+    "reference_start_m", "reference_end_m",
 ]
 PAIR_FIELDS = [
     "case_id", "coarse_level", "fine_level",
@@ -71,6 +77,17 @@ TIMESERIES_NAME = "rk4-01-synthetic-timeseries.csv"
 LEVELS_NAME = "rk4-01-level-summary.csv"
 PAIRS_NAME = "rk4-01-adjacent-differences.csv"
 MANIFEST_NAME = "rk4-01-run-manifest.json"
+
+
+def _artifact_names(case_id: str) -> dict[str, str]:
+    if case_id not in {"RK4-01", "RK4-02", "RK4-03", "RK4-04"}:
+        raise RK4ScreenError(f"unsupported RK4 case_id: {case_id}")
+    return {
+        "timeseries": f"{case_id.lower()}-synthetic-timeseries.csv",
+        "levels": f"{case_id.lower()}-level-summary.csv",
+        "pairs": f"{case_id.lower()}-adjacent-differences.csv",
+        "manifest": f"{case_id.lower()}-run-manifest.json",
+    }
 
 
 class RK4ScreenError(ValueError):
@@ -111,8 +128,9 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
         raise RK4ScreenError("configuration must be an object with integer schema_version")
     if config["schema_version"] != CONFIG_SCHEMA_VERSION:
         raise RK4ScreenError(f"unsupported schema_version; expected {CONFIG_SCHEMA_VERSION}")
-    if config.get("case_id") != "RK4-01":
-        raise RK4ScreenError("case_id must be RK4-01")
+    case_id = config.get("case_id")
+    if case_id not in {"RK4-01", "RK4-02", "RK4-03", "RK4-04"}:
+        raise RK4ScreenError("case_id must be one of RK4-01, RK4-02, RK4-03, RK4-04")
 
     provenance = config.get("provenance")
     if not isinstance(provenance, dict):
@@ -131,18 +149,50 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
 
     model, initial, external = path_support._build_model(config)
     controller = config.get("controller_and_loads")
-    if not isinstance(controller, dict) or controller.get("current_command_model") != "constant_current":
-        raise RK4ScreenError("RK4-01 supports only the declared smooth constant_current callback")
-    current_command = _number(
-        controller.get("feedforward_current_A"),
-        "controller_and_loads.feedforward_current_A",
-    )
+    if not isinstance(controller, dict):
+        raise RK4ScreenError("controller_and_loads must be an object")
+    command_model = controller.get("current_command_model")
+    if command_model == "constant_current":
+        command_spec = {
+            "model": "constant_current",
+            "feedforward_current_A": _number(
+                controller.get("feedforward_current_A"),
+                "controller_and_loads.feedforward_current_A",
+            ),
+        }
+    elif command_model == "quintic_pd_current":
+        path_cfg = controller.get("path_reference")
+        if not isinstance(path_cfg, dict) or path_cfg.get("family") != "quintic_rest_to_rest":
+            raise RK4ScreenError("quintic_pd_current requires path_reference.family=quintic_rest_to_rest")
+        command_spec = {
+            "model": "quintic_pd_current",
+            "feedforward_current_A": _number(controller.get("feedforward_current_A"), "controller_and_loads.feedforward_current_A"),
+            "Kp_pos_A_per_m": _number(controller.get("Kp_pos_A_per_m"), "controller_and_loads.Kp_pos_A_per_m", positive=True),
+            "Kd_vel_A_s_per_m": _number(controller.get("Kd_vel_A_s_per_m"), "controller_and_loads.Kd_vel_A_s_per_m", positive=True),
+            "path_family": "quintic_rest_to_rest",
+            "path_start_m": _number(path_cfg.get("start_m"), "controller_and_loads.path_reference.start_m"),
+            "path_end_m": _number(path_cfg.get("end_m"), "controller_and_loads.path_reference.end_m"),
+            "path_duration_s": _number(path_cfg.get("duration_s"), "controller_and_loads.path_reference.duration_s", positive=True),
+        }
+    else:
+        raise RK4ScreenError("current_command_model must be constant_current or quintic_pd_current")
 
     integration = config.get("integration")
     if not isinstance(integration, dict):
         raise RK4ScreenError("integration must be an object")
     duration = _number(integration.get("duration_s"), "integration.duration_s", positive=True)
     base_step = _number(integration.get("base_step_s"), "integration.base_step_s", positive=True)
+    if command_spec["model"] == "quintic_pd_current":
+        if not math.isclose(command_spec["path_duration_s"], duration, rel_tol=1e-10, abs_tol=1e-12):
+            raise RK4ScreenError("path_reference.duration_s must equal integration.duration_s")
+        if not math.isclose(initial.s, command_spec["path_start_m"], rel_tol=1e-9, abs_tol=1e-12):
+            raise RK4ScreenError("initial_state.s_m must equal path_reference.start_m")
+        if not math.isclose(initial.s_dot, 0.0, rel_tol=0.0, abs_tol=1e-12):
+            raise RK4ScreenError("quintic rest-to-rest path requires initial_state.s_dot_m_s = 0")
+        if case_id == "RK4-02" and not command_spec["path_end_m"] > command_spec["path_start_m"]:
+            raise RK4ScreenError("RK4-02 requires a positive path displacement")
+        if case_id == "RK4-03" and not command_spec["path_end_m"] < command_spec["path_start_m"]:
+            raise RK4ScreenError("RK4-03 requires a negative path displacement")
     ratio = duration / base_step
     if not math.isfinite(ratio) or ratio > 100_000:
         raise RK4ScreenError("duration/base_step is outside the supported range")
@@ -192,14 +242,14 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
 
     model.pack(initial)
     return {
-        "case_id": "RK4-01",
+        "case_id": case_id,
         "model": model,
         "initial": initial,
         "external": np.asarray(external, dtype=float),
         "duration": duration,
         "base_step": base_step,
         "intervals": intervals,
-        "current_command": current_command,
+        "command_spec": command_spec,
         "parameter_source": parameter_source.strip(),
         "source_ids": source_ids,
         "scales": normalized_scales,
@@ -293,8 +343,29 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
 
     started = datetime.now(timezone.utc).isoformat()
     model = v["model"]
-    current_command = v["current_command"]
+    command_spec = v["command_spec"]
     external = v["external"]
+
+    def reference_at(time_s: float) -> tuple[float, float, float] | None:
+        if command_spec["model"] == "constant_current":
+            return None
+        return path_support.quintic_rest_to_rest(
+            time_s, command_spec["path_start_m"],
+            command_spec["path_end_m"], command_spec["path_duration_s"],
+        )
+
+    def command_at(time_s: float, state: Any) -> float:
+        if command_spec["model"] == "constant_current":
+            return float(command_spec["feedforward_current_A"])
+        reference = reference_at(time_s)
+        assert reference is not None
+        return float(
+            command_spec["feedforward_current_A"]
+            + command_spec["Kp_pos_A_per_m"] * (reference[0] - state.s)
+            + command_spec["Kd_vel_A_s_per_m"] * (reference[1] - state.s_dot)
+        )
+
+    artifact_names = _artifact_names(v["case_id"])
     times_by_level: list[np.ndarray] = []
     states_by_level: list[np.ndarray] = []
     level_rows: list[dict[str, Any]] = []
@@ -303,17 +374,23 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     for level_index, label in enumerate(LEVELS):
         intervals = v["intervals"] * (2 ** level_index)
         step = v["duration"] / intervals
-        observations = {"count": 0, "reference": 0, "voltage": 0, "any": 0}
+        observations = {
+            "count": 0, "reference": 0, "voltage": 0, "any": 0,
+            "requested_min": math.inf, "requested_max": -math.inf,
+        }
 
         def tracked_command(time_s: float, state: Any) -> float:
-            diagnostic = model.electrical_diagnostics(state, current_command)
-            reference_limited = diagnostic["current_reference_A"] != current_command
+            requested_command = command_at(time_s, state)
+            diagnostic = model.electrical_diagnostics(state, requested_command)
+            reference_limited = diagnostic["current_reference_A"] != requested_command
             voltage_limited = bool(diagnostic["voltage_saturated"])
             observations["count"] += 1
             observations["reference"] += int(reference_limited)
             observations["voltage"] += int(voltage_limited)
             observations["any"] += int(reference_limited or voltage_limited)
-            return current_command
+            observations["requested_min"] = min(observations["requested_min"], requested_command)
+            observations["requested_max"] = max(observations["requested_max"], requested_command)
+            return requested_command
 
         def external_force(_time_s: float, _state: Any) -> np.ndarray:
             return external.copy()
@@ -328,6 +405,8 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         all_finite = bool(np.all(np.isfinite(states)))
         if not all_finite:
             raise FloatingPointError(f"non-finite state values at {label}")
+        reference_start = reference_at(0.0)
+        reference_end = reference_at(v["duration"])
         level_rows.append({
             "case_id": v["case_id"], "level": label,
             "intervals": intervals, "step_s": step, "samples": int(times.size),
@@ -339,13 +418,29 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "stage_count_matches_expected": str(stage_match),
             "smooth_unsaturated": str(smooth),
             "all_states_finite": str(all_finite),
+            "requested_current_min_A": observations["requested_min"],
+            "requested_current_max_A": observations["requested_max"],
+            "initial_s_m": float(states[0, 8]),
+            "final_s_m": float(states[-1, 8]),
+            "net_s_displacement_m": float(states[-1, 8] - states[0, 8]),
+            "reference_start_m": "" if reference_start is None else reference_start[0],
+            "reference_end_m": "" if reference_end is None else reference_end[0],
         })
         times_by_level.append(np.asarray(times, dtype=float))
         states_by_level.append(np.asarray(states, dtype=float))
         for index, (time_s, state) in enumerate(zip(times, states)):
+            state_object = model.unpack(np.asarray(state, dtype=float))
+            requested_command = command_at(float(time_s), state_object)
+            diagnostic = model.electrical_diagnostics(state_object, requested_command)
+            reference = reference_at(float(time_s))
             row: dict[str, Any] = {
                 "case_id": v["case_id"], "level": label,
                 "interval_index": index, "time_s": float(time_s), "step_s": step,
+                "s_reference_m": "" if reference is None else reference[0],
+                "s_reference_velocity_m_s": "" if reference is None else reference[1],
+                "requested_current_command_A": requested_command,
+                "limited_current_reference_A": diagnostic["current_reference_A"],
+                "voltage_saturated": str(bool(diagnostic["voltage_saturated"])),
             }
             row.update({field: float(state[column]) for column, field in enumerate(STATE_FIELDS)})
             timeseries_rows.append(row)
@@ -398,13 +493,13 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         else:
             row["screen_next_order"] = "NOT_APPLICABLE"
 
-    _atomic_csv(output / TIMESERIES_NAME, TIMESERIES_FIELDS, timeseries_rows)
-    _atomic_csv(output / LEVELS_NAME, LEVEL_FIELDS, level_rows)
-    _atomic_csv(output / PAIRS_NAME, PAIR_FIELDS, pair_rows)
+    _atomic_csv(output / artifact_names["timeseries"], TIMESERIES_FIELDS, timeseries_rows)
+    _atomic_csv(output / artifact_names["levels"], LEVEL_FIELDS, level_rows)
+    _atomic_csv(output / artifact_names["pairs"], PAIR_FIELDS, pair_rows)
     artifact_specs = {
-        TIMESERIES_NAME: (TIMESERIES_FIELDS, timeseries_rows),
-        LEVELS_NAME: (LEVEL_FIELDS, level_rows),
-        PAIRS_NAME: (PAIR_FIELDS, pair_rows),
+        artifact_names["timeseries"]: (TIMESERIES_FIELDS, timeseries_rows),
+        artifact_names["levels"]: (LEVEL_FIELDS, level_rows),
+        artifact_names["pairs"]: (PAIR_FIELDS, pair_rows),
     }
     artifacts = {
         name: _artifact_record(output / name, fields, rows)
@@ -414,6 +509,8 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     manifest = {
         "schema_version": 1,
         "case_id": v["case_id"],
+        "current_command_model": command_spec["model"],
+        "current_command_profile": command_spec,
         "status": recorded_status,
         "numerical_results_present": True,
         "engineering_acceptance_applied": False,
@@ -459,7 +556,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "command_line": " ".join(sys.argv),
         "output_artifacts": artifacts,
     }
-    manifest_path = output / MANIFEST_NAME
+    manifest_path = output / artifact_names["manifest"]
     payload = (json.dumps(manifest, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode("utf-8")
     with tempfile.NamedTemporaryFile(
         mode="wb", dir=output, prefix=f".{MANIFEST_NAME}.", suffix=".tmp", delete=False
@@ -488,11 +585,15 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise RK4ScreenError(f"cannot read RK4 manifest: {error}") from error
-    if manifest.get("schema_version") != 1 or manifest.get("case_id") != "RK4-01":
+    case_id = manifest.get("case_id")
+    if manifest.get("schema_version") != 1 or case_id not in {
+        "RK4-01", "RK4-02", "RK4-03", "RK4-04"
+    }:
         raise RK4ScreenError("unsupported RK4 archive manifest")
+    names = _artifact_names(case_id)
     artifacts = manifest.get("output_artifacts")
     if not isinstance(artifacts, dict) or set(artifacts) != {
-        TIMESERIES_NAME, LEVELS_NAME, PAIRS_NAME
+        names["timeseries"], names["levels"], names["pairs"]
     }:
         raise RK4ScreenError("RK4 archive artifact list is incomplete")
     verified = {}
@@ -523,7 +624,7 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run the RK4-01 synthetic fixed-step convergence screen.")
+    parser = argparse.ArgumentParser(description="Run a configured synthetic RK4 fixed-step convergence screen.")
     parser.add_argument("--config", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--verify-archive", action="store_true")
