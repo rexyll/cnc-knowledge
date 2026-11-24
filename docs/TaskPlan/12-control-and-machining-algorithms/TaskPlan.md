@@ -574,3 +574,4 @@
 - **归档：** Manifest schema从3升级为4；保存尺度、来源、来源ID、状态向量顺序和单位，`--verify-archive`重算无量纲相邻诊断。配置schema从1升级为2，旧配置/归档须用对应旧版本工具处理；模板中的尺度与来源保持空白。
 - **测试定义：** 新增3项ENE资源测试，ENE35项、求解器35项、PATH-01 39项，共109项资源测试均未执行。ENE积分未执行，矩阵仍 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
 
+- **仓库CI（有来源的状态特征尺度）：** 实现提交 `2bfa53fc9c8bfc14a3849748581d934dd4220152` 对应 [Run 45372572329](https://github.com/rexyll/cnc-knowledge/actions/runs/45372572329) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下109项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
