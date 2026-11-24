@@ -72,3 +72,5 @@
 - 新增4项归档语义资源测试定义；ENE资源测试12项，资源测试总计86项，全部未执行。未执行ENE积分。
 
 - 静态复核补充：归档校验同时约束电流参考/电压限幅计数与任一限幅计数的集合关系，并强制经验残差阶数列保持空值。
+
+- **仓库CI：** `d00d0a6fc5274b2f1399903a7551952989b1cd56` 对应 [Run 45333058677](https://github.com/rexyll/cnc-knowledge/actions/runs/45333058677) success；单元测试与repository knowledge lint成功。CI不执行 `resouces/` 下86项资源测试，也不运行ENE积分。

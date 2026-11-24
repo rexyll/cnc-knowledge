@@ -483,3 +483,5 @@
 - 核对四档RK4区间数、步长、样本数、时间网格递增性、汇总与时序行数，以及manifest状态与阈值/限幅门控/最细两档残差是否一致。
 - 新增4项归档语义资源测试定义；ENE运行器资源测试12项，总资源测试86项（求解器35、PATH-01 39、ENE 12）均未执行；ENE积分未执行。
 - `VERIFIED`仍仅表示归档文件与记录自洽，不代表仿真正确或物理有效；CH12-T003保持 `IN_PROGRESS`。
+
+- **仓库CI：** 归档语义校验提交 `d00d0a6fc5274b2f1399903a7551952989b1cd56` 对应 [Run 45333058677](https://github.com/rexyll/cnc-knowledge/actions/runs/45333058677) success；`Knowledge structure and data quality` job中的单元测试与repository knowledge lint成功。该CI不执行 `resouces/` 下86项资源测试，也不运行ENE积分。
