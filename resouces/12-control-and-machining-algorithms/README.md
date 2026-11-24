@@ -347,6 +347,8 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_scree
 - 参考轨迹为 `s_ref=s0+Δs(10τ³−15τ⁴+6τ⁵)`，其中 `τ=t/T`；位置误差和速度误差通过确定性PD回调形成电流指令，每个RK4积分阶段重新计算。该参考是自由轴的命令目标，不是理想路径约束；五次时间标度用于静止—静止且端点速度/加速度为零的通用轨迹构造，依据SRC-000373。
 - 运行：`python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-02-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic`。
 - GitHub Actions [Run 45387608094](https://github.com/rexyll/cnc-knowledge/actions/runs/45387608094)最终success：123/123项CH12资源测试通过；RK4-01及RK4-02均执行成功；仓库单元测试与strict knowledge lint通过。RK4-02四档区间数40/80/160/320、阶段数160/320/640/1280；状态均有限，阶段计数匹配，电流参考限幅和电压饱和均为0。
-- RK4-02归一化相邻RMS差依次为1.401131964624969e-04、6.750725089870764e-06、3.690347602559821e-07；两组有限层级观测阶数为4.375406561974051、4.193213850529427，均高于3.0数值筛查下限。实际路径坐标由0.72m增加至最细步长下的0.7254507489963524m，参考终点为0.735m；最细层级的带符号端点跟踪误差为-0.0095492510036476m。该偏差只作为描述指标，没有预设应用容差，也不代表终点定位通过。
-- 四个结果文件（604行时序、4行步长/跟踪误差汇总、3组相邻差异和manifest）已由Actions自动归档至`generated/rk4-02-synthetic/`；归档提交为`44a386005f8fb73835265c31492236c92b020d71`。manifest记录配置、求解器、PATH支持、runner SHA及CSV校验信息。
+- RK4-02归一化相邻RMS差依次为1.401131964624969e-04、6.750725089870764e-06、3.690347602559821e-07；两组有限层级观测阶数为4.375406561974051、4.193213850529427，均高于3.0数值筛查下限。最细层级参考路径误差RMS=0.007321842561068045m、峰值=0.010953049796999736m；实际路径坐标由0.72m增加至0.7254507489963524m，参考终点为0.735m，带符号端点误差为-0.0095492510036476m。该偏差只作为描述指标，没有预设应用容差，也不代表终点定位通过。
+- 四个结果文件（604行时序、4行步长/跟踪误差汇总、3组相邻差异和manifest）已由Actions自动归档至`generated/rk4-02-synthetic/`；初始归档提交为`44a386005f8fb73835265c31492236c92b020d71`，加入路径误差RMS/峰值/端点字段后的最新结果归档提交为`74812389cf5a8b73d1246265448004eb34788603`。manifest记录配置、求解器、PATH支持、runner SHA及CSV校验信息。
 - **判读边界：** `COMPLETED_REPORT_ONLY`仅表示四档连续时间数值收敛筛查通过。当前回调未模拟采样任务、PWM、通信延迟、硬限位、接触或硬件保护；无真实参数辨识、HIL、台架或实机验证。RK4-03/04、ENE-01/02/03积分及PATH-01仍为`NOT_RUN`。
+
+- **补充回归：** 路径误差诊断字段加入后，GitHub Actions [Run 45388357235](https://github.com/rexyll/cnc-knowledge/actions/runs/45388357235)再次通过：123/123资源测试、RK4-01/02运行、仓库单元测试和strict knowledge lint均success；源码/配置输入SHA未变化，归档步骤按预期跳过。

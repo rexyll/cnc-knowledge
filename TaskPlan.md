@@ -476,3 +476,9 @@
 - GitHub Actions [Run 45387608094](https://github.com/rexyll/cnc-knowledge/actions/runs/45387608094)最终success；CH12资源测试123/123、RK4-01/RK4-02运行、仓库单元测试和strict lint均通过。RK4-02四档状态有限、阶段数匹配、无参考限幅/电压饱和。
 - RK4-02归一化相邻RMS差1.40113e-4/6.75073e-6/3.69035e-7，观测阶数4.3754/4.1932；最细档实际s(T)=0.725450748996m，参考终点0.735m，存在约-9.55mm端点偏差，未设置应用容差，因此仅报告、不作轨迹跟踪合格判定。结果4文件已归档于`resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic/`。
 - RK4-01和RK4-02状态均为`COMPLETED_REPORT_ONLY`；RK4-03/04、ENE-01/02/03积分、PATH-01保持`NOT_RUN`，CH12-T003保持`IN_PROGRESS`。
+
+
+### CH12-T003 RK4-02验收记录补充（2026-11-24）
+
+- 路径误差诊断已进入归档汇总：h/8下参考路径误差RMS约7.3218mm、峰值约10.9530mm，端点误差约-9.5493mm。该偏差揭示自由轴响应未达到参考终点；不存在预先批准的应用容差，不宣称跟踪精度合格。
+- 来源SRC-000373经schema枚举纠正后，最终GitHub Actions [Run 45388357235](https://github.com/rexyll/cnc-knowledge/actions/runs/45388357235)全部Job success；资源123/123、RK4-01/02、根仓库测试和strict lint通过。main仅保留main分支，CH12-T003继续IN_PROGRESS。

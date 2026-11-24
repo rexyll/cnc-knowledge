@@ -255,3 +255,12 @@ ENE归档null一致性补充（2026-11-24）：runner比较器支持严格JSON n
 - **自由轴实际运动：** 最细档实际终点(s(T)=0.7254507489963524m)，相对初值净正向位移约0.00545074899635245m；参考终点0.735m，带符号端点误差为-0.0095492510036476m。路径误差RMS/峰值/端点均仅作为描述字段，未设置应用误差限，因此不宣称跟踪精度通过或完整到达目标终点。
 - **结果归档：** 四个CSV/JSON文件由Actions提交至`generated/rk4-02-synthetic/`，归档提交`44a386005f8fb73835265c31492236c92b020d71`。时序604行/22列；层级汇总4行/23列；相邻差异3行/58列；manifest记录每份CSV的SHA-256、字节数、行数/列数及源码/config SHA。RK4-01亦由同一CI重新生成并更新输出列结构。
 - **提交与边界：** runner与配置/测试/workflow提交`8c9c5ac79f3baf58b2d3ebfe0f1f39a3d60fc6e8`；归档校验修复提交`5940adb2e7e1d957205d1e24a26c422b019a2268`；结果归档提交`44a386005f8fb73835265c31492236c92b020d71`。全部仅在`main`。RK4-02为`COMPLETED_REPORT_ONLY`；RK4-03/04、ENE-01/02/03积分和PATH-01仍`NOT_RUN`；无真实设备参数、台架、HIL或实机验证，CH12-T003保持`IN_PROGRESS`。
+
+
+## RK4-02路径误差诊断、来源schema修正与最终CI复验（2026-11-24）
+
+- **路径误差诊断补强：** 对自由轴s(t)与参考路径s_ref(t)增加按各级实际输出栅格计算的误差RMS、绝对峰值和带符号端点误差。指标写入四行步长汇总CSV和manifest；不参与RK4数值收敛screen pass门控，不代替应用级路径容差。
+- **h/8实际结果：** 参考路径误差RMS=0.007321842561068045m，峰值=0.010953049796999736m，端点误差=-0.009549251003647563m；实际终点0.7254507489963524m，参考终点0.735m。明确说明本模型未完整到达参考终点，且无应用容差可以判定跟踪精度合格。
+- **首次schema lint问题：** 在提交`01b474a094df9f6fa10c9c92406b664d676cb486`后，Run [45388107854](https://github.com/rexyll/cnc-knowledge/actions/runs/45388107854)的CH12资源Job 123/123、RK4-01/02数值步骤和结果归档均success；全工作流因SRC-000373中的source_type/evidence_kind取值不属于仓库source schema枚举而失败。将来源分类改为允许的`other`和`official_documentation`。
+- **最终复验：** 来源schema修正后的Run [45388234987](https://github.com/rexyll/cnc-knowledge/actions/runs/45388234987)全工作流success；资产索引状态补正提交`cce7a3024c2b85fc871c9e09b720426af6377e6b`对应Run [45388357235](https://github.com/rexyll/cnc-knowledge/actions/runs/45388357235)再次success。后者两Job均success，资源测试123/123、RK4-01/02运行、根仓库5项单测和strict knowledge lint全部通过；归档检查识别源码/配置输入未变化，跳过重复结果写入。
+- **归档与状态：** 初始RK4-02四文件提交`44a386005f8fb73835265c31492236c92b020d71`；包含路径误差RMS/峰值/端点字段的最新结果提交`74812389cf5a8b73d1246265448004eb34788603`。资产索引与矩阵将RK4-01、RK4-02标记为`COMPLETED_REPORT_ONLY`；RK4-03/04、ENE-01/02/03和PATH-01仍`NOT_RUN`。所有提交仅在`main`；CH12-T003保持`IN_PROGRESS`。
