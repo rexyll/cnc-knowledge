@@ -54,8 +54,8 @@
     "current_A": 1.0,
     "current_integrator_V": 10.0
   },
-  "started_at_utc": "2026-11-24T11:39:32.949172+00:00",
-  "completed_at_utc": "2026-11-24T11:39:33.606620+00:00",
+  "started_at_utc": "2026-11-24T11:40:12.637357+00:00",
+  "completed_at_utc": "2026-11-24T11:40:12.978735+00:00",
   "duration_s": 0.2,
   "base_step_s": 0.005,
   "base_intervals": 40,
@@ -155,16 +155,16 @@
   "solver_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
   "path_support_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
   "runner_sha256": "a75759fa6ef0e3fa1a026156616f15804105b2049a1e886d2465ba0b606f071b",
-  "git_sha": "9295d474b06cdb91f7b54a942151610e4ce90eb3",
+  "git_sha": "9541ce0f3bb24c7f83dbf66d52f9d928e80034c7",
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
   "numpy_version": "2.5.5",
-  "operating_system": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+  "operating_system": "Linux-7.0.0-1016-aws-x86_64-with-glibc2.43",
   "command_line": "resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic",
   "output_artifacts": {
     "rk4-01-synthetic-timeseries.csv": {
       "file_name": "rk4-01-synthetic-timeseries.csv",
-      "sha256": "11eaaa9d85c87b85f93d220dfcd2218d1d57771bbec462c4acf4a7e5cbab6c2b",
-      "size_bytes": 173633,
+      "sha256": "15416293fc8d24ec3234c8d7ba5754b7e3c4b982381c453fb7bd84b016b45932",
+      "size_bytes": 173615,
       "data_rows": 604,
       "columns": 17
     },
@@ -177,8 +177,8 @@
     },
     "rk4-01-adjacent-differences.csv": {
       "file_name": "rk4-01-adjacent-differences.csv",
-      "sha256": "7cf6b3476833b8790a5b4076e4ad6fc1a7905ee8d7efe46fdfa827607d12a3c0",
-      "size_bytes": 5205,
+      "sha256": "5e05556015a6a88c7248b491454f519264f9b4dd82e11d19a58d75ad95e82785",
+      "size_bytes": 5207,
       "data_rows": 3,
       "columns": 58
     }
