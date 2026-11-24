@@ -474,3 +474,4 @@
 - **归档语义：** 明确输出先staging、后逐文件原子替换、manifest最后发布；该过程不构成多文件整体事务原子性。
 - **资源测试：** ENE运行器测试定义增至8项；求解器35项、PATH-01运行器39项、ENE运行器8项，共82项资源测试全部未执行。未执行ENE积分。
 - **状态：** CH12-T003保持 IN_PROGRESS；ENE-01～03与PATH-01验证仍为 NOT_RUN。
+- **仓库CI：** 修正提交 `ce86d8d75afca8bc00497f80377e16bc52e17a3e` 对应 [Run 45326460371](https://github.com/rexyll/cnc-knowledge/actions/runs/45326460371) success；`Knowledge structure and data quality` job中的单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下82项资源测试，也不运行ENE积分。
