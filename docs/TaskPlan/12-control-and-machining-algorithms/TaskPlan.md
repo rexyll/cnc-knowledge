@@ -629,3 +629,9 @@
 - RK4-01使用合成参数、恒定电流参考、零外部广义力，四档步长0.005/0.0025/0.00125/0.000625 s。归一化相邻RMS差依次2.4669535331394685e-05、9.795609168099331e-07、4.832443317361703e-08；两组观测阶数4.654451518041637、4.341310498009402。各档状态有限、RK4阶段计数匹配、无电流参考限幅/电压饱和。
 - 输出结果状态为`COMPLETED_REPORT_ONLY`；没有应用级误差容差，不代表数控机床精度、真实对象稳定性或物理验证。结果归档目录`resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/`，其中四个CSV/JSON文件已分别提交到main；运行环境和校验值见TaskHistory与协议3.4节。
 - 验证矩阵只将RK4-01更新为`COMPLETED_REPORT_ONLY`；RK4-02～04、ENE-01～03及PATH-01继续`NOT_RUN`。CH12-T003继续`IN_PROGRESS`。
+### CH12-T003 RK4-01结果归档工作流稳定性补充（2026-11-24）
+
+- 初次自动归档Run 45385940534成功，将四个结果文件写入`resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/`，归档提交`4dd4737f06a14ec8157c4afc6008e1f143fecca1`。
+- 多个push workflow曾并发推送不同运行生成的manifest，产生non-fast-forward拒绝；数值任务本身及两个质量Job通过。工作流现已按ref串行，main push显式checkout最新main，并在配置/求解器/PATH支持/RK4运行器SHA发生变化时才更新持久结果；相同输入不重复提交。
+- 稳定性修正提交`894020eda8bb1da74c59c97a35422fcb30993e97`及`5b67c82e148ff41bfec7b02f5ddd816e86e93d56`；Run 45386401202和45386439266均success。最近一轮121项资源测试、RK4-01运行、仓库tests与strict lint通过，归档比较识别输入未变化并跳过重复写入。
+- 该补充只改善CI串行与持久化，不改变模型方程/数值结论。RK4-01仍`COMPLETED_REPORT_ONLY`；RK4-02～04、ENE-01～03及PATH-01仍`NOT_RUN`；CH12-T003继续`IN_PROGRESS`。
