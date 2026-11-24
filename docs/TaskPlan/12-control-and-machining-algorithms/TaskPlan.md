@@ -410,3 +410,12 @@
 - **回归用例：** 新增3项PATH-01测试覆盖端口互易项正/负/零、规定路径正/反向约束功及自由模型排除约束功。求解器32项、运行器37项，共69项资源测试均未执行。
 - **内容提交与仓库CI：** 代码测试提交 f28696c3df90b7a29b2a1a959a5ff8a0f66b5d6d；GitHub Actions [Run 45208562193](https://github.com/rexyll/cnc-knowledge/actions/runs/45208562193) success，仓库既有单元测试步骤和 strict knowledge lint 均成功。该CI不执行资源测试。
 - **验证边界：** 仅补强代数/符号契约测试及文档；未运行ENE-01～03、PATH-01仿真或能量收敛分析。验证矩阵8项继续 NOT_RUN，CH12-T003保持 IN_PROGRESS。
+
+
+### CH12-T003 阻尼耗散与外部广义力功率符号复核（2026-11-24）
+
+- **解析核对：** 结构阻尼功率为 q_dot.T @ D0 @ q_dot；轴向摩擦功率为 (b*s_dot + Fc*tanh(s_dot/v_eps))*s_dot。按当前参数约束（D0半正定、b/Fc非负、v_eps正），两项理论上非负，速度反向不改变耗散符号。
+- **外力功率：** P_ext=Q_ext.T @ [q_dot,s_dot]，属于有符号输入/输出项。固定外力下速度反向应反号，力与速度正交时为零；账本与动力学方程采用相同广义坐标顺序。
+- **测试：** 新增2项PATH-01资源测试；运行器39项、求解器32项，共71项资源测试，均未执行。
+- **提交/CI：** 测试提交 `451ca951ff54b8eb9377f09e44f08abb8fa9ecb4`；GitHub Actions [Run 45307608288](https://github.com/rexyll/cnc-knowledge/actions/runs/45307608288) success。该工作流不执行 `resouces/` 资源测试。
+- **验证边界：** 本轮只完成代数审查和单样本符号契约测试定义；未执行ENE-02/03积分、PATH-01数值仿真或HIL。验证矩阵8项继续 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
