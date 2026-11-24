@@ -1,0 +1,5 @@
+case_id,level,intervals,step_s,samples,stage_evaluations,expected_stage_evaluations,current_reference_saturated_stages,voltage_saturated_stages,any_limiter_active_stages,stage_count_matches_expected,smooth_unsaturated,all_states_finite,requested_current_min_A,requested_current_max_A,initial_s_m,final_s_m,net_s_displacement_m,reference_start_m,reference_end_m,reference_path_error_rms_m,reference_path_error_peak_m,reference_endpoint_error_m
+RK4-04,h,40,0.005,41,160,160,0,0,0,True,True,True,-0.12,-0.12,0.721,0.7195518496089152,-0.0014481503910848126,,,,,
+RK4-04,h/2,80,0.0025,81,320,320,0,0,0,True,True,True,-0.12,-0.12,0.721,0.7195518496098263,-0.0014481503901736525,,,,,
+RK4-04,h/4,160,0.00125,161,640,640,0,0,0,True,True,True,-0.12,-0.12,0.721,0.719551849609857,-0.0014481503901430104,,,,,
+RK4-04,h/8,320,0.000625,321,1280,1280,0,0,0,True,True,True,-0.12,-0.12,0.721,0.7195518496098587,-0.001448150390141234,,,,,
