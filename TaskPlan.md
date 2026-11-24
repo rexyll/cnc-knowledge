@@ -489,4 +489,11 @@
 - 新增RK4-03反向自由轴工况：沿用s正方向约定，使用五次参考0.72m→0.705m、负前馈电流及连续PD命令；所有参数仍为合成夹具。
 - GitHub Actions [Run 45395098290](https://github.com/rexyll/cnc-knowledge/actions/runs/45395098290)最终success；CH12资源测试125/125、RK4-01/02/03运行、仓库单元测试与strict lint均通过。RK4-03四档状态有限、阶段计数匹配，无参考限幅/电压饱和。
 - 相邻归一化RMS差1.40113e-4/6.75072e-6/3.69035e-7，观测阶数4.3754/4.1932；最细档实际s(T)=0.714549218m，净负向位移约-5.451mm，参考终点0.705m，端点误差约+9.549mm。仅完成数值筛查，未判定轨迹精度合格。
-- RK4-01/02/03均为`COMPLETED_REPORT_ONLY`；RK4-04、ENE-01/02/03积分与PATH-01仍为`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。
+- RK4-01/02/03/04均为`COMPLETED_REPORT_ONLY`；ENE-01/02/03积分与PATH-01仍为`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。
+
+## CH12-T003最新数值验证里程碑（2026-11-24）：RK4-04
+
+- 完成非零结构/路径轴初始状态和非零外载合成工况，新增12维逐分量h/4到h/8最大归一化差门控；全部参数和1e-3筛查阈值均为合成声明值。
+- GitHub Actions [Run 45408964085](https://github.com/rexyll/cnc-knowledge/actions/runs/45408964085) success；CH12资源127/127、RK4-01～04运行、仓库单元测试与strict lint全部通过。
+- RK4-04相邻归一化RMS差1.59328e-5/6.32650e-7/3.12104e-8，有限网格观测阶数4.65445/4.34131；12分量逐项门槛全部通过。最细档自由轴净位移约-1.448mm，没有设置路径参考。
+- 结果四文件已由CI归档至 resouces/12-control-and-machining-algorithms/generated/rk4-04-synthetic/，归档提交 96bdbb3c89ad0b38783b5c6679400f7755425e0f。RK4-01～04均为COMPLETED_REPORT_ONLY；ENE-01/02/03积分和PATH-01仍未运行，CH12-T003保持IN_PROGRESS。没有真实参数、台架、HIL或实机结论。
