@@ -43,10 +43,7 @@ jobs:
       - name: Run CH12 solver, PATH-01, ENE, and RK4 screen resource tests
         run: python -m unittest discover -s resouces/12-control-and-machining-algorithms -p 'test_gantry_joint_drive_*.py' -v
       - name: Run RK4-01 synthetic convergence screen
-        run: |
-          python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py \\
-            --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json \\
-            --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic
+        run: python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic
       - name: Upload RK4-01 numerical results
         if: always()
         uses: actions/upload-artifact@v4
