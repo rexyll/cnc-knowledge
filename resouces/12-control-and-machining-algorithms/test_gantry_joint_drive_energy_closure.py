@@ -114,6 +114,41 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
                 "Q_yaw", "Q_x_common", "Q_bending", "Q_torsion", "Q_s"
             ])
 
+    def test_energy_diagnostics_attribute_absolute_component_work(self) -> None:
+        from gantry_joint_drive_energy_closure import _energy_diagnostics
+        integrals = {
+            "terminal_input": 100.0, "copper": -80.0, "structural": -10.0,
+            "friction": -5.0, "external": 4.0, "mismatch": 1.0,
+        }
+        result = _energy_diagnostics(integrals, 2.0, 50.0, 1e-6, 10.0, 3.0)
+        self.assertAlmostEqual(result["absolute_component_work_sum_J"], 200.0)
+        self.assertAlmostEqual(result["terminal_input_abs_contribution_fraction"], 0.5)
+        self.assertAlmostEqual(result["copper_loss_abs_contribution_fraction"], 0.4)
+        self.assertAlmostEqual(result["energy_residual_over_scale"], 0.04)
+        self.assertAlmostEqual(result["energy_residual_over_absolute_net_power_work"], 0.2)
+        self.assertAlmostEqual(result["energy_residual_over_absolute_component_work"], 0.01)
+        self.assertAlmostEqual(result["simpson_trapezoid_net_work_difference_J"], 1.0)
+
+    def test_energy_diagnostics_use_floor_for_zero_component_and_net_work(self) -> None:
+        from gantry_joint_drive_energy_closure import _energy_diagnostics
+        integrals = {key: 0.0 for key in (
+            "terminal_input", "copper", "structural", "friction", "external", "mismatch"
+        )}
+        result = _energy_diagnostics(integrals, 2.0, 10.0, 0.5, 0.0, 2.0)
+        self.assertEqual(result["absolute_component_work_sum_J"], 0.0)
+        self.assertEqual(result["terminal_input_abs_contribution_fraction"], 0.0)
+        self.assertEqual(result["energy_residual_over_absolute_net_power_work"], 4.0)
+        self.assertEqual(result["energy_residual_over_absolute_component_work"], 4.0)
+
+    def test_energy_diagnostics_do_not_relabel_simpson_trapezoid_gap_as_error_bound(self) -> None:
+        from gantry_joint_drive_energy_closure import _energy_diagnostics
+        integrals = {
+            "terminal_input": 3.0, "copper": -2.0, "structural": 0.0,
+            "friction": 0.0, "external": 0.0, "mismatch": 0.0,
+        }
+        result = _energy_diagnostics(integrals, 0.25, 1.0, 1e-9, 1.0, -0.75)
+        self.assertEqual(result["simpson_trapezoid_net_work_difference_J"], 1.0)
+
     def _valid_manifest_contract(self) -> dict:
         return {
             "schema_version": 1, "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",

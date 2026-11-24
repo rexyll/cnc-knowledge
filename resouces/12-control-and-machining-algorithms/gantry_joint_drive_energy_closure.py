@@ -55,6 +55,14 @@ SUMMARY_FIELDS = [
     "net_power_work_J", "absolute_net_power_work_J",
     "energy_residual_simpson_J", "energy_residual_trapezoid_J",
     "normalized_energy_residual", "normalized_energy_residual_trapezoid",
+    "absolute_component_work_sum_J",
+    "terminal_input_abs_contribution_fraction", "copper_loss_abs_contribution_fraction",
+    "structural_damping_abs_contribution_fraction", "axis_friction_abs_contribution_fraction",
+    "external_generalized_abs_contribution_fraction",
+    "electromechanical_mismatch_abs_contribution_fraction",
+    "energy_residual_over_scale", "energy_residual_over_absolute_net_power_work",
+    "energy_residual_over_absolute_component_work",
+    "simpson_trapezoid_net_work_difference_J",
     "current_reference_saturated_stages", "voltage_saturated_stages",
     "any_limiter_active_stages", "expected_rk4_stage_evaluations",
     "observed_rk4_stage_evaluations", "stage_count_matches_expected",
@@ -184,6 +192,36 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
         "floor": floor, "threshold": threshold, "source": source.strip(),
         "source_ids": [x.strip() for x in ids],
     }
+
+
+def _energy_diagnostics(integrals: dict[str, float], residual: float,
+                       scale: float, floor: float, absolute_net_work: float,
+                       trapezoid_residual: float) -> dict[str, float]:
+    """Return component attribution and residuals against distinct energy scales.
+
+    Fractions are absolute-work attribution diagnostics, not causal error
+    allocations. Every denominator has the predeclared positive floor.
+    """
+    component_keys = ("terminal_input", "copper", "structural", "friction",
+                      "external", "mismatch")
+    component_abs_sum = math.fsum(abs(float(integrals[key])) for key in component_keys)
+    denominator = max(component_abs_sum, floor)
+    result = {
+        "absolute_component_work_sum_J": component_abs_sum,
+        "terminal_input_abs_contribution_fraction": abs(float(integrals["terminal_input"])) / denominator,
+        "copper_loss_abs_contribution_fraction": abs(float(integrals["copper"])) / denominator,
+        "structural_damping_abs_contribution_fraction": abs(float(integrals["structural"])) / denominator,
+        "axis_friction_abs_contribution_fraction": abs(float(integrals["friction"])) / denominator,
+        "external_generalized_abs_contribution_fraction": abs(float(integrals["external"])) / denominator,
+        "electromechanical_mismatch_abs_contribution_fraction": abs(float(integrals["mismatch"])) / denominator,
+        "energy_residual_over_scale": abs(residual) / scale,
+        "energy_residual_over_absolute_net_power_work": abs(residual) / max(absolute_net_work, floor),
+        "energy_residual_over_absolute_component_work": abs(residual) / denominator,
+        "simpson_trapezoid_net_work_difference_J": abs(residual - trapezoid_residual),
+    }
+    if not all(math.isfinite(value) for value in result.values()):
+        raise FloatingPointError("non-finite ENE component/residual diagnostic")
+    return result
 
 
 def _power_sample(model: Any, vector: np.ndarray, command: float,
@@ -506,6 +544,25 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
             raise EnergyClosureError(f"summary threshold disagrees with manifest at {label}")
         if float(row["normalized_energy_residual"]) < 0 or float(row["normalized_energy_residual_trapezoid"]) < 0:
             raise EnergyClosureError(f"negative normalized residual at {label}")
+        expected_diagnostics = _energy_diagnostics(
+            {
+                "terminal_input": float(row["terminal_input_work_J"]),
+                "copper": float(row["copper_loss_J"]),
+                "structural": float(row["structural_damping_loss_J"]),
+                "friction": float(row["axis_friction_loss_J"]),
+                "external": float(row["external_generalized_work_J"]),
+                "mismatch": float(row["electromechanical_mismatch_work_J"]),
+            },
+            float(row["energy_residual_simpson_J"]),
+            float(manifest["energy_normalization_scale_J"]),
+            float(manifest["energy_normalization_floor_J"]),
+            float(row["absolute_net_power_work_J"]),
+            float(row["energy_residual_trapezoid_J"]),
+        )
+        for field, expected_value in expected_diagnostics.items():
+            actual_value = float(row[field])
+            if not math.isclose(actual_value, expected_value, rel_tol=1e-9, abs_tol=1e-12):
+                raise EnergyClosureError(f"summary diagnostic {field} is inconsistent at {label}")
         report = manifest["limiter_stage_reports"][index]
         summary_counts = {
             "expected_rk4_stage_evaluations": report["expected_stage_evaluations"],
@@ -631,8 +688,11 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         trap_residual = delta - trapezoid_net
         rho = abs(residual) / denominator
         trap_rho = abs(trap_residual) / denominator
+        diagnostics = _energy_diagnostics(
+            integrals, residual, v["scale"], v["floor"], abs_work, trap_residual
+        )
         finite_metrics = [delta, *integrals.values(), abs_work, residual, rho,
-                          trap_residual, trap_rho]
+                          trap_residual, trap_rho, *diagnostics.values()]
         if not all(math.isfinite(float(value)) for value in finite_metrics):
             raise FloatingPointError(f"non-finite ENE closure metric or component integral at {label}")
         for index, (time_s, vector, sample) in enumerate(zip(times, states, samples)):
@@ -681,6 +741,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "energy_residual_trapezoid_J": trap_residual,
             "normalized_energy_residual": rho,
             "normalized_energy_residual_trapezoid": trap_rho,
+            **diagnostics,
             "current_reference_saturated_stages": observations["reference"],
             "voltage_saturated_stages": observations["voltage"],
             "any_limiter_active_stages": observations["any"],

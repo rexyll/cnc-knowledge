@@ -97,3 +97,13 @@
 
 
 - **仓库CI（ENE RK4阶段/功率接口回归测试定义）：** 提交 `da8aa1b107b02e98d6e457ac1228ff3912768bd6` 对应 [Run 45341856376](https://github.com/rexyll/cnc-knowledge/actions/runs/45341856376) success；Knowledge structure and data quality job中的单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下90项资源测试，也不运行ENE积分。
+
+
+## CH12-T003 ENE多尺度残差与分项功贡献诊断
+
+- 静态审查确认：ENE运行器已经逐项积分端口输入、铜耗、结构阻尼、轴摩擦、外部广义力及机电失配功，但此前汇总缺少分项绝对贡献率和残差多尺度比率。
+- 新增六项绝对贡献率，以分项绝对功积分之和与预声明能量地板的较大者为分母；新增残差相对 E_scale、净功绝对积分和分项绝对积分尺度的比率，以及Simpson/梯形净功积分差。
+- 归档校验根据summary分项积分、manifest能量尺度/地板和残差重算上述指标，拒绝字段语义不一致的归档。
+- 新增3项资源测试定义：分项贡献率和残差尺度、零分母地板保护、Simpson/梯形差的敏感性语义。ENE资源测试19项，求解器35项、PATH-01运行器39项，共93项资源测试。
+- 误差解释边界：当前四档细化同时改变RK4状态轨迹与功率求积网格，残差不能独立归因；Simpson/梯形差不是严格误差上界。固定参考轨迹功率求积细化尚未实现。
+- 本轮只做代码/文档/测试定义和静态审查；未执行 resouces/ 资源测试或ENE积分。Knowledge Quality CI不覆盖资源测试。CH12-T003保持 IN_PROGRESS，ENE验证矩阵保持 NOT_RUN。
