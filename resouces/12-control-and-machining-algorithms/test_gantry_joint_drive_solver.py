@@ -356,6 +356,86 @@ class TestGantryJointDriveSolver(unittest.TestCase):
             delta=max(1.0e-5, abs(expected_rate) * 1.0e-3),
         )
 
+    def _assert_independent_energy_rate(self, *, damping: np.ndarray,
+                                         viscous: float, coulomb: float,
+                                         external: np.ndarray) -> None:
+        base = make_model(payload_mass=5.0)
+        mechanics = MechanicalParameters(
+            M0=base.mechanical.M0.copy(),
+            D0=np.asarray(damping, dtype=float),
+            K0=base.mechanical.K0.copy(),
+            payload_mass_kg=5.0,
+            axis_equivalent_mass_kg=base.mechanical.axis_equivalent_mass_kg,
+            gravity_acceleration_m_s2=np.zeros(3),
+            axis_viscous_Ns_m=viscous,
+            axis_coulomb_N=coulomb,
+            friction_smoothing_speed_m_s=0.01,
+        )
+        electrical = CurrentLoopParameters(
+            resistance_ohm=1.5, inductance_h=0.02,
+            back_emf_V_per_m_s=4.0, force_constant_N_per_A=4.0,
+            current_limit_A=8.0, voltage_min_V=-48.0, voltage_max_V=48.0,
+            kp_V_per_A=3.0, ki_V_per_A_s=20.0, antiwindup_gain_per_s=0.0,
+        )
+        actuator = ActuatorKinematics(
+            q_coefficients=np.array([1.0, 0.0, 0.0, 0.0]),
+            s_coefficient=1.0,
+        )
+        model = GantryJointDriveModel(base.geometry, mechanics, electrical, actuator)
+        state = JointState(
+            q=np.array([1e-4, 2e-4, -1e-5, 1e-4]),
+            q_dot=np.array([0.02, -0.01, 0.003, 0.001]),
+            s=0.7, s_dot=0.01, current_A=0.25, current_integrator_V=0.0,
+        )
+        # Hold the current reference at the state current, so the PI terminal
+        # voltage is exactly zero and the independent port budget is explicit.
+        vector = model.pack(state)
+        derivative = model.derivative(
+            0.0, vector, state.current_A, external_generalized_force=external
+        )
+        epsilon = 1.0e-5
+        energy_plus = model.total_stored_energy(
+            model.unpack(vector + epsilon * derivative)
+        )
+        energy_minus = model.total_stored_energy(
+            model.unpack(vector - epsilon * derivative)
+        )
+        observed_rate = (energy_plus - energy_minus) / (2.0 * epsilon)
+
+        z_dot = np.concatenate((state.q_dot, [state.s_dot]))
+        structural_loss = float(state.q_dot @ mechanics.D0 @ state.q_dot)
+        axis_force = (
+            viscous * state.s_dot
+            + coulomb * np.tanh(state.s_dot / mechanics.friction_smoothing_speed_m_s)
+        )
+        axis_loss = axis_force * state.s_dot
+        terminal_voltage = 0.0
+        expected_rate = (
+            terminal_voltage * state.current_A
+            - electrical.resistance_ohm * state.current_A**2
+            - structural_loss - axis_loss
+            + float(np.asarray(external, dtype=float) @ z_dot)
+        )
+        self.assertAlmostEqual(observed_rate, expected_rate, delta=2.0e-5)
+
+    def test_ene01_independent_energy_rate_oracle_with_reciprocal_port(self) -> None:
+        self._assert_independent_energy_rate(
+            damping=np.zeros((4, 4)), viscous=0.0, coulomb=0.0,
+            external=np.zeros(5),
+        )
+
+    def test_ene02_independent_energy_rate_oracle_includes_dissipation(self) -> None:
+        self._assert_independent_energy_rate(
+            damping=np.diag([2.0, 0.5, 1.0, 0.25]),
+            viscous=3.0, coulomb=0.8, external=np.zeros(5),
+        )
+
+    def test_ene03_independent_energy_rate_oracle_includes_external_work(self) -> None:
+        self._assert_independent_energy_rate(
+            damping=np.zeros((4, 4)), viscous=0.0, coulomb=0.0,
+            external=np.array([0.4, -0.2, 0.1, 0.05, 0.3]),
+        )
+
     def test_rk4_stage_times_match_returned_grid_with_rounded_step_count(self) -> None:
         model = make_model(payload_mass=0.0)
         initial = JointState(
