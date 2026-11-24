@@ -489,7 +489,7 @@
 - 新增RK4-03反向自由轴工况：沿用s正方向约定，使用五次参考0.72m→0.705m、负前馈电流及连续PD命令；所有参数仍为合成夹具。
 - GitHub Actions [Run 45395098290](https://github.com/rexyll/cnc-knowledge/actions/runs/45395098290)最终success；CH12资源测试125/125、RK4-01/02/03运行、仓库单元测试与strict lint均通过。RK4-03四档状态有限、阶段计数匹配，无参考限幅/电压饱和。
 - 相邻归一化RMS差1.40113e-4/6.75072e-6/3.69035e-7，观测阶数4.3754/4.1932；最细档实际s(T)=0.714549218m，净负向位移约-5.451mm，参考终点0.705m，端点误差约+9.549mm。仅完成数值筛查，未判定轨迹精度合格。
-- RK4-01/02/03/04和ENE-01均为`COMPLETED_REPORT_ONLY`；ENE-02/03积分与PATH-01仍为`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。
+- RK4-01/02/03/04、ENE-01和ENE-02均为`COMPLETED_REPORT_ONLY`；ENE-03积分与PATH-01仍为`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。
 
 ## CH12-T003最新数值验证里程碑（2026-11-24）：RK4-04
 
@@ -506,3 +506,11 @@
 - h/8储能变化0.0289504725473J，端电压输入功0.126342283494J，铜耗0.097391814659J，净功0.0289504688354J，归一化残差3.71191e-9。能量阈值保持null，状态只为COMPLETED_REPORT_ONLY；分析者外部误差界仍是合成假设，不宣称已证明。
 - GitHub Actions [Run 45412967222](https://github.com/rexyll/cnc-knowledge/actions/runs/45412967222) success：CH12资源130/130、RK4-01～04和ENE-01数值运行、仓库测试、strict lint及结果归档均成功。结果归档提交`9e9371c83be66b35b476b29407972f220bb1976a`。
 - RK4-01～04及ENE-01为COMPLETED_REPORT_ONLY；ENE-02/03与PATH-01仍未运行。CH12-T003继续IN_PROGRESS，无真实参数辨识、台架、HIL或实机结论。
+
+## CH12-T003最新数值验证里程碑（2026-11-24）：ENE-02
+
+- 完成含结构阻尼、路径轴黏性与正则化库仑摩擦的合成耗散工况；所有参数均为SYNTHETIC_FIXTURE，外部广义力为零、Kf=Ke。
+- 四档积分与h/16参考均成功；所有状态有限、阶段数匹配、无电流参考限幅/电压饱和。h/8阻尼损失0.0036187507424J、路径摩擦损失0.0204499638212J，均为正。
+- Simpson残差h～h/8为2.31197e-5/1.12336e-6/6.30612e-8/3.73866e-9J；h/16参考2.27507e-10J；观测阶数4.36324/4.15492/4.07616/4.03854。阈值null，只能报告态，不判定工程PASS。
+- GitHub Actions [Run 45416172656](https://github.com/rexyll/cnc-knowledge/actions/runs/45416172656) success：资源测试132/132、RK4-01～04、ENE-01/02运行、仓库测试、strict lint和归档全部成功；归档提交`97e4f43785902ec32ec682f7003c36ef64347ff1`。
+- RK4-01～04和ENE-01/02均为COMPLETED_REPORT_ONLY；ENE-03、PATH-01仍未运行。CH12-T003继续IN_PROGRESS，无实机/HIL结论。
