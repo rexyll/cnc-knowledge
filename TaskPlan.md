@@ -462,7 +462,7 @@
 ## CH12-T003 最新里程碑（2026-11-24）
 
 - CH12资源测试已接入GitHub Actions独立Job；首轮失败经测试夹具/断言归因修正后，Run [45384191326](https://github.com/rexyll/cnc-knowledge/actions/runs/45384191326)通过ENE42项、PATH-01 39项、求解器35项，共116/116项资源测试。
-- 该里程碑只覆盖资源级单元测试与CI质量检查；RK4-01～04、ENE-01～03积分和PATH-01数值比较仍为`NOT_RUN`，CH12-T003仍为`IN_PROGRESS`。
+- 该里程碑另完成RK4-01合成模型四级步长筛查，状态`COMPLETED_REPORT_ONLY`；RK4-02～04、ENE-01～03积分和PATH-01数值比较仍为`NOT_RUN`，CH12-T003仍为`IN_PROGRESS`。
 - 详细修正、版本、运行环境和验收证据见[2026-11-24任务历史](TaskHistory/TaskHistory-2026-11-24.md)及[CH12章节任务计划](docs/TaskPlan/12-control-and-machining-algorithms/TaskPlan.md)。
 ## CH12-T003 最新验证里程碑补充（2026-11-24）：RK4-01
 
