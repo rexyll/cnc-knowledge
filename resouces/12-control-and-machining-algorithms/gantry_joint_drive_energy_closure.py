@@ -31,10 +31,18 @@ SOLVER_PATH = ROOT / "gantry_joint_drive_solver.py"
 TIMESERIES_NAME = "gantry-joint-drive-energy-closure-timeseries.csv"
 SUMMARY_NAME = "gantry-joint-drive-energy-closure-summary.csv"
 MANIFEST_NAME = "gantry-joint-drive-energy-closure-run-manifest.json"
+REFERENCE_TIMESERIES_NAME = "gantry-joint-drive-energy-closure-reference-h16-timeseries.csv"
+REFERENCE_LEVEL = "reference_h/16"
+MANIFEST_SCHEMA_VERSION = 2
 LEVELS = ("h", "h/2", "h/4", "h/8")
 # Bound aggregate output rows before allocating RK4 trajectories and row dictionaries.
 MAX_TOTAL_SAMPLES = 50_000
 MAX_TOTAL_STAGE_SAMPLES = 200_000
+STATE_VECTOR_FIELDS = [
+    "q1_m", "q2_rad", "q3_m", "q4_rad",
+    "qdot1_m_s", "qdot2_rad_s", "qdot3_m_s", "qdot4_rad_s",
+    "s_m", "s_dot_m_s", "current_A", "current_integrator_V",
+]
 TIME_FIELDS = [
     "case_id", "step_level", "step_s", "time_s",
     "q1_m", "q2_rad", "q3_m", "q4_rad",
@@ -189,8 +197,8 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
     duration = path_support._number(integration.get("duration_s"), "integration.duration_s", positive=True)
     base_step = path_support._number(integration.get("base_step_s"), "integration.base_step_s", positive=True)
     intervals = path_support._interval_count(duration, base_step)
-    total_samples = sum(intervals * (2 ** level) + 1 for level in range(len(LEVELS)))
-    total_stage_samples = sum(4 * intervals * (2 ** level) for level in range(len(LEVELS)))
+    total_samples = sum(intervals * (2 ** level) + 1 for level in range(len(LEVELS))) + 16 * intervals + 1
+    total_stage_samples = sum(4 * intervals * (2 ** level) for level in range(len(LEVELS))) + 64 * intervals
     if total_stage_samples > MAX_TOTAL_STAGE_SAMPLES:
         raise EnergyClosureError(
             f"refinement schedule requires {total_stage_samples} RK4 stage rows; "
@@ -437,26 +445,192 @@ def _power_sample(model: Any, vector: np.ndarray, command: float,
     return values
 
 
+
+
+def _timeseries_row(case_id: str, step_level: str, step: float, time_s: float,
+                    vector: np.ndarray, sample: dict[str, Any],
+                    command: float) -> dict[str, Any]:
+    """Build the canonical endpoint/reference power timeseries row."""
+    vector = np.asarray(vector, dtype=float)
+    if vector.shape != (12,) or not np.all(np.isfinite(vector)):
+        raise FloatingPointError("timeseries state must contain 12 finite values")
+    row = {"case_id": case_id, "step_level": step_level,
+           "step_s": float(step), "time_s": float(time_s)}
+    row.update({f"q{i+1}_m" if i in (0, 2) else f"q{i+1}_rad": float(vector[i])
+                for i in range(4)})
+    row.update({f"qdot{i+1}_m_s" if i in (0, 2) else f"qdot{i+1}_rad_s": float(vector[4+i])
+                for i in range(4)})
+    row.update({
+        "s_m": float(vector[8]), "s_dot_m_s": float(vector[9]),
+        "current_A": float(vector[10]), "current_integrator_V": float(vector[11]),
+        "kinetic_energy_J": sample["kinetic"], "potential_energy_J": sample["potential"],
+        "magnetic_energy_J": sample["magnetic"], "stored_energy_J": sample["stored"],
+        "requested_current_command_A": command,
+        "limited_current_reference_A": sample["limited_reference"],
+        "current_reference_saturated": bool(sample["current_reference_saturated"]),
+        "raw_voltage_V": sample["raw_voltage"], "terminal_voltage_V": sample["terminal_voltage"],
+        "voltage_saturated": bool(sample["voltage_saturated"]),
+        "terminal_input_power_W": sample["terminal_input"], "copper_loss_W": sample["copper"],
+        "structural_damping_loss_W": sample["structural"],
+        "axis_friction_loss_W": sample["friction"],
+        "external_generalized_power_W": sample["external"],
+        "electromechanical_mismatch_power_W": sample["mismatch"],
+        "net_power_W": sample["net"],
+    })
+    return row
+
+
+def _reference_trajectory_diagnostics(
+    reference_rows: list[dict[str, Any]],
+    primary_rows: list[dict[str, Any]],
+    summary_by_level: dict[str, dict[str, Any]],
+    scale: float,
+    floor: float,
+) -> dict[str, Any]:
+    """Compare the four coupled trajectories against one h/16 RK4 reference.
+
+    The h/16 path is a finer numerical reference from the same solver, not an
+    exact solution or an independent physical model. Coarse reference powers
+    are sampled on each matching output grid before comparing coupled work.
+    """
+    if len(reference_rows) < 33 or (len(reference_rows) - 1) % 16:
+        raise ValueError("h/16 reference trajectory requires at least 32 intervals divisible by sixteen")
+    ref_times = np.asarray([float(row["time_s"]) for row in reference_rows], dtype=float)
+    ref_states = np.asarray([
+        [float(row[field]) for field in STATE_VECTOR_FIELDS] for row in reference_rows
+    ], dtype=float)
+    ref_stored = np.asarray([float(row["stored_energy_J"]) for row in reference_rows], dtype=float)
+    ref_net = np.asarray([float(row["net_power_W"]) for row in reference_rows], dtype=float)
+    if not all(np.all(np.isfinite(array)) for array in (ref_times, ref_states, ref_stored, ref_net)):
+        raise FloatingPointError("h/16 reference trajectory contains non-finite data")
+    if np.any(np.diff(ref_times) <= 0):
+        raise ValueError("h/16 reference times must be strictly increasing")
+    intervals = ref_times.size - 1
+    if not np.allclose(np.diff(ref_times), (ref_times[-1] - ref_times[0]) / intervals,
+                       rtol=1e-9, atol=1e-12):
+        raise ValueError("h/16 reference time grid must be uniformly spaced")
+    delta_reference = float(ref_stored[-1] - ref_stored[0])
+    fine_work = float(path_support.composite_simpson_13(ref_times, ref_net))
+    fine_abs_work = float(path_support.composite_simpson_13(ref_times, np.abs(ref_net)))
+    fine_residual = delta_reference - fine_work
+    fine_rho = abs(fine_residual) / max(scale, fine_abs_work, floor)
+    finest = {
+        "intervals": intervals, "samples": int(ref_times.size),
+        "step_s": float((ref_times[-1] - ref_times[0]) / intervals),
+        "delta_stored_energy_J": delta_reference,
+        "net_power_work_J": fine_work,
+        "absolute_net_power_work_J": fine_abs_work,
+        "energy_residual_simpson_J": fine_residual,
+        "normalized_energy_residual": fine_rho,
+    }
+    if not all(math.isfinite(float(value)) for value in finest.values()):
+        raise FloatingPointError("non-finite h/16 reference energy-closure metric")
+    comparisons = []
+    for level_index, label in enumerate(LEVELS):
+        level_rows = [row for row in primary_rows if row["step_level"] == label]
+        expected_intervals = intervals // (2 ** (len(LEVELS) - level_index))
+        expected_samples = expected_intervals + 1
+        if len(level_rows) != expected_samples:
+            raise ValueError(f"primary trajectory row count does not align with h/16 reference at {label}")
+        stride = 2 ** (len(LEVELS) - level_index)
+        selected_times = ref_times[::stride]
+        selected_states = ref_states[::stride]
+        selected_net = ref_net[::stride]
+        if selected_times.size != expected_samples:
+            raise ValueError(f"h/16 reference nested grid has wrong sample count at {label}")
+        primary_times = np.asarray([float(row["time_s"]) for row in level_rows], dtype=float)
+        primary_states = np.asarray([
+            [float(row[field]) for field in STATE_VECTOR_FIELDS] for row in level_rows
+        ], dtype=float)
+        primary_net = np.asarray([float(row["net_power_W"]) for row in level_rows], dtype=float)
+        if not all(np.all(np.isfinite(array)) for array in (primary_times, primary_states, primary_net)):
+            raise FloatingPointError(f"primary trajectory comparison contains non-finite data at {label}")
+        if not np.allclose(primary_times, selected_times, rtol=1e-9, atol=1e-12):
+            raise ValueError(f"primary and h/16 reference time grids do not align at {label}")
+        state_difference = primary_states - selected_states
+        net_difference = primary_net - selected_net
+        reference_work = float(path_support.composite_simpson_13(selected_times, selected_net))
+        reference_abs_work = float(path_support.composite_simpson_13(selected_times, np.abs(selected_net)))
+        reference_residual = delta_reference - reference_work
+        reference_rho = abs(reference_residual) / max(scale, reference_abs_work, floor)
+        primary_summary = summary_by_level[label]
+        primary_work = float(primary_summary["net_power_work_J"])
+        primary_delta = float(primary_summary["delta_stored_energy_J"])
+        primary_residual = float(primary_summary["energy_residual_simpson_J"])
+        comparisons.append({
+            "step_level": label,
+            "reference_net_power_work_J": reference_work,
+            "reference_absolute_net_power_work_J": reference_abs_work,
+            "reference_quadrature_delta_from_h16_J": reference_work - fine_work,
+            "reference_energy_residual_at_level_J": reference_residual,
+            "reference_normalized_energy_residual_at_level": reference_rho,
+            "coupled_vs_reference_net_work_delta_J": primary_work - reference_work,
+            "coupled_stored_energy_delta_vs_reference_J": primary_delta - delta_reference,
+            "coupled_energy_residual_delta_vs_reference_J": primary_residual - reference_residual,
+            "state_max_abs_difference": np.max(np.abs(state_difference), axis=0).tolist(),
+            "state_rms_difference": np.sqrt(np.mean(state_difference**2, axis=0)).tolist(),
+            "net_power_max_abs_difference_W": float(np.max(np.abs(net_difference))),
+            "net_power_rms_difference_W": float(np.sqrt(np.mean(net_difference**2))),
+        })
+    if not all(math.isfinite(value) for item in comparisons
+               for value in (item["reference_net_power_work_J"],
+                             item["reference_absolute_net_power_work_J"],
+                             item["reference_quadrature_delta_from_h16_J"],
+                             item["reference_energy_residual_at_level_J"],
+                             item["reference_normalized_energy_residual_at_level"],
+                             item["coupled_vs_reference_net_work_delta_J"],
+                             item["coupled_stored_energy_delta_vs_reference_J"],
+                             item["coupled_energy_residual_delta_vs_reference_J"],
+                             item["net_power_max_abs_difference_W"],
+                             item["net_power_rms_difference_W"],
+                             *item["state_max_abs_difference"], *item["state_rms_difference"])):
+        raise FloatingPointError("non-finite h/16 reference comparison metric")
+    return {"level": REFERENCE_LEVEL, "finest": finest, "comparisons": comparisons}
+
+
+def _assert_json_metrics_close(actual: Any, expected: Any, path: str = "reference") -> None:
+    """Compare nested manifest diagnostics with independently recomputed values."""
+    if isinstance(expected, dict):
+        if not isinstance(actual, dict) or set(actual) != set(expected):
+            raise EnergyClosureError(f"{path} structure is inconsistent")
+        for key in expected:
+            _assert_json_metrics_close(actual[key], expected[key], f"{path}.{key}")
+    elif isinstance(expected, list):
+        if not isinstance(actual, list) or len(actual) != len(expected):
+            raise EnergyClosureError(f"{path} array length is inconsistent")
+        for index, (actual_item, expected_item) in enumerate(zip(actual, expected)):
+            _assert_json_metrics_close(actual_item, expected_item, f"{path}[{index}]")
+    elif isinstance(expected, bool) or isinstance(expected, str):
+        if actual != expected:
+            raise EnergyClosureError(f"{path} value is inconsistent")
+    else:
+        if isinstance(actual, bool) or not isinstance(actual, (int, float)) or not math.isfinite(float(actual)):
+            raise EnergyClosureError(f"{path} numeric value is invalid")
+        if not math.isclose(float(actual), float(expected), rel_tol=1e-9, abs_tol=1e-12):
+            raise EnergyClosureError(f"{path} numeric value is inconsistent")
+
+
 def _atomic_bundle(output: Path, times: list[dict[str, Any]],
-                   stage_rows: list[dict[str, Any]], summaries: list[dict[str, Any]],
-                   manifest: dict[str, Any]) -> dict[str, Any]:
+                   stage_rows: list[dict[str, Any]], reference_rows: list[dict[str, Any]],
+                   summaries: list[dict[str, Any]], manifest: dict[str, Any]) -> dict[str, Any]:
     output.mkdir(parents=True, exist_ok=True)
-    time_path, stage_path, summary_path, manifest_path = (
+    time_path, stage_path, reference_path, summary_path, manifest_path = (
         output / TIMESERIES_NAME, output / STAGE_TIMESERIES_NAME,
-        output / SUMMARY_NAME, output / MANIFEST_NAME
+        output / REFERENCE_TIMESERIES_NAME, output / SUMMARY_NAME, output / MANIFEST_NAME
     )
-    targets = (time_path, stage_path, summary_path, manifest_path)
+    targets = (time_path, stage_path, reference_path, summary_path, manifest_path)
     if any(p.exists() for p in targets):
         raise FileExistsError("ENE output bundle already exists; choose a new directory")
     with tempfile.TemporaryDirectory(prefix=".ene-staging-", dir=output) as tmp:
         stage = Path(tmp)
-        staged_time, staged_stage, staged_summary, staged_manifest = (
+        staged_time, staged_stage, staged_reference, staged_summary, staged_manifest = (
             stage / TIMESERIES_NAME, stage / STAGE_TIMESERIES_NAME,
-            stage / SUMMARY_NAME, stage / MANIFEST_NAME
+            stage / REFERENCE_TIMESERIES_NAME, stage / SUMMARY_NAME, stage / MANIFEST_NAME
         )
         for path, fields, rows in (
             (staged_time, TIME_FIELDS, times),
             (staged_stage, STAGE_FIELDS, stage_rows),
+            (staged_reference, TIME_FIELDS, reference_rows),
             (staged_summary, SUMMARY_FIELDS, summaries),
         ):
             with path.open("w", encoding="utf-8", newline="") as stream:
@@ -467,6 +641,7 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
         for key, path, rows, fields in (
             ("timeseries_csv", staged_time, times, TIME_FIELDS),
             ("stage_power_csv", staged_stage, stage_rows, STAGE_FIELDS),
+            ("reference_timeseries_csv", staged_reference, reference_rows, TIME_FIELDS),
             ("summary_csv", staged_summary, summaries, SUMMARY_FIELDS),
         ):
             artifacts[key] = {
@@ -480,14 +655,15 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
             stream.write("\n")
         os.replace(staged_time, time_path)
         os.replace(staged_stage, stage_path)
+        os.replace(staged_reference, reference_path)
         os.replace(staged_summary, summary_path)
         os.replace(staged_manifest, manifest_path)
     return artifacts
 
 
 def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
-    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
-        raise EnergyClosureError("invalid ENE manifest schema")
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != MANIFEST_SCHEMA_VERSION:
+        raise EnergyClosureError("invalid ENE manifest schema; expected version 2 with h/16 reference trajectory")
     if manifest.get("case_id") not in ("ENE-01", "ENE-02", "ENE-03"):
         raise EnergyClosureError("invalid ENE manifest case_id")
     status = manifest.get("status")
@@ -528,15 +704,15 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         ratio = duration / base_step
     except OverflowError as error:
         raise EnergyClosureError("manifest duration/base_step ratio overflowed") from error
-    if not math.isfinite(ratio) or ratio > sys.maxsize // 8:
-        raise EnergyClosureError("manifest duration/base_step ratio exceeds the supported index range")
+    if not math.isfinite(ratio) or ratio > sys.maxsize // 16:
+        raise EnergyClosureError("manifest duration/base_step ratio exceeds the supported index range for h/16 refinement")
     base_intervals = int(round(ratio))
     if base_intervals < 2 or base_intervals % 2 or not math.isclose(
         base_intervals * base_step, duration, rel_tol=1e-9, abs_tol=1e-12
     ):
         raise EnergyClosureError("manifest duration/base_step does not define an even integer interval count")
-    total_samples = sum(base_intervals * (2 ** level) + 1 for level in range(len(LEVELS)))
-    total_stage_samples = sum(4 * base_intervals * (2 ** level) for level in range(len(LEVELS)))
+    total_samples = sum(base_intervals * (2 ** level) + 1 for level in range(len(LEVELS))) + 16 * base_intervals + 1
+    total_stage_samples = sum(4 * base_intervals * (2 ** level) for level in range(len(LEVELS))) + 64 * base_intervals
     if total_stage_samples > MAX_TOTAL_STAGE_SAMPLES:
         raise EnergyClosureError(
             f"manifest refinement schedule requires {total_stage_samples} RK4 stage rows; "
@@ -592,11 +768,41 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
     all_smooth = all(smooth_flags)
     if manifest.get("all_refinements_smooth_unsaturated") is not all_smooth:
         raise EnergyClosureError("manifest aggregate smooth-unsaturated flag is inconsistent")
+    reference_report = manifest.get("reference_trajectory_report")
+    if not isinstance(reference_report, dict) or reference_report.get("level") != REFERENCE_LEVEL:
+        raise EnergyClosureError("manifest h/16 reference trajectory report is missing or invalid")
+    reference_intervals = 16 * base_intervals
+    reference_expected_stages = 4 * reference_intervals
+    for key, expected_value in (("intervals", reference_intervals),
+                                ("samples", reference_intervals + 1),
+                                ("expected_stage_evaluations", reference_expected_stages)):
+        if type(reference_report.get(key)) is not int or reference_report[key] != expected_value:
+            raise EnergyClosureError(f"manifest h/16 reference {key} is inconsistent")
+    if not math.isclose(float(reference_report.get("step_s", math.nan)),
+                        duration / reference_intervals, rel_tol=1e-9, abs_tol=1e-12):
+        raise EnergyClosureError("manifest h/16 reference step size is inconsistent")
+    for key in ("stage_evaluations", "current_reference_saturated_stages",
+                "voltage_saturated_stages", "any_limiter_active_stages"):
+        if type(reference_report.get(key)) is not int or reference_report[key] < 0:
+            raise EnergyClosureError(f"manifest h/16 reference {key} is invalid")
+    if reference_report["stage_evaluations"] != reference_expected_stages:
+        raise EnergyClosureError("manifest h/16 reference stage evaluation count is inconsistent")
+    ref_counts = [reference_report[k] for k in (
+        "current_reference_saturated_stages", "voltage_saturated_stages", "any_limiter_active_stages")]
+    if any(x > reference_expected_stages for x in ref_counts) or ref_counts[2] < max(ref_counts[:2]) or ref_counts[2] > sum(ref_counts[:2]):
+        raise EnergyClosureError("manifest h/16 reference limiter counts are inconsistent")
+    if reference_report.get("stage_count_matches_expected") is not True:
+        raise EnergyClosureError("manifest h/16 reference stage count does not match expected")
+    if reference_report.get("smooth_unsaturated") is not (ref_counts[2] == 0):
+        raise EnergyClosureError("manifest h/16 reference smooth-unsaturated flag is inconsistent")
+    if not isinstance(reference_report.get("stage_power_diagnostics"), dict):
+        raise EnergyClosureError("manifest h/16 stage power diagnostics are missing")
     return {
         "status": status, "threshold": None if threshold is None else float(threshold),
         "duration": duration, "base_intervals": base_intervals,
         "all_smooth": all_smooth,
         "all_stage_counts_match": all(stage_match_flags),
+        "reference_report": reference_report,
     }
 
 
@@ -651,14 +857,16 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
         raise EnergyClosureError("ENE manifest root must be a JSON object")
     contract = _validate_manifest_contract(manifest)
     artifacts = manifest.get("output_artifacts")
-    if not isinstance(artifacts, dict) or set(artifacts) != {"timeseries_csv", "stage_power_csv", "summary_csv"}:
-        raise EnergyClosureError("manifest output_artifacts must contain exactly three CSV artifacts")
+    if not isinstance(artifacts, dict) or set(artifacts) != {"timeseries_csv", "stage_power_csv", "reference_timeseries_csv", "summary_csv"}:
+        raise EnergyClosureError("manifest output_artifacts must contain exactly four CSV artifacts")
     verified: dict[str, dict[str, Any]] = {}
     parsed: dict[str, list[dict[str, str]]] = {}
     for key, name, fields, bool_fields, blank_fields in (
         ("timeseries_csv", TIMESERIES_NAME, TIME_FIELDS,
          ("current_reference_saturated", "voltage_saturated"), ()),
         ("stage_power_csv", STAGE_TIMESERIES_NAME, STAGE_FIELDS,
+         ("current_reference_saturated", "voltage_saturated"), ()),
+        ("reference_timeseries_csv", REFERENCE_TIMESERIES_NAME, TIME_FIELDS,
          ("current_reference_saturated", "voltage_saturated"), ()),
         ("summary_csv", SUMMARY_NAME, SUMMARY_FIELDS, (), ("empirical_residual_order_from_previous",)),
     ):
@@ -741,22 +949,48 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
             actual_value = float(row[field])
             if not math.isclose(actual_value, expected_value, rel_tol=1e-9, abs_tol=1e-12):
                 raise EnergyClosureError(f"summary diagnostic {field} is inconsistent at {label}")
-        report = manifest["limiter_stage_reports"][index]
-        summary_counts = {
-            "expected_rk4_stage_evaluations": report["expected_stage_evaluations"],
-            "observed_rk4_stage_evaluations": report["stage_evaluations"],
-            "current_reference_saturated_stages": report["current_reference_saturated_stages"],
-            "voltage_saturated_stages": report["voltage_saturated_stages"],
-            "any_limiter_active_stages": report["any_limiter_active_stages"],
-        }
-        for field, expected_value in summary_counts.items():
-            if not float(row[field]).is_integer() or int(float(row[field])) != expected_value:
-                raise EnergyClosureError(f"summary {field} disagrees with manifest at {label}")
-        if row["stage_count_matches_expected"] != str(report["stage_count_matches_expected"]):
-            raise EnergyClosureError(f"summary stage-count flag disagrees with manifest at {label}")
-        if row["smooth_unsaturated"] != str(report["smooth_unsaturated"]):
-            raise EnergyClosureError(f"summary smooth-unsaturated flag disagrees with manifest at {label}")
-        summary_by_level[label] = row
+        report = (contract["reference_report"] if label == REFERENCE_LEVEL
+                  else manifest["limiter_stage_reports"][index])
+        reference_count = sum(row["current_reference_saturated"] == "True" for row in block)
+        voltage_count = sum(row["voltage_saturated"] == "True" for row in block)
+        any_count = sum(
+            row["current_reference_saturated"] == "True" or row["voltage_saturated"] == "True"
+            for row in block
+        )
+        if (
+            reference_count != report["current_reference_saturated_stages"]
+            or voltage_count != report["voltage_saturated_stages"]
+            or any_count != report["any_limiter_active_stages"]
+        ):
+            raise EnergyClosureError(f"RK4 stage limiter trace disagrees with manifest at {label}")
+        if label == REFERENCE_LEVEL:
+            reference_stored = float(reference_rows[-1]["stored_energy_J"]) - float(reference_rows[0]["stored_energy_J"])
+            reference_net_work = float(path_support.composite_simpson_13(
+                np.asarray([float(item["time_s"]) for item in reference_rows], dtype=float),
+                np.asarray([float(item["net_power_W"]) for item in reference_rows], dtype=float),
+            ))
+            expected_stage_metrics = _rk4_stage_power_diagnostics(block, reference_stored, reference_net_work)
+            _assert_json_metrics_close(
+                report["stage_power_diagnostics"], expected_stage_metrics,
+                "reference_trajectory_report.stage_power_diagnostics",
+            )
+        else:
+            summary = summary_by_level[label]
+            summary_counts = {
+                "expected_rk4_stage_evaluations": report["expected_stage_evaluations"],
+                "observed_rk4_stage_evaluations": report["stage_evaluations"],
+                "current_reference_saturated_stages": report["current_reference_saturated_stages"],
+                "voltage_saturated_stages": report["voltage_saturated_stages"],
+                "any_limiter_active_stages": report["any_limiter_active_stages"],
+            }
+            for field, expected_value in summary_counts.items():
+                if not float(summary[field]).is_integer() or int(float(summary[field])) != expected_value:
+                    raise EnergyClosureError(f"summary {field} disagrees with manifest at {label}")
+            if summary["stage_count_matches_expected"] != str(report["stage_count_matches_expected"]):
+                raise EnergyClosureError(f"summary stage-count flag disagrees with manifest at {label}")
+            if summary["smooth_unsaturated"] != str(report["smooth_unsaturated"]):
+                raise EnergyClosureError(f"summary smooth-unsaturated flag disagrees with manifest at {label}")
+        stage_cursor += count
     timeseries_rows = parsed["timeseries_csv"]
     cursor = 0
     for index, label in enumerate(LEVELS):
@@ -801,11 +1035,54 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
                 raise EnergyClosureError(
                     f"fixed-trajectory diagnostic {field} is inconsistent at {label}"
                 )
+    reference_rows = parsed["reference_timeseries_csv"]
+    reference_report = contract["reference_report"]
+    reference_intervals = 16 * contract["base_intervals"]
+    reference_step = contract["duration"] / reference_intervals
+    if len(reference_rows) != reference_intervals + 1:
+        raise EnergyClosureError("h/16 reference timeseries row count mismatch")
+    for sample_index, row in enumerate(reference_rows):
+        expected_time = sample_index * reference_step
+        if row["case_id"] != manifest["case_id"] or row["step_level"] != REFERENCE_LEVEL:
+            raise EnergyClosureError("h/16 reference timeseries identity/order mismatch")
+        if not math.isclose(float(row["step_s"]), reference_step, rel_tol=1e-9, abs_tol=1e-12):
+            raise EnergyClosureError("h/16 reference timeseries step mismatch")
+        if not math.isclose(float(row["time_s"]), expected_time, rel_tol=1e-9, abs_tol=1e-12):
+            raise EnergyClosureError("h/16 reference timeseries time grid mismatch")
+        current = float(row["current_A"])
+        voltage = float(row["terminal_voltage_V"])
+        if not math.isclose(float(row["terminal_input_power_W"]), voltage * current,
+                            rel_tol=1e-9, abs_tol=1e-12):
+            raise EnergyClosureError("h/16 reference terminal input power is inconsistent")
+        expected_net = (
+            float(row["terminal_input_power_W"]) - float(row["copper_loss_W"])
+            - float(row["structural_damping_loss_W"]) - float(row["axis_friction_loss_W"])
+            + float(row["external_generalized_power_W"])
+            + float(row["electromechanical_mismatch_power_W"])
+        )
+        if not math.isclose(float(row["net_power_W"]), expected_net, rel_tol=1e-9, abs_tol=1e-12):
+            raise EnergyClosureError("h/16 reference net power ledger is inconsistent")
+        if (row["current_reference_saturated"] == "True") != (
+            float(row["limited_current_reference_A"]) != float(row["requested_current_command_A"])
+        ):
+            raise EnergyClosureError("h/16 reference current limiter flag is inconsistent")
+    expected_reference_diagnostics = _reference_trajectory_diagnostics(
+        reference_rows, timeseries_rows, summary_by_level,
+        float(manifest["energy_normalization_scale_J"]),
+        float(manifest["energy_normalization_floor_J"]),
+    )
+    _assert_json_metrics_close(
+        manifest.get("reference_trajectory_diagnostics"),
+        expected_reference_diagnostics, "reference_trajectory_diagnostics",
+    )
+
     stage_rows = parsed["stage_power_csv"]
     stage_cursor = 0
     stage_abscissae = (0.0, 0.5, 0.5, 1.0)
-    for index, label in enumerate(LEVELS):
-        intervals = contract["base_intervals"] * (2 ** index)
+    stage_levels = list(LEVELS) + [REFERENCE_LEVEL]
+    for index, label in enumerate(stage_levels):
+        intervals = (16 * contract["base_intervals"] if label == REFERENCE_LEVEL
+                     else contract["base_intervals"] * (2 ** index))
         step = contract["duration"] / intervals
         count = intervals * 4
         block = stage_rows[stage_cursor:stage_cursor + count]
@@ -844,7 +1121,8 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
             limited = float(row["limited_current_reference_A"])
             if (row["current_reference_saturated"] == "True") != (limited != requested):
                 raise EnergyClosureError(f"RK4 stage current-reference limiter flag is inconsistent at {label}")
-        report = manifest["limiter_stage_reports"][index]
+        report = (contract["reference_report"] if label == REFERENCE_LEVEL
+                  else manifest["limiter_stage_reports"][index])
         reference_count = sum(row["current_reference_saturated"] == "True" for row in block)
         voltage_count = sum(row["voltage_saturated"] == "True" for row in block)
         any_count = sum(
@@ -857,14 +1135,28 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
             or any_count != report["any_limiter_active_stages"]
         ):
             raise EnergyClosureError(f"RK4 stage limiter trace disagrees with manifest at {label}")
-        summary = summary_by_level[label]
-        stage_metrics = _rk4_stage_power_diagnostics(
-            block, float(summary["delta_stored_energy_J"]),
-            float(summary["net_power_work_J"]),
-        )
-        for field, expected_value in stage_metrics.items():
-            if not math.isclose(float(summary[field]), expected_value, rel_tol=1e-9, abs_tol=1e-12):
-                raise EnergyClosureError(f"RK4 stage diagnostic {field} is inconsistent at {label}")
+        if label == REFERENCE_LEVEL:
+            reference_stored = float(reference_rows[-1]["stored_energy_J"]) - float(reference_rows[0]["stored_energy_J"])
+            reference_net_work = float(path_support.composite_simpson_13(
+                np.asarray([float(row["time_s"]) for row in reference_rows], dtype=float),
+                np.asarray([float(row["net_power_W"]) for row in reference_rows], dtype=float),
+            ))
+            expected_stage_metrics = _rk4_stage_power_diagnostics(
+                block, reference_stored, reference_net_work
+            )
+            _assert_json_metrics_close(
+                reference_report.get("stage_power_diagnostics"), expected_stage_metrics,
+                "reference_trajectory_report.stage_power_diagnostics",
+            )
+        else:
+            summary = summary_by_level[label]
+            stage_metrics = _rk4_stage_power_diagnostics(
+                block, float(summary["delta_stored_energy_J"]),
+                float(summary["net_power_work_J"]),
+            )
+            for field, expected_value in stage_metrics.items():
+                if not math.isclose(float(summary[field]), expected_value, rel_tol=1e-9, abs_tol=1e-12):
+                    raise EnergyClosureError(f"RK4 stage diagnostic {field} is inconsistent at {label}")
         stage_cursor += count
     if stage_cursor != len(stage_rows):
         raise EnergyClosureError("RK4 stage trace contains unexpected extra rows")
@@ -984,32 +1276,9 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         if not all(math.isfinite(float(value)) for value in finite_metrics):
             raise FloatingPointError(f"non-finite ENE closure metric or component integral at {label}")
         for index, (time_s, vector, sample) in enumerate(zip(times, states, samples)):
-            row = {
-                "case_id": v["case_id"], "step_level": label, "step_s": step,
-                "time_s": float(time_s),
-            }
-            row.update({f"q{i+1}_m" if i in (0, 2) else f"q{i+1}_rad": float(vector[i])
-                        for i in range(4)})
-            row.update({f"qdot{i+1}_m_s" if i in (0, 2) else f"qdot{i+1}_rad_s": float(vector[4+i])
-                        for i in range(4)})
-            row.update({
-                "s_m": float(vector[8]), "s_dot_m_s": float(vector[9]),
-                "current_A": float(vector[10]), "current_integrator_V": float(vector[11]),
-                "kinetic_energy_J": sample["kinetic"], "potential_energy_J": sample["potential"],
-                "magnetic_energy_J": sample["magnetic"], "stored_energy_J": sample["stored"],
-                "requested_current_command_A": command,
-                "limited_current_reference_A": sample["limited_reference"],
-                "current_reference_saturated": bool(sample["current_reference_saturated"]),
-                "raw_voltage_V": sample["raw_voltage"], "terminal_voltage_V": sample["terminal_voltage"],
-                "voltage_saturated": bool(sample["voltage_saturated"]),
-                "terminal_input_power_W": sample["terminal_input"], "copper_loss_W": sample["copper"],
-                "structural_damping_loss_W": sample["structural"],
-                "axis_friction_loss_W": sample["friction"],
-                "external_generalized_power_W": sample["external"],
-                "electromechanical_mismatch_power_W": sample["mismatch"],
-                "net_power_W": sample["net"],
-            })
-            all_rows.append(row)
+            all_rows.append(_timeseries_row(
+                v["case_id"], label, step, float(time_s), vector, sample, command
+            ))
         # The protocol requires a predeclared residual noise floor and stable,
         # non-crossing residuals before estimating empirical order. The config
         # schema has no such floor yet, so suppress the estimate.
@@ -1045,6 +1314,87 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "energy_closure_threshold": v["threshold"],
             "status": "PENDING",
         })
+    reference_intervals = v["intervals"] * 16
+    reference_step = v["duration"] / reference_intervals
+    reference_observations = {"count": 0, "reference": 0, "voltage": 0, "any": 0}
+    reference_stage_start = len(all_stage_rows)
+
+    def reference_tracked(_time: float, state: Any) -> float:
+        stage_number = reference_observations["count"]
+        stage_power = _power_sample(model, model.pack(state), command, external, v["case_id"])
+        stage_index = stage_number % 4
+        interval_index = stage_number // 4
+        all_stage_rows.append({
+            "case_id": v["case_id"], "step_level": REFERENCE_LEVEL,
+            "interval_index": interval_index, "stage_index": stage_index,
+            "stage_time_s": float(_time), "step_s": reference_step,
+            "requested_current_command_A": stage_power["requested_command"],
+            "limited_current_reference_A": stage_power["limited_reference"],
+            "current_A": float(state.current_A),
+            "raw_voltage_V": stage_power["raw_voltage"],
+            "terminal_voltage_V": stage_power["terminal_voltage"],
+            "terminal_input_power_W": stage_power["terminal_input"],
+            "copper_loss_W": stage_power["copper"],
+            "structural_damping_loss_W": stage_power["structural"],
+            "axis_friction_loss_W": stage_power["friction"],
+            "external_generalized_power_W": stage_power["external"],
+            "electromechanical_mismatch_power_W": stage_power["mismatch"],
+            "net_power_W": stage_power["net"],
+            "current_reference_saturated": bool(stage_power["current_reference_saturated"]),
+            "voltage_saturated": bool(stage_power["voltage_saturated"]),
+        })
+        ref_active = bool(stage_power["current_reference_saturated"])
+        voltage_active = bool(stage_power["voltage_saturated"])
+        reference_observations["count"] += 1
+        reference_observations["reference"] += int(ref_active)
+        reference_observations["voltage"] += int(voltage_active)
+        reference_observations["any"] += int(ref_active or voltage_active)
+        return command
+
+    def reference_load(_time: float, _state: Any) -> np.ndarray:
+        return external.copy()
+
+    reference_times, reference_states = model.simulate(
+        initial, v["duration"], reference_step, reference_tracked, reference_load
+    )
+    reference_samples = [
+        _power_sample(model, reference_states[index], command, external, v["case_id"])
+        for index in range(len(reference_times))
+    ]
+    reference_rows = [
+        _timeseries_row(v["case_id"], REFERENCE_LEVEL, reference_step, time_s,
+                        reference_states[index], reference_samples[index], command)
+        for index, time_s in enumerate(reference_times)
+    ]
+    reference_expected_stages = 4 * reference_intervals
+    reference_stage_count = reference_observations["count"]
+    reference_stage_match = reference_stage_count == reference_expected_stages
+    reference_smooth = reference_stage_match and reference_observations["any"] == 0
+    reference_net = np.asarray([sample["net"] for sample in reference_samples], dtype=float)
+    reference_delta = float(reference_samples[-1]["stored"] - reference_samples[0]["stored"])
+    reference_work = float(path_support.composite_simpson_13(reference_times, reference_net))
+    reference_stage_power_diagnostics = _rk4_stage_power_diagnostics(
+        all_stage_rows[reference_stage_start:], reference_delta, reference_work
+    )
+    if not reference_stage_match:
+        raise EnergyClosureError("h/16 reference RK4 stage callback count does not match expected")
+    reference_trajectory_report = {
+        "level": REFERENCE_LEVEL, "intervals": int(reference_intervals),
+        "samples": len(reference_times), "step_s": reference_step,
+        "stage_evaluations": reference_stage_count,
+        "expected_stage_evaluations": reference_expected_stages,
+        "current_reference_saturated_stages": reference_observations["reference"],
+        "voltage_saturated_stages": reference_observations["voltage"],
+        "any_limiter_active_stages": reference_observations["any"],
+        "stage_count_matches_expected": reference_stage_match,
+        "smooth_unsaturated": reference_smooth,
+        "stage_power_diagnostics": reference_stage_power_diagnostics,
+    }
+    summary_by_level = {row["step_level"]: row for row in summaries}
+    reference_trajectory_diagnostics = _reference_trajectory_diagnostics(
+        reference_rows, all_rows, summary_by_level, v["scale"], v["floor"]
+    )
+
     fine_times, fine_arrays = power_samples_by_level[-1]
     fixed_trajectory_diagnostics = _fixed_trajectory_quadrature_diagnostics(
         fine_times, fine_arrays["net"],
@@ -1067,7 +1417,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         row["status"] = status
     completed = datetime.now(timezone.utc).isoformat()
     manifest = {
-        "schema_version": 1, "case_id": v["case_id"], "status": status,
+        "schema_version": MANIFEST_SCHEMA_VERSION, "case_id": v["case_id"], "status": status,
         "numerical_results_present": True, "resource_tests_executed": False,
         "started_at_utc": started, "completed_at_utc": completed,
         "parameter_source": v["source"], "source_documents_or_measurement_ids": v["source_ids"],
@@ -1081,6 +1431,8 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "normalized_energy_closure_threshold": v["threshold"],
         "all_refinements_smooth_unsaturated": all_smooth,
         "limiter_stage_reports": saturation_by_level,
+        "reference_trajectory_report": reference_trajectory_report,
+        "reference_trajectory_diagnostics": reference_trajectory_diagnostics,
         "notes": [
             "Power accounting is implemented independently of PATH-01 energy ledger/metrics.",
             "The same solver state vector field and stored-energy function are reused; this is not an independent physical model.",
@@ -1089,15 +1441,19 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "RK4-stage power uses the classical 1:2:2:1 stage weights and is a solver-coupled sampling diagnostic, not an independent quadrature oracle or error bound.",
             "A VERIFIED archive proves file integrity/schema only, not simulation correctness or physical validity.",
             "Residual empirical order is intentionally omitted until a predeclared noise floor and stability gate are configured.",
-            "Bundle files are staged first and then published by per-file atomic replacement; the four-file bundle is not a single filesystem transaction.",
+            "The h/16 reference path uses the same RK4 solver and constant command/load; it is a finer numerical reference, not an exact or independent physical solution.",
+            "The h/16 reference comparison uses nested common time nodes to compare state, net power, stored-energy change and same-grid power work; it is diagnostic and excluded from the four-level primary PASS threshold.",
+            "The h/16 reference is excluded from the primary four-level PASS threshold and remains a diagnostic comparison only.",
+            "Bundle files are staged first and then published by per-file atomic replacement; the five-file bundle is not a single filesystem transaction.",
             "No hardware, SIL, HIL or machine measurement validation is implied.",
         ],
     }
-    artifacts = _atomic_bundle(output_dir.resolve(), all_rows, all_stage_rows, summaries, manifest)
+    artifacts = _atomic_bundle(output_dir.resolve(), all_rows, all_stage_rows, reference_rows, summaries, manifest)
     return {"case_id": v["case_id"], "status": status,
             "stage_power_csv": str(output_dir.resolve() / STAGE_TIMESERIES_NAME),
             "summary_csv": str(output_dir.resolve() / SUMMARY_NAME),
             "timeseries_csv": str(output_dir.resolve() / TIMESERIES_NAME),
+            "reference_timeseries_csv": str(output_dir.resolve() / REFERENCE_TIMESERIES_NAME),
             "manifest_json": str(output_dir.resolve() / MANIFEST_NAME),
             "output_artifacts": artifacts}
 

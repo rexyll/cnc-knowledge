@@ -174,6 +174,6 @@
     "energy_normalization_scale_J": null,
     "energy_normalization_floor_J": null,
     "normalized_energy_closure_threshold": null,
-    "note": "Scale and floor must be finite, positive, predeclared and unchanged across all four levels. Null threshold yields COMPLETED_REPORT_ONLY."
+    "note": "Scale and floor must be finite, positive, predeclared and unchanged across all four primary levels. The runner also computes a same-model h/16 reference trajectory; it is diagnostic only and does not change the primary PASS threshold. Null threshold yields COMPLETED_REPORT_ONLY."
   }
 }

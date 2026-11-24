@@ -8,6 +8,8 @@ import unittest
 
 import numpy as np
 
+import gantry_joint_drive_path_comparison as path_support
+
 from gantry_joint_drive_solver import (
     ActuatorKinematics, CurrentLoopParameters, GantryJointDriveModel,
     JointState, MechanicalParameters, SinusoidalBeamGeometry,
@@ -16,6 +18,7 @@ from gantry_joint_drive_energy_closure import (
     EnergyClosureError, _power_sample, _validate_case_contract,
     _validate_manifest_contract, _read_verified_csv,
     _fixed_trajectory_quadrature_diagnostics, _rk4_stage_power_diagnostics,
+    _reference_trajectory_diagnostics, STATE_VECTOR_FIELDS,
 )
 
 
@@ -256,9 +259,85 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         with self.assertRaisesRegex(FloatingPointError, "non-finite power"):
             _rk4_stage_power_diagnostics(rows, 0.0, 0.0)
 
+
+    def _make_reference_fixture(self, intervals: int = 32):
+        times = np.linspace(0.0, 1.0, intervals + 1)
+        reference_rows = []
+        for time_s in times:
+            row = {
+                "case_id": "ENE-01", "step_level": "reference_h/16",
+                "time_s": float(time_s), "stored_energy_J": 5.0 + float(time_s),
+                "net_power_W": 1.0 + float(time_s**2),
+            }
+            row.update({field: float((index + 1) * time_s)
+                        for index, field in enumerate(STATE_VECTOR_FIELDS)})
+            reference_rows.append(row)
+        primary_rows = []
+        summaries = {}
+        for level_index, label in enumerate(("h", "h/2", "h/4", "h/8")):
+            stride = 2 ** (4 - level_index)
+            selected = reference_rows[::stride]
+            perturbation = 0.01 * (level_index + 1)
+            level_rows = []
+            for source in selected:
+                row = dict(source)
+                row["step_level"] = label
+                row["time_s"] = float(source["time_s"])
+                row["net_power_W"] = float(source["net_power_W"]) + perturbation
+                for field in STATE_VECTOR_FIELDS:
+                    row[field] = float(source[field]) + perturbation
+                level_rows.append(row)
+            primary_rows.extend(level_rows)
+            level_times = np.asarray([row["time_s"] for row in level_rows], dtype=float)
+            level_power = np.asarray([row["net_power_W"] for row in level_rows], dtype=float)
+            delta = float(level_rows[-1]["stored_energy_J"] - level_rows[0]["stored_energy_J"])
+            work = float(path_support.composite_simpson_13(level_times, level_power))
+            summaries[label] = {
+                "net_power_work_J": work,
+                "delta_stored_energy_J": delta,
+                "energy_residual_simpson_J": delta - work,
+            }
+        return reference_rows, primary_rows, summaries
+
+    def test_h16_reference_comparison_uses_nested_nodes_and_reports_componentwise_state_error(self) -> None:
+        reference_rows, primary_rows, summaries = self._make_reference_fixture()
+        result = _reference_trajectory_diagnostics(
+            reference_rows, primary_rows, summaries, 10.0, 1e-6
+        )
+        self.assertEqual(result["level"], "reference_h/16")
+        self.assertEqual(result["finest"]["intervals"], 32)
+        self.assertEqual(len(result["comparisons"]), 4)
+        self.assertEqual([row["step_level"] for row in result["comparisons"]],
+                         ["h", "h/2", "h/4", "h/8"])
+        for index, row in enumerate(result["comparisons"]):
+            self.assertEqual(len(row["state_max_abs_difference"]), 12)
+            self.assertAlmostEqual(
+                row["state_max_abs_difference"][0], 0.01 * (index + 1)
+            )
+            self.assertAlmostEqual(
+                row["coupled_vs_reference_net_work_delta_J"],
+                summaries[row["step_level"]]["net_power_work_J"]
+                - row["reference_net_power_work_J"],
+            )
+
+    def test_h16_reference_comparison_rejects_non_nested_interval_count(self) -> None:
+        reference_rows, primary_rows, summaries = self._make_reference_fixture(intervals=16)
+        with self.assertRaisesRegex(ValueError, "at least 32 intervals"):
+            _reference_trajectory_diagnostics(
+                reference_rows, primary_rows, summaries, 10.0, 1e-6
+            )
+
+    def test_h16_reference_comparison_rejects_non_finite_state_or_power(self) -> None:
+        reference_rows, primary_rows, summaries = self._make_reference_fixture()
+        reference_rows[8]["net_power_W"] = float("nan")
+        with self.assertRaisesRegex(FloatingPointError, "non-finite data"):
+            _reference_trajectory_diagnostics(
+                reference_rows, primary_rows, summaries, 10.0, 1e-6
+            )
+
     def _valid_manifest_contract(self) -> dict:
         return {
-            "schema_version": 1, "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
+            "schema_version": 2, "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
             "numerical_results_present": True, "resource_tests_executed": False,
             "parameter_source": "synthetic test fixture", "source_documents_or_measurement_ids": [],
             "started_at_utc": "2026-01-01T00:00:00+00:00",
@@ -276,7 +355,23 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
                 for i, label in enumerate(("h", "h/2", "h/4", "h/8"))
             ],
             "all_refinements_smooth_unsaturated": True,
+            "reference_trajectory_report": {
+                "level": "reference_h/16", "intervals": 64, "samples": 65,
+                "step_s": 1.0 / 64.0, "stage_evaluations": 256,
+                "expected_stage_evaluations": 256,
+                "current_reference_saturated_stages": 0,
+                "voltage_saturated_stages": 0, "any_limiter_active_stages": 0,
+                "stage_count_matches_expected": True, "smooth_unsaturated": True,
+                "stage_power_diagnostics": {"rk4_stage_net_power_work_J": 0.0},
+            },
         }
+
+
+    def test_manifest_rejects_inconsistent_h16_reference_stage_count(self) -> None:
+        manifest = self._valid_manifest_contract()
+        manifest["reference_trajectory_report"]["stage_evaluations"] -= 1
+        with self.assertRaisesRegex(EnergyClosureError, "reference stage evaluation count"):
+            _validate_manifest_contract(manifest)
 
     def test_archive_manifest_rejects_invalid_or_unsubstantiated_status(self) -> None:
         manifest = self._valid_manifest_contract()
