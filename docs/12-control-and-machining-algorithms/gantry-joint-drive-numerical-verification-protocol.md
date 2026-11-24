@@ -75,12 +75,12 @@ p_h=\log_2(D_h/D_{h/2})
 
 ### 3.4 RK4-01合成数值筛查的已执行结果（2026-11-24）
 
-- **运行入口：** `resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py`；配置 `resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json`；结果包 `resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/rk4-01-synthetic-results-45385379794.zip`。
+- **运行入口：** `resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py`；配置 `resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json`；结果包 `resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/`（四个独立提交的CSV/JSON文件，manifest为`rk4-01-run-manifest.json`）。
 - **参数来源与工况：** 明确标记为 `SYNTHETIC_FIXTURE` 的低速平滑耦合状态；恒定电流参考、零外部广义力；总时长0.2 s，基础步长h=0.005 s，四档区间数40/80/160/320。所有12个状态特征尺度在运行前写入配置，仅用于混合单位分量归一化，不是工程容差、安全限值或机床规格。
 - **CI证据：** GitHub Actions [Run 45385379794](https://github.com/rexyll/cnc-knowledge/actions/runs/45385379794) success；Python 3.12.16、NumPy 2.5.5。资源测试121/121通过，原有仓库单元测试和strict knowledge lint通过。
 - **数值结果：** 相邻层级归一化RMS差异（h/h2、h2/h4、h4/h8）分别为2.4669535331394685e-05、9.795609168099331e-07、4.832443317361703e-08，严格单调下降；两组可计算观测阶数分别为4.654451518041637和4.341310498009402，均超过本筛查预设3.0下限。各档状态均有限，RK4阶段回调数与理论数一致，未触发电流参考限幅或电压饱和。
 - **判读与边界：** 记录状态为 `COMPLETED_REPORT_ONLY`。这是合成连续时间模型的有限网格收敛筛查，不包含应用级状态容差/定位精度限值，不证明已进入渐近区，也不是机床实测、台架、HIL、采样驱动或安全功能验证。不得由该结果推断任何实际机床性能。
-- **结果归档：** 结果包包含604行时间序列、4行步长汇总、3组相邻细化差异和运行manifest；manifest记录配置/求解器/运行器SHA、环境和各文件SHA-256。压缩包SHA-256为`6bfd6a2c51b05fe38f8abd5ef526110985e62e0e6c2d991eb3921bc6451b1c02`。
+- **结果归档：** 仓库中单独提交了604行时间序列CSV、4行步长汇总CSV、3组相邻细化差异CSV和运行manifest；manifest记录配置/求解器/运行器SHA、环境及各文件SHA-256。GitHub Actions另上传临时ZIP Artifact（Artifact ID `14915203518`，保留14天）；仓库持久归档不依赖该临时Artifact。
 - **状态：** RK4-01仅完成报告态数值筛查；RK4-02～04、ENE-01～03及PATH-01仍为`NOT_RUN`。
 
 ## 4. 机电能量平衡验证（ENE）
