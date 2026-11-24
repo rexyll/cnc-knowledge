@@ -135,3 +135,5 @@
 - **仓库CI（h/16参考轨迹与共同节点误差对照）：** 实现提交 `ff2a9e7cb66c6dc72286ce3806b2f8b9e4eb9063` 对应 [Run 45365141994](https://github.com/rexyll/cnc-knowledge/actions/runs/45365141994) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下103项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
 
 - **仓库CI（h/16文档记录与计数清理）：** 提交 `93231b47e7d7f848a73a5b2d0373f776cc4033cc` 对应 [Run 45365432150](https://github.com/rexyll/cnc-knowledge/actions/runs/45365432150) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下103项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
+- **仓库CI（h/16文档记录收尾）：** 提交 `ffc728dd72a85b1297b26bf3f0bcf63ed175216d` 对应 [Run 45365579897](https://github.com/rexyll/cnc-knowledge/actions/runs/45365579897) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下103项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
