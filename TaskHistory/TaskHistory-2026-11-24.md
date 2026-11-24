@@ -83,3 +83,6 @@
 - 阶段门控：RK4实际阶段回调数不匹配理论值属于执行完整性失败，状态改为FAIL；阶段数完整但发生限幅仍为COMPLETED_REPORT_ONLY。归档校验同步采用同一判读。
 - 测试定义：新增3项ENE资源测试（超大采样规模拒绝、阶段计数异常、非有限状态拒绝）；ENE测试15项，求解器35项、PATH-01运行器39项，共89项资源测试，全部未执行。
 - 验证边界：未执行任何resouces/测试或ENE积分；Knowledge Quality CI不覆盖这些资源测试。CH12-T003保持IN_PROGRESS，验证矩阵维持NOT_RUN。
+
+
+- **仓库CI（ENE资源/完整性门控修正）：** 提交 `211c2923d5134bec6019af5898ed09e392a6182c` 对应 [Run 45338509123](https://github.com/rexyll/cnc-knowledge/actions/runs/45338509123) success；`Knowledge structure and data quality` job中的单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下89项资源测试，也不运行ENE积分。
