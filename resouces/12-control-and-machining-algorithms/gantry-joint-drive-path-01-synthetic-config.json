@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "case_id": "PATH-01",
+  "status": "NOT_RUN",
+  "description": "Synthetic-only free-axis versus ideal prescribed-path comparison. Both models share the same deterministic PD current command callback and constant five-axis external generalized-force callback. Every model, load, state, controller, normalization scale and path value is an analyst-authored fixture, not CNC machine data.",
+  "provenance": {
+    "parameter_source": "SYNTHETIC_FIXTURE: PATH-01 borrows the synthetic electromechanical/structural/dissipation fixture from ENE-03, and adds an explicitly synthetic rest-to-rest path and common deterministic PD current callback. SRC-000369/SRC-000370 identify generic feed-drive modelling context; SRC-000372 supports RK4; SRC-000373 supports the generic quintic rest-to-rest time-scaling law. None of these sources supplies the numeric fixture values or application acceptance limits.",
+    "source_documents_or_measurement_ids": [
+      "SYNTHETIC:CH12-PATH-01:v1",
+      "SRC-000369",
+      "SRC-000370",
+      "SRC-000372",
+      "SRC-000373"
+    ],
+    "solver_git_sha_at_execution": null,
+    "config_sha256_at_execution": null,
+    "python_version": null,
+    "numpy_version": null,
+    "operating_system": null,
+    "command_line": null,
+    "stdout_artifact": null,
+    "stderr_artifact": null,
+    "exit_code": null
+  },
+  "mechanical": {
+    "geometry_span_m": 1.6,
+    "torsion_x_offset_m": 0.12,
+    "torsion_z_offset_m": 0.18,
+    "M0": [
+      [
+        75,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        12,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        9,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2
+      ]
+    ],
+    "D0": [
+      [
+        10,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0.5
+      ]
+    ],
+    "K0": [
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        120,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        180,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        60
+      ]
+    ],
+    "payload_mass_kg": 15,
+    "axis_equivalent_mass_kg": 8,
+    "gravity_acceleration_m_s2": [
+      0,
+      0,
+      0
+    ],
+    "axis_viscous_Ns_m": 10,
+    "axis_coulomb_N": 1.5,
+    "friction_smoothing_speed_m_s": 0.02,
+    "note": "All nonzero D0 diagonal coefficients, viscous friction, Coulomb friction, and smoothing speed are synthetic fixture values. D0 is diagonal positive definite in this fixture; no coefficient is sourced from a machine."
+  },
+  "electrical": {
+    "resistance_ohm": 1.5,
+    "inductance_h": 0.02,
+    "back_emf_V_per_m_s": 4,
+    "force_constant_N_per_A": 4,
+    "current_limit_A": 8,
+    "voltage_min_V": -48,
+    "voltage_max_V": 48,
+    "kp_V_per_A": 3,
+    "ki_V_per_A_s": 5,
+    "antiwindup_gain_per_s": 1,
+    "note": "Every value is a synthetic fixture. Ke and Kf remain equal in SI units to retain reciprocal electromechanical power transfer; they are not catalogue values or a motor selection."
+  },
+  "actuator": {
+    "q_coefficients": [
+      0.1,
+      0,
+      0,
+      0
+    ],
+    "s_coefficient": 1,
+    "offset_m": 0,
+    "displacement_definition_and_sign": "Synthetic actuator displacement ell_a = 0.1*q1 + s, with positive ell_a defined by positive s and positive q1 contributions; all coefficients are fixture values."
+  },
+  "initial_state": {
+    "q": [
+      0.0003,
+      0.0002,
+      -0.00015,
+      0.0001
+    ],
+    "q_dot": [
+      0.04,
+      0.025,
+      -0.02,
+      0.015
+    ],
+    "s_m": 0.72,
+    "s_dot_m_s": 0,
+    "current_A": 0.6,
+    "current_integrator_V": 0.3
+  },
+  "prescribed_path": {
+    "family": "quintic_rest_to_rest",
+    "s0_m": 0.72,
+    "s1_m": 0.735,
+    "duration_s": 0.2,
+    "normalized_time": "u=t/T",
+    "position": "s_ref=s0+(s1-s0)*(10*u^3-15*u^4+6*u^5)",
+    "velocity": "sdot_ref=(s1-s0)/T*(30*u^2-60*u^3+30*u^4)",
+    "acceleration": "sddot_ref=(s1-s0)/T^2*(60*u-180*u^2+120*u^3)",
+    "callback_contract": "prescribed_path(t) -> (s_ref_m, sdot_ref_m_s, sddot_ref_m_s2)",
+    "out_of_range_policy": "Reject or explicitly define extension; do not silently extrapolate.",
+    "note": "The rest-to-rest path and endpoints are synthetic comparison fixtures, not an application command or measured machine trajectory."
+  },
+  "controller_and_loads": {
+    "current_command_law": "i_cmd=i_ff(t)+Kp_pos*(s_ref-s)+Kd_vel*(sdot_ref-s_dot)",
+    "Kp_pos_A_per_m": 80,
+    "Kd_vel_A_s_per_m": 12,
+    "i_ff_definition_or_artifact": "Constant synthetic feedforward current i_ff=0.5 A shared by both models.",
+    "use_identical_deterministic_callback_for_both_models": true,
+    "external_generalized_force_order": [
+      "Q_x_common",
+      "Q_yaw",
+      "Q_bending",
+      "Q_torsion",
+      "Q_s"
+    ],
+    "external_force_definition_or_artifact": "Constant synthetic generalized force copied from the ENE-03 fixture and shared by both models; no cutting/contact force identification is implied.",
+    "note": "Both models call the same deterministic position/velocity PD current law and use the same external-force vector. Actuator force is generated by the electromechanical port and is not double-counted as external load.",
+    "feedforward_current_A": 0.5,
+    "external_generalized_force_constant": [
+      0.25,
+      0.01,
+      -0.02,
+      0.005,
+      0.2
+    ]
+  },
+  "integration": {
+    "duration_s": 0.2,
+    "base_step_s": 0.005,
+    "refinement_schedule": [
+      "h",
+      "h/2",
+      "h/4",
+      "h/8"
+    ],
+    "aligned_output_grid": true
+  },
+  "tolerances": {
+    "absolute_q": [
+      0.01,
+      0.01,
+      0.01,
+      0.01
+    ],
+    "relative_q": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "absolute_q_dot": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "relative_q_dot": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "absolute_s_m": 0.1,
+    "relative_s": 0,
+    "absolute_s_dot_m_s": 0.1,
+    "relative_s_dot": 0,
+    "application_path_error_limit_m": null,
+    "application_force_limit_N": null,
+    "constraint_work_limit_J": null,
+    "normalized_energy_residual_limit": null,
+    "absolute_current_A": 1,
+    "relative_current": 0,
+    "absolute_current_integrator_V": 10,
+    "relative_current_integrator": 0
+  },
+  "metrics": {
+    "free_path_position_error": "s_free-s_ref",
+    "free_path_velocity_error": "sdot_free-sdot_ref",
+    "payload_point_error": "r(q_free,s_free)-r(q_prescribed,s_ref)",
+    "constraint_force_peak": "max(abs(lambda))",
+    "constraint_force_rms": "sqrt(integral(lambda^2 dt)/T)",
+    "constraint_work": "integral(lambda*sdot_ref dt)",
+    "constrained_energy_power": "P_net includes +lambda*sdot_ref",
+    "energy_normalization_scale_J": 1,
+    "energy_normalization_floor_J": 1e-9,
+    "comparison_scale_source": "The per-component absolute values in tolerances are dimensional normalization anchors for comparing free and prescribed state trajectories. They are not acceptance tolerances, accuracy requirements or application limits; all relative comparison scales are zero for this synthetic fixture.",
+    "comparison_scale_source_ids": [
+      "SYNTHETIC:CH12-PATH-01:COMPARISON-SCALES:v1"
+    ],
+    "note": "No application acceptance limits are supplied. The runner must therefore return COMPLETED_REPORT_ONLY even when both numerical convergence screens pass."
+  },
+  "result_state": {
+    "status": "NOT_RUN",
+    "numerical_results_present": false,
+    "resource_tests_executed": false
+  },
+  "acceptance": {
+    "profile_id": null,
+    "application_path_error_limit_m": null,
+    "application_path_velocity_error_limit_m_s": null,
+    "payload_point_error_limit_m": null,
+    "application_force_limit_N": null,
+    "application_force_rms_limit_N": null,
+    "constraint_work_limit_J": null,
+    "normalized_energy_residual_limit": null,
+    "note": "All application limits deliberately remain null. Results are descriptive synthetic free-versus-ideal-constraint comparisons only; null limits prohibit engineering PASS/FAIL."
+  }
+}

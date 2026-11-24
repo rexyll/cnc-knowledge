@@ -609,5 +609,63 @@ class TestPathComparisonRunnerHelpers(unittest.TestCase):
             )
 
 
+
+class TestSyntheticPATH01Integration(unittest.TestCase):
+    CONFIG_PATH = (
+        Path(__file__).resolve().parent
+        / "gantry-joint-drive-path-01-synthetic-config.json"
+    )
+
+    def test_committed_path01_fixture_contract_and_report_only_limits(self) -> None:
+        with self.CONFIG_PATH.open("r", encoding="utf-8") as stream:
+            config = json.load(stream)
+        validated = path_runner._validate_config(config)
+        self.assertEqual(config["case_id"], "PATH-01")
+        self.assertEqual(validated["start_m"], 0.72)
+        self.assertEqual(validated["end_m"], 0.735)
+        self.assertEqual(validated["duration_s"], 0.2)
+        self.assertEqual(validated["initial_state"].s_dot, 0.0)
+        self.assertEqual(validated["external_force"].tolist(), [0.25, 0.01, -0.02, 0.005, 0.20])
+        self.assertTrue(all(value is None for value in validated["limits"].values()))
+        self.assertEqual(config["provenance"]["source_documents_or_measurement_ids"][0], "SYNTHETIC:CH12-PATH-01:v1")
+
+    def test_path01_runs_both_models_and_verifies_report_only_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary) / "path-01-output"
+            result = path_runner.run_path_comparison(self.CONFIG_PATH, output_dir)
+            self.assertEqual(result["case_id"], "PATH-01")
+            self.assertEqual(result["status"], "COMPLETED_REPORT_ONLY")
+            self.assertEqual(result["acceptance_decision"], "DESCRIPTIVE_ONLY")
+            self.assertTrue(result["free_convergence_screen"])
+            self.assertTrue(result["prescribed_convergence_screen"])
+            self.assertTrue(result["smooth_unsaturated_regime"])
+            with (output_dir / "gantry-joint-drive-path-comparison-summary.csv").open(
+                "r", encoding="utf-8", newline=""
+            ) as stream:
+                rows = list(csv.DictReader(stream))
+            self.assertEqual(len(rows), 4)
+            for row in rows:
+                self.assertEqual(row["status"], "COMPLETED_REPORT_ONLY")
+                self.assertEqual(row["acceptance_decision"], "DESCRIPTIVE_ONLY")
+                self.assertTrue(float(row["free_convergence_screen"] in ("True","False")) == 1.0)
+                self.assertTrue(float(row["prescribed_convergence_screen"] in ("True","False")) == 1.0)
+                self.assertEqual(int(row["free_any_limiter_active_stages"]), 0)
+                self.assertEqual(int(row["prescribed_any_limiter_active_stages"]), 0)
+                self.assertEqual(int(row["free_rk4_stage_evaluations"]), int(row["expected_rk4_stage_evaluations"]))
+                self.assertEqual(int(row["prescribed_rk4_stage_evaluations"]), int(row["expected_rk4_stage_evaluations"]))
+                for field in (
+                    "path_error_rms_m", "path_error_peak_m",
+                    "payload_point_error_rms_m", "lambda_peak_N",
+                    "lambda_rms_N", "constraint_work_J",
+                    "free_energy_residual_normalized",
+                    "prescribed_energy_residual_normalized",
+                ):
+                    self.assertTrue(np.isfinite(float(row[field])), field)
+            verified = path_runner.verify_output_bundle(output_dir)
+            self.assertEqual(verified["status"], "VERIFIED")
+            self.assertEqual(verified["recorded_run_status"], "COMPLETED_REPORT_ONLY")
+            self.assertEqual(len(verified["artifacts"]), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
