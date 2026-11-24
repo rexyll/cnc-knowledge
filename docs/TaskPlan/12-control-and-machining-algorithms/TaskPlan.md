@@ -497,3 +497,11 @@
 
 
 - **仓库CI（ENE资源/完整性门控修正）：** 提交 `211c2923d5134bec6019af5898ed09e392a6182c` 对应 [Run 45338509123](https://github.com/rexyll/cnc-knowledge/actions/runs/45338509123) success；`Knowledge structure and data quality` job中的单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下89项资源测试，也不运行ENE积分。
+
+
+## CH12-T003 ENE功率采样与RK4阶段接口一致性审查（2026-11-24）
+
+- 静态核对 `simulate()` 的k1/k2/k3/k4调用：每区间4次命令回调，阶段时刻依次为t、t+h/2、t+h/2、t+h；阶段限幅计数取自回调状态快照。功率/储能采样发生在N+1个输出节点，不计入阶段统计。
+- ENE `tracked()` 与 `derivative()` 对同一阶段状态、同一常值命令使用相同 `electrical_diagnostics()`；账本端电压与RL电流状态方程使用同一限幅后电压，端口功率按v*i计算。当前固定常值命令场景未发现接口不一致。
+- 新增1项资源测试定义：两区间8个阶段回调的时刻/状态、端电压/电流导数及端口功率一致性。ENE测试16项，求解器35项、PATH-01运行器39项，总计90项资源测试全部未执行；ENE积分未执行。
+- 未来若扩展时变或有状态命令回调，需防止命令回调因阶段统计与求解器导数重复求值而产生副作用；当前常值前馈实现不受影响。CH12-T003保持 `IN_PROGRESS`。

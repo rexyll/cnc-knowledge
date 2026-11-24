@@ -247,3 +247,10 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_cl
 - 每个12维状态向量必须全有限；储能变化、每项功积分、绝对净功率积分、Simpson/梯形残差和归一化残差均逐项检查有限性。
 - RK4实际阶段回调数不等于理论阶段数时状态为FAIL；阶段完整但发生限幅时仍为COMPLETED_REPORT_ONLY。
 - 新增3项ENE资源测试定义；ENE测试15项、求解器35项、PATH-01运行器39项，共89项资源测试全部未执行。未执行ENE积分；Knowledge Quality CI不执行resouces/资源测试。
+
+
+## ENE功率采样与RK4阶段接口契约（2026-11-24）
+
+- RK4每个区间4次命令回调用于阶段限幅统计；功率/储能在N+1个输出节点取样，两者不可混用。
+- 新增回归测试定义：检查两区间8个阶段快照的时间/状态，及同阶段限幅后端电压与RL电流导数、端口功率的一致性。
+- ENE资源测试16项，求解器35项、PATH-01运行器39项，共90项均未执行；ENE积分未运行。

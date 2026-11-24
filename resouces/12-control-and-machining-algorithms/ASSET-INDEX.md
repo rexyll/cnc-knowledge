@@ -165,3 +165,9 @@ PATH-01运行器测试新增2项，验证结构阻尼与平滑轴摩擦在正反
 - gantry_joint_drive_energy_closure.py增加四档合计50,000采样点上限、manifest端同口径检查、12维状态有限性检查和所有分项积分/残差有限性检查。
 - RK4阶段数与理论值不符现在判为FAIL；限幅但阶段完整仍为COMPLETED_REPORT_ONLY。
 - test_gantry_joint_drive_energy_closure.py新增3项资源测试定义；ENE运行器测试15项，求解器35项、PATH-01运行器39项，共89项资源测试均未执行。
+
+
+## ENE与RK4阶段接口一致性回归测试（2026-11-24）
+
+- `test_gantry_joint_drive_energy_closure.py` 新增1项：验证两区间8个RK4阶段回调的时刻/状态快照，以及功率账本端电压与状态方程电流导数、端口输入功率的一致性。
+- ENE测试16项，求解器35项、PATH-01运行器39项，共90项资源测试全部未执行；ENE积分未运行。

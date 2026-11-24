@@ -195,6 +195,37 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         with self.assertRaisesRegex(FloatingPointError, "12 finite values"):
             _power_sample(model, vector, 2.0, np.zeros(5), "ENE-01")
 
+    def test_rk4_stage_snapshots_and_energy_voltage_match_current_rhs(self) -> None:
+        model = make_model()
+        stage_snapshots = []
+
+        def command(time_s: float, state: JointState) -> float:
+            stage_snapshots.append((time_s, state.copy()))
+            return 2.0
+
+        model.simulate(self.state, 0.2, 0.1, command)
+        self.assertEqual(len(stage_snapshots), 4 * 2)
+        expected_times = (0.0, 0.05, 0.05, 0.1, 0.1, 0.15, 0.15, 0.2)
+        for (time_s, state), expected_time in zip(stage_snapshots, expected_times):
+            self.assertAlmostEqual(time_s, expected_time, places=12)
+            vector = model.pack(state)
+            sample = _power_sample(model, vector, 2.0, np.zeros(5), "ENE-01")
+            derivative = model.derivative(time_s, vector, 2.0)
+            ell_dot = model.actuator_relative_velocity(state.q_dot, state.s_dot)
+            expected_current_rate = (
+                sample["terminal_voltage"]
+                - model.electrical.resistance_ohm * state.current_A
+                - model.electrical.back_emf_V_per_m_s * ell_dot
+            ) / model.electrical.inductance_h
+            self.assertAlmostEqual(
+                derivative[10], expected_current_rate, places=12
+            )
+            self.assertAlmostEqual(
+                sample["terminal_input"],
+                sample["terminal_voltage"] * state.current_A,
+                places=12,
+            )
+
     def test_external_power_changes_sign_when_velocity_reverses(self) -> None:
         model = make_model()
         forward = self.state
