@@ -120,3 +120,6 @@
 - 新增3项资源测试定义：嵌套节点/代数分解、非嵌套区间拒绝、非有限样本拒绝。ENE资源测试22项、求解器35项、PATH-01 39项，总计96项资源测试均未执行。
 - 局限：参考轨迹仍是h/8 RK4轨迹，端点功率采样不能捕获步内变化；诊断不构成严格误差上界或物理验证。未增加更细参考积分，也未运行ENE积分。
 - 本轮未执行任何 `resouces/` 资源测试或数值积分；Knowledge Quality CI不覆盖资源测试。ENE验证矩阵仍为 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+
+
+- **仓库CI：** `0d644cf15407a9221dc498eb23b9b9c44d5b3b3e` 对应 GitHub Actions [Run 45352911112](https://github.com/rexyll/cnc-knowledge/actions/runs/45352911112) success；Knowledge structure and data quality job成功。该CI不执行 `resouces/` 下96项资源测试，也不运行ENE积分。
