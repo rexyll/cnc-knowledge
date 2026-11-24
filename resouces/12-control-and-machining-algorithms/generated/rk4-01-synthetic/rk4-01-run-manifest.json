@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "case_id": "RK4-01",
+  "status": "COMPLETED_REPORT_ONLY",
+  "numerical_results_present": true,
+  "engineering_acceptance_applied": false,
+  "parameter_source": "SYNTHETIC_FIXTURE — analyst-declared illustrative constants for numerical convergence screening only; not taken from any machine, drive, or vendor data.",
+  "source_documents_or_measurement_ids": [
+    "SYNTHETIC:CH12-RK4-01:v1"
+  ],
+  "characteristic_scale_source": "Explicit synthetic envelope declared with this fixture before the run; scales normalize unlike state units and are neither application tolerances nor machine limits.",
+  "characteristic_scale_source_ids": [
+    "SYNTHETIC:CH12-RK4-01:STATE-SCALES:v1"
+  ],
+  "state_vector_order": [
+    "q1_m",
+    "q2_rad",
+    "q3_m",
+    "q4_rad",
+    "qdot1_m_s",
+    "qdot2_rad_s",
+    "qdot3_m_s",
+    "qdot4_rad_s",
+    "s_m",
+    "s_dot_m_s",
+    "current_A",
+    "current_integrator_V"
+  ],
+  "state_vector_units": {
+    "q1_m": "m",
+    "q2_rad": "rad",
+    "q3_m": "m",
+    "q4_rad": "rad",
+    "qdot1_m_s": "m/s",
+    "qdot2_rad_s": "rad/s",
+    "qdot3_m_s": "m/s",
+    "qdot4_rad_s": "rad/s",
+    "s_m": "m",
+    "s_dot_m_s": "m/s",
+    "current_A": "A",
+    "current_integrator_V": "V"
+  },
+  "state_characteristic_scales": {
+    "q1_m": 0.01,
+    "q2_rad": 0.01,
+    "q3_m": 0.01,
+    "q4_rad": 0.01,
+    "qdot1_m_s": 0.1,
+    "qdot2_rad_s": 0.1,
+    "qdot3_m_s": 0.1,
+    "qdot4_rad_s": 0.1,
+    "s_m": 0.1,
+    "s_dot_m_s": 0.1,
+    "current_A": 1.0,
+    "current_integrator_V": 10.0
+  },
+  "started_at_utc": "2026-11-24T11:38:11.513837+00:00",
+  "completed_at_utc": "2026-11-24T11:38:11.854717+00:00",
+  "duration_s": 0.2,
+  "base_step_s": 0.005,
+  "base_intervals": 40,
+  "refinement_schedule": [
+    "h",
+    "h/2",
+    "h/4",
+    "h/8"
+  ],
+  "level_reports": [
+    {
+      "case_id": "RK4-01",
+      "level": "h",
+      "intervals": 40,
+      "step_s": 0.005,
+      "samples": 41,
+      "stage_evaluations": 160,
+      "expected_stage_evaluations": 160,
+      "current_reference_saturated_stages": 0,
+      "voltage_saturated_stages": 0,
+      "any_limiter_active_stages": 0,
+      "stage_count_matches_expected": "True",
+      "smooth_unsaturated": "True",
+      "all_states_finite": "True"
+    },
+    {
+      "case_id": "RK4-01",
+      "level": "h/2",
+      "intervals": 80,
+      "step_s": 0.0025,
+      "samples": 81,
+      "stage_evaluations": 320,
+      "expected_stage_evaluations": 320,
+      "current_reference_saturated_stages": 0,
+      "voltage_saturated_stages": 0,
+      "any_limiter_active_stages": 0,
+      "stage_count_matches_expected": "True",
+      "smooth_unsaturated": "True",
+      "all_states_finite": "True"
+    },
+    {
+      "case_id": "RK4-01",
+      "level": "h/4",
+      "intervals": 160,
+      "step_s": 0.00125,
+      "samples": 161,
+      "stage_evaluations": 640,
+      "expected_stage_evaluations": 640,
+      "current_reference_saturated_stages": 0,
+      "voltage_saturated_stages": 0,
+      "any_limiter_active_stages": 0,
+      "stage_count_matches_expected": "True",
+      "smooth_unsaturated": "True",
+      "all_states_finite": "True"
+    },
+    {
+      "case_id": "RK4-01",
+      "level": "h/8",
+      "intervals": 320,
+      "step_s": 0.000625,
+      "samples": 321,
+      "stage_evaluations": 1280,
+      "expected_stage_evaluations": 1280,
+      "current_reference_saturated_stages": 0,
+      "voltage_saturated_stages": 0,
+      "any_limiter_active_stages": 0,
+      "stage_count_matches_expected": "True",
+      "smooth_unsaturated": "True",
+      "all_states_finite": "True"
+    }
+  ],
+  "adjacent_pair_normalized_rms_differences": [
+    2.4669535331394685e-05,
+    9.795609168099331e-07,
+    4.832443317361703e-08
+  ],
+  "pairwise_observed_orders": [
+    4.654451518041637,
+    4.341310498009402
+  ],
+  "numerical_screen": {
+    "finite_states": true,
+    "rk4_stage_counts_match": true,
+    "all_refinements_smooth_unsaturated": true,
+    "adjacent_differences_monotonically_decrease": true,
+    "observed_order_minimum": 3.0,
+    "observed_order_screen_pass": true,
+    "screen_pass": true
+  },
+  "interpretation": [
+    "This is a synthetic continuous-time model run, not a machine parameter set or machine performance result.",
+    "The reported pairwise orders are finite-grid diagnostics based on adjacent solution differences, not a proof of an asymptotic error bound.",
+    "COMPLETED_REPORT_ONLY means the numerical convergence screen passed; no application accuracy limits or machine acceptance criteria were applied.",
+    "The solver command is a constant current reference and the model does not include sampled drive scheduling, PWM, communication delay, hard stops, contact, or hardware protection."
+  ],
+  "config_sha256": "0a2ea925c39c9ddd1a6567c5fa05cf354e5d04e310258375d80cf3dc3df51c36",
+  "solver_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
+  "path_support_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
+  "runner_sha256": "a75759fa6ef0e3fa1a026156616f15804105b2049a1e886d2465ba0b606f071b",
+  "git_sha": "6fe753ddf841df6af296be3ca8c3dfe70ac33e4c",
+  "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
+  "numpy_version": "2.5.5",
+  "operating_system": "Linux-7.0.0-1016-aws-x86_64-with-glibc2.43",
+  "command_line": "resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic",
+  "output_artifacts": {
+    "rk4-01-synthetic-timeseries.csv": {
+      "file_name": "rk4-01-synthetic-timeseries.csv",
+      "sha256": "15416293fc8d24ec3234c8d7ba5754b7e3c4b982381c453fb7bd84b016b45932",
+      "size_bytes": 173615,
+      "data_rows": 604,
+      "columns": 17
+    },
+    "rk4-01-level-summary.csv": {
+      "file_name": "rk4-01-level-summary.csv",
+      "sha256": "fb9066a3ac0b29ee0692c09938f994188a1804012e2f7f5dc7f804adf29d9749",
+      "size_bytes": 459,
+      "data_rows": 4,
+      "columns": 13
+    },
+    "rk4-01-adjacent-differences.csv": {
+      "file_name": "rk4-01-adjacent-differences.csv",
+      "sha256": "5e05556015a6a88c7248b491454f519264f9b4dd82e11d19a58d75ad95e82785",
+      "size_bytes": 5207,
+      "data_rows": 3,
+      "columns": 58
+    }
+  }
+}
