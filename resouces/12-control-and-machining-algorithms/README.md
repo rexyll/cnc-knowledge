@@ -325,3 +325,17 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_cl
 - 新增3项资源测试定义（预算计算/门控；自动预算测试包含小量级预算精确归档比较）；ENE42项、solver35项、PATH-01 39项，总计116项资源测试均未执行，ENE积分未运行。
 
 - 噪声预算报告和残差阶数门控报告采用递归精确JSON数值比对，避免通用1e-12绝对容差掩盖微小J单位界值；该检查已包含在3项新增资源测试之一，尚未执行。
+## RK4-01合成步长收敛筛查（2026-11-24）
+
+- 运行器：`gantry_joint_drive_rk4_screen.py`；配置：`gantry-joint-drive-rk4-01-synthetic-config.json`。所有参数和12维状态特征尺度均明确标为合成夹具，不代表任何机床/驱动器规格。
+- 运行方式：
+
+```bash
+python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py \
+  --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json \
+  --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic
+```
+
+- 运行结果：`generated/rk4-01-synthetic/rk4-01-synthetic-results-45385379794.zip`，包含时序CSV、四档汇总CSV、相邻层级差异CSV和manifest。压缩包SHA-256：`6bfd6a2c51b05fe38f8abd5ef526110985e62e0e6c2d991eb3921bc6451b1c02`。
+- GitHub Actions [Run 45385379794](https://github.com/rexyll/cnc-knowledge/actions/runs/45385379794)通过：资源测试121/121、仓库测试及strict lint通过；RK4-01状态`COMPLETED_REPORT_ONLY`，相邻归一化RMS差依次2.4669535331394685e-05、9.795609168099331e-07、4.832443317361703e-08，观测阶数4.654451518041637和4.341310498009402。
+- 此结果仅为合成连续时间模型的数值积分收敛筛查；无机床实测参数、工程验收阈值或HIL/实机证据。其余RK4/ENE/PATH-01矩阵项未运行。
