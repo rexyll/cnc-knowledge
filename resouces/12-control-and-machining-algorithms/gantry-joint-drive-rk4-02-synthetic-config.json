@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "case_id": "RK4-02",
-  "description": "Synthetic-only positive-direction free-axis quintic-reference motion. Not a CNC machine parameter set or machine acceptance profile.",
+  "case_id": "RK4-03",
+  "description": "Synthetic-only negative-direction free-axis quintic-reference motion. Not a CNC machine parameter set or machine acceptance profile.",
   "provenance": {
     "parameter_source": "SYNTHETIC_FIXTURE — analyst-declared illustrative constants for numerical convergence screening only; not taken from any machine, drive, or vendor data.",
     "source_documents_or_measurement_ids": [
-      "SYNTHETIC:CH12-RK4-02:v1"
+      "SYNTHETIC:CH12-RK4-03:v1"
     ]
   },
   "mechanical": {
@@ -131,19 +131,19 @@
       0.0001
     ],
     "q_dot": [
-      0.01,
-      0.005,
-      -0.004,
-      0.003
+      -0.01,
+      -0.005,
+      0.004,
+      -0.003
     ],
     "s_m": 0.72,
     "s_dot_m_s": 0,
-    "current_A": 0.08,
+    "current_A": -0.08,
     "current_integrator_V": 0
   },
   "controller_and_loads": {
     "current_command_model": "quintic_pd_current",
-    "feedforward_current_A": 0.08,
+    "feedforward_current_A": -0.08,
     "external_generalized_force_order": [
       "Q_x_common",
       "Q_yaw",
@@ -158,13 +158,13 @@
       0,
       0
     ],
-    "note": "Synthetic positive-direction free-path tracking using a smooth quintic reference and deterministic PD current command at every RK4 stage. The path is a reference, not a kinematic constraint.",
+    "note": "Synthetic negative-direction free-path tracking using a smooth quintic reference and deterministic negative-polarity PD current command at every RK4 stage. The path is a reference, not a kinematic constraint.",
     "Kp_pos_A_per_m": 200,
     "Kd_vel_A_s_per_m": 30,
     "path_reference": {
       "family": "quintic_rest_to_rest",
       "start_m": 0.72,
-      "end_m": 0.735,
+      "end_m": 0.705,
       "duration_s": 0.2
     }
   },
@@ -193,9 +193,9 @@
       "current_A": 1,
       "current_integrator_V": 10
     },
-    "state_characteristic_scale_source": "Explicit synthetic envelope declared with RK4-02 fixture before the run; scales normalize unlike state units and are neither application tolerances nor machine limits.",
+    "state_characteristic_scale_source": "Explicit synthetic envelope declared with RK4-03 fixture before the run; scales normalize unlike state units and are neither application tolerances nor machine limits.",
     "state_characteristic_scale_source_ids": [
-      "SYNTHETIC:CH12-RK4-02:STATE-SCALES:v1"
+      "SYNTHETIC:CH12-RK4-03:STATE-SCALES:v1"
     ],
     "numerical_screen": {
       "observed_order_min": 3,

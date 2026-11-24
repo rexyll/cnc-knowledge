@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "case_id": "RK4-03",
+  "description": "Synthetic-only negative-direction free-axis quintic-reference motion. Not a CNC machine parameter set or machine acceptance profile.",
+  "provenance": {
+    "parameter_source": "SYNTHETIC_FIXTURE — analyst-declared illustrative constants for numerical convergence screening only; not taken from any machine, drive, or vendor data.",
+    "source_documents_or_measurement_ids": [
+      "SYNTHETIC:CH12-RK4-03:v1"
+    ]
+  },
+  "mechanical": {
+    "geometry_span_m": 1.6,
+    "torsion_x_offset_m": 0.12,
+    "torsion_z_offset_m": 0.18,
+    "M0": [
+      [
+        75,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        12,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        9,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2
+      ]
+    ],
+    "D0": [
+      [
+        10,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        3,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "K0": [
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        120,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        180,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        60
+      ]
+    ],
+    "payload_mass_kg": 15,
+    "axis_equivalent_mass_kg": 8,
+    "gravity_acceleration_m_s2": [
+      0,
+      0,
+      0
+    ],
+    "axis_viscous_Ns_m": 2,
+    "axis_coulomb_N": 1,
+    "friction_smoothing_speed_m_s": 0.01
+  },
+  "electrical": {
+    "resistance_ohm": 1.5,
+    "inductance_h": 0.02,
+    "back_emf_V_per_m_s": 4,
+    "force_constant_N_per_A": 4,
+    "current_limit_A": 8,
+    "voltage_min_V": -48,
+    "voltage_max_V": 48,
+    "kp_V_per_A": 3,
+    "ki_V_per_A_s": 5,
+    "antiwindup_gain_per_s": 1
+  },
+  "actuator": {
+    "q_coefficients": [
+      0.1,
+      0,
+      0,
+      0
+    ],
+    "s_coefficient": 1,
+    "offset_m": 0
+  },
+  "initial_state": {
+    "q": [
+      0.0003,
+      0.0002,
+      -0.00015,
+      0.0001
+    ],
+    "q_dot": [
+      -0.01,
+      -0.005,
+      0.004,
+      -0.003
+    ],
+    "s_m": 0.72,
+    "s_dot_m_s": 0,
+    "current_A": -0.08,
+    "current_integrator_V": 0
+  },
+  "controller_and_loads": {
+    "current_command_model": "quintic_pd_current",
+    "feedforward_current_A": -0.08,
+    "external_generalized_force_order": [
+      "Q_x_common",
+      "Q_yaw",
+      "Q_bending",
+      "Q_torsion",
+      "Q_s"
+    ],
+    "external_generalized_force_constant": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "note": "Synthetic negative-direction free-path tracking using a smooth quintic reference and deterministic negative-polarity PD current command at every RK4 stage. The path is a reference, not a kinematic constraint.",
+    "Kp_pos_A_per_m": 200,
+    "Kd_vel_A_s_per_m": 30,
+    "path_reference": {
+      "family": "quintic_rest_to_rest",
+      "start_m": 0.72,
+      "end_m": 0.705,
+      "duration_s": 0.2
+    }
+  },
+  "integration": {
+    "duration_s": 0.2,
+    "base_step_s": 0.005,
+    "refinement_schedule": [
+      "h",
+      "h/2",
+      "h/4",
+      "h/8"
+    ]
+  },
+  "metrics": {
+    "state_characteristic_scales": {
+      "q1_m": 0.01,
+      "q2_rad": 0.01,
+      "q3_m": 0.01,
+      "q4_rad": 0.01,
+      "qdot1_m_s": 0.1,
+      "qdot2_rad_s": 0.1,
+      "qdot3_m_s": 0.1,
+      "qdot4_rad_s": 0.1,
+      "s_m": 0.1,
+      "s_dot_m_s": 0.1,
+      "current_A": 1,
+      "current_integrator_V": 10
+    },
+    "state_characteristic_scale_source": "Explicit synthetic envelope declared with RK4-03 fixture before the run; scales normalize unlike state units and are neither application tolerances nor machine limits.",
+    "state_characteristic_scale_source_ids": [
+      "SYNTHETIC:CH12-RK4-03:STATE-SCALES:v1"
+    ],
+    "numerical_screen": {
+      "observed_order_min": 3,
+      "note": "A pairwise order floor of 3.0 is only a numerical sanity screen for the smooth unsaturated fixed-step RK4 demonstration. It is not a CNC accuracy tolerance or engineering acceptance criterion."
+    }
+  }
+}

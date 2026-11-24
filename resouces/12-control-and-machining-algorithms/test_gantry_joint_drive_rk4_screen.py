@@ -85,6 +85,76 @@ class TestRK4SyntheticConvergenceScreen(unittest.TestCase):
         with self.assertRaisesRegex(rk4_runner.RK4ScreenError, "positive path displacement"):
             rk4_runner._validate(config)
 
+    def _rk4_03_config(self) -> dict:
+        config = self._rk4_02_config()
+        config["case_id"] = "RK4-03"
+        config["description"] = (
+            "Synthetic-only negative-direction free-axis quintic-reference motion. "
+            "Not a CNC machine parameter set or machine acceptance profile."
+        )
+        config["initial_state"]["q_dot"] = [
+            -value for value in config["initial_state"]["q_dot"]
+        ]
+        config["initial_state"]["current_A"] = -0.08
+        controller = config["controller_and_loads"]
+        controller["feedforward_current_A"] = -0.08
+        controller["path_reference"]["start_m"] = 0.72
+        controller["path_reference"]["end_m"] = 0.705
+        controller["note"] = (
+            "Synthetic negative-direction free-path tracking using a smooth "
+            "quintic reference and deterministic negative-polarity PD current "
+            "command at every RK4 stage. The path is a reference, not a kinematic constraint."
+        )
+        config["provenance"]["source_documents_or_measurement_ids"] = [
+            "SYNTHETIC:CH12-RK4-03:v1"
+        ]
+        config["metrics"]["state_characteristic_scale_source"] = (
+            "Explicit synthetic envelope declared with RK4-03 fixture before the run; "
+            "scales normalize unlike state units and are neither application tolerances nor machine limits."
+        )
+        config["metrics"]["state_characteristic_scale_source_ids"] = [
+            "SYNTHETIC:CH12-RK4-03:STATE-SCALES:v1"
+        ]
+        return config
+
+    def test_rk4_03_requires_negative_free_path_direction(self) -> None:
+        config = self._rk4_03_config()
+        validated = rk4_runner._validate(config)
+        self.assertEqual(validated["case_id"], "RK4-03")
+        self.assertEqual(validated["command_spec"]["model"], "quintic_pd_current")
+        self.assertLess(validated["command_spec"]["feedforward_current_A"], 0.0)
+        self.assertLess(validated["command_spec"]["path_end_m"], validated["command_spec"]["path_start_m"])
+        config["controller_and_loads"]["path_reference"]["end_m"] = 0.74
+        with self.assertRaisesRegex(rk4_runner.RK4ScreenError, "negative path displacement"):
+            rk4_runner._validate(config)
+
+    def test_rk4_03_runs_negative_smooth_free_path_motion(self) -> None:
+        config = self._rk4_03_config()
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / "rk4-03-config.json"
+            output_dir = Path(directory) / "output"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            result = rk4_runner.run(config_path, output_dir)
+            self.assertEqual(result["case_id"], "RK4-03")
+            self.assertEqual(result["status"], "COMPLETED_REPORT_ONLY")
+            self.assertTrue(result["numerical_screen"]["all_refinements_smooth_unsaturated"])
+            self.assertTrue(result["numerical_screen"]["adjacent_differences_monotonically_decrease"])
+            self.assertTrue(result["numerical_screen"]["observed_order_screen_pass"])
+            with (output_dir / "rk4-03-level-summary.csv").open(encoding="utf-8", newline="") as stream:
+                rows = list(__import__("csv").DictReader(stream))
+            self.assertEqual(len(rows), 4)
+            self.assertTrue(all(int(row["current_reference_saturated_stages"]) == 0 for row in rows))
+            self.assertTrue(all(int(row["voltage_saturated_stages"]) == 0 for row in rows))
+            self.assertTrue(all(float(row["net_s_displacement_m"]) < 0.0 for row in rows))
+            self.assertTrue(all(float(row["requested_current_min_A"]) < 0.0 for row in rows))
+            self.assertTrue(all(float(row["requested_current_max_A"]) < 0.0 for row in rows))
+            finest = rows[-1]
+            self.assertGreater(float(finest["reference_path_error_rms_m"]), 0.0)
+            self.assertGreater(float(finest["reference_path_error_peak_m"]), 0.0)
+            self.assertGreater(float(finest["reference_endpoint_error_m"]), 0.0)
+            archive = rk4_runner.verify_archive(output_dir)
+            self.assertEqual(archive["recorded_numerical_status"], "COMPLETED_REPORT_ONLY")
+
     def test_rk4_02_runs_positive_smooth_free_path_motion(self) -> None:
         config = self._rk4_02_config()
         with tempfile.TemporaryDirectory() as directory:
