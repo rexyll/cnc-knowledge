@@ -231,6 +231,25 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
     scale_source_ids = [item.strip() for item in scale_source_ids]
     if len(set(scale_source_ids)) != len(scale_source_ids):
         raise RK4ScreenError("state characteristic scale source IDs must be unique")
+    componentwise_raw = metrics.get("componentwise_numerical_screen")
+    if case_id == "RK4-04":
+        if not isinstance(componentwise_raw, dict):
+            raise RK4ScreenError("RK4-04 requires metrics.componentwise_numerical_screen")
+        componentwise_values = componentwise_raw.get("max_normalized_difference_by_state")
+        if not isinstance(componentwise_values, dict) or set(componentwise_values) != set(STATE_FIELDS):
+            raise RK4ScreenError(
+                "RK4-04 componentwise screen must contain exactly all 12 state fields"
+            )
+        componentwise_thresholds = {
+            key: _number(
+                componentwise_values[key],
+                f"metrics.componentwise_numerical_screen.max_normalized_difference_by_state.{key}",
+                positive=True,
+            )
+            for key in STATE_FIELDS
+        }
+    else:
+        componentwise_thresholds = None
     screen = metrics.get("numerical_screen")
     if not isinstance(screen, dict):
         raise RK4ScreenError("metrics.numerical_screen must be an object")
@@ -257,6 +276,7 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
         "scales": normalized_scales,
         "scale_source": scale_source.strip(),
         "scale_source_ids": scale_source_ids,
+        "componentwise_thresholds": componentwise_thresholds,
         "minimum_order": minimum_order,
     }
 
@@ -497,7 +517,32 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
     order_screen = bool(
         orders_eligible and all(float(order) >= v["minimum_order"] for order in orders)
     )
-    screen_pass = all_finite and stage_counts_match and all_smooth and monotone_reduction and order_screen
+    componentwise_report = None
+    componentwise_screen_pass = True
+    if v["componentwise_thresholds"] is not None:
+        finest_pair = pair_rows[-1]
+        measured = {
+            field: float(finest_pair[f"{field}_max_normalized_difference"])
+            for field in STATE_FIELDS
+        }
+        componentwise_screen_pass = all(
+            measured[field] <= v["componentwise_thresholds"][field]
+            for field in STATE_FIELDS
+        )
+        componentwise_report = {
+            "method": "h/4_to_h/8_pairwise_max_normalized_difference",
+            "thresholds_max_normalized_difference_by_state": v["componentwise_thresholds"],
+            "measured_max_normalized_difference_by_state": measured,
+            "pass": componentwise_screen_pass,
+            "interpretation": (
+                "Predeclared synthetic numerical-regression bounds only; "
+                "not machine, application, or trajectory-accuracy tolerances."
+            ),
+        }
+    screen_pass = (
+        all_finite and stage_counts_match and all_smooth and monotone_reduction
+        and order_screen and componentwise_screen_pass
+    )
     recorded_status = "COMPLETED_REPORT_ONLY" if screen_pass else "FAIL"
 
     for index, row in enumerate(pair_rows):
@@ -547,6 +592,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "level_reports": level_rows,
         "adjacent_pair_normalized_rms_differences": pair_differences,
         "pairwise_observed_orders": orders,
+        "componentwise_numerical_screen": componentwise_report,
         "numerical_screen": {
             "finite_states": all_finite,
             "rk4_stage_counts_match": stage_counts_match,
@@ -554,6 +600,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "adjacent_differences_monotonically_decrease": monotone_reduction,
             "observed_order_minimum": v["minimum_order"],
             "observed_order_screen_pass": order_screen,
+            "componentwise_screen_pass": componentwise_screen_pass,
             "screen_pass": screen_pass,
         },
         "interpretation": [
@@ -594,6 +641,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "output_dir": str(output),
         "pairwise_normalized_rms_differences": pair_differences,
         "pairwise_observed_orders": orders,
+        "componentwise_numerical_screen": componentwise_report,
         "numerical_screen": manifest["numerical_screen"],
         "manifest": str(manifest_path),
         "output_artifacts": artifacts,

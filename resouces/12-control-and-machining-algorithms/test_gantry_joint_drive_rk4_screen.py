@@ -187,5 +187,100 @@ class TestRK4SyntheticConvergenceScreen(unittest.TestCase):
             self.assertEqual(archive["recorded_numerical_status"], "COMPLETED_REPORT_ONLY")
 
 
+    def _rk4_04_config(self) -> dict:
+        config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        config["case_id"] = "RK4-04"
+        config["description"] = (
+            "Synthetic-only simultaneous nonzero structural and free-path-axis "
+            "state case under nonzero payload and generalized loading."
+        )
+        config["provenance"]["source_documents_or_measurement_ids"] = [
+            "SYNTHETIC:CH12-RK4-04:v1"
+        ]
+        config["initial_state"]["q"] = [0.00035, -0.00018, 0.00012, -0.00009]
+        config["initial_state"]["q_dot"] = [-0.009, 0.004, 0.0025, -0.0018]
+        config["initial_state"]["s_m"] = 0.721
+        config["initial_state"]["s_dot_m_s"] = -0.008
+        config["initial_state"]["current_A"] = -0.10
+        config["initial_state"]["current_integrator_V"] = -0.02
+        controller = config["controller_and_loads"]
+        controller["current_command_model"] = "constant_current"
+        controller["feedforward_current_A"] = -0.12
+        controller["external_generalized_force_constant"] = [
+            0.2, -0.005, 0.03, -0.002, -0.15
+        ]
+        controller["note"] = (
+            "Synthetic mixed-sign coupled structural and free-axis states with "
+            "nonzero payload and nonzero generalized loads; no machine values."
+        )
+        config["metrics"]["state_characteristic_scale_source"] = (
+            "Explicit synthetic component scales declared with RK4-04 before "
+            "execution; not application tolerances or machine limits."
+        )
+        config["metrics"]["state_characteristic_scale_source_ids"] = [
+            "SYNTHETIC:CH12-RK4-04:STATE-SCALES:v1"
+        ]
+        config["metrics"]["componentwise_numerical_screen"] = {
+            "method": "finest_adjacent_pair_h4_to_h8_componentwise_max_normalized_difference",
+            "max_normalized_difference_by_state": {
+                field: 0.001 for field in rk4_runner.STATE_FIELDS
+            },
+            "note": (
+                "Predeclared dimensionless synthetic numerical-regression "
+                "bounds only; not machine or application tolerances."
+            ),
+        }
+        return config
+
+    def test_rk4_04_requires_predeclared_threshold_for_each_state(self) -> None:
+        config = self._rk4_04_config()
+        validated = rk4_runner._validate(config)
+        self.assertEqual(validated["case_id"], "RK4-04")
+        self.assertEqual(set(validated["componentwise_thresholds"]), set(rk4_runner.STATE_FIELDS))
+        self.assertTrue(any(
+            value != 0.0
+            for value in config["controller_and_loads"]["external_generalized_force_constant"]
+        ))
+        del config["metrics"]["componentwise_numerical_screen"]["max_normalized_difference_by_state"]["s_m"]
+        with self.assertRaisesRegex(rk4_runner.RK4ScreenError, "exactly all 12"):
+            rk4_runner._validate(config)
+
+    def test_rk4_04_runs_loaded_mixed_sign_coupled_state_screen(self) -> None:
+        config = self._rk4_04_config()
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / "rk4-04-config.json"
+            output_dir = Path(directory) / "output"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            result = rk4_runner.run(config_path, output_dir)
+            self.assertEqual(result["case_id"], "RK4-04")
+            self.assertEqual(result["status"], "COMPLETED_REPORT_ONLY")
+            self.assertTrue(result["numerical_screen"]["finite_states"])
+            self.assertTrue(result["numerical_screen"]["rk4_stage_counts_match"])
+            self.assertTrue(result["numerical_screen"]["all_refinements_smooth_unsaturated"])
+            self.assertTrue(result["numerical_screen"]["adjacent_differences_monotonically_decrease"])
+            self.assertTrue(result["numerical_screen"]["observed_order_screen_pass"])
+            self.assertTrue(result["numerical_screen"]["componentwise_screen_pass"])
+            componentwise = result["componentwise_numerical_screen"]
+            self.assertTrue(componentwise["pass"])
+            self.assertEqual(
+                set(componentwise["measured_max_normalized_difference_by_state"]),
+                set(rk4_runner.STATE_FIELDS),
+            )
+
+            with (output_dir / "rk4-04-level-summary.csv").open(
+                encoding="utf-8", newline=""
+            ) as stream:
+                rows = list(__import__("csv").DictReader(stream))
+            self.assertEqual(len(rows), 4)
+            self.assertTrue(all(row["all_states_finite"] == "True" for row in rows))
+            self.assertTrue(all(row["stage_count_matches_expected"] == "True" for row in rows))
+            self.assertTrue(all(int(row["current_reference_saturated_stages"]) == 0 for row in rows))
+            self.assertTrue(all(int(row["voltage_saturated_stages"]) == 0 for row in rows))
+            self.assertTrue(all(float(row["requested_current_max_A"]) < 0.0 for row in rows))
+            self.assertTrue(all(float(row["net_s_displacement_m"]) < 0.0 for row in rows))
+            archive = rk4_runner.verify_archive(output_dir)
+            self.assertEqual(archive["recorded_numerical_status"], "COMPLETED_REPORT_ONLY")
+
+
 if __name__ == "__main__":
     unittest.main()
