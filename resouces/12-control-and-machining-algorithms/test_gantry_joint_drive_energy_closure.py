@@ -4,6 +4,7 @@ These tests are intentionally not executed by the repository Knowledge Quality C
 """
 from __future__ import annotations
 
+import sys
 import unittest
 
 import numpy as np
@@ -464,6 +465,7 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             budget, 1.0, 4, context="metrics",
         )
         self.assertEqual(normalized["floating_point_format"], "IEEE-754 binary64")
+        self.assertEqual(sys.float_info.rounds, 1)
         self.assertEqual(report["finest_interval_count"], 64)
         self.assertEqual(report["odd_sample_count"], 32)
         self.assertEqual(report["even_interior_sample_count"], 31)

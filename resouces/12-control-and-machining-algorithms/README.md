@@ -319,7 +319,7 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_cl
 ## ENE残差噪声底的可复算前向误差预算（2026-11-24）
 
 - ENE配置schema v4新增 `energy_residual_noise_budget`，要求来源化的五档最大储能/净功率包络、储能/净功率函数评估误差、RK4状态舍入传播影响和时间栅格积分影响界，并由运行者确认binary64及无溢出/subnormal假设。
-- 预算字段固定声明 `roundTiesToEven`；runner按最细h/16的奇数/偶数样本计数，以 `gamma_k=k*u/(1-k*u)` 推导两组 `numpy.sum`、外层加法、Simpson权重、h/3缩放和乘法舍入界；并自动累计端点储能差、功率样本传播、时间栅格及最终残差减法项。
+- 预算字段固定声明 `roundTiesToEven`，并在运行时检查round-to-nearest模式；runner按最细h/16的奇数/偶数样本计数，以 `gamma_k=k*u/(1-k*u)` 推导两组 `numpy.sum`、外层加法、Simpson权重、h/3缩放和乘法舍入界；并自动累计端点储能差、功率样本传播、时间栅格及最终残差减法项。
 - 用户给出的 `energy_residual_noise_floor_J` 若低于自动推导的 `minimum_noise_floor_J`，运行器在积分前拒绝；manifest v6保存输入预算和自动分项报告，归档验证器重算。
 - 外部输入界必须来自预运行工况包络、函数评估/平台库误差分析及RK4浮点传播分析，不得根据结果反推。该工具不证明外部输入界有效，不覆盖RK4截断、参数/模型不确定度；不把Simpson积分截断误差计入舍入噪声底。
 - 新增3项资源测试定义（预算计算/门控；自动预算测试包含小量级预算精确归档比较）；ENE42项、solver35项、PATH-01 39项，总计116项资源测试均未执行，ENE积分未运行。

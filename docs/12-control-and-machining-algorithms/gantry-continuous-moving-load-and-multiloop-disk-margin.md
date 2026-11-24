@@ -719,7 +719,7 @@ summary在h/2、h/4、h/8行写入前三个经验指数，同时重复记录门�
 
 #### 7.6.33 ENE残差噪声底的可复算前向误差预算（2026-11-24）
 
-ENE配置schema升级为4，manifest schema升级为6。噪声底不再只接受一个有来源的标量，而是要求 `metrics.energy_residual_noise_budget` 明确给出：五档最大储能绝对值、单端点储能函数评估误差、RK4状态舍入传播对端点储能的影响；五档最大净功率绝对值、单样本净功率函数评估误差、RK4状态舍入传播对净功率的影响；以及时间栅格舍入对积分的影响。另要求配置声明 `rounding_mode=roundTiesToEven`，并由运行者确认binary64算术与无溢出/subnormal前提。所有界都必须运行前、从模型/工况包络、代码路径误差分析、平台函数库精度材料和数值传播分析中给出，不能从本次轨迹统计量反推。
+ENE配置schema升级为4，manifest schema升级为6。噪声底不再只接受一个有来源的标量，而是要求 `metrics.energy_residual_noise_budget` 明确给出：五档最大储能绝对值、单端点储能函数评估误差、RK4状态舍入传播对端点储能的影响；五档最大净功率绝对值、单样本净功率函数评估误差、RK4状态舍入传播对净功率的影响；以及时间栅格舍入对积分的影响。另要求配置声明 `rounding_mode=roundTiesToEven`；runner还检查 `sys.float_info.rounds==1`、binary64基数/精度和NumPy float64尺寸，并由运行者确认无溢出/subnormal前提。所有界都必须运行前、从模型/工况包络、代码路径误差分析、平台函数库精度材料和数值传播分析中给出，不能从本次轨迹统计量反推。
 
 运行器限定IEEE-754 binary64、单位舍入误差 (u=2^{-53})，按 (gamma_k=ku/(1-ku)) 计算最坏加法误差。对最细h/16的Simpson奇/偶分组分别按最坏顺序求和界，考虑外层三次加法、权重4/2、(h/3)除法及最终乘法，得到自动的Simpson累加舍入界。再叠加两端储能评估及RK4状态传播界、功率样本评估及RK4状态传播界、时间栅格影响、储能端点相减、最终残差相减和正数求和保护，得到 `minimum_noise_floor_J`。用户配置的 `energy_residual_noise_floor_J` 必须不低于该自动值，否则在进入积分前拒绝。
 

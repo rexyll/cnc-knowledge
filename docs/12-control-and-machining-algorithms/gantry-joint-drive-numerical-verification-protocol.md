@@ -564,7 +564,7 @@ Manifest schema从2升级为3，新增 `adjacent_refinement_diagnostics`；归�
 
 前两个 envelope 上界必须由参数和批准工况范围推导；函数评估界需覆盖当前运行环境的 `sin/cos/tanh` 实现及中间运算范围；轨迹传播界需依据RK4阶段运算路径及五档区间数给出；时间栅格界需覆盖当前时间向量构造与实际首差分步长的差异。来源/来源ID应指向计算表、分析脚本、数学证明、平台库精度材料或经批准的数值分析报告。若无法建立这些上界，字段留空并阻止运行/阶数判读，不可用经验噪声值替代。
 
-**运行器自动计算的项：** 当前平台限定为IEEE-754 binary64，单位舍入误差 \(u=2^{-53}\)，配置字段 `rounding_mode` 固定为 `roundTiesToEven`，并由运行者确认 `arithmetic_assumptions_confirmed=true` 与 `no_overflow_or_subnormal_intermediates=true`。定义
+**运行器自动计算的项：** 当前平台限定为IEEE-754 binary64，单位舍入误差 \(u=2^{-53}\)，配置字段 `rounding_mode` 固定为 `roundTiesToEven`；运行器还检查 `sys.float_info.rounds == 1`、binary64基数/精度和NumPy float64尺寸，并由运行者确认 `arithmetic_assumptions_confirmed=true` 与 `no_overflow_or_subnormal_intermediates=true`。定义
 \[
 \gamma_k=\frac{ku}{1-ku},\quad ku<1.
 \]

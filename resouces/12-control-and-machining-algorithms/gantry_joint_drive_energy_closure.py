@@ -264,8 +264,10 @@ def _derive_energy_residual_noise_budget(
             f"{context}.energy_residual_noise_budget.no_overflow_or_subnormal_intermediates must be true"
         )
     if (sys.float_info.radix != 2 or sys.float_info.mant_dig != 53
-            or np.dtype(np.float64).itemsize != 8):
-        raise EnergyClosureError("runtime does not satisfy the required IEEE-754 binary64 assumptions")
+            or sys.float_info.rounds != 1 or np.dtype(np.float64).itemsize != 8):
+        raise EnergyClosureError(
+            "runtime must provide IEEE-754 binary64 with round-to-nearest arithmetic"
+        )
     budget = {
         "floating_point_format": FLOAT64_FORMAT_NAME,
         "rounding_mode": "roundTiesToEven",
