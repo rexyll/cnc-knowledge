@@ -619,7 +619,7 @@
 - **修正提交：** `6862981116ee0eefdc9cbb18049d604df9b32e4a`修正求解器资源测试中的三个测试问题；`ce0ea5a68234efc1d325b3ee78822f4f548ee40b`修正ENE参考网格拒绝测试夹具。未改生产求解器/运行器方程或降低数值断言。
 - **复验结果：** GitHub Actions [Run 45384191326](https://github.com/rexyll/cnc-knowledge/actions/runs/45384191326)两个Job均success；Python 3.12.16 / NumPy 2.5.5，ENE42/42、PATH-01 39/39、solver35/35，总计116/116通过（日志`Ran 116 tests in 0.082s`、`OK`）。原仓库tests与strict knowledge lint也通过。
 - **资源测试状态：** 已接入CI并通过当前运行环境的单元测试验收。后续代码更新仍由该Job自动回归。
-- **未完成数值验证：** RK4-01～04、ENE-01～03、PATH-01均继续`NOT_RUN`。资源单测不等于四档积分、能量闭合或自由/约束轨迹仿真；真实机床参数辨识、台架、HIL和实机仍未完成。没有完整工程验收阈值时，不得标记工程PASS。
+- **未完成数值验证：** RK4-02～04、ENE-01～03、PATH-01继续`NOT_RUN`。RK4-01仅完成合成模型`COMPLETED_REPORT_ONLY`筛查；资源单测不等于四档积分、能量闭合或自由/约束轨迹仿真；真实机床参数辨识、台架、HIL和实机仍未完成。没有完整工程验收阈值时，不得标记工程PASS。
 - **相关每日记录：** [TaskHistory-2026-11-24.md](../../../TaskHistory/TaskHistory-2026-11-24.md)。
 - **当前任务状态：** CH12-T003保持`IN_PROGRESS`。
 ## CH12-T003 RK4-01合成数值积分收敛筛查（2026-11-24）
@@ -627,5 +627,5 @@
 - 新增四级固定步长RK4运行器`resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py`、合成配置`gantry-joint-drive-rk4-01-synthetic-config.json`和5项运行器资源测试；引用SRC-000372记录经典RK4方法来源。
 - GitHub Actions [Run 45385379794](https://github.com/rexyll/cnc-knowledge/actions/runs/45385379794)两个Job均success。资源测试121/121通过；知识结构测试及strict lint通过。
 - RK4-01使用合成参数、恒定电流参考、零外部广义力，四档步长0.005/0.0025/0.00125/0.000625 s。归一化相邻RMS差依次2.4669535331394685e-05、9.795609168099331e-07、4.832443317361703e-08；两组观测阶数4.654451518041637、4.341310498009402。各档状态有限、RK4阶段计数匹配、无电流参考限幅/电压饱和。
-- 输出结果状态为`COMPLETED_REPORT_ONLY`；没有应用级误差容差，不代表数控机床精度、真实对象稳定性或物理验证。结果包归档路径`resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/rk4-01-synthetic-results-45385379794.zip`，校验值及运行环境见TaskHistory与协议3.4节。
+- 输出结果状态为`COMPLETED_REPORT_ONLY`；没有应用级误差容差，不代表数控机床精度、真实对象稳定性或物理验证。结果归档目录`resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/`，其中四个CSV/JSON文件已分别提交到main；运行环境和校验值见TaskHistory与协议3.4节。
 - 验证矩阵只将RK4-01更新为`COMPLETED_REPORT_ONLY`；RK4-02～04、ENE-01～03及PATH-01继续`NOT_RUN`。CH12-T003继续`IN_PROGRESS`。
