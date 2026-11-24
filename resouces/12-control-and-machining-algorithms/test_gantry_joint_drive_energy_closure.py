@@ -861,5 +861,68 @@ class TestSyntheticENE01Integration(unittest.TestCase):
         return helper._valid_manifest_contract()
 
 
+class TestSyntheticENE02Integration(unittest.TestCase):
+    CONFIG_PATH = (
+        Path(__file__).resolve().parent
+        / "gantry-joint-drive-ene-02-synthetic-config.json"
+    )
+
+    def test_committed_ene02_fixture_has_both_dissipation_mechanisms(self) -> None:
+        config = json.loads(self.CONFIG_PATH.read_text(encoding="utf-8"))
+        validated = energy_runner._validate(config)
+        model = validated["model"]
+        self.assertEqual(config["case_id"], "ENE-02")
+        self.assertIsNone(validated["threshold"])
+        self.assertTrue(np.array_equal(model.mechanical.D0, np.diag([10.0, 2.0, 4.0, 0.5])))
+        self.assertTrue(np.all(np.linalg.eigvalsh(model.mechanical.D0) > 0.0))
+        self.assertGreater(model.mechanical.axis_viscous_Ns_m, 0.0)
+        self.assertGreater(model.mechanical.axis_coulomb_N, 0.0)
+        self.assertEqual(validated["external"].tolist(), [0.0] * 5)
+        self.assertEqual(
+            model.electrical.force_constant_N_per_A,
+            model.electrical.back_emf_V_per_m_s,
+        )
+        self.assertGreaterEqual(
+            validated["energy_residual_noise_floor_J"],
+            validated["energy_residual_noise_budget_report"]["minimum_noise_floor_J"],
+        )
+
+    def test_ene02_four_level_dissipative_energy_balance_and_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary) / "ene-02-output"
+            result = energy_runner.run(self.CONFIG_PATH, output_dir)
+            self.assertEqual(result["case_id"], "ENE-02")
+            self.assertEqual(result["status"], "COMPLETED_REPORT_ONLY")
+            manifest = json.loads(
+                (output_dir / energy_runner.MANIFEST_NAME).read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["schema_version"], 7)
+            self.assertIsNone(manifest["normalized_energy_closure_threshold"])
+            self.assertTrue(manifest["all_refinements_smooth_unsaturated"])
+            self.assertEqual(len(manifest["limiter_stage_reports"]), 4)
+            self.assertTrue(all(item["smooth_unsaturated"] for item in manifest["limiter_stage_reports"]))
+            self.assertEqual(manifest["residual_order_diagnostic"]["gate_status"], "ELIGIBLE")
+            with (output_dir / energy_runner.SUMMARY_NAME).open(
+                encoding="utf-8", newline=""
+            ) as stream:
+                summaries = list(csv.DictReader(stream))
+            self.assertEqual(len(summaries), 4)
+            for row in summaries:
+                self.assertEqual(row["status"], "COMPLETED_REPORT_ONLY")
+                for field in (
+                    "structural_damping_loss_J", "axis_friction_loss_J",
+                    "energy_residual_simpson_J", "energy_residual_trapezoid_J",
+                    "normalized_energy_residual"
+                ):
+                    self.assertTrue(np.isfinite(float(row[field])), field)
+                self.assertGreater(float(row["structural_damping_loss_J"]), 0.0)
+                self.assertGreater(float(row["axis_friction_loss_J"]), 0.0)
+                self.assertEqual(float(row["external_generalized_work_J"]), 0.0)
+            archived = energy_runner.verify_archive(output_dir)
+            self.assertEqual(archived["status"], "VERIFIED")
+            self.assertEqual(archived["recorded_status"], "COMPLETED_REPORT_ONLY")
+            self.assertEqual(len(archived["artifacts"]), 4)
+
+
 if __name__ == "__main__":
     unittest.main()
