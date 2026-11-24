@@ -505,3 +505,6 @@
 - ENE `tracked()` 与 `derivative()` 对同一阶段状态、同一常值命令使用相同 `electrical_diagnostics()`；账本端电压与RL电流状态方程使用同一限幅后电压，端口功率按v*i计算。当前固定常值命令场景未发现接口不一致。
 - 新增1项资源测试定义：两区间8个阶段回调的时刻/状态、端电压/电流导数及端口功率一致性。ENE测试16项，求解器35项、PATH-01运行器39项，总计90项资源测试全部未执行；ENE积分未执行。
 - 未来若扩展时变或有状态命令回调，需防止命令回调因阶段统计与求解器导数重复求值而产生副作用；当前常值前馈实现不受影响。CH12-T003保持 `IN_PROGRESS`。
+
+
+- **仓库CI（ENE RK4阶段/功率接口回归测试定义）：** 提交 `da8aa1b107b02e98d6e457ac1228ff3912768bd6` 对应 [Run 45341856376](https://github.com/rexyll/cnc-knowledge/actions/runs/45341856376) success；Knowledge structure and data quality job中的单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下90项资源测试，也不运行ENE积分。
