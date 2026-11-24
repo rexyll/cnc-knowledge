@@ -143,3 +143,7 @@
 新增诊断不会合并混合单位状态误差，不推导经验阶数、误差上界或PASS；它只提供相邻细化的原始轨迹差异，并将功率求积统一到较粗网格，以免混入不同节点求积影响。若任一轨迹发生限幅，不作经典光滑RK4阶数解释。Manifest schema升级为3，新增相邻细化诊断并由归档验证器重算。新增3项ENE测试定义，ENE32项、求解器35项、PATH-01 39项，总计106项资源测试均未执行；ENE积分未执行，CH12-T003保持IN_PROGRESS。
 
 - **仓库CI（相邻细化轨迹共同节点诊断）：** 实现提交 `102d473bfe01750ff447a3c4689cd86e882c6c42` 对应 [Run 45366368115](https://github.com/rexyll/cnc-knowledge/actions/runs/45366368115) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下106项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
+
+- **仓库CI（相邻细化轨迹文档同步）：** 提交 `353c51aceffecd3a12fda25dc6f2ca0b9ac6bbf4` 对应 [Run 45366448936](https://github.com/rexyll/cnc-knowledge/actions/runs/45366448936) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下106项资源测试，也不运行ENE积分。
+
+- **仓库CI（相邻轨迹测试夹具修正）：** 提交 `775e7f37197552dc115f6bc8e45f3288d82c570d` 对应 [Run 45366553735](https://github.com/rexyll/cnc-knowledge/actions/runs/45366553735) success；该改动仅修正资源测试夹具的层级偏移构造。CI不执行 `resouces/` 下106项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
