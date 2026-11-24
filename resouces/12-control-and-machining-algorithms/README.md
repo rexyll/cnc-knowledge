@@ -240,3 +240,10 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_cl
 - 对CSV所有数值字段拒绝NaN/Inf/非数值，布尔字段只接受True/False；核对汇总状态与manifest一致、四档区间数/步长/样本数正确、时序网格严格递增且匹配配置时长。
 - 根据manifest阈值、限幅门控和最细两档归一化残差重新推导预期状态，拒绝PASS/FAIL/REPORT_ONLY语义不一致的归档。`VERIFIED`仍只表示归档自洽，不表示仿真或物理正确。
 - 新增4项归档语义资源测试定义；ENE运行器测试由8项增至12项。
+
+## ENE积分运行器数值完整性与资源上限审查（2026-11-24）
+
+- 四档轨迹合计采样点按NΣ=15N+4计算，配置端和manifest归档校验端均限制为不超过50,000点；极端区间数/步长比值在分配轨迹前拒绝。
+- 每个12维状态向量必须全有限；储能变化、每项功积分、绝对净功率积分、Simpson/梯形残差和归一化残差均逐项检查有限性。
+- RK4实际阶段回调数不等于理论阶段数时状态为FAIL；阶段完整但发生限幅时仍为COMPLETED_REPORT_ONLY。
+- 新增3项ENE资源测试定义；ENE测试15项、求解器35项、PATH-01运行器39项，共89项资源测试全部未执行。未执行ENE积分；Knowledge Quality CI不执行resouces/资源测试。

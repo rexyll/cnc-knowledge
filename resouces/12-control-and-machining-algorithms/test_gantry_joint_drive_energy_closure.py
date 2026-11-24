@@ -172,6 +172,29 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
                 _read_verified_csv(path, ["value", "flag"], path.name,
                                    boolean_fields=("flag",))
 
+    def test_manifest_rejects_unbounded_refinement_sample_count(self) -> None:
+        manifest = self._valid_manifest_contract()
+        manifest["duration_s"] = 100000.0
+        manifest["base_step_s"] = 0.25
+        with self.assertRaisesRegex(EnergyClosureError, "supported limit"):
+            _validate_manifest_contract(manifest)
+
+    def test_archive_manifest_marks_stage_count_mismatch_as_not_valid_for_pass(self) -> None:
+        manifest = self._valid_manifest_contract()
+        manifest["limiter_stage_reports"][1]["stage_evaluations"] -= 1
+        manifest["limiter_stage_reports"][1]["stage_count_matches_expected"] = False
+        manifest["limiter_stage_reports"][1]["smooth_unsaturated"] = False
+        manifest["all_refinements_smooth_unsaturated"] = False
+        contract = _validate_manifest_contract(manifest)
+        self.assertFalse(contract["all_stage_counts_match"])
+
+    def test_power_sample_rejects_non_finite_state(self) -> None:
+        model = make_model()
+        vector = model.pack(self.state)
+        vector[10] = float("nan")
+        with self.assertRaisesRegex(FloatingPointError, "12 finite values"):
+            _power_sample(model, vector, 2.0, np.zeros(5), "ENE-01")
+
     def test_external_power_changes_sign_when_velocity_reverses(self) -> None:
         model = make_model()
         forward = self.state

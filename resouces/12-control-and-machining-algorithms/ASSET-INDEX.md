@@ -158,3 +158,10 @@ PATH-01运行器测试新增2项，验证结构阻尼与平滑轴摩擦在正反
 - 经验残差阶数在噪声地板与稳定性门控尚未进入配置前不计算；输出归档采用staging及逐文件原子替换，manifest最后发布，不表示多文件事务原子性。
 
 | `gantry_joint_drive_energy_closure.py` | Python运行器 | ENE归档校验：manifest状态/限幅报告、数值有限性、CSV时间网格和验收状态一致性校验 | 项目原创 | 2026-11-24 | 原创代码 | 同上 |
+
+
+## ENE运行器数值完整性与资源规模门控（2026-11-24）
+
+- gantry_joint_drive_energy_closure.py增加四档合计50,000采样点上限、manifest端同口径检查、12维状态有限性检查和所有分项积分/残差有限性检查。
+- RK4阶段数与理论值不符现在判为FAIL；限幅但阶段完整仍为COMPLETED_REPORT_ONLY。
+- test_gantry_joint_drive_energy_closure.py新增3项资源测试定义；ENE运行器测试15项，求解器35项、PATH-01运行器39项，共89项资源测试均未执行。

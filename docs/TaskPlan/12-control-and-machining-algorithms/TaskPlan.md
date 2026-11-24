@@ -485,3 +485,12 @@
 - `VERIFIED`仍仅表示归档文件与记录自洽，不代表仿真正确或物理有效；CH12-T003保持 `IN_PROGRESS`。
 
 - **仓库CI：** 归档语义校验提交 `d00d0a6fc5274b2f1399903a7551952989b1cd56` 对应 [Run 45333058677](https://github.com/rexyll/cnc-knowledge/actions/runs/45333058677) success；`Knowledge structure and data quality` job中的单元测试与repository knowledge lint成功。该CI不执行 `resouces/` 下86项资源测试，也不运行ENE积分。
+
+
+## CH12-T003 ENE运行器资源边界与积分完整性复核（2026-11-24）
+
+- 资源上限：原区间数只限制在平台整数范围，不能防止内存型轨迹/逐行CSV归档出现不可执行的巨大工作量。新增四档总采样点上限50,000，配置端和manifest验证端同口径检查；超限在积分前拒绝。
+- 有限性：每个状态向量严格要求12维且所有分量有限；每档对储能变化、所有分项功积分、净功率/绝对净功率积分、Simpson/梯形残差和归一化残差逐项检查。
+- 阶段门控：RK4实际阶段回调数不匹配理论值属于执行完整性失败，状态改为FAIL；阶段数完整但发生限幅仍为COMPLETED_REPORT_ONLY。归档校验同步采用同一判读。
+- 测试定义：新增3项ENE资源测试（超大采样规模拒绝、阶段计数异常、非有限状态拒绝）；ENE测试15项，求解器35项、PATH-01运行器39项，共89项资源测试，全部未执行。
+- 验证边界：未执行任何resouces/测试或ENE积分；Knowledge Quality CI不覆盖这些资源测试。CH12-T003保持IN_PROGRESS，验证矩阵维持NOT_RUN。

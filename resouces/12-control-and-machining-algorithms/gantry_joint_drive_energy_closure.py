@@ -32,6 +32,8 @@ TIMESERIES_NAME = "gantry-joint-drive-energy-closure-timeseries.csv"
 SUMMARY_NAME = "gantry-joint-drive-energy-closure-summary.csv"
 MANIFEST_NAME = "gantry-joint-drive-energy-closure-run-manifest.json"
 LEVELS = ("h", "h/2", "h/4", "h/8")
+# Bound aggregate output rows before allocating RK4 trajectories and row dictionaries.
+MAX_TOTAL_SAMPLES = 50_000
 TIME_FIELDS = [
     "case_id", "step_level", "step_s", "time_s",
     "q1_m", "q2_rad", "q3_m", "q4_rad",
@@ -157,6 +159,12 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
     duration = path_support._number(integration.get("duration_s"), "integration.duration_s", positive=True)
     base_step = path_support._number(integration.get("base_step_s"), "integration.base_step_s", positive=True)
     intervals = path_support._interval_count(duration, base_step)
+    total_samples = sum(intervals * (2 ** level) + 1 for level in range(len(LEVELS)))
+    if total_samples > MAX_TOTAL_SAMPLES:
+        raise EnergyClosureError(
+            f"refinement schedule requires {total_samples} samples; "
+            f"configured safety limit is {MAX_TOTAL_SAMPLES}"
+        )
     if integration.get("refinement_schedule") != list(LEVELS):
         raise EnergyClosureError("refinement_schedule must be [h,h/2,h/4,h/8]")
     command = path_support._number(controller.get("feedforward_current_A"), "controller_and_loads.feedforward_current_A")
@@ -180,6 +188,9 @@ def _validate(config: dict[str, Any]) -> dict[str, Any]:
 
 def _power_sample(model: Any, vector: np.ndarray, command: float,
                   external: np.ndarray, case_id: str) -> dict[str, float | bool]:
+    vector = np.asarray(vector, dtype=float)
+    if vector.shape != (12,) or not np.all(np.isfinite(vector)):
+        raise FloatingPointError("ENE state vector must contain 12 finite values")
     state = model.unpack(vector)
     diagnostics = model.electrical_diagnostics(state, command)
     kinetic, potential = model.mechanical_energy(state)
@@ -305,11 +316,23 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
             raise EnergyClosureError(f"manifest {key} must be finite and positive")
     duration = float(manifest["duration_s"])
     base_step = float(manifest["base_step_s"])
-    base_intervals = int(round(duration / base_step))
+    try:
+        ratio = duration / base_step
+    except OverflowError as error:
+        raise EnergyClosureError("manifest duration/base_step ratio overflowed") from error
+    if not math.isfinite(ratio) or ratio > sys.maxsize // 8:
+        raise EnergyClosureError("manifest duration/base_step ratio exceeds the supported index range")
+    base_intervals = int(round(ratio))
     if base_intervals < 2 or base_intervals % 2 or not math.isclose(
         base_intervals * base_step, duration, rel_tol=1e-9, abs_tol=1e-12
     ):
         raise EnergyClosureError("manifest duration/base_step does not define an even integer interval count")
+    total_samples = sum(base_intervals * (2 ** level) + 1 for level in range(len(LEVELS)))
+    if total_samples > MAX_TOTAL_SAMPLES:
+        raise EnergyClosureError(
+            f"manifest refinement schedule requires {total_samples} samples; "
+            f"supported limit is {MAX_TOTAL_SAMPLES}"
+        )
     threshold = manifest.get("normalized_energy_closure_threshold")
     if threshold is not None and (
         isinstance(threshold, bool) or not isinstance(threshold, (int, float))
@@ -322,6 +345,7 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(reports, list) or len(reports) != len(LEVELS):
         raise EnergyClosureError("manifest limiter_stage_reports must contain four levels")
     smooth_flags = []
+    stage_match_flags = []
     for index, (report, label) in enumerate(zip(reports, LEVELS)):
         if not isinstance(report, dict) or report.get("level") != label:
             raise EnergyClosureError(f"manifest limiter report {label} is invalid")
@@ -344,6 +368,7 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         )) or any_count < max(reference_count, voltage_count) or any_count > reference_count + voltage_count:
             raise EnergyClosureError(f"manifest limiter counts are inconsistent at {label}")
         stage_match = report["stage_evaluations"] == expected
+        stage_match_flags.append(stage_match)
         smooth = stage_match and report["any_limiter_active_stages"] == 0
         if report.get("stage_count_matches_expected") is not stage_match:
             raise EnergyClosureError(f"manifest stage-count flag is inconsistent at {label}")
@@ -357,6 +382,7 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         "status": status, "threshold": None if threshold is None else float(threshold),
         "duration": duration, "base_intervals": base_intervals,
         "all_smooth": all_smooth,
+        "all_stage_counts_match": all(stage_match_flags),
     }
 
 
@@ -524,7 +550,9 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
     if cursor != len(timeseries_rows):
         raise EnergyClosureError("timeseries contains unexpected extra rows")
     threshold = contract["threshold"]
-    if threshold is None or not contract["all_smooth"]:
+    if not contract["all_stage_counts_match"]:
+        expected_status = "FAIL"
+    elif threshold is None or not contract["all_smooth"]:
         expected_status = "COMPLETED_REPORT_ONLY"
     elif all(float(summary_by_level[level]["normalized_energy_residual"]) <= threshold
              for level in ("h/4", "h/8")):
@@ -603,8 +631,10 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         trap_residual = delta - trapezoid_net
         rho = abs(residual) / denominator
         trap_rho = abs(trap_residual) / denominator
-        if not all(math.isfinite(x) for x in (delta, net_work, residual, rho, trap_residual, trap_rho)):
-            raise FloatingPointError(f"non-finite ENE closure metric at {label}")
+        finite_metrics = [delta, *integrals.values(), abs_work, residual, rho,
+                          trap_residual, trap_rho]
+        if not all(math.isfinite(float(value)) for value in finite_metrics):
+            raise FloatingPointError(f"non-finite ENE closure metric or component integral at {label}")
         for index, (time_s, vector, sample) in enumerate(zip(times, states, samples)):
             row = {
                 "case_id": v["case_id"], "step_level": label, "step_s": step,
@@ -663,7 +693,10 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
             "status": "PENDING",
         })
     all_smooth = all(item["smooth_unsaturated"] for item in saturation_by_level)
-    if v["threshold"] is None or not all_smooth:
+    all_stage_counts_match = all(item["stage_count_matches_expected"] for item in saturation_by_level)
+    if not all_stage_counts_match:
+        status = "FAIL"
+    elif v["threshold"] is None or not all_smooth:
         status = "COMPLETED_REPORT_ONLY"
     elif summaries[-1]["normalized_energy_residual"] <= v["threshold"] and summaries[-2]["normalized_energy_residual"] <= v["threshold"]:
         status = "PASS"
