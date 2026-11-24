@@ -464,3 +464,8 @@
 - CH12资源测试已接入GitHub Actions独立Job；首轮失败经测试夹具/断言归因修正后，Run [45384191326](https://github.com/rexyll/cnc-knowledge/actions/runs/45384191326)通过ENE42项、PATH-01 39项、求解器35项，共116/116项资源测试。
 - 该里程碑只覆盖资源级单元测试与CI质量检查；RK4-01～04、ENE-01～03积分和PATH-01数值比较仍为`NOT_RUN`，CH12-T003仍为`IN_PROGRESS`。
 - 详细修正、版本、运行环境和验收证据见[2026-11-24任务历史](TaskHistory/TaskHistory-2026-11-24.md)及[CH12章节任务计划](docs/TaskPlan/12-control-and-machining-algorithms/TaskPlan.md)。
+## CH12-T003 最新验证里程碑补充（2026-11-24）：RK4-01
+
+- CH12数值资源回归已扩展到121项并在GitHub Actions [Run 45385379794](https://github.com/rexyll/cnc-knowledge/actions/runs/45385379794)全部通过；原仓库测试及strict knowledge lint也通过。
+- 新增RK4-01合成低速平滑工况四级固定步长数值筛查，归一化相邻差单调下降，两组观测阶数4.6545/4.3413；状态仅为`COMPLETED_REPORT_ONLY`，不等于工程/实机验收。
+- RK4-02～04、ENE-01～03积分、PATH-01仍为`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。完整细节、SHA和边界见当日TaskHistory与CH12数值验证协议。
