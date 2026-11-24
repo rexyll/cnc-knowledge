@@ -1,0 +1,222 @@
+{
+  "schema_version": 4,
+  "case_id": "ENE-01",
+  "status": "NOT_RUN",
+  "description": "Synthetic-only ENE-01 ideal electromechanical one-port energy-closure integration case. All numerical parameters, initial states, normalization scales and input bounds are declared analysis fixtures; none are CNC machine or drive specifications.",
+  "provenance": {
+    "parameter_source": "SYNTHETIC_FIXTURE: all numeric parameter values are authored solely for reproducible software/numerical verification. SRC-000369 identifies generic linear-motor parameter conventions, SRC-000372 supports the classical RK4 method, and SRC-000374 supports the conventional gamma_k rounding-error form; none of these sources supplies the numeric values in this configuration or proves the analyst-declared energy/power/trajectory bounds.",
+    "source_documents_or_measurement_ids": [
+      "SYNTHETIC:CH12-ENE-01:v1",
+      "SRC-000369",
+      "SRC-000372",
+      "SRC-000374"
+    ]
+  },
+  "mechanical": {
+    "geometry_span_m": 1.6,
+    "torsion_x_offset_m": 0.12,
+    "torsion_z_offset_m": 0.18,
+    "M0": [
+      [
+        75,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        12,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        9,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2
+      ]
+    ],
+    "D0": [
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "K0": [
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        120,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        180,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        60
+      ]
+    ],
+    "payload_mass_kg": 15,
+    "axis_equivalent_mass_kg": 8,
+    "gravity_acceleration_m_s2": [
+      0,
+      0,
+      0
+    ],
+    "axis_viscous_Ns_m": 0,
+    "axis_coulomb_N": 0,
+    "friction_smoothing_speed_m_s": 0.01
+  },
+  "electrical": {
+    "resistance_ohm": 1.5,
+    "inductance_h": 0.02,
+    "back_emf_V_per_m_s": 4,
+    "force_constant_N_per_A": 4,
+    "current_limit_A": 8,
+    "voltage_min_V": -48,
+    "voltage_max_V": 48,
+    "kp_V_per_A": 3,
+    "ki_V_per_A_s": 5,
+    "antiwindup_gain_per_s": 1,
+    "note": "Every value is a synthetic fixture. Ke and Kf are set equal in SI units solely to exercise the ideal one-port energy identity; they are not catalogue values or a motor selection."
+  },
+  "actuator": {
+    "q_coefficients": [
+      0.1,
+      0,
+      0,
+      0
+    ],
+    "s_coefficient": 1,
+    "offset_m": 0,
+    "displacement_definition_and_sign": "Synthetic actuator displacement ell_a = 0.1*q1 + s, with positive ell_a defined by positive s and positive q1 contributions; all coefficients are fixture values."
+  },
+  "initial_state": {
+    "q": [
+      0.0003,
+      0.0002,
+      -0.00015,
+      0.0001
+    ],
+    "q_dot": [
+      0.04,
+      0.025,
+      -0.02,
+      0.015
+    ],
+    "s_m": 0.72,
+    "s_dot_m_s": 0.05,
+    "current_A": 0.6,
+    "current_integrator_V": 0.3
+  },
+  "controller_and_loads": {
+    "feedforward_current_A": 0.8,
+    "external_generalized_force_order": [
+      "Q_x_common",
+      "Q_yaw",
+      "Q_bending",
+      "Q_torsion",
+      "Q_s"
+    ],
+    "external_generalized_force_constant": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "note": "Constant 0.8 A synthetic feedforward current command. ENE-01 external generalized forces are exactly zero; no structural damping or axis friction is included. This is a continuous-time idealized model input, not a digital servo command or hardware setting."
+  },
+  "integration": {
+    "duration_s": 0.2,
+    "base_step_s": 0.005,
+    "refinement_schedule": [
+      "h",
+      "h/2",
+      "h/4",
+      "h/8"
+    ]
+  },
+  "metrics": {
+    "energy_normalization_scale_J": 1,
+    "energy_normalization_floor_J": 1e-9,
+    "normalized_energy_closure_threshold": null,
+    "energy_residual_noise_floor_J": 1e-11,
+    "energy_residual_noise_floor_method": "Pre-run synthetic-fixture envelope plus binary64 operation-bound analysis. The analyst declares upper bounds for stored-energy evaluation, RK4 trajectory propagation, net-power evaluation/trajectory propagation and time-grid effects before integration; the runner independently derives h/16 composite-Simpson accumulation and energy-residual subtraction bounds using gamma_k=k*u/(1-k*u). No residual from the executed trajectories is used to set this floor. This is a numerical roundoff-noise screen only; it excludes RK4 truncation and model/parameter uncertainty.",
+    "energy_residual_noise_floor_source": "Analyst-declared synthetic ENE-01 envelope and roundoff propagation assumptions. SRC-000374 supports the standard gamma_k expression only; the supplied maximum-energy, power, trajectory and time-grid bounds are synthetic assumptions and have not been independently proven or measured.",
+    "energy_residual_noise_floor_source_ids": [
+      "SYNTHETIC:CH12-ENE-01:ENERGY-NOISE-BOUNDS:v1",
+      "SRC-000374"
+    ],
+    "energy_residual_noise_budget": {
+      "floating_point_format": "IEEE-754 binary64",
+      "rounding_mode": "roundTiesToEven",
+      "arithmetic_assumptions_confirmed": true,
+      "no_overflow_or_subnormal_intermediates": true,
+      "max_abs_stored_energy_J": 2,
+      "stored_energy_evaluation_error_bound_J": 5e-13,
+      "trajectory_energy_roundoff_effect_bound_J": 2e-12,
+      "max_abs_net_power_W": 10,
+      "net_power_evaluation_error_bound_W": 2e-13,
+      "trajectory_power_roundoff_effect_bound_W": 2e-12,
+      "time_grid_roundoff_effect_bound_J": 2e-13
+    },
+    "state_comparison_scales": {
+      "q1_m": 0.01,
+      "q2_rad": 0.01,
+      "q3_m": 0.01,
+      "q4_rad": 0.01,
+      "qdot1_m_s": 0.1,
+      "qdot2_rad_s": 0.1,
+      "qdot3_m_s": 0.1,
+      "qdot4_rad_s": 0.1,
+      "s_m": 0.1,
+      "s_dot_m_s": 0.1,
+      "current_A": 1,
+      "current_integrator_V": 10
+    },
+    "state_comparison_scale_source": "Per-component characteristic magnitude anchors explicitly declared for this synthetic ENE-01 fixture before integration. The values are scale descriptors in their respective physical units, not tolerances, state bounds or acceptance criteria.",
+    "state_comparison_scale_source_ids": [
+      "SYNTHETIC:CH12-ENE-01:STATE-SCALES:v1"
+    ],
+    "note": "The normalization scale/floor and roundoff noise floor are synthetic pre-run declarations; the normalized closure threshold is intentionally null so this case cannot report engineering PASS. Analyst-supplied envelope and trajectory roundoff bounds are assumptions, not proved by the runner. Config schema v4; manifest schema v7."
+  }
+}

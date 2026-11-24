@@ -34,7 +34,7 @@ MANIFEST_NAME = "gantry-joint-drive-energy-closure-run-manifest.json"
 REFERENCE_TIMESERIES_NAME = "gantry-joint-drive-energy-closure-reference-h16-timeseries.csv"
 REFERENCE_LEVEL = "reference_h/16"
 CONFIG_SCHEMA_VERSION = 4
-MANIFEST_SCHEMA_VERSION = 6
+MANIFEST_SCHEMA_VERSION = 7
 LEVELS = ("h", "h/2", "h/4", "h/8")
 # Bound aggregate output rows before allocating RK4 trajectories and row dictionaries.
 MAX_TOTAL_SAMPLES = 50_000
@@ -1174,7 +1174,7 @@ def _atomic_bundle(output: Path, times: list[dict[str, Any]],
 def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
     if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != MANIFEST_SCHEMA_VERSION:
         raise EnergyClosureError(
-            "invalid ENE manifest schema; expected version 6 with derived residual-noise budget"
+            "invalid ENE manifest schema; expected version 7 with path-support provenance and derived residual-noise budget"
         )
     if type(manifest.get("config_schema_version")) is not int or manifest["config_schema_version"] != CONFIG_SCHEMA_VERSION:
         raise EnergyClosureError("manifest config_schema_version must be 4")
@@ -1187,6 +1187,11 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> dict[str, Any]:
         raise EnergyClosureError("manifest numerical_results_present must be true")
     if manifest.get("resource_tests_executed") is not False:
         raise EnergyClosureError("manifest resource_tests_executed must be false")
+    for sha_field in ("config_sha256", "solver_sha256", "path_support_sha256", "runner_sha256"):
+        digest = manifest.get(sha_field)
+        if (not isinstance(digest, str) or len(digest) != 64
+                or any(character not in "0123456789abcdef" for character in digest)):
+            raise EnergyClosureError(f"manifest {sha_field} must be a lowercase SHA-256 digest")
     state_comparison_scales, state_comparison_scale_source, state_comparison_scale_source_ids = (
         _validate_state_comparison_scale_contract(
             manifest.get("state_comparison_scales"),
@@ -2036,6 +2041,7 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
         "started_at_utc": started, "completed_at_utc": completed,
         "parameter_source": v["source"], "source_documents_or_measurement_ids": v["source_ids"],
         "config_sha256": _sha256(config_path), "solver_sha256": _sha256(SOLVER_PATH),
+        "path_support_sha256": _sha256(Path(path_support.__file__).resolve()),
         "runner_sha256": _sha256(Path(__file__).resolve()), "solver_git_sha": _git_sha(),
         "python_version": sys.version, "numpy_version": np.__version__,
         "operating_system": platform.platform(), "cpu": platform.processor() or None,

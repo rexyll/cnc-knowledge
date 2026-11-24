@@ -4,12 +4,17 @@ These tests are intentionally not executed by the repository Knowledge Quality C
 """
 from __future__ import annotations
 
+import csv
+import json
 import sys
+import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 
 import gantry_joint_drive_path_comparison as path_support
+import gantry_joint_drive_energy_closure as energy_runner
 
 from gantry_joint_drive_solver import (
     ActuatorKinematics, CurrentLoopParameters, GantryJointDriveModel,
@@ -419,7 +424,9 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
             noise_budget, 1.0, 4, context="manifest",
         )[1]
         return {
-            "schema_version": 6, "config_schema_version": 4,
+            "schema_version": 7, "config_schema_version": 4,
+            "config_sha256": "a" * 64, "solver_sha256": "b" * 64,
+            "path_support_sha256": "c" * 64, "runner_sha256": "d" * 64,
             "case_id": "ENE-01", "status": "COMPLETED_REPORT_ONLY",
             "numerical_results_present": True, "resource_tests_executed": False,
             "parameter_source": "synthetic test fixture", "source_documents_or_measurement_ids": [],
@@ -760,6 +767,98 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         positive = _power_sample(model, model.pack(forward), 2.0, external, "ENE-03")
         negative = _power_sample(model, model.pack(reverse), 2.0, external, "ENE-03")
         self.assertAlmostEqual(positive["external"], -negative["external"], places=12)
+
+
+class TestSyntheticENE01Integration(unittest.TestCase):
+    CONFIG_PATH = (
+        Path(__file__).resolve().parent
+        / "gantry-joint-drive-ene-01-synthetic-config.json"
+    )
+
+    def test_committed_ene01_fixture_obeys_ideal_one_port_contract(self) -> None:
+        config = json.loads(self.CONFIG_PATH.read_text(encoding="utf-8"))
+        validated = energy_runner._validate(config)
+        model = validated["model"]
+        self.assertEqual(config["case_id"], "ENE-01")
+        self.assertIsNone(validated["threshold"])
+        self.assertEqual(validated["external"].tolist(), [0.0] * 5)
+        self.assertTrue(np.array_equal(model.mechanical.D0, np.zeros((4, 4))))
+        self.assertEqual(model.mechanical.axis_viscous_Ns_m, 0.0)
+        self.assertEqual(model.mechanical.axis_coulomb_N, 0.0)
+        self.assertEqual(
+            model.electrical.force_constant_N_per_A,
+            model.electrical.back_emf_V_per_m_s,
+        )
+        self.assertGreaterEqual(
+            validated["energy_residual_noise_floor_J"],
+            validated["energy_residual_noise_budget_report"]["minimum_noise_floor_J"],
+        )
+        self.assertTrue(
+            all(value > 0.0 for value in validated["state_comparison_scales"].values())
+        )
+
+    def test_ene01_four_level_plus_h16_bundle_is_report_only_and_verifiable(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary) / "ene-01-output"
+            result = energy_runner.run(self.CONFIG_PATH, output_dir)
+            self.assertEqual(result["case_id"], "ENE-01")
+            self.assertEqual(result["status"], "COMPLETED_REPORT_ONLY")
+            manifest = json.loads(
+                (output_dir / energy_runner.MANIFEST_NAME).read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["schema_version"], 7)
+            self.assertEqual(
+                manifest["path_support_sha256"],
+                energy_runner._sha256(Path(path_support.__file__).resolve()),
+            )
+            self.assertIsNone(manifest["normalized_energy_closure_threshold"])
+            self.assertTrue(manifest["all_refinements_smooth_unsaturated"])
+            self.assertEqual(len(manifest["limiter_stage_reports"]), 4)
+            self.assertTrue(all(item["smooth_unsaturated"] for item in manifest["limiter_stage_reports"]))
+            self.assertTrue(manifest["reference_trajectory_report"]["smooth_unsaturated"])
+            self.assertGreater(
+                manifest["energy_residual_noise_floor_J"],
+                manifest["energy_residual_noise_budget_report"]["minimum_noise_floor_J"],
+            )
+            self.assertIn(
+                manifest["residual_order_diagnostic"]["gate_status"],
+                {
+                    "ELIGIBLE", "AT_OR_BELOW_NOISE_FLOOR",
+                    "NONSMOOTH_OR_LIMITER_ACTIVE", "SIGN_CROSSING",
+                    "NON_MONOTONIC_MAGNITUDE",
+                },
+            )
+            with (output_dir / energy_runner.SUMMARY_NAME).open(
+                encoding="utf-8", newline=""
+            ) as stream:
+                summaries = list(csv.DictReader(stream))
+            self.assertEqual(len(summaries), 4)
+            self.assertTrue(all(row["status"] == "COMPLETED_REPORT_ONLY" for row in summaries))
+            for row in summaries:
+                for key in (
+                    "delta_stored_energy_J", "terminal_input_work_J", "copper_loss_J",
+                    "energy_residual_simpson_J", "energy_residual_trapezoid_J",
+                    "normalized_energy_residual",
+                ):
+                    self.assertTrue(np.isfinite(float(row[key])), key)
+                self.assertEqual(float(row["structural_damping_loss_J"]), 0.0)
+                self.assertEqual(float(row["axis_friction_loss_J"]), 0.0)
+                self.assertEqual(float(row["external_generalized_work_J"]), 0.0)
+            verified = energy_runner.verify_archive(output_dir)
+            self.assertEqual(verified["status"], "VERIFIED")
+            self.assertEqual(verified["recorded_status"], "COMPLETED_REPORT_ONLY")
+            self.assertEqual(len(verified["artifacts"]), 4)
+
+    def test_manifest_rejects_invalid_path_support_sha256(self) -> None:
+        manifest = self._valid_minimal_manifest()
+        manifest["path_support_sha256"] = "not-a-sha256"
+        with self.assertRaisesRegex(EnergyClosureError, "path_support_sha256"):
+            energy_runner._validate_manifest_contract(manifest)
+
+    def _valid_minimal_manifest(self) -> dict:
+        # Reuse the established unit-test manifest fixture and exercise the SHA guard.
+        helper = TestIndependentEnergyPowerAccounting()
+        return helper._valid_manifest_contract()
 
 
 if __name__ == "__main__":

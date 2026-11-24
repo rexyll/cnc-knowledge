@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000374",
+  "source_type": "academic_paper",
+  "title": "A New Approach to Probabilistic Rounding Error Analysis",
+  "publisher": "SIAM Journal on Scientific Computing, Vol. 41, No. 5, pp. A2815-A2835",
+  "author": "Nicholas J. Higham; Theo Mary",
+  "url": "https://doi.org/10.1137/18M1226312",
+  "version": "2019; DOI: 10.1137/18M1226312; accessed 2026-11-24",
+  "published_on": null,
+  "accessed_on": "2026-11-24",
+  "locator": "Abstract: conventional worst-case backward-error constant gamma_n = n*u/(1-n*u), with n the operation count and u the unit roundoff; the paper's contribution develops probabilistic relaxations.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": "Publisher identifies the article as open access under Creative Commons Attribution 4.0; consult the publisher licence text for redistribution terms.",
+  "notes": "Used only as a source for the conventional gamma_n worst-case floating-point accumulation bound. It does not justify the ENE-01 analyst-supplied maximum stored-energy, net-power, trajectory propagation or time-grid error bounds, nor does it provide CNC machine parameters or acceptance criteria.",
+  "authority_tier": "B",
+  "evidence_kind": "academic_research"
+}
