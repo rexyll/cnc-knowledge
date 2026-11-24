@@ -1,5 +1,5 @@
-case_id,level,intervals,step_s,samples,stage_evaluations,expected_stage_evaluations,current_reference_saturated_stages,voltage_saturated_stages,any_limiter_active_stages,stage_count_matches_expected,smooth_unsaturated,all_states_finite,requested_current_min_A,requested_current_max_A,initial_s_m,final_s_m,net_s_displacement_m,reference_start_m,reference_end_m
-RK4-02,h,40,0.005,41,160,160,0,0,0,True,True,True,0.08,4.900635749886101,0.72,0.7254507518523025,0.005450751852302482,0.72,0.735
-RK4-02,h/2,80,0.0025,81,320,320,0,0,0,True,True,True,0.08,4.901742529975099,0.72,0.7254507491423999,0.005450749142399958,0.72,0.735
-RK4-02,h/4,160,0.00125,161,640,640,0,0,0,True,True,True,0.08,4.901630762290427,0.72,0.7254507490040847,0.0054507490040847095,0.72,0.735
-RK4-02,h/8,320,0.000625,321,1280,1280,0,0,0,True,True,True,0.08,4.901633336446032,0.72,0.7254507489963524,0.00545074899635245,0.72,0.735
+case_id,level,intervals,step_s,samples,stage_evaluations,expected_stage_evaluations,current_reference_saturated_stages,voltage_saturated_stages,any_limiter_active_stages,stage_count_matches_expected,smooth_unsaturated,all_states_finite,requested_current_min_A,requested_current_max_A,initial_s_m,final_s_m,net_s_displacement_m,reference_start_m,reference_end_m,reference_path_error_rms_m,reference_path_error_peak_m,reference_endpoint_error_m
+RK4-02,h,40,0.005,41,160,160,0,0,0,True,True,True,0.08,4.900635749886101,0.72,0.7254507518523025,0.005450751852302482,0.72,0.735,0.007309387544860862,0.010948784343809193,-0.009549248147697531
+RK4-02,h/2,80,0.0025,81,320,320,0,0,0,True,True,True,0.08,4.901742529975099,0.72,0.7254507491423999,0.005450749142399958,0.72,0.735,0.0073165886719317235,0.010952573778714392,-0.009549250857600056
+RK4-02,h/4,160,0.00125,161,640,640,0,0,0,True,True,True,0.08,4.901630762290427,0.72,0.7254507490040847,0.0054507490040847095,0.72,0.735,0.007320105489636851,0.01095257931220095,-0.009549250995915304
+RK4-02,h/8,320,0.000625,321,1280,1280,0,0,0,True,True,True,0.08,4.901633336446032,0.72,0.7254507489963524,0.00545074899635245,0.72,0.735,0.007321842561068045,0.010953049796999736,-0.009549251003647563

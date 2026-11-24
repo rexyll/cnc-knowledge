@@ -65,8 +65,8 @@
     "current_A": 1.0,
     "current_integrator_V": 10.0
   },
-  "started_at_utc": "2026-11-24T11:49:01.756001+00:00",
-  "completed_at_utc": "2026-11-24T11:49:02.183425+00:00",
+  "started_at_utc": "2026-11-24T11:52:15.019826+00:00",
+  "completed_at_utc": "2026-11-24T11:52:15.340000+00:00",
   "duration_s": 0.2,
   "base_step_s": 0.005,
   "base_intervals": 40,
@@ -97,7 +97,10 @@
       "final_s_m": 0.7254507518523025,
       "net_s_displacement_m": 0.005450751852302482,
       "reference_start_m": 0.72,
-      "reference_end_m": 0.735
+      "reference_end_m": 0.735,
+      "reference_path_error_rms_m": 0.007309387544860862,
+      "reference_path_error_peak_m": 0.010948784343809193,
+      "reference_endpoint_error_m": -0.009549248147697531
     },
     {
       "case_id": "RK4-02",
@@ -119,7 +122,10 @@
       "final_s_m": 0.7254507491423999,
       "net_s_displacement_m": 0.005450749142399958,
       "reference_start_m": 0.72,
-      "reference_end_m": 0.735
+      "reference_end_m": 0.735,
+      "reference_path_error_rms_m": 0.0073165886719317235,
+      "reference_path_error_peak_m": 0.010952573778714392,
+      "reference_endpoint_error_m": -0.009549250857600056
     },
     {
       "case_id": "RK4-02",
@@ -141,7 +147,10 @@
       "final_s_m": 0.7254507490040847,
       "net_s_displacement_m": 0.0054507490040847095,
       "reference_start_m": 0.72,
-      "reference_end_m": 0.735
+      "reference_end_m": 0.735,
+      "reference_path_error_rms_m": 0.007320105489636851,
+      "reference_path_error_peak_m": 0.01095257931220095,
+      "reference_endpoint_error_m": -0.009549250995915304
     },
     {
       "case_id": "RK4-02",
@@ -163,7 +172,10 @@
       "final_s_m": 0.7254507489963524,
       "net_s_displacement_m": 0.00545074899635245,
       "reference_start_m": 0.72,
-      "reference_end_m": 0.735
+      "reference_end_m": 0.735,
+      "reference_path_error_rms_m": 0.007321842561068045,
+      "reference_path_error_peak_m": 0.010953049796999736,
+      "reference_endpoint_error_m": -0.009549251003647563
     }
   ],
   "adjacent_pair_normalized_rms_differences": [
@@ -188,13 +200,14 @@
     "This is a synthetic continuous-time model run, not a machine parameter set or machine performance result.",
     "The reported pairwise orders are finite-grid diagnostics based on adjacent solution differences, not a proof of an asymptotic error bound.",
     "COMPLETED_REPORT_ONLY means the numerical convergence screen passed; no application accuracy limits or machine acceptance criteria were applied.",
-    "The solver command is a constant current reference and the model does not include sampled drive scheduling, PWM, communication delay, hard stops, contact, or hardware protection."
+    "The solver uses a continuous quintic-reference PD current command evaluated at every RK4 stage; reported path tracking errors are descriptive only and have no application acceptance limit.",
+    "The model does not include sampled drive scheduling, PWM, communication delay, hard stops, contact, or hardware protection."
   ],
   "config_sha256": "29b681fbb15cafd75f053308d95a5adf67114d1a3fa51609b3d7fbdc4764603c",
   "solver_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
   "path_support_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
-  "runner_sha256": "8a45423a4ec925ef1ae64d111f0bb9e4ac3d4f8edeff62d98c966590e90ca7d8",
-  "git_sha": "5940adb2e7e1d957205d1e24a26c422b019a2268",
+  "runner_sha256": "bd6fe63a3e5a3bec3c2d1fb2aa7b7dc5d6a21c1239093fa6bd6b3dc1694544b5",
+  "git_sha": "01b474a094df9f6fa10c9c92406b664d676cb486",
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
   "numpy_version": "2.5.5",
   "operating_system": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
@@ -209,10 +222,10 @@
     },
     "rk4-02-level-summary.csv": {
       "file_name": "rk4-02-level-summary.csv",
-      "sha256": "41d9a39fcf4672192bf7a548f851cb45a2c544c3e44ef9cd1700a05341759d8d",
-      "size_bytes": 900,
+      "sha256": "bb890bc643fa8e56fc5782dfea769cffb14a5fd5ad526a6a6a8f13fa078f9e17",
+      "size_bytes": 1238,
       "data_rows": 4,
-      "columns": 20
+      "columns": 23
     },
     "rk4-02-adjacent-differences.csv": {
       "file_name": "rk4-02-adjacent-differences.csv",
