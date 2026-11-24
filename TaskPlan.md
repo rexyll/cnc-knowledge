@@ -482,3 +482,11 @@
 
 - 路径误差诊断已进入归档汇总：h/8下参考路径误差RMS约7.3218mm、峰值约10.9530mm，端点误差约-9.5493mm。该偏差揭示自由轴响应未达到参考终点；不存在预先批准的应用容差，不宣称跟踪精度合格。
 - 来源SRC-000373经schema枚举纠正后，最终GitHub Actions [Run 45388357235](https://github.com/rexyll/cnc-knowledge/actions/runs/45388357235)全部Job success；资源123/123、RK4-01/02、根仓库测试和strict lint通过。main仅保留main分支，CH12-T003继续IN_PROGRESS。
+
+
+## CH12-T003最新数值验证里程碑（2026-11-24）：RK4-03
+
+- 新增RK4-03反向自由轴工况：沿用s正方向约定，使用五次参考0.72m→0.705m、负前馈电流及连续PD命令；所有参数仍为合成夹具。
+- GitHub Actions [Run 45395098290](https://github.com/rexyll/cnc-knowledge/actions/runs/45395098290)最终success；CH12资源测试125/125、RK4-01/02/03运行、仓库单元测试与strict lint均通过。RK4-03四档状态有限、阶段计数匹配，无参考限幅/电压饱和。
+- 相邻归一化RMS差1.40113e-4/6.75072e-6/3.69035e-7，观测阶数4.3754/4.1932；最细档实际s(T)=0.714549218m，净负向位移约-5.451mm，参考终点0.705m，端点误差约+9.549mm。仅完成数值筛查，未判定轨迹精度合格。
+- RK4-01/02/03均为`COMPLETED_REPORT_ONLY`；RK4-04、ENE-01/02/03积分与PATH-01仍为`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。
