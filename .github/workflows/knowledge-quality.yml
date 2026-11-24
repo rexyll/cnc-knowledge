@@ -74,7 +74,7 @@ jobs:
           inputs = ("config_sha256", "solver_sha256", "path_support_sha256", "runner_sha256")
           changed = previous is None or any(previous.get(key) != current.get(key) for key in inputs)
           with open(__import__("os").environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"changed={'true' if changed else 'false'}\\n")
+              output.write(f"changed={'true' if changed else 'false'}\n")
           print("RK4-01 model/runner/config input changed:", changed)
           PY
       - name: Upload RK4-01 numerical results
