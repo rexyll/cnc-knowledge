@@ -595,3 +595,6 @@
 
 
 归档null比较回归测试定义（2026-11-24）：新增1项资源测试，确保“阶数不可报告”的null可以通过正确归档比较，并拒绝manifest中篡改成数值的情形。ENE运行器39项、求解器35项、PATH-01 39项，共113项资源测试均未执行。
+
+- **仓库CI（噪声底门控文档记录同步）：** 提交 `7bb780bb6f28d598ee2f379a913ab341021a36cf` 对应 [Run 45377481837](https://github.com/rexyll/cnc-knowledge/actions/runs/45377481837) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下112项资源测试，也不运行ENE积分。
+- **仓库CI（门控阶数null归档比较修正）：** 实现/文档修正提交 `554ac5116d87c43c5bddab60b8ae8cc310e1920e` 对应 [Run 45377757508](https://github.com/rexyll/cnc-knowledge/actions/runs/45377757508) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下113项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`，ENE验证矩阵保持 `NOT_RUN`。
