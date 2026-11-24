@@ -190,3 +190,6 @@ ENE归档null一致性补充（2026-11-24）：runner比较器支持严格JSON n
 - 新增3项ENE资源测试定义（预算计算/网格尺度且包含manifest小量级数字精确比较、算术假设或预算缺项拒绝、噪声底低于预算界拒绝）。ENE资源测试定义42项，求解器35项、PATH-01 39项，总计116项资源测试仍全部未执行；ENE积分/仿真未执行，验证矩阵NOT_RUN，CH12-T003保持IN_PROGRESS。
 
 - 归档预算报告和残差阶数诊断改用递归精确JSON数值比较，避免1e-12通用绝对容差掩盖小量级舍入界差异；该检查已包含在自动预算资源测试中（ENE42项）。
+
+
+- **仓库CI（ENE残差可复算binary64前向误差预算）：** 实现提交 `064987dfa1231f13f3effaf80b00be143ad09ec0` 对应 [Run 45380805096](https://github.com/rexyll/cnc-knowledge/actions/runs/45380805096) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下116项资源测试，也不运行ENE积分或数值仿真。ENE-01/02/03验证矩阵继续 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
