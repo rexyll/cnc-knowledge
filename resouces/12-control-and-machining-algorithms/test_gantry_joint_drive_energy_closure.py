@@ -340,11 +340,13 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
     def test_adjacent_refinement_reports_shared_grid_componentwise_differences(self) -> None:
         reference_rows, primary_rows, _ = self._make_reference_fixture()
         offsets = {"h": 0.08, "h/2": 0.04, "h/4": 0.02, "h/8": 0.01}
+        reference_by_time = {float(row["time_s"]): row for row in reference_rows}
         for row in primary_rows:
             offset = offsets[row["step_level"]]
-            row["net_power_W"] = float(row["net_power_W"]) + offset
+            base = reference_by_time[float(row["time_s"])]
+            row["net_power_W"] = float(base["net_power_W"]) + offset
             for field in STATE_VECTOR_FIELDS:
-                row[field] = float(row[field]) + offset
+                row[field] = float(base[field]) + offset
         smooth = {"h": True, "h/2": True, "h/4": False,
                   "h/8": True, "reference_h/16": True}
         result = _adjacent_refinement_diagnostics(primary_rows, reference_rows, smooth)
