@@ -51,6 +51,8 @@ TIME_FIELDS = [
 STAGE_TIMESERIES_NAME = "gantry-joint-drive-energy-closure-stage-power-timeseries.csv"
 STAGE_FIELDS = [
     "case_id", "step_level", "interval_index", "stage_index", "stage_time_s", "step_s",
+    "requested_current_command_A", "limited_current_reference_A", "current_A",
+    "raw_voltage_V", "terminal_voltage_V",
     "terminal_input_power_W", "copper_loss_W", "structural_damping_loss_W",
     "axis_friction_loss_W", "external_generalized_power_W",
     "electromechanical_mismatch_power_W", "net_power_W",
@@ -823,6 +825,38 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
                 raise EnergyClosureError(f"RK4 stage trace step mismatch at {label}")
             if not math.isclose(float(row["stage_time_s"]), expected_time, rel_tol=1e-9, abs_tol=1e-12):
                 raise EnergyClosureError(f"RK4 stage trace time mismatch at {label}")
+            current = float(row["current_A"])
+            terminal_voltage = float(row["terminal_voltage_V"])
+            if not math.isclose(
+                float(row["terminal_input_power_W"]), terminal_voltage * current,
+                rel_tol=1e-9, abs_tol=1e-12,
+            ):
+                raise EnergyClosureError(f"RK4 stage terminal input power is inconsistent at {label}")
+            expected_net = (
+                float(row["terminal_input_power_W"]) - float(row["copper_loss_W"])
+                - float(row["structural_damping_loss_W"]) - float(row["axis_friction_loss_W"])
+                + float(row["external_generalized_power_W"])
+                + float(row["electromechanical_mismatch_power_W"])
+            )
+            if not math.isclose(float(row["net_power_W"]), expected_net, rel_tol=1e-9, abs_tol=1e-12):
+                raise EnergyClosureError(f"RK4 stage net power ledger is inconsistent at {label}")
+            requested = float(row["requested_current_command_A"])
+            limited = float(row["limited_current_reference_A"])
+            if (row["current_reference_saturated"] == "True") != (limited != requested):
+                raise EnergyClosureError(f"RK4 stage current-reference limiter flag is inconsistent at {label}")
+        report = manifest["limiter_stage_reports"][index]
+        reference_count = sum(row["current_reference_saturated"] == "True" for row in block)
+        voltage_count = sum(row["voltage_saturated"] == "True" for row in block)
+        any_count = sum(
+            row["current_reference_saturated"] == "True" or row["voltage_saturated"] == "True"
+            for row in block
+        )
+        if (
+            reference_count != report["current_reference_saturated_stages"]
+            or voltage_count != report["voltage_saturated_stages"]
+            or any_count != report["any_limiter_active_stages"]
+        ):
+            raise EnergyClosureError(f"RK4 stage limiter trace disagrees with manifest at {label}")
         summary = summary_by_level[label]
         stage_metrics = _rk4_stage_power_diagnostics(
             block, float(summary["delta_stored_energy_J"]),
@@ -882,6 +916,11 @@ def run(config_path: Path, output_dir: Path) -> dict[str, Any]:
                 "case_id": v["case_id"], "step_level": label,
                 "interval_index": interval_index, "stage_index": stage_index,
                 "stage_time_s": float(_time), "step_s": step,
+                "requested_current_command_A": power["requested_command"],
+                "limited_current_reference_A": power["limited_reference"],
+                "current_A": float(state.current_A),
+                "raw_voltage_V": power["raw_voltage"],
+                "terminal_voltage_V": power["terminal_voltage"],
                 "terminal_input_power_W": power["terminal_input"],
                 "copper_loss_W": power["copper"],
                 "structural_damping_loss_W": power["structural"],
