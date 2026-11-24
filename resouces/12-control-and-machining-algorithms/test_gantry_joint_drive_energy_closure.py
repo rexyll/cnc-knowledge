@@ -924,5 +924,62 @@ class TestSyntheticENE02Integration(unittest.TestCase):
             self.assertEqual(len(archived["artifacts"]), 4)
 
 
+class TestSyntheticENE03Integration(unittest.TestCase):
+    CONFIG_PATH = (
+        Path(__file__).resolve().parent
+        / "gantry-joint-drive-ene-03-synthetic-config.json"
+    )
+
+    def test_committed_ene03_fixture_has_nonzero_signed_external_load(self) -> None:
+        config = json.loads(self.CONFIG_PATH.read_text(encoding="utf-8"))
+        validated = energy_runner._validate(config)
+        model = validated["model"]
+        self.assertEqual(config["case_id"], "ENE-03")
+        self.assertIsNone(validated["threshold"])
+        self.assertTrue(np.array_equal(model.mechanical.D0, np.diag([10.0, 2.0, 4.0, 0.5])))
+        self.assertGreater(model.mechanical.axis_viscous_Ns_m, 0.0)
+        self.assertGreater(model.mechanical.axis_coulomb_N, 0.0)
+        self.assertTrue(np.any(validated["external"] != 0.0))
+        self.assertEqual(
+            model.electrical.force_constant_N_per_A,
+            model.electrical.back_emf_V_per_m_s,
+        )
+        self.assertGreaterEqual(
+            validated["energy_residual_noise_floor_J"],
+            validated["energy_residual_noise_budget_report"]["minimum_noise_floor_J"],
+        )
+
+    def test_ene03_four_level_signed_external_work_and_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary) / "ene-03-output"
+            result = energy_runner.run(self.CONFIG_PATH, output_dir)
+            self.assertEqual(result["case_id"], "ENE-03")
+            self.assertEqual(result["status"], "COMPLETED_REPORT_ONLY")
+            manifest = json.loads(
+                (output_dir / energy_runner.MANIFEST_NAME).read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["schema_version"], 7)
+            self.assertIsNone(manifest["normalized_energy_closure_threshold"])
+            self.assertTrue(manifest["all_refinements_smooth_unsaturated"])
+            self.assertEqual(manifest["residual_order_diagnostic"]["gate_status"], "ELIGIBLE")
+            self.assertTrue(all(item["smooth_unsaturated"] for item in manifest["limiter_stage_reports"]))
+            with (output_dir / energy_runner.SUMMARY_NAME).open(
+                encoding="utf-8", newline=""
+            ) as stream:
+                rows = list(csv.DictReader(stream))
+            self.assertEqual(len(rows), 4)
+            for row in rows:
+                self.assertEqual(row["status"], "COMPLETED_REPORT_ONLY")
+                self.assertTrue(np.isfinite(float(row["external_generalized_work_J"])))
+                self.assertGreater(float(row["external_generalized_work_J"]), 0.0)
+                self.assertGreater(float(row["structural_damping_loss_J"]), 0.0)
+                self.assertGreater(float(row["axis_friction_loss_J"]), 0.0)
+                self.assertTrue(np.isfinite(float(row["energy_residual_simpson_J"])))
+            archived = energy_runner.verify_archive(output_dir)
+            self.assertEqual(archived["status"], "VERIFIED")
+            self.assertEqual(archived["recorded_status"], "COMPLETED_REPORT_ONLY")
+            self.assertEqual(len(archived["artifacts"]), 4)
+
+
 if __name__ == "__main__":
     unittest.main()
