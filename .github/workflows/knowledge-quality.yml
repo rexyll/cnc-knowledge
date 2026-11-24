@@ -30,6 +30,8 @@ jobs:
 
   ch12-resource-tests:
     name: CH12 numerical resource tests
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -43,6 +45,7 @@ jobs:
       - name: Run CH12 solver, PATH-01, ENE, and RK4 screen resource tests
         run: python -m unittest discover -s resouces/12-control-and-machining-algorithms -p 'test_gantry_joint_drive_*.py' -v
       - name: Run RK4-01 synthetic convergence screen
+        id: rk4_screen
         run: python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-01-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic
       - name: Upload RK4-01 numerical results
         if: always()
@@ -52,3 +55,15 @@ jobs:
           path: resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/
           if-no-files-found: warn
           retention-days: 14
+      - name: Persist RK4-01 results to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic/
+          if git diff --cached --quiet; then
+            echo "No new RK4-01 result files to archive."
+            exit 0
+          fi
+          git commit -m "chore(ch12): archive RK4-01 synthetic results [skip ci]"
+          git push origin HEAD:main
