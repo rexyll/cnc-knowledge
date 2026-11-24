@@ -31,3 +31,12 @@
 - 资源测试仍为求解器35项、PATH-01运行器39项，共74项，均未执行；ENE积分、RK4细化、PATH-01均NOT_RUN。
 
 - **提交/CI：** `17448b6e7d82df433a74fa186c1761abd5b7ae0c`；GitHub Actions [Run 45316278632](https://github.com/rexyll/cnc-knowledge/actions/runs/45316278632) success，Knowledge structure and data quality job成功。CI不执行 `resouces/` 下74项资源测试。
+
+
+## CH12-T003 ENE多步积分能量闭合判据（2026-11-24）
+
+- 新增协议5.15与专题7.6.24，明确ENE-01～03四档积分每档独立计算储能变化、净功率积分、J单位残差与归一化残差。
+- 固定归一化定义：rho_E=abs(R_E)/max(E_scale, integral(abs(P_net)), E_floor)；E_scale/E_floor必须运行前声明且四档一致。Simpson为主积分，梯形为敏感性对照。
+- 功率项：ENE-01端电压输入功减铜耗；ENE-02再扣结构阻尼与路径摩擦；ENE-03再加有符号外部广义力。要求分项归档，不以命令电压替代限幅后端电压。
+- 判读：最细两档满足预声明阈值才可称达到闭合容差；跨零或噪声地板主导时不强行给出残差阶数，不机械套用状态误差p>=3。
+- 本轮仅定义协议，没有运行资源测试或数值积分；74项资源测试、RK4、ENE、PATH-01仍未完成。
