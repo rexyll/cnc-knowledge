@@ -122,7 +122,7 @@
 - 本轮未执行任何 `resouces/` 资源测试或数值积分；Knowledge Quality CI不覆盖资源测试。ENE验证矩阵仍为 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
 
 
-- **仓库CI：** `0d644cf15407a9221dc498eb23b9b9c44d5b3b3e` 对应 GitHub Actions [Run 45352911112](https://github.com/rexyll/cnc-knowledge/actions/runs/45352911112) success；Knowledge structure and data quality job成功。该CI不执行 `resouces/` 下96项资源测试，也不运行ENE积分。undefined
+- **仓库CI：** `0d644cf15407a9221dc498eb23b9b9c44d5b3b3e` 对应 GitHub Actions [Run 45352911112](https://github.com/rexyll/cnc-knowledge/actions/runs/45352911112) success；Knowledge structure and data quality job成功。该CI不执行 `resouces/` 下96项资源测试，也不运行ENE积分。
 
 - **仓库CI：** 阶段功率快照实现与归档语义加固提交 `40c65ac9eaa593effa584896f13d6af146ed7f59` 对应 GitHub Actions [Run 45357974206](https://github.com/rexyll/cnc-knowledge/actions/runs/45357974206) success；Knowledge structure and data quality job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下99项资源测试，也不运行ENE积分。
 
