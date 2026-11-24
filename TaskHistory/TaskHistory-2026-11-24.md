@@ -204,3 +204,19 @@ ENE归档null一致性补充（2026-11-24）：runner比较器支持严格JSON n
 - **实际完成时间：** 2026-11-24T19:13:15+08:00（GitHub提交时间，Asia/Shanghai）
 - **交付文件：** `.github/workflows/knowledge-quality.yml`；本记录文件。
 - **验收证据：** GitHub提交 [556d603ae3543cd455b6b8060b76e6fcfd937beb](https://github.com/rexyll/cnc-knowledge/commit/556d603ae3543cd455b6b8060b76e6fcfd937beb)；CI运行结果尚待核验。
+## CH12资源级测试首次执行、失败归因与复验通过（2026-11-24）
+
+- **首次资源CI：** 新增工作流后，Run [45382162709](https://github.com/rexyll/cnc-knowledge/actions/runs/45382162709) 与后续文档提交 Run [45382486802](https://github.com/rexyll/cnc-knowledge/actions/runs/45382486802) 均执行116项资源测试，结果为2 FAIL、2 ERROR；两个Run的原有仓库质量Job均success。
+- **失败归因与修正范围：**
+  1. 混合尺度SPD解测试构造的物理坐标解与`1e-6/1/1e6`尺度造成右端项舍入后小分量信息不可恢复；测试改为在对角均衡坐标中构造均衡解，保留原高动态范围与严格数值断言。
+  2. 零速度RL测试把零电流指令误当作零PI电压；由于PI比例项非零，实际电压为负。测试改为命令等于当前电流，显式确认端电压为零后检查纯RL衰减。
+  3. RK4阶段时间测试在最后一个区间仍访问“下一步k1”，造成索引越界；改为只比较非末端区间的k4/k1，并单独核验最终k4与输出终点及阶段数量。
+  4. ENE h/16拒绝测试的无效参考网格在构造夹具时先触发Simpson奇数区间异常；改为先生成有效夹具，再仅缩短参考网格，以直接验证“至少32个参考区间”的目标前置条件。
+- **生产代码边界：** 本轮只修复两个资源测试文件，不修改联合求解器、ENE运行器或PATH-01生产实现；不降低求解器数值断言、不改变动力学方程或运行器验收门控。
+- **修正提交：** 求解器资源测试 `6862981116ee0eefdc9cbb18049d604df9b32e4a`；ENE资源测试 `ce0ea5a68234efc1d325b3ee78822f4f548ee40b`。均直接提交到`main`。
+- **最终CI：** GitHub Actions [Run 45384191326](https://github.com/rexyll/cnc-knowledge/actions/runs/45384191326) success。`Knowledge structure and data quality`与`CH12 numerical resource tests`两个Job均success。
+- **测试结果：** Python 3.12.16、NumPy 2.5.5；116/116通过，其中ENE 42/42、PATH-01 39/39、联合求解器35/35；日志为`Ran 116 tests in 0.082s`、`OK`。原仓库单元测试与strict knowledge lint同样通过。
+- **验收边界：** 该结果仅证明当前资源单元测试在该CI环境中通过。没有运行ENE-01/02/03积分、RK4-01～04实际步长收敛或PATH-01自由/规定轨迹数值对照；验证矩阵这些条目继续`NOT_RUN`。没有真实设备参数、HIL或实机验证结论。
+- **实际完成时间：** 2026-11-24T19:26:36+08:00（GitHub Actions完成日志，Asia/Shanghai）
+- **交付文件：** `.github/workflows/knowledge-quality.yml`；`resouces/12-control-and-machining-algorithms/test_gantry_joint_drive_solver.py`；`resouces/12-control-and-machining-algorithms/test_gantry_joint_drive_energy_closure.py`。
+- **所在分支：** `main`
