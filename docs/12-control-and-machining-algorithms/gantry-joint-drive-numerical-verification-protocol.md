@@ -542,4 +542,7 @@ Manifest schema从2升级为3，新增 `adjacent_refinement_diagnostics`；归�
 
 前3个相邻指数分别写入summary中对应的h/2、h/4、h/8行；h行没有前序层级，留空。h/8→h/16指数与完整五档诊断写入manifest。归档验证器使用summary四个残差、h/16参考残差、五档限幅报告及manifest中预声明噪声底重新计算门控与指数，并检查CSV/manifest一致性。该诊断**不改变原能量闭合PASS阈值、最细两档阈值判定或任何状态误差门槛**。
 
-配置schema升为3，manifest schema升为5。新增3项ENE资源测试定义；ENE运行器38项、求解器35项、PATH-01运行器39项，总计112项资源测试仍均为未执行状态。未运行ENE积分，验证矩阵仍为 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+配置schema升为3，manifest schema升为5。新增3项ENE资源测试定义；ENE运行器38项、求解器35项、PATH-01运行器39项，总计113项资源测试仍均为未执行状态。未运行ENE积分，验证矩阵仍为 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
+
+
+归档比较器补充修正（2026-11-24）：对被门控抑制的经验阶数，manifest以JSON null保留四个“不可报告”占位。归档嵌套诊断比较器现显式支持null且要求双方严格一致，新增1项资源测试定义，ENE运行器测试39项，总资源测试数更新为113项；仍未执行资源测试或ENE积分。

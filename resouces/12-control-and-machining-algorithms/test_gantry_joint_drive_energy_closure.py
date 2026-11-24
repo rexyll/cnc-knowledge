@@ -20,7 +20,8 @@ from gantry_joint_drive_energy_closure import (
     _fixed_trajectory_quadrature_diagnostics, _rk4_stage_power_diagnostics,
     _reference_trajectory_diagnostics, _adjacent_refinement_diagnostics,
     _validate_state_comparison_scale_contract, _validate_residual_noise_floor_contract,
-    _residual_order_diagnostics, STATE_VECTOR_FIELDS, STATE_COMPARISON_UNITS,
+    _residual_order_diagnostics, _assert_json_metrics_close,
+    STATE_VECTOR_FIELDS, STATE_COMPARISON_UNITS,
 )
 
 
@@ -488,6 +489,17 @@ class TestIndependentEnergyPowerAccounting(unittest.TestCase):
         manifest["state_comparison_units"]["q1_m"] = "mm"
         with self.assertRaisesRegex(EnergyClosureError, "state_comparison_units"):
             _validate_manifest_contract(manifest)
+
+    def test_json_diagnostic_comparison_accepts_and_checks_null_order_values(self) -> None:
+        _assert_json_metrics_close(
+            {"gate_status": "AT_OR_BELOW_NOISE_FLOOR", "orders": [None, None]},
+            {"gate_status": "AT_OR_BELOW_NOISE_FLOOR", "orders": [None, None]},
+        )
+        with self.assertRaisesRegex(EnergyClosureError, "orders\\[1\\] value is inconsistent"):
+            _assert_json_metrics_close(
+                {"gate_status": "AT_OR_BELOW_NOISE_FLOOR", "orders": [None, 0.0]},
+                {"gate_status": "AT_OR_BELOW_NOISE_FLOOR", "orders": [None, None]},
+            )
 
     def test_residual_noise_floor_validation_requires_positive_sourced_contract(self) -> None:
         floor, method, source, ids = _validate_residual_noise_floor_contract(

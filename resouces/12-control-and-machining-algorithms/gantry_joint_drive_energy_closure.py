@@ -883,6 +883,9 @@ def _assert_json_metrics_close(actual: Any, expected: Any, path: str = "referenc
             raise EnergyClosureError(f"{path} array length is inconsistent")
         for index, (actual_item, expected_item) in enumerate(zip(actual, expected)):
             _assert_json_metrics_close(actual_item, expected_item, f"{path}[{index}]")
+    elif expected is None:
+        if actual is not None:
+            raise EnergyClosureError(f"{path} value is inconsistent")
     elif isinstance(expected, bool) or isinstance(expected, str):
         if actual != expected:
             raise EnergyClosureError(f"{path} value is inconsistent")

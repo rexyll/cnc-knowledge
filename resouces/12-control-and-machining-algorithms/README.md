@@ -309,4 +309,7 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_energy_cl
 - 该噪声底与 `energy_normalization_floor_J` 分离；不能从本次轨迹反推，也不能仅按 machine epsilon × 能量尺度设定。方法说明应覆盖浮点格式、操作与累加路径、求积节点/权重、数值范围/抵消和执行环境。
 - 使用h、h/2、h/4、h/8、h/16五层残差门控：五层均完整未限幅、均高于噪声底、同号、绝对值严格递减才输出四个相邻经验指数；其余情况明确报告门控状态并留空指数。
 - 经验指数仅作有限层级诊断，不证明渐近阶数、不构成误差上界、不影响既有PASS判据。前三个指数写入summary，h/8→h/16及完整门控写入manifest；归档校验重算。
-- Manifest schema升级为5，配置模板全部新增噪声底字段保持null/空数组。新增3项测试定义；ENE38项、求解器35项、PATH-01 39项，共112项资源测试均未执行，ENE积分未运行。
+- Manifest schema升级为5，配置模板全部新增噪声底字段保持null/空数组。新增3项测试定义；ENE38项、求解器35项、PATH-01 39项，共113项资源测试均未执行，ENE积分未运行。
+
+
+归档null值一致性修正（2026-11-24）：门控抑制经验阶数时，manifest中的JSON null现在由归档比较器逐层严格验证；新增1项资源测试定义。资源测试总计113项（ENE39、solver35、PATH-01 39），均未执行。
