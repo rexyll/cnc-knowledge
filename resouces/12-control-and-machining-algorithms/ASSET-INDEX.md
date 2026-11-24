@@ -78,7 +78,7 @@ python resouces/12-control-and-machining-algorithms/gantry-mimo-simulation.py --
 | 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
 |---|---|---|---|---|---|---|
 | gantry_joint_drive_path_comparison.py | Python源码 | PATH-01四档步长自由轴/理想规定路径比较运行器；输出逐点时序、归一化误差、约束反力/约束功、机电能量账本、阶段限幅诊断和运行manifest | 项目原创 | 2026-11-23 | 原创代码 | 龙门连续移动负载与双向耦合专题 |
-| test_gantry_joint_drive_path_comparison.py | Python测试 | 37项资源级测试：五次参考路径、Simpson/梯形求积与有限值边界、机电功率互易与约束功符号、混合单位归一化、限幅精确比较、来源ID校验、CSV哈希绑定、归档校验/篡改识别/路径覆盖拒绝、溢出边界与CLI错误返回 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
+| test_gantry_joint_drive_path_comparison.py | Python测试 | 41项资源级测试：五次参考路径、自由/规定双模型四档积分与归档回归、Simpson/梯形求积与有限值边界、机电功率互易与约束功符号、混合单位归一化、限幅精确比较、来源ID校验、CSV哈希绑定、归档校验/篡改识别/路径覆盖拒绝、溢出边界与CLI错误返回 | 项目原创 | 2026-11-23 | 原创代码 | 同上 |
 
 当前PATH-01运行器资源测试37项、求解器资源测试32项，共69项，均未执行；仓库CI不执行resouces资源测试。
 
@@ -270,7 +270,7 @@ ENE运行器测试定义42项（自动预算测试包括预算报告精确数值
 | `generated/rk4-01-synthetic/rk4-01-adjacent-differences.csv` | CSV差异 | 三组相邻细化网格的12状态分量最大/RMS差、归一化差异和有限层级观测阶数 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
 | `generated/rk4-01-synthetic/rk4-01-run-manifest.json` | JSON运行清单 | 配置/源码SHA-256、执行环境、数值筛查、限幅和阶段统计、三个CSV文件校验元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
-运行状态：RK4-01～04、ENE-01～03均为`COMPLETED_REPORT_ONLY`；PATH-01仍`NOT_RUN`。上述完成状态仅表示合成模型数值/软件筛查，不是机床实测或性能验收。
+运行状态：RK4-01～04、ENE-01～03和PATH-01均为`COMPLETED_REPORT_ONLY`；PATH-01验收决策为`DESCRIPTIVE_ONLY`。上述完成状态仅表示合成模型数值/软件筛查，不是机床实测或性能验收。
 
 
 ## RK4-02正向自由路径数值筛查资源（2026-11-24）
@@ -350,3 +350,13 @@ ENE-02为`COMPLETED_REPORT_ONLY`。h/8结构阻尼损失约3.61875e-3J、路径�
 | `generated/ene-03-synthetic/gantry-joint-drive-energy-closure-run-manifest.json` | JSON运行清单 | 输入SHA-256、噪声预算、h/16参考、四档限幅/阶段报告及CSV哈希/尺寸/行列 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
 ENE-03为`COMPLETED_REPORT_ONLY`。h/8外部广义力功=+4.2078931032e-3J，结构阻尼损失=3.6791157486e-3J，路径轴摩擦损失=2.0885147980e-2J；Simpson残差h～h/8为2.3101603200e-5/1.1224940887e-6/6.3012923828e-8/3.7358090553e-9J，h/16参考2.2733322429e-10J；观测阶数4.36321/4.15492/4.07616/4.03854。噪声地板1e-11J，自动浮点底线5.7137932863e-12J，工程阈值null。Actions Run 45417667115通过134/134项资源测试并归档五件套，归档提交de53f2f57c6afca75c62e4bdc980bd6927e2b19b。PATH-01仍`NOT_RUN`；CH12-T003保持`IN_PROGRESS`。
+## PATH-01自由轴/理想规定路径双积分执行资源（2026-11-24）
+
+| 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
+|---|---|---|---|---|---|---|
+| `gantry-joint-drive-path-01-synthetic-config.json` | JSON配置 | 合成PATH-01五次静止—静止路径、自由/规定双模型共同初始状态、确定性PD电流回调、同一五维外载及四档积分；应用验收限值全为null | 项目原创 | 2026-11-24 | 原创合成配置 | 龙门连续移动轴—电流环联合模型数值验证协议 |
+| `generated/path-01-synthetic/gantry-joint-drive-path-comparison-timeseries.csv` | CSV时序 | 604行/73列，四档自由/约束模型状态、路径误差、负载点、约束反力/功、能量与限幅诊断 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/path-01-synthetic/gantry-joint-drive-path-comparison-summary.csv` | CSV汇总 | 4行/73列，两模型逐档收敛、位置/速度/负载点差、lambda峰值/RMS、约束功、能量残差和验收状态 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/path-01-synthetic/gantry-joint-drive-path-comparison-run-manifest.json` | JSON运行清单 | 配置/求解器/runner SHA-256、双模型四档收敛屏、限幅阶段、输入网格和两个CSV哈希/尺寸/行列元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
+
+PATH-01为`COMPLETED_REPORT_ONLY`、`DESCRIPTIVE_ONLY`。自由/规定两模型分别通过四档数值收敛筛查，有限层级观测阶数分别为4.57637/4.29229和4.65977/4.34479；全档无参考限幅/电压饱和。最细档路径误差RMS/峰值约7.999/12.201mm，约束反力峰值/RMS约50.312/35.739N，约束功约0.0161883J。由于所有应用级限值保持null，不判定跟踪或驱动力工程合格。GitHub Actions Run 45419174116通过136/136项资源测试并归档三文件，归档提交f7798c801d792a78d1f27f5522671ab370b07d4b。CH12-T003保持`IN_PROGRESS`。

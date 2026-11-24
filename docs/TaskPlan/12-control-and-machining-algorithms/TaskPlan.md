@@ -619,7 +619,7 @@
 - **修正提交：** `6862981116ee0eefdc9cbb18049d604df9b32e4a`修正求解器资源测试中的三个测试问题；`ce0ea5a68234efc1d325b3ee78822f4f548ee40b`修正ENE参考网格拒绝测试夹具。未改生产求解器/运行器方程或降低数值断言。
 - **复验结果：** GitHub Actions [Run 45384191326](https://github.com/rexyll/cnc-knowledge/actions/runs/45384191326)两个Job均success；Python 3.12.16 / NumPy 2.5.5，ENE42/42、PATH-01 39/39、solver35/35，总计116/116通过（日志`Ran 116 tests in 0.082s`、`OK`）。原仓库tests与strict knowledge lint也通过。
 - **资源测试状态：** 已接入CI并通过当前运行环境的单元测试验收。后续代码更新仍由该Job自动回归。
-- **当前未完成验证：** ENE-01～03均已完成合成积分并标记`COMPLETED_REPORT_ONLY`；仅PATH-01自由/规定轨迹数值对照仍`NOT_RUN`。RK4-01～04亦为合成模型`COMPLETED_REPORT_ONLY`。资源测试和报告态能量闭合不等于真实机床适用性或轨迹验收；真实参数辨识、台架、HIL和实机仍未完成。没有完整工程验收阈值时，不得标记工程PASS。
+- **当前验证状态：** RK4-01～04、ENE-01～03和PATH-01均已完成合成模型数值筛查，状态`COMPLETED_REPORT_ONLY`；PATH-01为`DESCRIPTIVE_ONLY`，所有应用级验收限值为空。资源测试和报告态双模型对照均不等于真实机床适用性或轨迹验收；真实参数辨识、台架、HIL和实机仍未完成。没有完整工程验收阈值时，不得标记工程PASS。
 - **相关每日记录：** [TaskHistory-2026-11-24.md](../../../TaskHistory/TaskHistory-2026-11-24.md)。
 - **当前任务状态：** CH12-T003保持`IN_PROGRESS`。
 ## CH12-T003 RK4-01合成数值积分收敛筛查（2026-11-24）
@@ -706,3 +706,13 @@
 - 工程能量阈值保持null，结果只为`COMPLETED_REPORT_ONLY`。外载和误差界都是合成分析输入，未独立证明；不代表真实加工载荷或机床能量验证。
 - GitHub Actions [Run 45417667115](https://github.com/rexyll/cnc-knowledge/actions/runs/45417667115)两个Job success：资源测试134/134、RK4-01～04、ENE-01～03运行、仓库测试、strict lint及归档均成功；五件套归档提交`de53f2f57c6afca75c62e4bdc980bd6927e2b19b`。
 - ENE-01～03均为`COMPLETED_REPORT_ONLY`；PATH-01仍`NOT_RUN`；真实参数辨识、台架、HIL和实机验证未完成；CH12-T003保持`IN_PROGRESS`。
+
+## CH12-T003 PATH-01自由轴与理想规定轨迹四档双模型数值对照（2026-11-24）
+
+- 新增 `gantry-joint-drive-path-01-synthetic-config.json`：五次静止—静止路径s=0.720→0.735m、T=0.2s；两套模型共享初始状态、确定性PD回调（Kp=80A/m、Kd=12A·s/m、前馈0.5A）、五维常值合成外力[0.25,0.01,-0.02,0.005,0.20]。所有参数与路径/比较尺度均为合成输入。
+- 新增2项PATH-01资源测试：配置契约/空应用阈值、完整自由与规定双积分及归档回归。PATH-01运行器测试由39项增至41项；与求解器35、ENE49、RK4 runner11项合计CH12资源测试136项。
+- 四档区间40/80/160/320，两套积分器阶段计数均与理论相符、各档状态有限，且未触发电流参考限幅/电压饱和。自由相邻归一化距离1.56716e-4/6.56885e-6/3.35260e-7、观测阶数4.57637/4.29229；规定模型1.35803e-4/5.37252e-6/2.64403e-7、观测阶数4.65977/4.34479。
+- h/8路径位置误差RMS/峰值7.999/12.201mm，速度误差RMS/峰值0.07703/0.12480m/s；自由轴终点0.723431376m，参考终点0.735m，带符号端点误差-11.569mm。移动负载点误差RMS/峰值7.999/12.201mm。
+- h/8约束反力峰值/RMS=50.3123/35.7391N，约束功=0.01618832J；自由/规定能量残差分别9.16906e-9J和2.48793e-8J。约束模型是理想运动学约束，不代表实际伺服可达能力。
+- 归档应用限值均为null，结果严格为`COMPLETED_REPORT_ONLY`/`DESCRIPTIVE_ONLY`。GitHub Actions [Run 45419174116](https://github.com/rexyll/cnc-knowledge/actions/runs/45419174116)两个Job success，CH12资源测试136/136、所有RK4/ENE/PATH运行、仓库测试和strict lint通过；结果归档提交`f7798c801d792a78d1f27f5522671ab370b07d4b`。
+- 真实机床轨迹、驱动器峰值/连续力能力、应用容差、参数辨识、台架、HIL和实机验证尚未开展；CH12-T003保持`IN_PROGRESS`。

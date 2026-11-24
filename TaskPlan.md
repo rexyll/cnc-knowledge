@@ -521,4 +521,12 @@
 - 四档积分和h/16参考均成功；状态有限、阶段计数匹配，无电流参考限幅或电压饱和。h/8外部输入功+0.0042078931032J，结构阻尼损失0.0036791157486J，路径摩擦损失0.0208851479796J，净功0.0054529616977J。
 - Simpson残差h～h/8为2.31016e-5/1.12249e-6/6.30129e-8/3.73581e-9J；h/16参考2.27333e-10J；观测阶数4.36321/4.15492/4.07616/4.03854。噪声地板1e-11J；阈值null，只能报告态。
 - GitHub Actions [Run 45417667115](https://github.com/rexyll/cnc-knowledge/actions/runs/45417667115) success：CH12资源134/134、RK4-01～04和ENE-01～03运行、仓库测试、strict lint及归档全部通过；结果归档提交`de53f2f57c6afca75c62e4bdc980bd6927e2b19b`。
-- RK4-01～04、ENE-01～03均为COMPLETED_REPORT_ONLY；PATH-01仍未运行，CH12-T003保持IN_PROGRESS。没有真实加工载荷、参数辨识、台架、HIL或实机结论。
+- RK4-01～04、ENE-01～03和PATH-01均为COMPLETED_REPORT_ONLY；PATH-01验收决策为DESCRIPTIVE_ONLY，CH12-T003保持IN_PROGRESS。没有真实加工载荷、参数辨识、台架、HIL或实机结论。
+
+## CH12-T003最新数值验证里程碑（2026-11-24）：PATH-01
+
+- 新增PATH-01合成双模型对照：s=0.720→0.735m五次静止—静止参考，T=0.2s；自由与规定模型共享PD（Kp=80A/m、Kd=12A·s/m、前馈0.5A）和五维合成外载。
+- 136/136项资源测试通过；两套积分器四档收敛均通过且全档无参考限幅/电压饱和。自由/规定观测阶数分别4.57637/4.29229与4.65977/4.34479。
+- h/8路径误差RMS/峰值约7.999/12.201mm，速度误差RMS/峰值0.07703/0.12480m/s；自由终点0.723431m，参考0.735m。约束反力峰值/RMS约50.312/35.739N，约束功0.0161883J。
+- 应用限值全为null，状态`COMPLETED_REPORT_ONLY`、决策`DESCRIPTIVE_ONLY`，不判定跟踪/驱动力工程合格。GitHub Actions [Run 45419174116](https://github.com/rexyll/cnc-knowledge/actions/runs/45419174116)两个Job success，136/136资源测试和所有RK4/ENE/PATH数值步骤成功；三文件归档提交`f7798c801d792a78d1f27f5522671ab370b07d4b`。
+- RK4-01～04、ENE-01～03、PATH-01均完成合成报告态筛查；CH12-T003仍IN_PROGRESS，真实设备/HIL工作未完成。
