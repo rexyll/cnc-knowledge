@@ -65,8 +65,8 @@
     "current_A": 1.0,
     "current_integrator_V": 10.0
   },
-  "started_at_utc": "2026-11-24T14:37:50.426050+00:00",
-  "completed_at_utc": "2026-11-24T14:37:50.799926+00:00",
+  "started_at_utc": "2026-11-24T14:45:49.291234+00:00",
+  "completed_at_utc": "2026-11-24T14:45:49.724735+00:00",
   "duration_s": 0.2,
   "base_step_s": 0.005,
   "base_intervals": 40,
@@ -209,10 +209,10 @@
   "solver_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
   "path_support_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
   "runner_sha256": "3fc6f8ca52fb831274cd98c9b3331456e19821d9cf582f3f1358946f85207db9",
-  "git_sha": "af029d76cd195ee485d245e6026739799f0259f7",
+  "git_sha": "6d735c6a159b28e09d9ddb12b6e70e209a81cd3e",
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
   "numpy_version": "2.5.5",
-  "operating_system": "Linux-7.0.0-1016-aws-x86_64-with-glibc2.43",
+  "operating_system": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
   "command_line": "resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_screen.py --config resouces/12-control-and-machining-algorithms/gantry-joint-drive-rk4-02-synthetic-config.json --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-02-synthetic",
   "output_artifacts": {
     "rk4-02-synthetic-timeseries.csv": {
