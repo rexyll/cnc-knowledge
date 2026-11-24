@@ -270,7 +270,7 @@ ENE运行器测试定义42项（自动预算测试包括预算报告精确数值
 | `generated/rk4-01-synthetic/rk4-01-adjacent-differences.csv` | CSV差异 | 三组相邻细化网格的12状态分量最大/RMS差、归一化差异和有限层级观测阶数 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
 | `generated/rk4-01-synthetic/rk4-01-run-manifest.json` | JSON运行清单 | 配置/源码SHA-256、执行环境、数值筛查、限幅和阶段统计、三个CSV文件校验元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
-运行状态：RK4-01为`COMPLETED_REPORT_ONLY`。该包不是机床实测或性能验收结果；RK4-02～04、ENE-01～03、PATH-01仍`NOT_RUN`。
+运行状态：RK4-01和RK4-02均为`COMPLETED_REPORT_ONLY`；两者均为合成模型数值收敛筛查，不是机床实测或性能验收。RK4-03/04、ENE-01～03、PATH-01仍`NOT_RUN`。
 
 
 ## RK4-02正向自由路径数值筛查资源（2026-11-24）
