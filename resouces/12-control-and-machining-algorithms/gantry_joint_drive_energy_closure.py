@@ -1433,7 +1433,7 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
          ("current_reference_saturated", "voltage_saturated"), ()),
         ("summary_csv", SUMMARY_NAME, SUMMARY_FIELDS,
          ("stage_count_matches_expected", "smooth_unsaturated"),
-         ("empirical_residual_order_from_previous",)),
+         ("empirical_residual_order_from_previous", "energy_closure_threshold")),
     ):
         record = artifacts.get(key)
         path = output / name
