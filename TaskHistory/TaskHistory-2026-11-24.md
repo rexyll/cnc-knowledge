@@ -170,3 +170,5 @@
 - 前三个经验指数分别写入h/2、h/4、h/8 summary行；h/8→h/16指数与五层残差/门控写入manifest。归档校验从summary残差、h/16参考残差、限幅报告与预声明噪声底重新计算门控和指数。
 - 新增3项ENE资源测试定义：噪声底值/来源契约；高于噪声底同号单调序列与噪声/跨零/非单调/限幅门控；manifest噪声底来源完整性。ENE资源测试38项、求解器35项、PATH-01 39项，共112项资源测试均未执行。
 - 配置schema升至3，manifest schema升至5；配置模板中的噪声底及来源字段全部留空。仅完成代码/文档/测试定义与静态检查；未执行任何resouces测试、ENE积分或数值仿真。验证矩阵保持NOT_RUN，CH12-T003保持IN_PROGRESS。
+
+- **仓库CI（ENE残差噪声底与经验阶数门控实现）：** 实现提交 `e2e10e867e5166d507c30c6d0d6b6a2f2c250cc8` 对应 [Run 45377309267](https://github.com/rexyll/cnc-knowledge/actions/runs/45377309267) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下112项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`，ENE验证矩阵继续 `NOT_RUN`。

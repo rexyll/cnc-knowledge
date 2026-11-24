@@ -590,3 +590,5 @@
 - **判读算法：** 以h、h/2、h/4、h/8、h/16五档Simpson残差作为序列。五档阶段完整且未限幅、所有残差均高于预声明噪声底、符号一致、绝对值严格递减，才报告四个相邻经验指数；否则按 `NONSMOOTH_OR_LIMITER_ACTIVE`、`AT_OR_BELOW_NOISE_FLOOR`、`SIGN_CROSSING` 或 `NON_MONOTONIC_MAGNITUDE` 明确标记并抑制全部阶数值。
 - **语义边界：** 经验指数仅为有限层级比值，不证明渐近阶数或误差界，不自动套用p≥3，也不修改原ENE PASS阈值。前三个指数写入summary，h/8→h/16指数与五档完整诊断保存在manifest；归档校验从summary及manifest重算。
 - **版本/测试：** 配置schema v3、manifest schema v5。新增3项ENE资源测试定义；ENE38项、求解器35项、PATH-01 39项，总计112项资源测试均未执行；ENE积分未执行。验证矩阵仍NOT_RUN，CH12-T003保持IN_PROGRESS。
+
+- **仓库CI（ENE残差噪声底与经验阶数门控实现）：** 实现提交 `e2e10e867e5166d507c30c6d0d6b6a2f2c250cc8` 对应 [Run 45377309267](https://github.com/rexyll/cnc-knowledge/actions/runs/45377309267) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下112项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`，ENE验证矩阵继续 `NOT_RUN`。
