@@ -336,6 +336,6 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_scree
   --output-dir resouces/12-control-and-machining-algorithms/generated/rk4-01-synthetic
 ```
 
-- 运行结果：`generated/rk4-01-synthetic/rk4-01-synthetic-results-45385379794.zip`，包含时序CSV、四档汇总CSV、相邻层级差异CSV和manifest。压缩包SHA-256：`6bfd6a2c51b05fe38f8abd5ef526110985e62e0e6c2d991eb3921bc6451b1c02`。
+- 运行结果：`generated/rk4-01-synthetic/`目录中分别提交了`rk4-01-synthetic-timeseries.csv`、`rk4-01-level-summary.csv`、`rk4-01-adjacent-differences.csv`和`rk4-01-run-manifest.json`。manifest记录三个CSV的SHA-256/尺寸/行列数。GitHub Actions另上传临时ZIP Artifact（Run 45385379794，Artifact ID 14915203518，保留14天），但仓库持久归档是上述四个独立文件。
 - GitHub Actions [Run 45385379794](https://github.com/rexyll/cnc-knowledge/actions/runs/45385379794)通过：资源测试121/121、仓库测试及strict lint通过；RK4-01状态`COMPLETED_REPORT_ONLY`，相邻归一化RMS差依次2.4669535331394685e-05、9.795609168099331e-07、4.832443317361703e-08，观测阶数4.654451518041637和4.341310498009402。
 - 此结果仅为合成连续时间模型的数值积分收敛筛查；无机床实测参数、工程验收阈值或HIL/实机证据。其余RK4/ENE/PATH-01矩阵项未运行。
