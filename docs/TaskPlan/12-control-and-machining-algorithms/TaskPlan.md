@@ -557,3 +557,4 @@
 - **归档：** Manifest schema从2升级为3，新增 `adjacent_refinement_diagnostics`；归档验证器从端点CSV重算四组对照并校验manifest。
 - **测试定义：** 新增3项ENE测试；ENE测试32项、求解器35项、PATH-01 39项，总计106项资源测试均未执行。ENE主积分未执行，验证矩阵仍 `NOT_RUN`，CH12-T003保持 `IN_PROGRESS`。
 
+- **仓库CI（相邻细化轨迹共同节点诊断）：** 实现提交 `102d473bfe01750ff447a3c4689cd86e882c6c42` 对应 [Run 45366368115](https://github.com/rexyll/cnc-knowledge/actions/runs/45366368115) success；`Knowledge structure and data quality` job中的既有单元测试与repository knowledge lint均成功。该CI不执行 `resouces/` 下106项资源测试，也不运行ENE积分。CH12-T003保持 `IN_PROGRESS`。
