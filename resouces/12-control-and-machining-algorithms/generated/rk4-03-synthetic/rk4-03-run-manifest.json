@@ -65,8 +65,8 @@
     "current_A": 1.0,
     "current_integrator_V": 10.0
   },
-  "started_at_utc": "2026-11-24T14:45:49.852663+00:00",
-  "completed_at_utc": "2026-11-24T14:45:50.294293+00:00",
+  "started_at_utc": "2026-11-24T14:54:50.070907+00:00",
+  "completed_at_utc": "2026-11-24T14:54:50.773183+00:00",
   "duration_s": 0.2,
   "base_step_s": 0.005,
   "base_intervals": 40,
@@ -209,7 +209,7 @@
   "solver_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
   "path_support_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
   "runner_sha256": "3fc6f8ca52fb831274cd98c9b3331456e19821d9cf582f3f1358946f85207db9",
-  "git_sha": "6d735c6a159b28e09d9ddb12b6e70e209a81cd3e",
+  "git_sha": "126f95c996600265ff85247beeb0aa5676a9b3e6",
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
   "numpy_version": "2.5.5",
   "operating_system": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
@@ -217,8 +217,8 @@
   "output_artifacts": {
     "rk4-03-synthetic-timeseries.csv": {
       "file_name": "rk4-03-synthetic-timeseries.csv",
-      "sha256": "7bccf6ca0b86b542d37cd0a4846e32ec3122678033c4c50cf5df1fabe99dc2f4",
-      "size_bytes": 226924,
+      "sha256": "8fda18864019ede7b39485af0aeaae38601857e02a3fe1cf17c012c072f02c5d",
+      "size_bytes": 226914,
       "data_rows": 604,
       "columns": 22
     },
@@ -231,8 +231,8 @@
     },
     "rk4-03-adjacent-differences.csv": {
       "file_name": "rk4-03-adjacent-differences.csv",
-      "sha256": "7256a05c133319ca45e4528225c0c76c3c1441db89f3104a22eafed328265f46",
-      "size_bytes": 5213,
+      "sha256": "8e78e19925fcd635b5cc95ccf92e6b5f3d9f3fc92d659485aff250265d095f66",
+      "size_bytes": 5211,
       "data_rows": 3,
       "columns": 58
     }

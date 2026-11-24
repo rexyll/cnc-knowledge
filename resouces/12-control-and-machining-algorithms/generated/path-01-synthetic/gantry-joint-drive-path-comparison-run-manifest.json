@@ -1,0 +1,115 @@
+{
+  "schema_version": 2,
+  "case_id": "PATH-01",
+  "status": "COMPLETED_REPORT_ONLY",
+  "acceptance_decision": "DESCRIPTIVE_ONLY",
+  "smooth_unsaturated_regime": true,
+  "numerical_results_present": true,
+  "resource_tests_executed": false,
+  "started_at_utc": "2026-11-24T14:54:58.158063+00:00",
+  "completed_at_utc": "2026-11-24T14:54:59.731406+00:00",
+  "parameter_source": "SYNTHETIC_FIXTURE: PATH-01 borrows the synthetic electromechanical/structural/dissipation fixture from ENE-03, and adds an explicitly synthetic rest-to-rest path and common deterministic PD current callback. SRC-000369/SRC-000370 identify generic feed-drive modelling context; SRC-000372 supports RK4; SRC-000373 supports the generic quintic rest-to-rest time-scaling law. None of these sources supplies the numeric fixture values or application acceptance limits.",
+  "source_documents_or_measurement_ids": [
+    "SYNTHETIC:CH12-PATH-01:v1",
+    "SRC-000369",
+    "SRC-000370",
+    "SRC-000372",
+    "SRC-000373"
+  ],
+  "config_path": "/home/runner/work/cnc-knowledge/cnc-knowledge/resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-01-synthetic-config.json",
+  "config_sha256": "6a7223941ee29ba97d0860f4dabb6bc030783ded1d9018d812d803979f6512e2",
+  "solver_git_sha": "126f95c996600265ff85247beeb0aa5676a9b3e6",
+  "solver_file_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
+  "runner_file_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
+  "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
+  "numpy_version": "2.5.5",
+  "operating_system": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+  "cpu": null,
+  "blas_environment": {},
+  "command_line": [
+    "resouces/12-control-and-machining-algorithms/gantry_joint_drive_path_comparison.py",
+    "--config",
+    "resouces/12-control-and-machining-algorithms/gantry-joint-drive-path-01-synthetic-config.json",
+    "--output-dir",
+    "resouces/12-control-and-machining-algorithms/generated/path-01-synthetic"
+  ],
+  "output_files": {
+    "timeseries_csv": "gantry-joint-drive-path-comparison-timeseries.csv",
+    "summary_csv": "gantry-joint-drive-path-comparison-summary.csv"
+  },
+  "step_convergence": {
+    "free": {
+      "distances": [
+        0.00015671631669916084,
+        6.568847698807224e-06,
+        3.3525964232379817e-07
+      ],
+      "peaks": [
+        0.00241835917620159,
+        9.625874423047076e-05,
+        4.806077423369359e-06
+      ],
+      "orders": [
+        4.576371268743721,
+        4.292289585659221
+      ],
+      "screen": true,
+      "exact": false
+    },
+    "prescribed": {
+      "distances": [
+        0.00013580265943669202,
+        5.372519345221381e-06,
+        2.6440298957783153e-07
+      ],
+      "peaks": [
+        0.002413732311409622,
+        9.249028627095202e-05,
+        4.5280424918470175e-06
+      ],
+      "orders": [
+        4.659769149591919,
+        4.34478837802222
+      ],
+      "screen": true,
+      "exact": false
+    }
+  },
+  "acceptance_limits": {
+    "application_path_error_limit_m": null,
+    "application_path_velocity_error_limit_m_s": null,
+    "payload_point_error_limit_m": null,
+    "application_force_limit_N": null,
+    "application_force_rms_limit_N": null,
+    "constraint_work_limit_J": null,
+    "normalized_energy_residual_limit": null
+  },
+  "notes": [
+    "The prescribed path is an ideal kinematic constraint, not a physical servo capability model.",
+    "The same deterministic current-command and constant external-force callbacks are used by both solvers.",
+    "Current-reference and voltage saturation are counted at every RK4 stage callback; output-grid diagnostics are also written to the timeseries CSV.",
+    "The RK4 observed-order screen is eligible for ordinary smooth-regime PASS only when neither limiter activates in either model at any of the h, h/2, h/4 or h/8 refinements; limiter-active or stage-count-mismatch cases remain report-only.",
+    "The prescribed solver's final endpoint diagnostic is excluded from RK4-stage counts.",
+    "CSV artifact SHA-256, byte size, data-row count and column count are recorded in output_artifacts; the manifest is published last as the output-set completion marker.",
+    "CSV and manifest files are staged in a temporary directory under the output directory before publication. If publication is interrupted, the manifest is absent and a retry requires --force or a new output directory.",
+    "The constrained energy ledger includes lambda * sdot_ref; the PI integrator is not physical stored energy.",
+    "Kf/Ke mismatch power is reported separately as (Kf-Ke)*i*ell_dot.",
+    "This runner does not execute resource unit tests or establish machine/HIL validity."
+  ],
+  "output_artifacts": {
+    "timeseries_csv": {
+      "file": "gantry-joint-drive-path-comparison-timeseries.csv",
+      "sha256": "1468ad8aaf5a919b9838c5aeb233730ee22cd67a2f3d9816ac3c72a4cc829039",
+      "size_bytes": 797614,
+      "data_rows": 604,
+      "columns": 73
+    },
+    "summary_csv": {
+      "file": "gantry-joint-drive-path-comparison-summary.csv",
+      "sha256": "a7c0bba763e066afeb2a91639cf7bb6506a30afe2ea613885b36577670ddd58f",
+      "size_bytes": 6737,
+      "data_rows": 4,
+      "columns": 73
+    }
+  }
+}

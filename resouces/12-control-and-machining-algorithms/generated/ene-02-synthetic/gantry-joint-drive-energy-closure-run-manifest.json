@@ -5,8 +5,8 @@
   "status": "COMPLETED_REPORT_ONLY",
   "numerical_results_present": true,
   "resource_tests_executed": false,
-  "started_at_utc": "2026-11-24T14:45:52.384129+00:00",
-  "completed_at_utc": "2026-11-24T14:45:53.520816+00:00",
+  "started_at_utc": "2026-11-24T14:54:53.882920+00:00",
+  "completed_at_utc": "2026-11-24T14:54:55.750694+00:00",
   "parameter_source": "SYNTHETIC_FIXTURE: ENE-02 damping, viscous friction and Coulomb friction coefficients are analyst-authored solely for reproducible software/numerical verification. SRC-000369 and SRC-000370 support generic linear-motor/feed-drive electromechanical model context; SRC-000372 supports the RK4 integration method; SRC-000374 supports only the conventional gamma_n floating-point bound form. None supplies the numeric fixture parameters or proves the analyst-declared outer energy/power/trajectory bounds.",
   "source_documents_or_measurement_ids": [
     "SYNTHETIC:CH12-ENE-02:v1",
@@ -19,7 +19,7 @@
   "solver_sha256": "996a5092dd49ceac63701bad290ed72e0c55721330b8826bc7f76c3e05958d13",
   "path_support_sha256": "0018a946e5d6bed01d345b7b6367657ac4e234b806230a3692965ff048120eae",
   "runner_sha256": "e222a96bc05719d3fbe884565bb46652411061026b8d737c11be86ab96e025f1",
-  "solver_git_sha": "6d735c6a159b28e09d9ddb12b6e70e209a81cd3e",
+  "solver_git_sha": "126f95c996600265ff85247beeb0aa5676a9b3e6",
   "python_version": "3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]",
   "numpy_version": "2.5.5",
   "operating_system": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
@@ -89,7 +89,7 @@
     ],
     "energy_residual_simpson_J": [
       2.3119731306727462e-05,
-      1.1233566654304892e-06,
+      1.1233566654166114e-06,
       6.306117667333536e-08,
       3.738662084995861e-09,
       2.2750655200888537e-10
@@ -97,8 +97,8 @@
     "noise_floor_J": 1e-11,
     "gate_status": "ELIGIBLE",
     "pairwise_empirical_orders": [
-      4.3632366703400205,
-      4.154920155662526,
+      4.3632366703578445,
+      4.154920155644702,
       4.076158104117351,
       4.038542081129492
     ]
@@ -161,7 +161,7 @@
     "stage_power_diagnostics": {
       "rk4_stage_terminal_input_work_J": 0.12522744911072467,
       "rk4_stage_copper_loss_J": 0.0997745811513284,
-      "rk4_stage_structural_damping_loss_J": 0.0036187507424604902,
+      "rk4_stage_structural_damping_loss_J": 0.0036187507424604907,
       "rk4_stage_axis_friction_loss_J": 0.02044996382370889,
       "rk4_stage_external_generalized_work_J": 0.0,
       "rk4_stage_electromechanical_mismatch_work_J": 0.0,
@@ -216,7 +216,7 @@
           2.643824558240991e-09,
           9.718726441738214e-11,
           1.61364200250344e-09,
-          7.050727774220457e-10,
+          7.050727774151991e-10,
           4.146076799842317e-10,
           9.275737521425583e-08,
           0.00011904870685993772,
@@ -233,8 +233,8 @@
         "reference_energy_residual_at_level_J": 4.432142691422874e-07,
         "reference_normalized_energy_residual_at_level": 4.432142691422874e-07,
         "coupled_vs_reference_net_work_delta_J": -6.801422902896585e-07,
-        "coupled_stored_energy_delta_vs_reference_J": 1.0599854327608682e-13,
-        "coupled_energy_residual_delta_vs_reference_J": 6.801423962882018e-07,
+        "coupled_stored_energy_delta_vs_reference_J": 1.05984665488279e-13,
+        "coupled_energy_residual_delta_vs_reference_J": 6.80142396274324e-07,
         "state_max_abs_difference": [
           2.3421331063824824e-12,
           1.0682166956543782e-13,
@@ -252,11 +252,11 @@
         "state_rms_difference": [
           4.748556202422787e-13,
           7.169161469454419e-14,
-          2.94402864646164e-13,
+          2.9440281061290203e-13,
           2.925365378687563e-13,
-          1.061580827100298e-10,
+          1.06158082709857e-10,
           3.903892553911022e-12,
-          6.476583998605657e-11,
+          6.476583999624927e-11,
           2.833184058351885e-11,
           1.6647402048016127e-11,
           3.7244086679807525e-09,
@@ -264,7 +264,7 @@
           1.0682831734188368e-07
         ],
         "net_power_max_abs_difference_W": 5.6413233546381836e-05,
-        "net_power_rms_difference_W": 1.1372446358580062e-05
+        "net_power_rms_difference_W": 1.137244635858006e-05
       },
       {
         "step_level": "h/4",
@@ -346,7 +346,7 @@
           2.7804912642435385e-10
         ],
         "net_power_max_abs_difference_W": 1.4795682567320112e-07,
-        "net_power_rms_difference_W": 2.9635044562984982e-08
+        "net_power_rms_difference_W": 2.9635044563017223e-08
       }
     ]
   },
@@ -392,12 +392,12 @@
         "state_rms_difference": [
           1.1368759893194321e-11,
           1.1261364594927512e-12,
-          6.945395593649794e-12,
+          6.945395629618697e-12,
           5.007868304914162e-12,
-          2.5418776109269984e-09,
+          2.5418776109271253e-09,
           9.343850736465851e-11,
-          1.5514238920934667e-09,
-          6.77856514175388e-10,
+          1.551423892087241e-09,
+          6.778565141687184e-10,
           3.9862027870285773e-10,
           8.918062512638879e-08,
           0.00011445815558907546,
@@ -420,12 +420,12 @@
         "state_rms_difference_normalized": [
           1.1368759893194322e-09,
           1.1261364594927512e-10,
-          6.945395593649794e-10,
+          6.945395629618697e-10,
           5.007868304914161e-10,
-          2.5418776109269982e-08,
+          2.5418776109271253e-08,
           9.34385073646585e-10,
-          1.5514238920934665e-08,
-          6.778565141753879e-09,
+          1.5514238920872408e-08,
+          6.778565141687183e-09,
           3.986202787028577e-09,
           8.918062512638878e-07,
           0.00011445815558907546,
@@ -434,14 +434,14 @@
         "net_power_max_abs_difference_W": 0.001395932118246554,
         "net_power_rms_difference_W": 0.00027000326870666293,
         "coarse_net_power_work_on_shared_grid_J": 0.0013610336767006773,
-        "fine_net_power_work_on_shared_grid_J": 0.0013776859496990306,
-        "fine_minus_coarse_net_work_on_shared_grid_J": 1.6652272998353337e-05,
+        "fine_net_power_work_on_shared_grid_J": 0.0013776859496990304,
+        "fine_minus_coarse_net_work_on_shared_grid_J": 1.665227299835312e-05,
         "coarse_stored_energy_delta_J": 0.0013841534080074047,
-        "fine_stored_energy_delta_on_shared_grid_J": 0.0013841534061041494,
-        "fine_minus_coarse_stored_energy_delta_J": -1.903255331114906e-12,
+        "fine_stored_energy_delta_on_shared_grid_J": 0.0013841534061041355,
+        "fine_minus_coarse_stored_energy_delta_J": -1.9032692089027137e-12,
         "coarse_energy_residual_on_shared_grid_J": 2.3119731306727462e-05,
-        "fine_energy_residual_on_shared_grid_J": 6.467456405118794e-06,
-        "fine_minus_coarse_energy_residual_J": -1.6652274901608668e-05
+        "fine_energy_residual_on_shared_grid_J": 6.467456405105133e-06,
+        "fine_minus_coarse_energy_residual_J": -1.665227490162233e-05
       },
       {
         "coarse_level": "h/2",
@@ -465,11 +465,11 @@
         "state_rms_difference": [
           4.514845818487244e-13,
           6.729119399672085e-14,
-          2.797268316534506e-13,
+          2.7972677822372037e-13,
           2.7510078525296837e-13,
-          1.0093365769353809e-10,
+          1.0093365769336724e-10,
           3.71169426412455e-12,
-          6.157850899167173e-11,
+          6.157850900171275e-11,
           2.6936009336991643e-11,
           1.5828145301021036e-11,
           3.5411169505487406e-09,
@@ -493,11 +493,11 @@
         "state_rms_difference_normalized": [
           4.514845818487244e-11,
           6.729119399672085e-12,
-          2.7972683165345058e-11,
+          2.7972677822372036e-11,
           2.7510078525296835e-11,
-          1.0093365769353808e-09,
+          1.0093365769336723e-09,
           3.7116942641245496e-11,
-          6.157850899167173e-10,
+          6.157850900171274e-10,
           2.693600933699164e-10,
           1.5828145301021036e-10,
           3.54111695054874e-08,
@@ -505,16 +505,16 @@
           1.0157090604344874e-08
         ],
         "net_power_max_abs_difference_W": 5.3636371988588505e-05,
-        "net_power_rms_difference_W": 1.0812769361390474e-05,
+        "net_power_rms_difference_W": 1.0812769361390472e-05,
         "coarse_net_power_work_on_shared_grid_J": 0.001383030049438719,
-        "fine_net_power_work_on_shared_grid_J": 0.0013836767298605985,
-        "fine_minus_coarse_net_work_on_shared_grid_J": 6.466804218796269e-07,
-        "coarse_stored_energy_delta_J": 0.0013841534061041494,
+        "fine_net_power_work_on_shared_grid_J": 0.0013836767298605987,
+        "fine_minus_coarse_net_work_on_shared_grid_J": 6.466804218798437e-07,
+        "coarse_stored_energy_delta_J": 0.0013841534061041355,
         "fine_stored_energy_delta_on_shared_grid_J": 0.0013841534060044375,
-        "fine_minus_coarse_stored_energy_delta_J": -9.971190539914687e-14,
-        "coarse_energy_residual_on_shared_grid_J": 1.1233566654304892e-06,
-        "fine_energy_residual_on_shared_grid_J": 4.766761438389569e-07,
-        "fine_minus_coarse_energy_residual_J": -6.466805215915323e-07
+        "fine_minus_coarse_stored_energy_delta_J": -9.969802761133906e-14,
+        "coarse_energy_residual_on_shared_grid_J": 1.1233566654166114e-06,
+        "fine_energy_residual_on_shared_grid_J": 4.7667614383874006e-07,
+        "fine_minus_coarse_energy_residual_J": -6.466805215778713e-07
       },
       {
         "coarse_level": "h/4",
@@ -651,7 +651,7 @@
           2.7804912642435386e-11
         ],
         "net_power_max_abs_difference_W": 1.4795682567320112e-07,
-        "net_power_rms_difference_W": 2.9635044562984982e-08,
+        "net_power_rms_difference_W": 2.9635044563017223e-08,
         "coarse_net_power_work_on_shared_grid_J": 0.0013841496673364544,
         "fine_net_power_work_on_shared_grid_J": 0.001384151427837297,
         "fine_minus_coarse_net_work_on_shared_grid_J": 1.7605008425462115e-09,
@@ -731,29 +731,29 @@
   "output_artifacts": {
     "timeseries_csv": {
       "file": "gantry-joint-drive-energy-closure-timeseries.csv",
-      "sha256": "9917943634d6952d9b09b4d11550f17e62b1081727949c2373602c3fed4411fb",
-      "size_bytes": 316590,
+      "sha256": "e143dba2929993d5347c0743e54d303711321e9739185707157cddd630c3e5bc",
+      "size_bytes": 316631,
       "data_rows": 604,
       "columns": 33
     },
     "stage_power_csv": {
       "file": "gantry-joint-drive-energy-closure-stage-power-timeseries.csv",
-      "sha256": "7961461546e8926ee1177dfd355055273793e55f50e7872c59f9dce2d5bb7782",
-      "size_bytes": 1127773,
+      "sha256": "afa7fe40a96c7c845a6c1cc66c3996af7cd3724d2422d1a7eaf0978387cddb17",
+      "size_bytes": 1127767,
       "data_rows": 4960,
       "columns": 20
     },
     "reference_timeseries_csv": {
       "file": "gantry-joint-drive-energy-closure-reference-h16-timeseries.csv",
-      "sha256": "588b18f6a64aca6f1c99dce7b34d252df35cb1246bd8fd2bd023c6c71a294545",
-      "size_bytes": 346007,
+      "sha256": "08061212b45cb63dabdfb061c816720e85ea6c05b0563919ff831a9d6b507fc9",
+      "size_bytes": 346034,
       "data_rows": 641,
       "columns": 33
     },
     "summary_csv": {
       "file": "gantry-joint-drive-energy-closure-summary.csv",
-      "sha256": "4e0e11212c72531570826666ca4cf0bc6489bbad9a7cb3be4d110206df074b1d",
-      "size_bytes": 5193,
+      "sha256": "1b25330d1003cf2d9cab6ca7dbaee2d31d0f12506644ba1e66a33a6eeda2f3f7",
+      "size_bytes": 5190,
       "data_rows": 4,
       "columns": 58
     }
