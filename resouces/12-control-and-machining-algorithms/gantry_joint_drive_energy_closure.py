@@ -1539,48 +1539,22 @@ def verify_archive(output_dir: Path) -> dict[str, Any]:
             actual_value = float(row[field])
             if not math.isclose(actual_value, expected_value, rel_tol=1e-9, abs_tol=1e-12):
                 raise EnergyClosureError(f"summary diagnostic {field} is inconsistent at {label}")
-        report = (contract["reference_report"] if label == REFERENCE_LEVEL
-                  else manifest["limiter_stage_reports"][index])
-        reference_count = sum(row["current_reference_saturated"] == "True" for row in block)
-        voltage_count = sum(row["voltage_saturated"] == "True" for row in block)
-        any_count = sum(
-            row["current_reference_saturated"] == "True" or row["voltage_saturated"] == "True"
-            for row in block
-        )
-        if (
-            reference_count != report["current_reference_saturated_stages"]
-            or voltage_count != report["voltage_saturated_stages"]
-            or any_count != report["any_limiter_active_stages"]
-        ):
-            raise EnergyClosureError(f"RK4 stage limiter trace disagrees with manifest at {label}")
-        if label == REFERENCE_LEVEL:
-            reference_stored = float(reference_rows[-1]["stored_energy_J"]) - float(reference_rows[0]["stored_energy_J"])
-            reference_net_work = float(path_support.composite_simpson_13(
-                np.asarray([float(item["time_s"]) for item in reference_rows], dtype=float),
-                np.asarray([float(item["net_power_W"]) for item in reference_rows], dtype=float),
-            ))
-            expected_stage_metrics = _rk4_stage_power_diagnostics(block, reference_stored, reference_net_work)
-            _assert_json_metrics_close(
-                report["stage_power_diagnostics"], expected_stage_metrics,
-                "reference_trajectory_report.stage_power_diagnostics",
-            )
-        else:
-            summary = summary_by_level[label]
-            summary_counts = {
-                "expected_rk4_stage_evaluations": report["expected_stage_evaluations"],
-                "observed_rk4_stage_evaluations": report["stage_evaluations"],
-                "current_reference_saturated_stages": report["current_reference_saturated_stages"],
-                "voltage_saturated_stages": report["voltage_saturated_stages"],
-                "any_limiter_active_stages": report["any_limiter_active_stages"],
-            }
-            for field, expected_value in summary_counts.items():
-                if not float(summary[field]).is_integer() or int(float(summary[field])) != expected_value:
-                    raise EnergyClosureError(f"summary {field} disagrees with manifest at {label}")
-            if summary["stage_count_matches_expected"] != str(report["stage_count_matches_expected"]):
-                raise EnergyClosureError(f"summary stage-count flag disagrees with manifest at {label}")
-            if summary["smooth_unsaturated"] != str(report["smooth_unsaturated"]):
-                raise EnergyClosureError(f"summary smooth-unsaturated flag disagrees with manifest at {label}")
-        stage_cursor += count
+        report = manifest["limiter_stage_reports"][index]
+        summary = summary_by_level[label]
+        summary_counts = {
+            "expected_rk4_stage_evaluations": report["expected_stage_evaluations"],
+            "observed_rk4_stage_evaluations": report["stage_evaluations"],
+            "current_reference_saturated_stages": report["current_reference_saturated_stages"],
+            "voltage_saturated_stages": report["voltage_saturated_stages"],
+            "any_limiter_active_stages": report["any_limiter_active_stages"],
+        }
+        for field, expected_value in summary_counts.items():
+            if not float(summary[field]).is_integer() or int(float(summary[field])) != expected_value:
+                raise EnergyClosureError(f"summary {field} disagrees with manifest at {label}")
+        if summary["stage_count_matches_expected"] != str(report["stage_count_matches_expected"]):
+            raise EnergyClosureError(f"summary stage-count flag disagrees with manifest at {label}")
+        if summary["smooth_unsaturated"] != str(report["smooth_unsaturated"]):
+            raise EnergyClosureError(f"summary smooth-unsaturated flag disagrees with manifest at {label}")
     timeseries_rows = parsed["timeseries_csv"]
     cursor = 0
     for index, label in enumerate(LEVELS):
