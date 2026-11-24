@@ -460,3 +460,7 @@
 - 新增4项ENE功率账本资源测试。资源测试总数由74项增至78项（求解器35、PATH-01运行器39、ENE运行器4），全部未执行。
 - **限制：** 账本实现独立于PATH-01，但复用同一状态方程和储能函数；不是独立物理模型。运行器要求 (K_f=K_e)，命令为常值前馈电流；未覆盖时变电流指令辨识、非互易端口主试验。
 - **状态：** 未运行ENE数值积分、未运行任何资源测试；ENE-01～03和PATH-01仍NOT_RUN，CH12-T003保持IN_PROGRESS。
+
+
+- **仓库CI（运行器代码）：** 提交 `e345fa7c26311ff1029d0b0cc6660ea31e26fac7` 对应 [Run 45320569139](https://github.com/rexyll/cnc-knowledge/actions/runs/45320569139) success。
+- **仓库CI（文档/索引/矩阵）：** 提交 `d0fd57d95a4a66d6077d5c02e74ca54b4ac22264` 对应 [Run 45320847709](https://github.com/rexyll/cnc-knowledge/actions/runs/45320847709) success，`Knowledge structure and data quality` job成功。两次CI均不执行 `resouces/` 下78项资源测试，也不运行ENE数值积分。
