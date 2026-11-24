@@ -265,6 +265,9 @@ ENE运行器测试定义42项（自动预算测试包括预算报告精确数值
 | `gantry_joint_drive_rk4_screen.py` | Python源码 | 执行四级h/h2/h4/h8固定步长RK4积分，记录12维状态、阶段次数/限幅、相邻网格分量差异及有限层级观测阶数；不判定机器工程精度 | 项目原创 | 2026-11-24 | 原创代码 | 龙门连续移动轴—电流环联合模型数值验证协议 |
 | `gantry-joint-drive-rk4-01-synthetic-config.json` | JSON配置 | RK4-01低速平滑合成夹具；参数和状态特征尺度显式标记SYNTHETIC_FIXTURE | 项目原创 | 2026-11-24 | 原创合成配置 | 同上 |
 | `test_gantry_joint_drive_rk4_screen.py` | Python测试 | 5项运行器资源测试，覆盖合成来源/12维特征尺度契约、四级积分、归档篡改检测和单位字段一致性 | 项目原创 | 2026-11-24 | 原创代码 | 同上 |
-| `generated/rk4-01-synthetic/rk4-01-synthetic-results-45385379794.zip` | ZIP结果包 | 604行四档状态时序、4档摘要、3组相邻差异、运行manifest；RUN 45385379794，SHA-256见README/协议 | 脚本生成 | 2026-11-24 | 合成数据/项目生成 | 同上 |
+| `generated/rk4-01-synthetic/rk4-01-synthetic-timeseries.csv` | CSV时序 | 四档固定步长积分的604行状态时序，12维状态按原单位记录 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/rk4-01-synthetic/rk4-01-level-summary.csv` | CSV汇总 | h/h2/h4/h8四档积分区间、步长、样本数、RK4阶段数、限幅计数和有限性标志 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/rk4-01-synthetic/rk4-01-adjacent-differences.csv` | CSV差异 | 三组相邻细化网格的12状态分量最大/RMS差、归一化差异和有限层级观测阶数 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
+| `generated/rk4-01-synthetic/rk4-01-run-manifest.json` | JSON运行清单 | 配置/源码SHA-256、执行环境、数值筛查、限幅和阶段统计、三个CSV文件校验元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
 运行状态：RK4-01为`COMPLETED_REPORT_ONLY`。该包不是机床实测或性能验收结果；RK4-02～04、ENE-01～03、PATH-01仍`NOT_RUN`。
