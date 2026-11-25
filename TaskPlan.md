@@ -555,3 +555,5 @@
 - 在 `resouces/17-operation-maintenance-and-repair/` 新增维修工单及维修后复验CSV模板，并将原开机准备清单一并补登记为ASSET实体；来源新增SRC-000389～SRC-000390。
 - CH17覆盖度更新为2级基础知识框架；仅代表有来源支持的通用维修流程，不代表型号级可执行SOP或现场验证。
 - CH17-T001仍为IN_PROGRESS；T002～T004维持TODO。下一优先项是确定具体机床系列并取得现行OEM服务/维护手册，再形成型号级维护与维修资料。
+
+- **CI验收补记（2026-11-25）：** CH17维修框架提交 `5cd0082d1e9322ef6b3990a8cab906c7ab2dd67d` 的 GitHub Actions [Run 45546453542](https://github.com/rexyll/cnc-knowledge/actions/runs/45546453542) 两个Job均success；知识库5/5单元测试、strict lint（0 errors）及仓库CH12数值资源143/143测试通过。该结果是仓库结构/回归测试，不构成机床维修现场、HIL或实机验收。
