@@ -309,5 +309,5 @@
 - **验证：** verify_backup() 检查目录精确文件集合、普通文件/非符号链接、清单摘要、文件大小和SHA-256、COMMIT身份、事件哈希链、快照和对应账本前缀以及事件重建。
 - **恢复：** restore_backup() 只接受新建或空白隔离目标目录；验证后恢复原代际文件，先发布代际目录，最后原子切换CURRENT；不覆盖非空目录。中断在CURRENT之前时只留下孤立代际。
 - **资源与测试：** 新增ASSET-000056，10个纯合成测试场景；新增6个专项unittest，全库CI共116项测试通过。覆盖备份篡改、清单篡改、创建中断、源代际被GC后恢复、非空目标拒绝覆盖、恢复中断和路径隔离。
-- **CI：** 实现提交 0fdef80a2da217c0fbd622f3185fb820287be8f5 对应Run 45643219363；Knowledge structure and data quality Job为success，全库116个unittest通过，备份验证/隔离恢复self-check均PASS；等待另一Job最终状态及文档同步提交复验。
+- **CI：** 实现提交 0fdef80a2da217c0fbd622f3185fb820287be8f5 对应Run 45643219363，两个Job均completed/success，全库116个unittest通过，备份验证/隔离恢复self-check均PASS；文档同步提交 2f6cdb72418582c94035e4359a9171b1fcd4f1b8 对应Run 45643684590，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success。
 - **限制：** 未实现备份加密、数字签名/外部信任根、异地副本、对象存储/WORM、介质恢复、企业RPO/RTO或真实灾备演练。仅POSIX本地临时目录合成数据，无企业连接/生产写入；30项企业业务测试仍NOT_RUN，业务断言NOT_EVALUATED，审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。

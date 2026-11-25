@@ -355,5 +355,5 @@
 - 新增 verify_backup()：要求备份目录只含四个预期普通文件，拒绝符号链接/额外文件；验证清单哈希、负载长度/哈希、COMMIT状态/代际身份、事件哈希链、快照摘要、快照账本前缀和事件重建。
 - 新增 restore_backup()：先校验备份，再仅恢复到新建或空白隔离存储；不覆盖既有数据。恢复先发布代际目录，最后原子发布CURRENT；代际发布后中断不会暴露为当前代际。
 - 新增CLI：--backup-root/--backup-parent/--backup-id创建；--verify-backup验证；--restore-backup/--restore-target隔离恢复。
-- 新增ASSET-000056：10个纯合成备份/恢复测试场景；新增6项专项unittest。首轮CI Run 45643219363：Knowledge structure and data quality Job成功，全库116个unittest通过；持久化self-check的备份清单/负载验证、隔离恢复、源代际GC后仍能恢复均PASS。另一CH12 Job及文档同步提交CI需最终复核。
+- 新增ASSET-000056：10个纯合成备份/恢复测试场景；新增6项专项unittest。首轮CI Run 45643219363：Knowledge structure and data quality Job成功，全库116个unittest通过；持久化self-check的备份清单/负载验证、隔离恢复、源代际GC后仍能恢复均PASS。同一实现Run的CH12 numerical resource tests Job也completed/success；文档同步提交 2f6cdb72418582c94035e4359a9171b1fcd4f1b8 对应Run 45643684590，两个Job均completed/success。
 - 严格边界：POSIX临时目录合成模型，无企业系统连接/生产写入；不含加密/签名/外部信任根、异地副本、对象存储/WORM、备份介质恢复、RPO/RTO、企业留存审批或生产灾备实测。30项企业业务测试仍NOT_RUN，business_rule_assertions仍NOT_EVALUATED，execution_status仍BLOCKED_PENDING_ENTERPRISE_APPROVAL；CH17-T004保持IN_PROGRESS。
