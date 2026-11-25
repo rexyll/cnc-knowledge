@@ -123,22 +123,14 @@ python scripts/spare_parts_fixture_loader.py --root . --all \
 在仓库根目录执行全部30项：
 
 ```bash
-python scripts/spare_parts_scenario_loader.py --root . --all \
-  --output-dir /tmp/ch17-spare-parts-scenario-packages
-python scripts/spare_parts_scenario_runner.py --root . \
-  --packages-dir /tmp/ch17-spare-parts-scenario-packages --all \
-  --report-json resouces/17-operation-maintenance-and-repair/generated/spare-parts-offline-simulation-report-v1.json
-```
-
-单个用例可使用 `--test-case SPAT-010` 替代 `--all`。第一条命令的真实脚本名称为 `spare_parts_fixture_loader.py`；完整执行命令如下：
-
-```bash
 python scripts/spare_parts_fixture_loader.py --root . --all \
   --output-dir /tmp/ch17-spare-parts-scenario-packages
 python scripts/spare_parts_scenario_runner.py --root . \
   --packages-dir /tmp/ch17-spare-parts-scenario-packages --all \
   --report-json resouces/17-operation-maintenance-and-repair/generated/spare-parts-offline-simulation-report-v1.json
 ```
+
+单个用例可使用 `--test-case SPAT-010` 替代 `--all`。报告文件由执行器自动创建其父目录；数据包和原始CSV均保持只读。
 
 执行器检查：
 - 场景包六份文件是否与当前数据集、用例映射和重置配置确定性重建结果逐字节一致；检查对象/事件分拆、纯合成标记和manifest边界字段。
