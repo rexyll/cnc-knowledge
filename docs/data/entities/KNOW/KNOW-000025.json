@@ -1,0 +1,70 @@
+{
+  "entity_id": "KNOW-000025",
+  "entity_type": "knowledge_article",
+  "canonical_name": "主轴、伺服与滚珠丝杠专项更换工作包模板",
+  "english_name": "CNC spindle, servo and ballscrew specialized replacement work package templates",
+  "aliases": [
+    "主轴更换专项工作包",
+    "伺服电机编码器更换工作包",
+    "滚珠丝杠支撑轴承更换工作包"
+  ],
+  "description": "为主轴单元、伺服电机/编码器、滚珠丝杠/支撑轴承建立部件专项更换工作包模板，覆盖设备与部件身份、拆前基线、OEM兼容性、危险能量、复装、参数恢复、维修后验证和放行记录。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH05",
+    "CH06",
+    "CH08",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "专业维修与部件更换",
+    "关键部件专项更换工作包"
+  ],
+  "tags": [
+    "CH17",
+    "主轴维修",
+    "伺服电机",
+    "编码器",
+    "滚珠丝杠",
+    "支撑轴承",
+    "更换工作包",
+    "维修后验证"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T14:01:52+08:00",
+  "updated_at": "2026-11-25T14:01:52+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000382",
+    "SRC-000390"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spindle-servo-ballscrew-specialized-replacement-work-packages.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "主轴单元/主轴电机、伺服电机/编码器、滚珠丝杠/螺母副/支撑轴承专项工作包字段、拆前基线、替代兼容性、风险控制、安装恢复和复验要求",
+    "article_status": "model_agnostic_specialized_work_package_templates",
+    "machine_specific_procedures_defined": false,
+    "universal_torque_or_preload_values_defined": false,
+    "universal_acceptance_limits_defined": false,
+    "component_substitution_approvals_defined": false,
+    "field_execution_validation": false,
+    "hardware_validation": false,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spindle-replacement-work-package-template.csv",
+      "resouces/17-operation-maintenance-and-repair/servo-motor-encoder-replacement-work-package-template.csv",
+      "resouces/17-operation-maintenance-and-repair/ballscrew-support-bearing-replacement-work-package-template.csv"
+    ]
+  },
+  "notes": "三份专项模板是待按具体机床序列号/配置和OEM文件映射的记录工具，不含通用拆装动作、紧固/预紧数值、介质规格或验收限值。"
+}

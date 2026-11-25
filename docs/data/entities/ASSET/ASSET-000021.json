@@ -1,0 +1,55 @@
+{
+  "entity_id": "ASSET-000021",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床滚珠丝杠与支撑轴承专项更换工作包模板",
+  "english_name": null,
+  "aliases": [],
+  "description": "滚珠丝杠与支撑轴承专项更换工作包空白模板，含17条检查项目和35列工作包字段。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH05",
+    "CH06",
+    "CH08",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "专业维修与部件更换",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "项目原创维修资源",
+    "专项更换工作包",
+    "BS"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T14:01:52+08:00",
+  "updated_at": "2026-11-25T14:01:52+08:00",
+  "verified_at": "2026-11-25T14:01:52+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/ballscrew-support-bearing-replacement-work-package-template.csv",
+    "file_name": "ballscrew-support-bearing-replacement-work-package-template.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000025",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original component-specific blank work package template",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "原创空白专项工作包字段模板；不包含真实设备记录、已批准替代件或经现场验证的拆装/校准/验收步骤。关键值、OEM程序和验收依据必须按具体机床文件填写。"
+}
