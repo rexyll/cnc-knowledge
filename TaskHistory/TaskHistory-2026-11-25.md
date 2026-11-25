@@ -35,3 +35,18 @@
 - 在维护模板提交 `ecc70ca326fccacab6ed3036fdf5802309c7bb95` 后进行逐行CSV列数审查，发现维护任务矩阵与耗材登记表的预置行存在多余空字段，已在本次更正提交中统一重建字段映射。
 - 修正后维护任务矩阵表头/数据行均为37列（22个任务分类入口）；耗材登记表均为41列（8类耗材类别示例）；保养卡为空白单表头模板；Haas RD0035示例CSV为11列、15条数据记录。
 - 该更正只修复CSV结构和字段映射；维护周期、油液规格、阈值仍保持待核实，不增加设备级执行授权。
+
+
+## CH17-T003 部件更换工作包框架第一轮
+
+- **实际完成时间：** 2026-11-25T13:06:35+08:00（Asia/Shanghai；实施提交时间）
+- **所在分支：** main（未创建其他分支）
+- **新增正文：** docs/17-operation-maintenance-and-repair/component-replacement-work-package.md（KNOW-000023，verification_status=in_review）。
+- **新增资源：** component-replacement-work-package-template.csv（ASSET-000015，57列）；component-tool-and-measurement-register-template.csv（ASSET-000016，25列）；component-interface-and-replacement-compatibility-template.csv（ASSET-000017，28列）。均为 resouces/17-operation-maintenance-and-repair 下的原创空白模板。
+- **结构化记录与索引：** 新增 KNOW-000023、ASSET-000015～ASSET-000017；更新本章ASSET-INDEX、资源README、章节README、docs入口、CH17章节计划、根TaskPlan和CHAPTER-COVERAGE。
+- **来源与边界：** 仅引用SRC-000382（OSHA 29 CFR 1910.147，限适用美国场景的法规入口）和SRC-000390（ISO 230-2:2014及2016修正案官方目录，单个NC轴定位/重复定位方法入口）。未复制受版权限制的标准全文。
+- **内容范围：** 建立设备/部件身份、OEM文件、停工点、风险与人员授权、拆前基线、工具量具、接口兼容性、拆装证据、参数/补偿恢复、校准、维修后复验和放行记录框架；不提供型号级拆装步骤、吊装方法、扭矩/预紧数值、介质规格、参数或验收阈值。
+- **CSV验收：** 远程复读三份文件，均为单行表头模板且列宽分别为57、25、28；四份新JSON实体记录均可解析，ASSET记录均关联KNOW-000023。
+- **实施提交：** 852bf193dffc7cc3dda31ae9de7da61961267e4c；计划/索引/覆盖度同步提交：200620804124e88a7adf97f78908aabb69f8e3ff。
+- **CI验收：** 实施提交对应GitHub Actions [Run 45551283372](https://github.com/rexyll/cnc-knowledge/actions/runs/45551283372)，计划/索引同步提交对应 [Run 45551345376](https://github.com/rexyll/cnc-knowledge/actions/runs/45551345376)，两个Run的全部Job均completed/success；知识结构与数据质量测试、strict lint及CH12数值资源回归Job通过。CH12回归仅验证既有数值资源，不构成CH17维修现场、设备/HIL或实机验证。
+- **状态与遗留：** CH17-T003保持IN_PROGRESS；尚无用户指定的机床型号、序列范围、配置和受控OEM服务手册，未形成型号级维修SOP、替代件批准或真实拆装/校准/复验记录。
