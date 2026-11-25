@@ -1,0 +1,53 @@
+{
+  "entity_id": "ASSET-000015",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床部件更换工作包模板",
+  "english_name": null,
+  "aliases": [],
+  "description": "单次部件更换的设备实例、旧件/新件身份、OEM依据、风险授权、拆前基线、作业程序、兼容性审核、校准、复验和放行追溯字段。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH06",
+    "CH08",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "专业维修与部件更换",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "项目原创维修资源",
+    "部件更换"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T13:10:00+08:00",
+  "updated_at": "2026-11-25T13:10:00+08:00",
+  "verified_at": "2026-11-25T13:10:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/component-replacement-work-package-template.csv",
+    "file_name": "component-replacement-work-package-template.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000023",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original blank CSV template",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "原创空白字段模板；只通过文件结构、列宽和知识库数据质量检查，不包含真实设备记录或经现场验证的型号级拆装/测量/验收数据。用途和权利边界见CH17 ASSET-INDEX.md。"
+}

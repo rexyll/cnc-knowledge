@@ -1,0 +1,70 @@
+{
+  "entity_id": "KNOW-000023",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床零部件更换工作包与复验框架",
+  "english_name": "CNC machine tool component replacement work package and verification framework",
+  "aliases": [
+    "部件更换工作包",
+    "零部件拆装更换审核框架"
+  ],
+  "description": "建立零部件更换工作包的设备/部件身份、OEM文件、人员授权和风险、拆前基线、工具量具、接口兼容性、复装、校准、维修后验证与放行追溯框架。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH06",
+    "CH08",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "专业维修与部件更换",
+    "工作包与维修后复验"
+  ],
+  "tags": [
+    "CH17",
+    "零部件更换",
+    "维修工作包",
+    "OEM文件",
+    "部件兼容性",
+    "复装检查",
+    "校准",
+    "维修后验证",
+    "安全授权"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T13:10:00+08:00",
+  "updated_at": "2026-11-25T13:10:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000382",
+    "SRC-000390"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/component-replacement-work-package.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "通用部件更换工作包身份模型、前置停工点、人员授权与危险能量边界、拆前基线、工装/量具、替代件接口兼容性、拆装证据、参数恢复、校准、维修后验证、放行和跨章节接口",
+    "article_status": "model_agnostic_work_package_framework",
+    "machine_specific_procedures_defined": false,
+    "component_substitution_approvals_defined": false,
+    "machine_parameters_defined": false,
+    "universal_torque_or_preload_values_defined": false,
+    "universal_acceptance_limits_defined": false,
+    "field_execution_validation": false,
+    "hardware_validation": false,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/component-replacement-work-package-template.csv",
+      "resouces/17-operation-maintenance-and-repair/component-tool-and-measurement-register-template.csv",
+      "resouces/17-operation-maintenance-and-repair/component-interface-and-replacement-compatibility-template.csv"
+    ]
+  },
+  "notes": "本文仅定义审查与记录框架，不是品牌/型号SOP。目标机型和受控OEM服务手册尚未指定；任何具体拆装、吊装、紧固/预紧、介质、参数和验收值均需从适用OEM/批准工程文件取得。"
+}
