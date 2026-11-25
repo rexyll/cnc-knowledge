@@ -138,15 +138,17 @@ class InventoryLedger:
         seen: set[str] = set()
         count = 0
         previous_sequence = 0
+        candidate = InventoryLedger(self._balances)
         for event in events:
             if event.event_id in seen:
                 raise InventoryModelError(f"duplicate event_id: {event.event_id}")
             if event.sequence <= previous_sequence:
                 raise InventoryModelError("event sequence must be strictly increasing")
-            self.transfer(event)
+            candidate.transfer(event)
             seen.add(event.event_id)
             previous_sequence = event.sequence
             count += 1
+        self._balances = candidate._balances
         return {"applied_events": count, "unique_event_ids": len(seen)}
 
 
