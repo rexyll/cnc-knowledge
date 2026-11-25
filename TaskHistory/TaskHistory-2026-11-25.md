@@ -96,3 +96,18 @@
 - **提交与修正记录：** 初始实施提交 `46a1a69042e3aeceb82a3db1dfd1fc15b976cfb6`；该提交中CSV路径误落到根目录临时文件`0`/`1`/`2`，其CI Run 45565074614的Knowledge lint失败（CH12数值资源Job成功）。已通过修正提交 `a8c024973d9b07194e675a7f60185d8002c4842d` 将三份CSV迁移至约定资源目录、删除误放文件并修正KNOW-000026的`linked_templates`；计划/索引同步提交为 `8a5333cbc4ee248587f5d24ac8d24d3f94cbb55d`。
 - **CI验收：** 修正提交对应 [Run 45565219082](https://github.com/rexyll/cnc-knowledge/actions/runs/45565219082) completed/success；计划与索引同步提交对应 [Run 45565331120](https://github.com/rexyll/cnc-knowledge/actions/runs/45565331120) completed/success。两个Run的Knowledge structure and data quality与CH12 numerical resource tests均成功；CH12回归只验证仓库数值资源，不构成CH17现场维修、HIL或实机验收。
 - **状态与遗留：** CH17-T003保持IN_PROGRESS；仍未指定目标机床型号、序列范围、选件、CNC/PLC软件版本和受控OEM服务手册，未形成型号级拆装SOP、替代件批准、真实工单或现场更换/校准/实机复验记录。
+
+
+## CH17-T004 备件管理与生命周期闭环第一轮
+
+- **实际完成时间：** 2026-11-25T15:28:58+08:00（Asia/Shanghai；两次主CI全部通过后补录）
+- **所在分支：** `main`（未创建其他分支）
+- **新增正文：** `docs/17-operation-maintenance-and-repair/spare-parts-management-and-lifecycle.md`（KNOW-000027，`verification_status=in_review`）。
+- **新增资源：** `spare-part-master-data-template.csv`（ASSET-000025，38列）；`spare-part-criticality-assessment-template.csv`（ASSET-000026，32列）；`spare-part-inventory-and-replenishment-template.csv`（ASSET-000027，40列）；`spare-part-substitution-approval-template.csv`（ASSET-000028，36列）；`spare-part-lifecycle-and-obsolescence-template.csv`（ASSET-000029，31列）；`repair-spare-consumption-feedback-template.csv`（ASSET-000030，34列）。全部位于 `resouces/17-operation-maintenance-and-repair/`。
+- **专项内容：** 建立备件主数据与BOM/机型适用关系、关键度评估因素、库存分桶与补货口径、候选替代件技术证据和审批流程、制造商PCN/EOL及last-time-buy跟踪、工单备件领用/旧件返回/故障反馈闭环；明确CH18故障分析、CH19供应链、CH20 BOM及配置的跨章接口。
+- **安全/数据治理边界：** 没有建立真实PART/PRODUCT/MINST、备件料号、供应商、价格、库存余额、采购交期、关键度评分、补货阈值、替代结论或最后采购数量。库存公式只定义字段口径；替代审批必须限定机型/序列/配置/BOM范围并具备OEM或批准工程证据及验证结果。所有模板均为空白，不是已执行的企业ERP/CMMS记录。
+- **结构化记录和索引：** 新增KNOW-000027、ASSET-000025～ASSET-000030；更新CH17章节TaskPlan、根TaskPlan、章节README、docs目录入口、资源README、ASSET-INDEX和CHAPTER-COVERAGE。T004由TODO调整为IN_PROGRESS；覆盖度更新为7篇知识文章、23项资源记录、9条去重来源。
+- **CSV/实体验收：** 从GitHub远程复读6份CSV；列宽分别为38、32、40、36、31、34，所有文件表头格式一致且当前为header-only空模板。KNOW-000027及6个ASSET JSON均可解析，文件路径、`linked_templates`和`related_knowledge_id`关联一致。
+- **实施提交：** `5a329add7c0996db1414ee9211b5f4b26c22df8c`；对应 [GitHub Actions Run 45568231521](https://github.com/rexyll/cnc-knowledge/actions/runs/45568231521) completed/success。
+- **计划/索引同步提交：** `a0304e6b4fe7ff22b91a10e4fc1097207db3aea3`；对应 [GitHub Actions Run 45568350982](https://github.com/rexyll/cnc-knowledge/actions/runs/45568350982) completed/success。两个Run的Knowledge structure and data quality与CH12 numerical resource tests Job均成功；CH12回归只验证仓库既有数值资源，不构成CH17现场库存盘点、替代件验证或实机维修验证。
+- **状态与遗留：** CH17-T004保持IN_PROGRESS；尚无目标机型受控BOM/OEM备件目录、企业库存和消耗历史、正式供应商交期/报价、PCN/EOL通知及真实维修工单，未激活具体库存策略或批准任何替代件。
