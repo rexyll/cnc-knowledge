@@ -1,5 +1,5 @@
 {
-  "source_id": "SRC-000380",
+  "source_id": "SRC-000387",
   "source_type": "manufacturer_manual",
   "title": "Haas Operators Manual — Safety (Mill)",
   "publisher": "Haas Automation, Inc.",
@@ -8,11 +8,11 @@
   "version": "Official Haas mill operator-manual safety page; accessed 2026-11-25.",
   "published_on": null,
   "accessed_on": "2026-11-25",
-  "locator": "Safety and responsibility information distinguishing operation, operator-level maintenance and service/repair work for Haas milling machines.",
+  "locator": "Safety/responsibility information distinguishing operation, operator-level maintenance and service/repair work for Haas milling machines.",
   "language": "en",
   "rights_status": "link_only",
   "license_or_permission": null,
-  "notes": "Manufacturer-specific example only. The permitted operator-maintenance/service boundary for another make or model must be determined from its own manual.",
+  "notes": "Manufacturer-specific example only. The permitted operator-maintenance/service boundary for another make/model must be determined from its own manual.",
   "authority_tier": "A",
   "evidence_kind": "manufacturer_declaration"
 }

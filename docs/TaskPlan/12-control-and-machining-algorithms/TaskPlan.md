@@ -716,3 +716,13 @@
 - h/8约束反力峰值/RMS=50.3123/35.7391N，约束功=0.01618832J；自由/规定能量残差分别9.16906e-9J和2.48793e-8J。约束模型是理想运动学约束，不代表实际伺服可达能力。
 - 归档应用限值均为null，结果严格为`COMPLETED_REPORT_ONLY`/`DESCRIPTIVE_ONLY`。GitHub Actions [Run 45419174116](https://github.com/rexyll/cnc-knowledge/actions/runs/45419174116)两个Job success，CH12资源测试136/136、所有RK4/ENE/PATH运行、仓库测试和strict lint通过；结果归档提交`f7798c801d792a78d1f27f5522671ab370b07d4b`。
 - 真实机床轨迹、驱动器峰值/连续力能力、应用容差、参数辨识、台架、HIL和实机验证尚未开展；CH12-T003保持`IN_PROGRESS`。
+
+
+## CH12-T003 SCURVE-01 标量三阶七段限跃度S曲线参考剖面（2026-11-26）
+
+- 新增S曲线合成配置`gantry-joint-drive-scurve-01-synthetic-config.json`和解析运行器`gantry_joint_drive_scurve_profile.py`，定义0.25m静止—静止运动、最大速度0.2m/s、最大加速度1m/s²、最大跃度10m/s³及0.001s采样周期。所有数值均为SYNTHETIC_FIXTURE，不是实际CNC轴参数或推荐设置。
+- 运行结果为第三阶七段S曲线：总时间1.55s、巡航0.95s、峰值速度/加速度/跃度0.2m/s、1m/s²、10m/s³；终点0.25m，终点速度/加速度为0；1551个采样点。分段常值跃度在各段边界发生跃变。
+- 归档文件：`generated/scurve-01-synthetic/cnc-scurve-profile-timeseries.csv`（1551×8）、segments CSV（7×12）、summary CSV（1×19）和运行manifest。
+- 新增7项S曲线资源测试；CH12资源测试总数143/143。GitHub Actions [Run 45517202862](https://github.com/rexyll/cnc-knowledge/actions/runs/45517202862)两个Job均success；RK4/ENE/PATH/SCURVE运行、仓库单测、strict lint、归档检查全部成功。
+- 注册来源SRC-000375～SRC-000378：三阶/四阶S曲线差异、五轴CNC轴空间/笛卡尔空间约束，以及LinuxCNC路径混合和look-ahead文档。来源支持概念和控制器语义，不提供合成数值。
+- **判读边界：** SCURVE-01状态为`COMPLETED_REPORT_ONLY`、决策为`DESCRIPTIVE_ONLY`；不包含多轴逆运动学、程序段前瞻链、拐角混合、Snap限制、伺服模型或机床验收。CH12-T003继续`IN_PROGRESS`。

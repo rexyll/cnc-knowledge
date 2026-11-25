@@ -536,5 +536,14 @@
 
 - 开始推进“机床操作、维护与维修”（CH17），新增 docs/17-operation-maintenance-and-repair/overview.md，明确操作、操作者日常维护、计划/状态维护和授权维修的范围与责任边界。
 - 在 resouces/17-operation-maintenance-and-repair/ 新增25项空白开机准备检查表及资源索引；结果均为NOT_ASSESSED，不含型号级参数、维护周期、润滑剂规格或合格限值。
-- 新增SRC-000375～SRC-000381，登记OSHA危险能量控制法规、ISO机床安全标准目录和Haas官方手册/维护计划入口；只引用与具体管辖、标准范围和产品族匹配的资料。
+- 新增SRC-000382～SRC-000388，登记OSHA危险能量控制法规、ISO机床安全标准目录和Haas官方手册/维护计划入口；只引用与具体管辖、标准范围和产品族匹配的资料。
 - CH17-T001状态为IN_PROGRESS；待确定目标机床型号/控制系统/配置并取得现行官方手册后，才能继续形成型号级操作与维护条目。CH17-T002～T004仍TODO。所有提交仅在main。
+
+
+## CH12-T003轨迹规划参考剖面里程碑（2026-11-26）：SCURVE-01
+
+- 完成标量三阶七段限跃度S曲线参考运行：合成距离0.25m、最大速度0.2m/s、最大加速度1m/s²、最大跃度10m/s³、采样周期0.001s。
+- 结果总时间1.55s、巡航0.95s、7段/1551采样点，峰值速度/加速度/跃度0.2m/s、1m/s²、10m/s³；输出三份CSV及manifest，状态COMPLETED_REPORT_ONLY、验收决策DESCRIPTIVE_ONLY。
+- GitHub Actions [Run 45517202862](https://github.com/rexyll/cnc-knowledge/actions/runs/45517202862) success：CH12资源测试143/143，RK4/ENE/PATH/SCURVE步骤、仓库单测、strict lint和归档全部通过。
+- 补齐S曲线论文、五轴CNC轴/笛卡尔空间约束论文、LinuxCNC路径混合及look-ahead官方文档来源SRC-000375～SRC-000378。该结果仅为标量合成参考，不含多轴逆运动学、look-ahead/拐角混合、伺服或机床验收。
+- CH12-T003仍为IN_PROGRESS；真实控制器适配、机床参数、台架、HIL和实机验证仍需独立完成。

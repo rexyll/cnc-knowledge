@@ -408,3 +408,11 @@ python resouces/12-control-and-machining-algorithms/gantry_joint_drive_rk4_scree
 - **约束反力与能量：** 理想约束反力峰值|lambda|=50.31225301835113N、RMS=35.73909232770913N；约束功`integral(lambda*sdot_ref dt)`=0.01618832025875501J。h/8自由模型能量残差=9.169063036607028e-9J，规定路径模型残差=2.487933858149466e-8J。lambda是维持理想运动学约束所需的广义力，不是实际驱动器推力能力证明。
 - **限幅/CI/归档：** 四档自由与规定模型均为有限状态、RK4阶段计数完整；所有层级电流参考限幅和电压饱和阶段数均为0，处于本模型的光滑未限幅数值筛查区间。GitHub Actions [Run 45419174116](https://github.com/rexyll/cnc-knowledge/actions/runs/45419174116)两个Job均success；CH12资源测试136/136、RK4-01～04、ENE-01～03和PATH-01运行、仓库单元测试及strict lint全部通过。三份结果文件归档至`generated/path-01-synthetic/`，结果归档提交`f7798c801d792a78d1f27f5522671ab370b07d4b`。
 - **判读边界：** `acceptance_decision=DESCRIPTIVE_ONLY`、状态`COMPLETED_REPORT_ONLY`。所有应用级路径位置/速度误差、负载点误差、驱动力、约束功和归一化能量残差阈值均为空；因此不能判定轨迹精度或驱动能力工程合格/不合格，也不能说明真实设备的动力学约束可以实现。
+
+
+## SCURVE-01标量三阶七段限跃度S曲线参考剖面（2026-11-26）
+
+- **配置：** `gantry-joint-drive-scurve-01-synthetic-config.json`，标量静止—静止位移0.25m、速度上限0.2m/s、加速度上限1m/s²、跃度上限10m/s³、采样周期0.001s。所有值均为SYNTHETIC_FIXTURE，不是实际轴参数或推荐设置。
+- **剖面：** 七段三阶S曲线；总时间1.55s、巡航0.95s；峰值速度/加速度/跃度0.2m/s、1m/s²、10m/s³，终点位置0.25m、速度/加速度为0；共7段、1551个采样点。
+- **CI与归档：** GitHub Actions [Run 45517202862](https://github.com/rexyll/cnc-knowledge/actions/runs/45517202862)两个Job均success；资源测试143/143，RK4-01～04、ENE-01～03、PATH-01和SCURVE-01运行、仓库测试、strict lint及归档步骤均成功。manifest为`COMPLETED_REPORT_ONLY`、验收决策为`DESCRIPTIVE_ONLY`。
+- **方法边界：** 这是三阶七段限跃度标量参考剖面，跃度在阶段边界发生跳变；不是四阶十五段跃度连续剖面，也不是多轴逆运动学、look-ahead程序段链、拐角混合、伺服模型或机床验收。SRC-000375～378仅作方法/控制器语义依据，不为合成数值背书。

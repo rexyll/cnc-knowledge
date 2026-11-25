@@ -270,7 +270,7 @@ ENE运行器测试定义42项（自动预算测试包括预算报告精确数值
 | `generated/rk4-01-synthetic/rk4-01-adjacent-differences.csv` | CSV差异 | 三组相邻细化网格的12状态分量最大/RMS差、归一化差异和有限层级观测阶数 | 脚本生成 | 2026-11-24 | 合成数据 | 同上 |
 | `generated/rk4-01-synthetic/rk4-01-run-manifest.json` | JSON运行清单 | 配置/源码SHA-256、执行环境、数值筛查、限幅和阶段统计、三个CSV文件校验元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
-运行状态：RK4-01～04、ENE-01～03和PATH-01均为`COMPLETED_REPORT_ONLY`；PATH-01验收决策为`DESCRIPTIVE_ONLY`。上述完成状态仅表示合成模型数值/软件筛查，不是机床实测或性能验收。
+运行状态：RK4-01～04、ENE-01～03、PATH-01和SCURVE-01均为`COMPLETED_REPORT_ONLY`；PATH-01与SCURVE-01验收决策为`DESCRIPTIVE_ONLY`。上述完成状态仅表示合成模型数值/软件筛查，不是机床实测或性能验收。最近一次Actions Run 45517202862通过143/143项CH12资源测试。
 
 
 ## RK4-02正向自由路径数值筛查资源（2026-11-24）
@@ -360,3 +360,17 @@ ENE-03为`COMPLETED_REPORT_ONLY`。h/8外部广义力功=+4.2078931032e-3J，结
 | `generated/path-01-synthetic/gantry-joint-drive-path-comparison-run-manifest.json` | JSON运行清单 | 配置/求解器/runner SHA-256、双模型四档收敛屏、限幅阶段、输入网格和两个CSV哈希/尺寸/行列元数据 | 脚本生成 | 2026-11-24 | 合成运行记录 | 同上 |
 
 PATH-01为`COMPLETED_REPORT_ONLY`、`DESCRIPTIVE_ONLY`。自由/规定两模型分别通过四档数值收敛筛查，有限层级观测阶数分别为4.57637/4.29229和4.65977/4.34479；全档无参考限幅/电压饱和。最细档路径误差RMS/峰值约7.999/12.201mm，约束反力峰值/RMS约50.312/35.739N，约束功约0.0161883J。由于所有应用级限值保持null，不判定跟踪或驱动力工程合格。GitHub Actions Run 45419174116通过136/136项资源测试并归档三文件，归档提交f7798c801d792a78d1f27f5522671ab370b07d4b。CH12-T003保持`IN_PROGRESS`。
+
+## SCURVE-01 标量三阶七段限跃度S曲线参考剖面（2026-11-26）
+
+| 文件 | 类型 | 说明 | 来源/作者 | 生成日期 | 权利状态 | 关联知识 |
+|---|---|---|---|---|---|---|
+| `gantry-joint-drive-scurve-01-synthetic-config.json` | JSON配置 | 标量静止—静止三阶七段S曲线合成夹具；数值仅用于算法软件验证，不是机床轴参数 | 项目原创 | 2026-11-25 | 原创合成配置 | 轨迹规划、限跃度剖面 |
+| `gantry_joint_drive_scurve_profile.py` | Python源码 | 七段三阶S曲线解析规划、状态采样、分段和manifest校验/生成 | 项目原创 | 2026-11-25 | 原创代码 | 同上 |
+| `test_gantry_joint_drive_scurve_profile.py` | Python测试 | 7项测试，覆盖加速巡航、三角/梯形加速、连续性、边界、限值、非法输入及归档完整性 | 项目原创 | 2026-11-25 | 原创代码 | 同上 |
+| `generated/scurve-01-synthetic/cnc-scurve-profile-timeseries.csv` | CSV时序 | 1551行/8列，位置、速度、加速度、跃度与七段标记 | 脚本生成 | 2026-11-25 | 合成数据 | 同上 |
+| `generated/scurve-01-synthetic/cnc-scurve-profile-segments.csv` | CSV分段 | 7行/12列，七阶段起止时间、跃度及状态边界 | 脚本生成 | 2026-11-25 | 合成数据 | 同上 |
+| `generated/scurve-01-synthetic/cnc-scurve-profile-summary.csv` | CSV汇总 | 1行/19列，限制值、峰值、加速/恒加速度/巡航时间和终点状态 | 脚本生成 | 2026-11-25 | 合成数据 | 同上 |
+| `generated/scurve-01-synthetic/cnc-scurve-profile-run-manifest.json` | JSON运行清单 | 配置/runner SHA、运行环境、结果状态、三个CSV哈希/尺寸/行列数及来源引用 | 脚本生成 | 2026-11-25 | 合成运行记录 | 同上 |
+
+SCURVE-01为`COMPLETED_REPORT_ONLY`、`DESCRIPTIVE_ONLY`。合成剖面距离0.25m、最大速度0.2m/s、最大加速度1m/s²、最大跃度10m/s³；总时间1.55s，巡航阶段0.95s，峰值速度/加速度/跃度分别0.2m/s、1m/s²和10m/s³，共7段和1551个采样点。三阶七段模型的分段常值跃度在阶段边界跳变；不包含四阶跃度连续/Snap限制、多轴逆运动学、程序段前瞻链、拐角混合、伺服动力学或机床验收。SRC-000375～SRC-000378只支持轨迹方法和控制器语义，不提供本合成夹具参数。Actions Run 45517202862通过143/143项CH12资源测试，SCURVE-01运行及归档校验成功。

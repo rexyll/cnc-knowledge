@@ -1,18 +1,18 @@
 {
   "source_id": "SRC-000378",
-  "source_type": "standard_catalog",
-  "title": "ISO 23125:2015 — Machine tools safety — Turning machines",
-  "publisher": "International Organization for Standardization (ISO)",
+  "source_type": "other",
+  "title": "LinuxCNC INI Configuration — [TRAJ] Trajectory Planner Settings",
+  "publisher": "LinuxCNC Project Documentation",
   "author": null,
-  "url": "https://www.iso.org/standard/65500.html",
-  "version": "Edition 2 (2015); corrected version 2016-03; ISO catalogue accessed 2026-11-25; catalogue indicates revision in progress.",
+  "url": "https://linuxcnc.org/docs/stable/html/config/ini-config.html",
+  "version": "Stable documentation; accessed 2026-11-25",
   "published_on": null,
   "accessed_on": "2026-11-25",
-  "locator": "Official catalogue scope and publication/status metadata for turning machines and turning centres.",
+  "locator": "[TRAJ] section; ARC_BLEND_ENABLE, ARC_BLEND_FALLBACK_ENABLE and ARC_BLEND_OPTIMIZATION_DEPTH (look-ahead depth in number of segments).",
   "language": "en",
   "rights_status": "link_only",
   "license_or_permission": null,
-  "notes": "The standard text is copyrighted and is not copied into this repository. Catalogue status and target-market adoption must be rechecked before contractual or conformity use.",
+  "notes": "Official LinuxCNC-specific configuration documentation. The documented look-ahead setting and example depth are not universal CNC parameters and must not be copied to other controllers or machines.",
   "authority_tier": "A",
-  "evidence_kind": "normative_requirement"
+  "evidence_kind": "official_documentation"
 }

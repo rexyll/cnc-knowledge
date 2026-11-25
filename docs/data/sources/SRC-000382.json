@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000382",
+  "source_type": "regulation",
+  "title": "29 CFR 1910.147 — The control of hazardous energy (lockout/tagout)",
+  "publisher": "Occupational Safety and Health Administration, U.S. Department of Labor",
+  "author": null,
+  "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.147",
+  "version": "29 CFR 1910.147; accessed 2026-11-25",
+  "published_on": null,
+  "accessed_on": "2026-11-25",
+  "locator": "Paragraphs (b)–(f): scope and definitions, energy-control program and procedures, application/removal of lockout or tagout devices, release and periodic inspection.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "U.S. federal occupational-safety regulation. Cited as a jurisdiction-specific example for applicable servicing/maintenance work; determine workplace and task applicability. Does not replace local law, site risk assessment, or machine-specific OEM procedures.",
+  "authority_tier": "A",
+  "evidence_kind": "normative_requirement"
+}

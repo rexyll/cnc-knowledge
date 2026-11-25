@@ -1,6 +1,6 @@
 # 龙门移动轴—电流环联合求解器数值验证协议
 
-> **状态：** RK4-01～04、ENE-01～03和PATH-01均已完成合成模型数值执行，统一标记`COMPLETED_REPORT_ONLY`；PATH-01验收决策为`DESCRIPTIVE_ONLY`。本文不包含真实机床参数、实机/HIL结果或工程验收通过结论。
+> **状态：** RK4-01～04、ENE-01～03、PATH-01和SCURVE-01均已完成合成模型数值执行，统一标记`COMPLETED_REPORT_ONLY`；PATH-01验收决策为`DESCRIPTIVE_ONLY`。本文不包含真实机床参数、实机/HIL结果或工程验收通过结论。
 >
 > **适用对象：** `resouces/12-control-and-machining-algorithms/gantry_joint_drive_solver.py` 中的四结构坐标、自由路径坐标、单点移动载荷和单轴等效RL/连续PI联合模型。
 
@@ -285,10 +285,11 @@ E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{presc
 - **限制：** 本次是可复现的合成连续时间自由/理想约束对照；没有真实机床定位/驱动能力、真实加工载荷、参数辨识、离散伺服/PWM、台架、HIL或实机验证。
 ## 6. 执行顺序与结果归档
 
-1. 执行CH12全部资源级测试并保存完整stdout/stderr、退出码、Python/NumPy版本和源码SHA；最近一次Actions Run 45419174116已执行136/136项资源测试。
+1. 执行CH12全部资源级测试并保存完整stdout/stderr、退出码、Python/NumPy版本和源码SHA；最近一次Actions Run 45517202862已执行143/143项资源测试。
 2. 代码变更后按当前代码版本复跑完整资源测试集；不得以仓库知识质量CI替代资源测试。
 3. RK4-01～04已完成四档细化试验并保存状态输出、误差及运行清单。
 4. ENE-01～03与PATH-01均已完成合成报告态数值执行；PATH-01两模型分别完成四档收敛，对照决策为DESCRIPTIVE_ONLY。
+5. SCURVE-01完成标量三阶七段限跃度S曲线参考剖面生成与归档校验；该运行不是多轴CNC规划或机床验收。
 5. 若取得目标机床的可信参数与应用级路径/驱动力/能量阈值，再按本节重新配置PATH-01；不得将当前合成基准当成设备验收。
 6. 所有完整输出、配置和结果文件保存到 `resouces/12-control-and-machining-algorithms/`，并登记 `ASSET-INDEX.md`。PATH-01配置模板和两份CSV空白模板只定义输入/输出格式，不包含参数或结果；执行后另存带配置SHA/求解器SHA的实际文件，不覆盖模板。
 
@@ -296,9 +297,9 @@ E_{q,j}(t)=\frac{q_{free,j}-q_{prescribed,j}}{a_j+r_j\max(|q_{free,j}|,|q_{presc
 
 ## 7. 本轮当前状态
 
-- 本协议与矩阵及资源归档已同步；RK4-01～04、ENE-01～03和PATH-01均为`COMPLETED_REPORT_ONLY`；PATH-01验收决策为`DESCRIPTIVE_ONLY`。
+- 本协议与矩阵及资源归档已同步；RK4-01～04、ENE-01～03、PATH-01和SCURVE-01均为`COMPLETED_REPORT_ONLY`；PATH-01验收决策为`DESCRIPTIVE_ONLY`。
 - PATH-01两模型分别完成四档收敛筛查，应用级路径/速度/负载点/反力/约束功/能量阈值全部null，不判定工程合格。
-- GitHub Actions Run 45419174116执行136/136项CH12资源测试，RK4-01～04、ENE-01～03和PATH-01运行成功；仓库单元测试、strict lint及结果归档均成功。
+- GitHub Actions Run 45517202862执行143/143项CH12资源测试；RK4-01～04、ENE-01～03、PATH-01和SCURVE-01运行/归档成功，仓库单元测试与strict lint均通过。
 - CH12-T003继续`IN_PROGRESS`；真实机床参数辨识、台架、HIL和实机验证未完成。
 
 
@@ -689,3 +690,13 @@ R_{\rm round,min}=2B_E+B_{\Delta E,sub}+B_{W,sample}+B_S+B_t+B_{R,sub}+B_{sumgua
 
 
 **预算归档精确比较补充（2026-11-24）：** 噪声预算报告中的浮点分项和残差阶数门控报告不再使用通用 `abs_tol=1e-12` 比较，而是对JSON层级结构和数值执行精确一致性比较，避免小量级预算（例如低于1e-12 J）被过宽绝对容差掩盖。精确比较回归已纳入上述自动预算测试，ENE运行器测试42项，三类资源测试总计116项均未执行；未运行ENE积分。
+
+
+### SCURVE-01 标量三阶七段限跃度参考剖面
+
+SCURVE-01是独立的轨迹参考剖面软件筛查，不属于龙门联合ODE的RK4收敛或ENE能量闭合积分。该夹具只在标量路径坐标上构造静止—静止的三阶七段S曲线。
+
+- **合成输入：** 位移0.25m、最大速度0.2m/s、最大加速度1m/s²、最大跃度10m/s³、采样周期0.001s。所有数值均标记为SYNTHETIC_FIXTURE。
+- **解析结果：** 七段结构，巡航0.95s，总时间1.55s，峰值速度/加速度/跃度为0.2m/s、1m/s²、10m/s³；终点位置0.25m、速度和加速度为0；1551个采样点。
+- **方法区别：** 经典三阶七段S曲线使用分段常值跃度，跃度在切换点发生跃变；四阶十五段方法可构造跃度连续曲线，两者不可混称。[SRC-000375](../../data/sources/SRC-000375.json) 五轴CNC轴/关节空间速度、加速度、跃度约束与笛卡尔空间弦误差约束属于不同约束空间，需由运动学映射联合处理。[SRC-000376](../../data/sources/SRC-000376.json) LinuxCNC的G61/G61.1/G64路径控制及P/Q容差是特定控制器语义示例。[SRC-000377](../../data/sources/SRC-000377.json) LinuxCNC的`ARC_BLEND_OPTIMIZATION_DEPTH`是该轨迹规划器的look-ahead段数设置，不能推广为所有CNC控制器参数。[SRC-000378](../../data/sources/SRC-000378.json)
+- **CI与判定：** Actions Run 45517202862通过143/143项CH12资源测试；SCURVE-01输出状态为`COMPLETED_REPORT_ONLY`，验收决策为`DESCRIPTIVE_ONLY`。归档包括时序CSV（1551行/8列）、分段CSV（7行/12列）、汇总CSV（1行/19列）和manifest。该运行不是多轴逆运动学、块段look-ahead算法实现、拐角混合、四阶jerk-continuous/Snap限制、伺服动力学或机床验收。
