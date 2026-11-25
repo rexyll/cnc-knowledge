@@ -142,3 +142,18 @@
 - **实施提交：** `305b7a5e057926dab2540a510aeaca8040c9c636`；GitHub Actions [Run 45573023428](https://github.com/rexyll/cnc-knowledge/actions/runs/45573023428) completed/success，Knowledge structure and data quality与CH12 numerical resource tests均成功。
 - **计划/索引同步提交：** `23b5bfec010166a8c5b7b277c27e4db4d770b7c5`；GitHub Actions [Run 45573116169](https://github.com/rexyll/cnc-knowledge/actions/runs/45573116169) completed/success，两个Job均成功。
 - **状态与遗留：** 尚无真实企业ERP/CMMS/EAM状态字典、交易接口、收货/库存/工单样本、正式企业组织授权RACI、目标机型受控BOM/OEM和现场维修证据；未导入真实采购/收货/库存移动/领退料记录，未确定企业实际审批权限、盘点频率/容差或异常SLA。CI仅验证仓库结构/数据质量及CH12既有数值资源，不代表企业事务集成、库存盘点、现场维修或实机验收。
+
+
+## CH17-T004 备件端到端验收场景与测试证据第四轮
+
+- **实际完成时间：** 2026-11-25T16:18:31+08:00（Asia/Shanghai；TaskHistory补录时间）
+- **所在分支：** `main`（未创建其他分支）
+- **新增正文：** `docs/17-operation-maintenance-and-repair/spare-parts-end-to-end-acceptance-testing.md`（KNOW-000030，`verification_status=in_review`）。
+- **新增资源：** `spare-parts-end-to-end-acceptance-test-matrix.csv`（ASSET-000036，30测试用例/24列）；`spare-parts-acceptance-test-execution-record-template.csv`（ASSET-000037，30列表头空模板），均位于 `resouces/17-operation-maintenance-and-repair/`。
+- **测试内容：** L0静态、L1组件/规则、L2集成/SIT、L3业务/UAT、L4上线准备；覆盖主数据/外部键/BOM适用性、采购收货/质量放行、库存桶/在途PO/单位、事件幂等、替代审批范围、发料与实际安装、批次追溯、返修/报废、盘点对账、PCN/EOL、权限/SoR/敏感数据和事件恢复。
+- **验收边界：** 30个场景全部为NOT_RUN；执行记录模板为header-only。未连接用户企业ERP/CMMS/EAM/PLM，未导入生产数据，未执行SIT/UAT/生产影子运行或机床现场/实机测试。测试阈值、容差、接口时延、环境与审批角色由企业批准。
+- **结构化实体与索引：** 新增KNOW-000030、ASSET-000036～ASSET-000037；更新根TaskPlan、CH17 TaskPlan（新增6.11）、章节README、docs总入口、资源README、ASSET-INDEX与CHAPTER-COVERAGE。覆盖度更新为10篇KNOW条目、30项资源记录、SRC去重9条；CH17-T004继续IN_PROGRESS。
+- **CSV/JSON验收：** 远程复读测试矩阵为30行/24列且所有行宽一致；执行记录模板为0数据行/30列表头。KNOW-000030及两个ASSET JSON均可解析，`linked_templates`、`file_path`和`related_knowledge_id`关联正确；测试矩阵所有执行状态均为NOT_RUN。
+- **实施提交：** `039960f85923b8c3a521f3267db4396fb8dd0a63`；GitHub Actions [Run 45574910040](https://github.com/rexyll/cnc-knowledge/actions/runs/45574910040) completed/success，Knowledge structure and data quality与CH12 numerical resource tests均成功。
+- **计划/索引同步提交：** `6e93d3e251531317e3ec7a461376a8d312b5ae4f`；GitHub Actions [Run 45574998349](https://github.com/rexyll/cnc-knowledge/actions/runs/45574998349) completed/success，两个Job均成功。
+- **状态与遗留：** 尚无企业授权非生产环境、系统字段/SoR正式批准、合成数据集版本、企业测试角色授权和测试执行证据；未实际运行30个场景或生成PASS/FAIL。CI只验证仓库知识结构/数据质量及CH12既有数值资源，不代表备件系统SIT/UAT、库存实盘、现场维修或实机验收。
