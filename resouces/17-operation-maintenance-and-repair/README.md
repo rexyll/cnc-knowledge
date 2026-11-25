@@ -164,3 +164,9 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - `spare-parts-inventory-opening-state-scenario-matrix-v1.csv`：新增候选资源；映射9个代表性场景的期初输入和守恒断言，全部未批准且未执行。
 
 所有账户、维度和场景均为讨论候选，未获得企业批准，不得据此过账或生成业务期末库存。
+
+## CH17-T004 多维库存余额模型第十二轮（2026-11-25）
+
+- spare-parts-multidimensional-inventory-model-test-cases-v1.csv（ASSET-000050）：17项纯合成数学性质测试，覆盖多维余额键、同单位守恒、跨库位/物料/批次/所有权拒绝、单位换算审批、期初快照隔离、事件ID/序号及整批回放原子性。
+- 模型代码：scripts/spare_parts_multidimensional_inventory.py；专项测试：tests/test_spare_parts_multidimensional_inventory.py。
+- CI自检报告：Artifact ch17-multidimensional-inventory-self-check。自检仅验证虚构余额上的数学性质，execution_status固定为BLOCKED_PENDING_ENTERPRISE_APPROVAL。

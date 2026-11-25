@@ -85,6 +85,18 @@ class MultidimensionalInventoryTests(unittest.TestCase):
             ledger.replay([model.InventoryEvent("E1", 1, src, dst, Decimal("2"), "X")])
         self.assertEqual(ledger.balances, before)
 
+    def test_replay_batch_is_atomic_when_later_event_fails(self):
+        src, dst = key("HOLD"), key()
+        ledger = model.InventoryLedger({src: Decimal("2")})
+        before = ledger.balances
+        events = [
+            model.InventoryEvent("E1", 1, src, dst, Decimal("1"), "X"),
+            model.InventoryEvent("E2", 2, src, dst, Decimal("5"), "X"),
+        ]
+        with self.assertRaises(model.InventoryModelError):
+            ledger.replay(events)
+        self.assertEqual(ledger.balances, before)
+
     def test_synthetic_opening_snapshot_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "opening.csv"

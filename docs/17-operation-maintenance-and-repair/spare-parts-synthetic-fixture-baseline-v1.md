@@ -162,3 +162,13 @@ CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-
 - [期初状态场景矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-opening-state-scenario-matrix-v1.csv)：针对SPAT-006/008/010/012/017/019/020/021/022/023定义期初输入要求与待审批守恒断言。所有场景保持PROPOSED_NOT_APPROVED和NOT_RUN。
 
 **重要边界：** 账户代码和维度集合只是候选设计，不是企业库存政策。可用、待检、隔离、返修、现场保管、在途、待报废属于候选实物账户；预留/分配和PO未交属于候选非实物承诺；盘点差异属于观察记录。企业可能采用不同账户/子账结构，必须由库存数据所有者确认。当前没有任何可用的企业期初余额数据，本轮不生成库存余额、不激活转移契约、不计算业务期末量。
+
+## 12. 多维库存余额内核与期初快照隔离
+
+新增 [多维库存余额模型测试矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-multidimensional-inventory-model-test-cases-v1.csv)（ASSET-000050，17项纯合成数学性质测试）。
+
+实现位于 [多维库存内核](../../scripts/spare_parts_multidimensional_inventory.py)，专项测试位于 [多维库存测试](../../tests/test_spare_parts_multidimensional_inventory.py)。余额键固定包含账户、物料、批次、库位、所有权、质量状态和计量单位。普通双边转移只允许在同物料/批次/库位/所有权/单位下改变账户或状态；跨库位移动、物料/批次变更和所有权变更必须由独立业务事件建模。不同单位禁止直接转移；只有显式提供包含批准人和批准依据的APPROVED换算记录，才可调用独立换算函数。模型不自动应用换算，也不从BOX/EA示例推断换算。
+
+期初快照装载器只接受 synthetic_only=TRUE 且 snapshot_status=SYNTHETIC_TEST_ONLY 的行，并要求reset_group；企业生产/批准快照不能通过该装载入口。事件回放要求事件ID唯一、序号严格递增；整个批次在全部事件成功前不提交余额，后续事件失败时整批不改变状态。
+
+**边界：** 自检使用虚构数量，仅验证内核数学性质；不加载企业期初快照、不连接ERP/WMS/CMMS、不产生外部写入。自检报告固定为 BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务规则断言为 NOT_EVALUATED。17项单测PASS不代表企业库存流程验收。

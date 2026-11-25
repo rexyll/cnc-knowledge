@@ -1,0 +1,54 @@
+{
+  "entity_id": "ASSET-000050",
+  "entity_type": "asset_file",
+  "canonical_name": "多维库存余额模型测试矩阵v1",
+  "english_name": "Multidimensional inventory balance model test matrix v1",
+  "aliases": [
+    "Inventory transition contracts v1"
+  ],
+  "description": "17项纯合成数学性质测试矩阵，覆盖多维余额键、双边守恒、维度边界、单位换算审批、期初快照隔离和事件回放原子性。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "库存状态机",
+    "双边转移",
+    "项目原创资源",
+    "ASSET-000045"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T22:10:00+08:00",
+  "updated_at": "2026-11-25T22:10:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-multidimensional-inventory-model-test-cases-v1.csv",
+    "file_name": "spare-parts-multidimensional-inventory-model-test-cases-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000032",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic mathematical test matrix; not enterprise acceptance evidence",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "17项CI单元测试映射表；纯合成数学性质检查，不代表企业库存业务规则获批或业务验收。"
+}

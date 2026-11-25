@@ -261,3 +261,16 @@
 - **CI验收：** GitHub Actions [Run 45617936840](https://github.com/rexyll/cnc-knowledge/actions/runs/45617936840) completed/success；Knowledge structure and data quality与CH12 numerical resource tests两个Job均成功；全量单元测试42/42通过；22类转移契约继续全部NOT_APPROVED，库存模型就绪状态仍为BLOCKED。
 - **CI产物：** [库存状态模型就绪/审批门禁报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45617936840/artifacts/15022767310)。
 - **边界与遗留：** 本轮只建立候选账户/维度结构和期初输入模板，不推断企业库存政策、不填充期初数量、不启用双边转移契约、不计算业务期末库存。企业库存数据所有者仍需批准账户字典、维度组合、所有权/质量状态、单位换算、预留/分配语义、期初快照及外部账户。数据集DRAFT、22项环境检查NOT_ASSESSED、30项业务测试NOT_RUN；CH17-T004继续IN_PROGRESS。
+
+## CH17-T004 多维库存余额内核与事件回放第十二轮（2026-11-25）
+
+- 实际完成时间：2026-11-25T22:10:00+08:00（Asia/Shanghai）。
+- 所在分支：main（未创建新分支）。
+- 新增 scripts/spare_parts_multidimensional_inventory.py：余额键包含账户、物料、批次、库位、所有权、质量状态和单位；Decimal数量；同物料/批次/库位/所有权/单位的双边转移守恒；跨库位、物料、批次、所有权和单位变化拒绝由普通转移隐式完成。
+- 单位换算门禁：显式UnitConversion接口必须提供APPROVED状态、批准人和批准依据，换算因子必须为有限正数。内核不自动应用换算、不从夹具推断BOX/EA关系；跨单位转移仍拒绝。
+- 期初快照隔离：只允许synthetic_only=TRUE且snapshot_status=SYNTHETIC_TEST_ONLY的行进入测试装载器，并要求reset_group；企业生产/正式快照无法通过该入口。重复余额键拒绝，禁止静默累加。
+- 事件回放：event_id唯一、sequence严格递增；整批回放使用候选账本，全部事件成功后才提交，后续失败时整批原子回滚。
+- 测试与资源：新增17项专项测试及ASSET-000050测试矩阵，覆盖维度隔离、守恒、显式换算审批、合成快照门禁、事件顺序和整批原子性。
+- CI：Knowledge Quality增加模型self-check与JSON Artifact；自检报告声明execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED，不连接企业系统、不写数据库/API。
+- 文档登记：更新KNOW-000032第12节、章节README、资源README、ASSET-INDEX、根TaskPlan、CH17 TaskPlan第6.19节和coverage。CH17覆盖统计12篇KNOW、45个实体、43项资源、9条去重来源。
+- 遗留：22类事件转移契约、13类候选账户及候选维度均未获企业批准；期初余额模板无正式数据；30项业务测试NOT_RUN。数学自检PASS不构成企业业务验收，CH17-T004继续IN_PROGRESS。

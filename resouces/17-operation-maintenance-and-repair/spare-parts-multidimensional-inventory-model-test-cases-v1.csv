@@ -1,0 +1,18 @@
+test_id,scope,assertion,expected_result,execution_evidence,approval_status,notes
+MDI-001,"Balance key includes account, item, lot, location, owner, condition and UOM",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-002,"Same-dimension same-unit transfer conserves quantity",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-003,"Cross-location transfer is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-004,"Cross-item transfer is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-005,"Cross-lot transfer is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-006,"Ownership change is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-007,"Cross-unit transfer without explicit conversion is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-008,"Unapproved unit conversion is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-009,"Approved unit conversion requires approver and evidence",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-010,"Zero negative and non-finite conversion factors are rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-011,"Negative opening balance is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-012,"Event sequence must increase and event IDs must be unique",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-013,"Single-event failure leaves ledger unchanged",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-014,"Batch replay is atomic when a later event fails",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-015,"Opening snapshot accepts synthetic-test-only rows",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-016,"Duplicate opening balance key is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+MDI-017,"Self-check report remains blocked pending enterprise approval",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
