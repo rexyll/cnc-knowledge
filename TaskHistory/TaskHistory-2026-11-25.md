@@ -50,3 +50,19 @@
 - **实施提交：** 852bf193dffc7cc3dda31ae9de7da61961267e4c；计划/索引/覆盖度同步提交：200620804124e88a7adf97f78908aabb69f8e3ff。
 - **CI验收：** 实施提交对应GitHub Actions [Run 45551283372](https://github.com/rexyll/cnc-knowledge/actions/runs/45551283372)，计划/索引同步提交对应 [Run 45551345376](https://github.com/rexyll/cnc-knowledge/actions/runs/45551345376)，两个Run的全部Job均completed/success；知识结构与数据质量测试、strict lint及CH12数值资源回归Job通过。CH12回归仅验证既有数值资源，不构成CH17维修现场、设备/HIL或实机验证。
 - **状态与遗留：** CH17-T003保持IN_PROGRESS；尚无用户指定的机床型号、序列范围、配置和受控OEM服务手册，未形成型号级维修SOP、替代件批准或真实拆装/校准/复验记录。
+
+
+## CH17-T003 关键部件族影响分析与复验矩阵第一轮
+
+- **实际完成时间：** 2026-11-25T13:53:23+08:00（Asia/Shanghai；补录与远程验收完成时间）
+- **所在分支：** main（未创建其他分支）
+- **新增正文：** docs/17-operation-maintenance-and-repair/component-family-impact-assessment-and-verification.md（KNOW-000024，verification_status=in_review）。
+- **新增资源：** resouces/17-operation-maintenance-and-repair/component-family-impact-verification-matrix-template.csv（ASSET-000018），九类部件族、57条审查记录、20列。
+- **部件族范围：** 主轴单元/主轴电机；伺服电机/编码器/驱动；滚珠丝杠/支撑轴承/联接件；直线导轨/滑块；刀库/换刀机械手/刀塔/夹持机构；卡盘/夹具/工件夹持；液压/气动动力单元；润滑/冷却/过滤/排屑；CNC/PLC/驱动模块/I/O/传感器。
+- **矩阵范围：** 每项预留拆前基线、替代兼容性证据、OEM程序、危险能量/风险审查、维修后验证域、验证方法、接受准则来源、责任专业、停工点、适用性、结果和证据引用。
+- **结构化记录与索引：** 新增KNOW-000024、ASSET-000018；更新CH17章节计划、根TaskPlan、章节README、docs入口、资源README、ASSET-INDEX和CHAPTER-COVERAGE。
+- **边界：** 矩阵所有行初始TO_BE_ASSESSED/NOT_TESTED，仅为审查提示，不是所有设备的通用要求。无目标机床型号、序列范围、选件和受控OEM服务手册，因此未生成型号级拆装动作、吊装参数、紧固/预紧数值、介质规格、参数或验收阈值；没有真实测量或现场/实机验证。
+- **CSV验收：** 远程复读文件共58行（1行表头+57条数据），20列表头，所有行均为20列；9个部件族ID均存在。新建KNOW/ASSET JSON可解析，ASSET路径及索引关联正确。
+- **实施提交：** 698efeecde445e2f63fba7c561c28d7f686369d8；计划/索引/覆盖度同步提交：eb296e24f92a800ac89474da3e7eda9ac719ccb4。
+- **CI验收：** 实施提交对应GitHub Actions [Run 45556482627](https://github.com/rexyll/cnc-knowledge/actions/runs/45556482627)，计划/索引同步提交对应 [Run 45556547468](https://github.com/rexyll/cnc-knowledge/actions/runs/45556547468)，两个Run的全部Job均completed/success；知识结构与数据质量检查、strict lint及CH12数值资源回归Job均成功。CH12回归只验证仓库既有数值资源，不构成CH17现场维修、HIL或实机验收。
+- **状态与遗留：** CH17-T003保持IN_PROGRESS；下一步需取得目标机床系列、序列范围、选件和受控OEM服务文件，将适用矩阵行逐项映射到OEM条款、批准的替代关系、验证方法和现场证据。

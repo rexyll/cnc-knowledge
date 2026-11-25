@@ -586,3 +586,5 @@
 - 新增 resouces/17-operation-maintenance-and-repair/component-family-impact-verification-matrix-template.csv（ASSET-000018），共57条审查记录、20列；包含拆前基线、兼容性证据、OEM程序、危险能量/风险审查、复验域、验证方法、判据来源、责任专业和停工点。
 - 矩阵默认TO_BE_ASSESSED/NOT_TESTED，仅为通用审查提示；无目标机床配置和现行OEM文件，不能作为型号级SOP或验收标准。
 - **状态：** CH17-T003保持IN_PROGRESS；后续需依据指定设备型号、序列范围、选件和受控OEM服务手册映射条目，并取得适用现场复验记录。
+
+- **提交与CI验收补记：** 实施提交 `698efeecde445e2f63fba7c561c28d7f686369d8` 对应 [Run 45556482627](https://github.com/rexyll/cnc-knowledge/actions/runs/45556482627)；计划/索引同步提交 `eb296e24f92a800ac89474da3e7eda9ac719ccb4` 对应 [Run 45556547468](https://github.com/rexyll/cnc-knowledge/actions/runs/45556547468)。两个Run的全部Job均success；CI不代表CH17现场或实机维修验证。
