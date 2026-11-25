@@ -157,3 +157,17 @@
 - **实施提交：** `039960f85923b8c3a521f3267db4396fb8dd0a63`；GitHub Actions [Run 45574910040](https://github.com/rexyll/cnc-knowledge/actions/runs/45574910040) completed/success，Knowledge structure and data quality与CH12 numerical resource tests均成功。
 - **计划/索引同步提交：** `6e93d3e251531317e3ec7a461376a8d312b5ae4f`；GitHub Actions [Run 45574998349](https://github.com/rexyll/cnc-knowledge/actions/runs/45574998349) completed/success，两个Job均成功。
 - **状态与遗留：** 尚无企业授权非生产环境、系统字段/SoR正式批准、合成数据集版本、企业测试角色授权和测试执行证据；未实际运行30个场景或生成PASS/FAIL。CI只验证仓库知识结构/数据质量及CH12既有数值资源，不代表备件系统SIT/UAT、库存实盘、现场维修或实机验收。
+
+## CH17-T004 备件合成测试数据集与环境就绪规范第五轮
+
+- **实际完成时间：** 2026-11-25T17:01:07+08:00（Asia/Shanghai；两次主提交的CI全部通过后补录）
+- **所在分支：** `main`（未创建其他分支）
+- **新增正文：** `docs/17-operation-maintenance-and-repair/spare-parts-synthetic-test-data-and-environment-readiness.md`（KNOW-000031，`verification_status=in_review`）。
+- **新增资源：** `spare-parts-synthetic-test-dataset-manifest-template.csv`（ASSET-000038，29列表头空模板）；`spare-parts-test-environment-readiness-checklist.csv`（ASSET-000039，22项/11列，全部NOT_ASSESSED）；`spare-parts-test-fixture-cross-reference-template.csv`（ASSET-000040，27列表头空模板），均归档于 `resouces/17-operation-maintenance-and-repair/`。
+- **专题内容：** 建立合成数据集身份/语义版本/生成器/种子引用/冻结/校验；覆盖组织与仓库、虚构机床实例和配置、BOM、PART/PRODUCT、虚构供应来源、采购收货、质量处置、库存流水、维修工单、替代审批、PCN/EOL及测试身份；区分业务时间、接收时间、顺序号、版本、重复/乱序/冲销和事件重放；定义L0～L4测试环境分层、身份/网络/数据隔离、mock/sandbox、最小权限、秘密管理、非生产备份恢复和清理。
+- **安全与数据边界：** 默认仅使用纯合成数据；经批准的脱敏数据须单独记录数据所有者、隐私/安全审批、方法版本和重识别风险。禁止生产快照、真实生产主键、个人信息、凭证或供应商机密进入合成夹具或公共仓库；禁止生产写入、真实供应商/客户通知和未授权机床动作。采购行、收货、质检、库存流水、预留、维修工单和审批仍为测试系统事务/事件，不扩展全库静态实体Schema。
+- **结构化记录与索引：** 新增KNOW-000031、ASSET-000038～ASSET-000040；更新根TaskPlan、CH17 TaskPlan（新增6.12）、章节README、docs总入口、资源README、ASSET-INDEX和CHAPTER-COVERAGE。CH17覆盖度更新为11篇KNOW条目、34个登记实体、33项资源记录、SRC去重9条；CH17-T004继续IN_PROGRESS。
+- **CSV/JSON验收：** 从GitHub远程复读三份新增CSV：数据集清单29列/0数据行；环境就绪表22行/11列；夹具引用模板27列/0数据行；三份文件各行列宽一致。新增KNOW/ASSET四份JSON均可解析；三个ASSET的file_path、related_knowledge_id及ASSET-INDEX条目与实际文件一致，索引条目位于资源表格内。覆盖度CSV行宽为13列。
+- **实施提交：** `9b7b20b3acabde5032ca98249775e0c5dde74fa8`；GitHub Actions [Run 45581158205](https://github.com/rexyll/cnc-knowledge/actions/runs/45581158205) completed/success，Knowledge structure and data quality与CH12 numerical resource tests两个Job均success。
+- **计划/索引同步提交：** `5ed043b580d05ec88157c43f6004120c136245d5`；GitHub Actions [Run 45581324072](https://github.com/rexyll/cnc-knowledge/actions/runs/45581324072) completed/success，两个Job均success。
+- **状态与遗留：** 22项环境检查仍为NOT_ASSESSED；尚未取得企业授权非生产环境清单、网络隔离/角色/备份恢复证据，也未生成或冻结企业专用合成数据集。既有30项备件端到端测试仍全部NOT_RUN；未执行企业SIT/UAT、生产影子运行、HIL或实机测试。CH17-T004保持IN_PROGRESS。CI只证明仓库结构/数据质量及CH12既有数值资源回归成功，不代表企业系统、库存业务或机床现场验收。
