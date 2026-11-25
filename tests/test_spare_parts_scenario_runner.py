@@ -92,22 +92,33 @@ class SparePartsScenarioRunnerTests(unittest.TestCase):
         self.assertTrue(report["cases"][0]["errors"])
 
     def test_unknown_event_type_is_rejected(self) -> None:
-        # Modify the canonical source in the isolated test copy and rebuild that one package.
-        import csv
-        source = self.root / loader.FIXTURES
-        with source.open("r", encoding="utf-8", newline="") as stream:
-            rows = list(csv.DictReader(stream))
-            headers = list(rows[0])
-        for row in rows:
-            if row["fixture_id"] == "EVT-RECEIPT-PARTIAL-001":
-                row["event_type"] = "UNREGISTERED_EVENT"
-        with source.open("w", encoding="utf-8", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=headers, lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(rows)
-        # The changed source is not valid against the original hashes/mappings; the runner must fail closed.
-        report = runner.run_scenarios(self.root, self.packages, ["SPAT-006"])
-        self.assertEqual(report["result"], "FAIL")
+        event = {
+            "event_id": "EVT-UNKNOWN-001", "event_type": "UNREGISTERED_EVENT",
+            "reset_group": "RESET-UNKNOWN", "expected_quantity_delta": "0",
+            "expected_inventory_bucket": "", "business_event_time": "2026-01-02T09:00:00+08:00",
+            "ingestion_time": "2026-01-02T09:00:00+08:00", "sequence_no": "1",
+            "related_fixture_id": "", "expected_state": "EXPECTED_ONLY",
+        }
+        with self.assertRaises(runner.ScenarioRunError):
+            runner.replay_expected_event_deltas("SPAT-001", [event])
+
+    def test_duplicate_replay_cannot_carry_nonzero_expected_delta(self) -> None:
+        event_rows = runner._read_csv(
+            self.packages / "SPAT-010" / "events.csv", loader.validator.FIXTURE_HEADERS
+        )
+        for event in event_rows:
+            if event["event_type"] == "DUPLICATE_MESSAGE_REPLAY":
+                event["expected_quantity_delta"] = "4"
+        with self.assertRaises(runner.ScenarioRunError):
+            runner.replay_expected_event_deltas("SPAT-010", event_rows)
+
+    def test_non_inventory_event_cannot_mutate_an_inventory_bucket(self) -> None:
+        event_rows = runner._read_csv(
+            self.packages / "SPAT-013" / "events.csv", loader.validator.FIXTURE_HEADERS
+        )
+        event_rows[0]["expected_quantity_delta"] = "1"
+        with self.assertRaises(runner.ScenarioRunError):
+            runner.replay_expected_event_deltas("SPAT-013", event_rows)
 
     def test_source_test_status_and_fixture_files_remain_unchanged(self) -> None:
         source = self.root / loader.FIXTURES

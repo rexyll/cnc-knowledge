@@ -48,12 +48,27 @@ jobs:
           --root .
           --all
           --output-dir "$RUNNER_TEMP/ch17-spare-parts-scenario-packages"
+      - name: Validate packages and replay expected synthetic event deltas offline
+        run: >-
+          python scripts/spare_parts_scenario_runner.py
+          --root .
+          --packages-dir "$RUNNER_TEMP/ch17-spare-parts-scenario-packages"
+          --all
+          --report-json "$RUNNER_TEMP/ch17-spare-parts-offline-simulation-report.json"
       - name: Upload CH17 scenario staging packages
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ch17-spare-parts-scenario-packages-${{ github.run_id }}
           path: ${{ runner.temp }}/ch17-spare-parts-scenario-packages/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload CH17 offline scenario simulation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch17-spare-parts-offline-simulation-${{ github.run_id }}
+          path: ${{ runner.temp }}/ch17-spare-parts-offline-simulation-report.json
           if-no-files-found: warn
           retention-days: 14
       - name: Run repository knowledge lint

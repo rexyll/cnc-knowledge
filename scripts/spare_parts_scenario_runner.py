@@ -302,6 +302,8 @@ def replay_expected_event_deltas(
 
 def run_scenarios(root: Path, packages_dir: Path, requested_cases: list[str]) -> dict[str, Any]:
     root = root.resolve()
+    if packages_dir.is_symlink():
+        raise ScenarioRunError(f"scenario packages directory is a symlink: {packages_dir}")
     packages_dir = packages_dir.resolve()
     manifest, fixtures, coverage, _profiles = loader.load_and_check_inputs(root)
     known_cases = [row["test_case_id"] for row in coverage]
