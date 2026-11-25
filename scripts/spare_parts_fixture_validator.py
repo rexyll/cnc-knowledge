@@ -384,7 +384,7 @@ def validate_dataset(root: Path) -> dict[str, Any]:
     _add_check(
         checks, errors, "test_case_fixture_coverage", coverage_ok,
         f"{len(coverage_rows)} unique mapping rows cover exactly SPAT-001..SPAT-030; every referenced fixture/event exists"
-        if coverage_ok else "coverage map has missing/duplicate cases, mismatched source fields or invalid fixture/event references",
+        if coverage_ok else "coverage map has missing/duplicate cases; expected exactly SPAT-001..SPAT-030 with matching source fields and valid fixture/event references",
     )
 
     manifest_coverage = set(split_ids(manifest.get("covered_test_case_ids", "")))
