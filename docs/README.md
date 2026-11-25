@@ -39,6 +39,7 @@
   - [备件合成测试夹具基线与30项用例映射](17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-baseline-v1.md)
   - [备件合成夹具本地静态校验工具](../scripts/spare_parts_fixture_validator.py)
   - [备件合成场景本地包生成器](../scripts/spare_parts_fixture_loader.py)
+  - [备件合成场景包离线校验与事件投影工具](../scripts/spare_parts_scenario_runner.py)
 - [18. 故障诊断与可靠性](./18-fault-diagnosis-and-reliability/README.md) — 机械、电气、数控、伺服、通信、软件和加工质量故障，以及根因分析、可靠性、可维护性和故障统计。
 - [19. 厂商、产品与供应链](./19-manufacturers-products-and-supply-chain/README.md) — 数控机床整机厂、数控系统、伺服驱动、主轴、导轨丝杠、轴承、刀具、传感器及备件供应商和产品目录。
 - [20. BOM、图纸与工程技术文档](./20-bom-drawings-and-technical-documents/README.md) — 整机/子系统BOM、零件清单、电气BOM、图纸、规格书、手册、技术变更、文档版本和数据关联。

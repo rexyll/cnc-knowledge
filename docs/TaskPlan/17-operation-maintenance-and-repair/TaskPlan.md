@@ -218,3 +218,11 @@
 - 每个本地场景包包含scenario-manifest、fixtures/objects/events CSV、load-plan和PLAN_ONLY reset-plan；目标目录存在时拒绝覆盖。工具没有企业系统适配器，不访问数据库/API/队列，不执行任何企业重置/删除。
 - 新增 `tests/test_spare_parts_fixture_loader.py`，验证单场景、全30场景、父子顺序、重置计划、未知用例、拒绝覆盖、配置篡改和源数据不变；CI全量打包和Artifact归档。
 - **边界：** 30项业务测试仍NOT_RUN；数据集仍DRAFT；22项环境检查仍NOT_ASSESSED。CH17-T004保持IN_PROGRESS。
+
+## 6.16 CH17-T004 备件场景包完整性校验与离线事件投影第九轮（2026-11-25）
+
+- 新增 `scripts/spare_parts_scenario_runner.py`：独立重建场景包，逐文件验证内容与哈希，复核源夹具引用闭包、纯合成字段、对象/事件分区及事件接收顺序；缺失/额外文件、内容漂移或符号链接均失败关闭。
+- 显式维护22类事件离线行为目录；重复消息必须保留原事件引用且零增量，迟到冲销不得删除原事件，乱序必须显式标记，非库存事件不得改变库存桶。
+- 使用Decimal对夹具声明的期望数量变化做reset_group隔离投影；无企业初始库存快照和库存口径，不计算期末库存/可用量，也不跨组求和。
+- 新增11项执行器专项测试；CI共33项单测通过，生成并检查30个场景包，离线模拟30/30、0失败，报告Artifact归档。
+- **边界：** simulation PASS不是业务验收，business_rule_assertions=NOT_EVALUATED，30项业务测试NOT_RUN；无企业系统适配器、无数据库/API写入、无SIT/UAT/HIL/实机运行。CH17-T004保持IN_PROGRESS。

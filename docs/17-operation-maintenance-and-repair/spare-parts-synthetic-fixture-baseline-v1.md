@@ -115,3 +115,38 @@ python scripts/spare_parts_fixture_loader.py --root . --all \
 工具默认拒绝覆盖已有场景目录，所有操作只写用户指定的本地输出目录，不修改原始夹具、映射或企业系统。CI会对30个场景全部生成包并上传Artifact。
 
 **严格限制：** “loader”在当前版本仅指本地文件场景包生成器，不是数据库导入器，不提供ERP/WMS/CMMS/EAM/QMS或消息队列适配器。即使全部30个包都生成成功，业务测试状态仍为NOT_RUN；数据集仍为DRAFT，必须取得企业数据/系统/安全责任人批准后，才能开发目标系统适配器和执行SIT/UAT。
+
+## 9. 场景包完整性校验与离线事件期望投影
+
+仓库新增 `scripts/spare_parts_scenario_runner.py`。该执行器针对第八轮loader生成的场景包做二次验证和离线期望事件投影，不调用企业系统，也不实现ERP/WMS/CMMS/EAM/QMS业务规则。
+
+在仓库根目录执行全部30项：
+
+```bash
+python scripts/spare_parts_scenario_loader.py --root . --all \
+  --output-dir /tmp/ch17-spare-parts-scenario-packages
+python scripts/spare_parts_scenario_runner.py --root . \
+  --packages-dir /tmp/ch17-spare-parts-scenario-packages --all \
+  --report-json resouces/17-operation-maintenance-and-repair/generated/spare-parts-offline-simulation-report-v1.json
+```
+
+单个用例可使用 `--test-case SPAT-010` 替代 `--all`。第一条命令的真实脚本名称为 `spare_parts_fixture_loader.py`；完整执行命令如下：
+
+```bash
+python scripts/spare_parts_fixture_loader.py --root . --all \
+  --output-dir /tmp/ch17-spare-parts-scenario-packages
+python scripts/spare_parts_scenario_runner.py --root . \
+  --packages-dir /tmp/ch17-spare-parts-scenario-packages --all \
+  --report-json resouces/17-operation-maintenance-and-repair/generated/spare-parts-offline-simulation-report-v1.json
+```
+
+执行器检查：
+- 场景包六份文件是否与当前数据集、用例映射和重置配置确定性重建结果逐字节一致；检查对象/事件分拆、纯合成标记和manifest边界字段。
+- 源文件SHA-256、包内文件身份、依赖闭包、对象/事件分区及目录结构；拒绝缺文件、额外文件、符号链接和任何内容漂移。
+- 事件类型必须属于显式离线处理目录；业务时间/接收时间/序号必须有效且顺序一致；无法解释的业务时间倒退被拒绝。
+- 重复消息必须引用原始收货事件并声明零数量增量；迟到冲销必须保留原事件关联且在本期望投影中为零增量；显式乱序事件必须确实呈现业务时间回退。
+- 事件中声明的期望数量增量以十进制定点数投影至对应库存桶，并严格按 `reset_group` 分开输出；没有初始库存快照和企业口径，因此不会计算期末余额、可用量或跨reset group总量。
+
+**结果语义必须区分：** `simulation_status=PASS` 只表示场景包内部完整、来源一致、事件期望投影符合上述静态约束；`business_rule_assertions=NOT_EVALUATED`、`business_test_status=NOT_RUN`。执行器不会调用真实业务规则，也不会把夹具里的期望数量当成实际账面事务。CI模拟通过不能替代企业SIT/UAT、生产影子、HIL或机床实机验收。
+
+CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-spare-parts-offline-simulation` 报告Artifact。用户本地报告应写入本章 `resouces/17-operation-maintenance-and-repair/generated/` 目录；动态报告不默认提交进Git。

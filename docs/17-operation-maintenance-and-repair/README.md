@@ -55,3 +55,5 @@
 备件合成夹具基线附带 [本地静态校验工具](../../scripts/spare_parts_fixture_validator.py) 和 [单元测试](../../tests/test_spare_parts_fixture_validator.py)。工具只读取本地CSV，不连接企业系统；CI会生成JSON验证报告Artifact。
 
 备件合成夹具现提供 [30项场景重置配置](../../resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-reset-profiles-v1.csv) 与 [本地场景包生成器](../../scripts/spare_parts_fixture_loader.py)。该工具仅在指定目录生成文件系统场景包和PLAN_ONLY重置计划，不连接或写入企业数据库；CI会生成全部30个场景包供审查。
+
+备件合成夹具增加 [离线场景包校验与事件期望投影工具](../../scripts/spare_parts_scenario_runner.py)。它逐场景验证包哈希/依赖/事件顺序，并按reset_group独立列出夹具声明的数量增量。模拟结果PASS仅代表静态包和期望事件投影一致；业务规则未执行，30项测试仍NOT_RUN。

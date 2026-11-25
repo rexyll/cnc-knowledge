@@ -675,3 +675,10 @@
 - 每场景包只写指定本地目录，无数据库/API/队列/ERP/WMS/CMMS/EAM/QMS连接，不执行企业导入、重置或删除；adapter保持NOT_IMPLEMENTED。CI全量打包30场景并归档Artifact。
 - 本轮更新KNOW-000032关联、docs导航、CH17 README、资源README、ASSET-INDEX及coverage；CH17新增ASSET-000044，统计12篇KNOW、39个实体、37项资源。
 - **验收边界：** loader测试覆盖单场景、30场景全量生成、依赖顺序、PLAN_ONLY清理顺序、未知用例、拒绝覆盖、配置不一致和源文件只读。生成包不是SIT/UAT结果；数据集仍DRAFT、30项业务测试仍NOT_RUN。
+
+## CH17-T004 备件场景包完整性与离线事件期望投影第九轮（2026-11-25）
+
+- 新增 `scripts/spare_parts_scenario_runner.py`：对每个场景包和当前固定源数据确定性重建结果做逐文件字节比对，验证source/file SHA-256、夹具闭包、对象/事件分区、纯合成标记和事件时间/序号顺序；拒绝缺失/额外文件和符号链接。
+- 新增显式22类事件离线契约：重复收货重放、迟到冲销、显式乱序、库存桶期望增量和非库存事件零变更约束；事件数量使用Decimal按reset_group分组投影，禁止跨组/全局库存总额计算。
+- 新增 `tests/test_spare_parts_scenario_runner.py` 11项测试。CI全量运行33项unittest，重新生成30个场景包，再执行30个离线包校验和期望事件投影并上传报告Artifact。
+- **验收含义：** simulation PASS仅证明场景包字节/来源/依赖及预期事件投影一致；不执行ERP/WMS等业务规则，`business_rule_assertions=NOT_EVALUATED`、业务测试仍NOT_RUN。数据集DRAFT、22项环境检查NOT_ASSESSED，CH17-T004继续IN_PROGRESS。

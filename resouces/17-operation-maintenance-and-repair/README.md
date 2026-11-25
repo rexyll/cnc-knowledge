@@ -140,3 +140,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 每个场景包包括scenario-manifest.json、fixtures.csv、objects.csv、events.csv、load-plan.json和reset-plan.json；reset计划固定PLAN_ONLY，清理范围仅限生成的本地包。
 - 不连接数据库/API/队列，不执行导入、业务事务、企业环境重置或删除。目标系统适配器NOT_IMPLEMENTED；生成场景包不改变源测试用例的NOT_RUN状态。
 - CI单元测试和静态夹具校验已完成；全量30场景打包和Artifact归档已纳入CI。
+
+## CH17-T004 场景包离线校验与期望事件投影第九轮（2026-11-25）
+
+- `scripts/spare_parts_scenario_runner.py`：独立重建场景包并对六份文件逐字节校验，复核来源数据和SHA-256、纯合成属性、对象/事件分区、依赖闭包与时间/序号顺序；拒绝内容漂移、缺失/额外文件和符号链接。
+- 离线事件处理目录明确登记22类合成事件：数量增量事件按期望库存桶投影；重复消息要求保留原始收货事件关联且零增量；迟到冲销保留原事件；乱序必须显式标记；取消PO、权限拒绝、PCN/EOL、SoR和数据导出等非库存事件不得改变库存桶。
+- 数量增量使用Decimal并按reset_group分别输出；不跨组求和，不计算期末库存/可用量（缺少获批期初余额及企业库存口径）。
+- 新增 `tests/test_spare_parts_scenario_runner.py` 11项测试，包含全30包、包篡改、缺失文件、重复事件零增量、非库存事件零变更、冲销/乱序关联和CLI JSON报告；CI当前全量单测33项通过。
+- CI在生成30个场景包后运行离线执行器；本轮日志确认30/30模拟完成、0失败。报告Artifact与包Artifact分别归档。
+- **严格状态边界：** 模拟PASS仅是包完整性与期望事件投影一致，不等于业务规则正确；`business_rule_assertions=NOT_EVALUATED`、30项企业业务测试仍NOT_RUN。数据集DRAFT、22项环境检查NOT_ASSESSED，未连接/修改任何企业系统。
