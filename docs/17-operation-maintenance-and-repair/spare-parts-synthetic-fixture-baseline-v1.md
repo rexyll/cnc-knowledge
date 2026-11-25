@@ -195,3 +195,6 @@ CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-
 快照包含schema_version、截止ledger_sequence、前序事件链头、业务/知识截止时点、合成期初余额、快照余额和快照摘要。恢复时先校验快照摘要和账本前缀，再回放增量事件，并与从期初余额全量重放的结果逐维比较。任何业务时间不晚于快照截止时点的迟到增量都会拒绝恢复并要求全量重建；截止时点不能倒退。未知版本、前缀链头不符、序号缺口和摘要异常均失败关闭。
 
 **安全限制：** SHA-256链只能检测内容/顺序/链头不一致，不能证明事件来源真实性，也不能抵御有权限者同时重写账本及全部哈希。该实现没有数字签名、外部信任根、WORM/不可变存储、访问控制或跨进程并发保护；不能称为法律意义的防篡改审计账本。CI PASS只表示模型测试通过，business_rule_assertions仍为NOT_EVALUATED，execution_status仍为BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+第十四轮CI复验结果：GitHub Actions Run 45629680465 completed/success，Knowledge structure and data quality 与 CH12 numerical resource tests 两个Job均成功；全库87个unittest方法通过，其中新增完整性/快照专项13项通过。账本完整性自检PASS，增量回放1条事件并与全量重放一致；Artifact为ch17-inventory-ledger-integrity-45629680465。该结果只代表合成模型测试通过，业务规则仍NOT_EVALUATED、企业审批门禁仍BLOCKED_PENDING_ENTERPRISE_APPROVAL。

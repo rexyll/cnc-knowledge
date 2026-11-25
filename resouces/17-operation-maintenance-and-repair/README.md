@@ -185,3 +185,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 对影响快照历史窗口的迟到事件、向后移动的业务截止时点、链头不匹配、摘要损坏及未知版本失败关闭；迟到事件要求全量重建。
 - 新增ASSET-000052、15个纯合成断言场景及13个专项unittest方法；首轮CI中全库87项测试通过，但self-check入口因缺少仓库根目录导入路径失败，已定位并修复，需复跑确认。
 - **安全边界：** 哈希链不是数字签名或WORM；无法抵御有权限者同时重写数据与哈希。无外部信任根、企业权限/职责分离、持久化、并发或生产连接。CH17-T004继续IN_PROGRESS。
+
+
+## CH17-T004 库存事件账本完整性链与快照恢复第十四轮验收
+
+- ASSET-000052：15个纯合成断言场景；新增13个unittest方法。
+- GitHub Actions Run 45629680465：completed/success；Knowledge structure and data quality、CH12 numerical resource tests两个Job均success；全库87个unittest方法通过。
+- 完整性self-check：PASS；2条事件进入哈希链；快照后增量回放1条事件；与全量重放结果一致。
+- Artifact：ch17-inventory-ledger-integrity-45629680465。
+- 业务断言保持NOT_EVALUATED；审批状态保持BLOCKED_PENDING_ENTERPRISE_APPROVAL；无企业系统连接或数据库/API写入。

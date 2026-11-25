@@ -269,3 +269,5 @@
 - 若后续到达事件的business_time不晚于快照截止时点，恢复失败并要求从期初余额全量重建；业务截止时点不得倒退。未知版本、链头不匹配、摘要损坏和序号缺口均失败关闭。
 - 新增ASSET-000052及15个纯合成测试场景，13个专项unittest方法；CI运行自检并归档报告。
 - **限制：** 哈希链不是数字签名、WORM或法律意义防篡改；不具备外部信任根、生产持久化、访问控制、职责分离和并发保护。业务规则仍NOT_EVALUATED，审批门禁保持BLOCKED_PENDING_ENTERPRISE_APPROVAL，CH17-T004继续IN_PROGRESS。
+
+- **CI验收：** GitHub Actions Run 45629680465 completed/success；Knowledge structure and data quality与CH12 numerical resource tests两个Job均成功；全库87个unittest方法通过，完整性/快照专项13项通过。自检报告显示2条事件封链、快照后增量回放1条、与全量重放一致。Artifact ch17-inventory-ledger-integrity-45629680465。

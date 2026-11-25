@@ -309,3 +309,6 @@
 - 已定位并修复入口导入路径初始化；后续必须重新运行CI确认模块self-check、两个workflow Job和Artifact全部成功，未把首轮失败标记为通过。
 - 功能包括规范化JSON/Decimal/UTC时间编码、SHA-256事件内容摘要及前序哈希链、账本连续序号/唯一身份检查、版本化快照、前缀校验、增量回放与全量重放比较；对影响快照历史窗口的迟到事件失败关闭并要求全量重建。
 - 安全边界：哈希链不等于签名/WORM，不具备外部信任根、生产持久化、访问控制或并发保护；纯合成、无企业连接/数据库API写入。CH17-T004保持IN_PROGRESS，business_rule_assertions=NOT_EVALUATED、审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+- **第十四轮CI复验成功：** Run 45629680465 completed/success；Knowledge structure and data quality、CH12 numerical resource tests两个Job均success；全库87个unittest方法通过（新增13项完整性/快照专项测试通过）。完整性self-check PASS，2条事件完成哈希链封装，快照后增量回放1条并与全量重放一致；Artifact ch17-inventory-ledger-integrity-45629680465。第十四轮交付记录补齐；本轮首轮Run 45628703377的入口导入路径失败已修复，不隐藏失败历史。
