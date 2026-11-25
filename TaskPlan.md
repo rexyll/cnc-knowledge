@@ -704,4 +704,4 @@
 - 单位换算必须使用显式APPROVED记录及批准人/依据；不自动推断换算关系。
 - 期初余额装载仅接受synthetic_only=TRUE且snapshot_status=SYNTHETIC_TEST_ONLY的合成数据，并要求独立reset_group。
 - 事件ID唯一、序号严格递增，批量事件回放原子性；失败时不提交任何批次余额变化。
-- 17项纯合成数学性质测试进入CI；自检报告始终保持BLOCKED_PENDING_ENTERPRISE_APPROVAL，企业业务规则未评估。
+- 17个纯合成断言场景进入CI；自检报告始终保持BLOCKED_PENDING_ENTERPRISE_APPROVAL，企业业务规则未评估。

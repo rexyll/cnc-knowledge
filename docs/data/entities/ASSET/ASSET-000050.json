@@ -6,7 +6,7 @@
   "aliases": [
     "Inventory transition contracts v1"
   ],
-  "description": "17项纯合成数学性质测试矩阵，覆盖多维余额键、双边守恒、维度边界、单位换算审批、期初快照隔离和事件回放原子性。",
+  "description": "17个纯合成数学断言场景矩阵，由14个unittest方法覆盖，涉及多维余额键、双边守恒、维度边界、单位换算审批、期初快照隔离和事件回放原子性。",
   "primary_chapter": "CH17",
   "related_chapters": [
     "CH17",
@@ -50,5 +50,5 @@
     "sha256": null,
     "file_size": null
   },
-  "notes": "17项CI单元测试映射表；纯合成数学性质检查，不代表企业库存业务规则获批或业务验收。"
+  "notes": "17个断言场景映射表，由14个CI单元测试方法覆盖；纯合成数学性质检查，不代表企业库存业务规则获批或业务验收。"
 }

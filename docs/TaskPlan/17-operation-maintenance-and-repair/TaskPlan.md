@@ -247,6 +247,6 @@
 - 新增 scripts/spare_parts_multidimensional_inventory.py：余额键包含账户/物料/批次/库位/所有权/状态/单位；使用Decimal；同物料/批次/库位/所有权/单位下执行双边转移；跨库位、物料、批次、所有权及单位变化失败关闭。
 - 新增显式单位换算记录接口：仅APPROVED且包含批准人/批准依据的换算记录可计算；内核不自动套用换算。
 - 新增纯合成期初快照装载器：仅接受synthetic_only=TRUE且snapshot_status=SYNTHETIC_TEST_ONLY的行，要求reset_group，拒绝企业快照。
-- 新增事件顺序与ID检查、整批回放原子性；新增17项专项测试与ASSET-000050测试矩阵。
+- 新增事件顺序与ID检查、整批回放原子性；新增14个专项unittest方法，覆盖ASSET-000050中的17个断言场景。
 - CI运行模型自检并归档报告；自检状态BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
 - **边界：** 不执行企业业务规则、不计算企业期末库存、不连接外部系统。CH17-T004继续IN_PROGRESS。
