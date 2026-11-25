@@ -187,3 +187,21 @@
 - **BOM日期修正提交：** `0cb9514d30f2874dc5f642ae7704b94578b15d13`；GitHub Actions [Run 45584246386](https://github.com/rexyll/cnc-knowledge/actions/runs/45584246386) completed/success，两个Job均成功。
 - **计划/索引同步提交：** `4121f6777a2bce84e42e012375688c4ef6e80aed`；GitHub Actions [Run 45584345318](https://github.com/rexyll/cnc-knowledge/actions/runs/45584345318) completed/success，两个Job均成功。
 - **状态与遗留：** 数据集清单保持DRAFT，未获企业批准/冻结；未开发或执行自动fixture validator；22项环境检查仍NOT_ASSESSED；30项测试仍NOT_RUN。未连接ERP/WMS/QMS/CMMS/EAM，未执行企业SIT/UAT、生产影子、HIL或实机验证。后续需先完成本地fixture validator，并取得获批的隔离非生产环境后再运行测试。
+
+## CH17-T004 备件合成夹具本地静态校验工具第七轮
+
+- **实际完成时间：** 2026-11-25T17:47:31+08:00（Asia/Shanghai；最终CI全部通过）
+- **所在分支：** `main`（未创建其他分支）
+- **新增工具：** `scripts/spare_parts_fixture_validator.py`，使用Python标准库，默认只读验证，不访问网络、不连接ERP/WMS/QMS/CMMS/EAM，不执行采购/库存/维修事务。
+- **新增测试：** `tests/test_spare_parts_fixture_validator.py`，包含9项专项单元测试：真实基线通过、重复Fixture ID、悬空父引用、缺失用例、BOM重叠、缺失事件时间、JSON报告CLI、CSV列宽损坏、用例映射双向引用不一致。仓库全量unittest共14项通过。
+- **验证规则：** manifest/CSV表头和行宽；数据集ID/版本/纯合成声明；89个Fixture/Event ID唯一；parent/related引用完整；test_case_id有效；SPAT-001～SPAT-030与源测试矩阵分类/标题/前置条件/执行状态一致；正/负Fixture与事件引用存在且双向test_case_ids一致；BOM修订时间窗带时区且不重叠；事件ID、业务时间/接收时间、正序号、延迟/乱序显式标记及reset group序号唯一。
+- **夹具数据修正：** 补齐22个事件的业务时间与接收时间；重复收货重放及迟到冲销明确关联原始收货事件；正式PCN和来源不明EOL线索采用独立reset group；根据30项用例映射反向补齐各Fixture的test_case_ids。数据仍为固定合成样例。
+- **静态校验结果：** 10项检查全部PASS、0 errors；89条夹具记录（67对象+22事件）、89个唯一ID、30项用例映射、2个BOM修订、17个reset group，5条延迟投递和1条显式乱序事件。验证报告保留5项warning：数据集DRAFT、无获批企业环境、无获批测试层级、30项测试仍NOT_RUN、manifest内容校验值pending。
+- **报告归档：** CLI支持JSON输出；本地报告命令将报告写入 `resouces/17-operation-maintenance-and-repair/generated/spare-parts-fixture-validation-report-v1.json`。CI上传同路径报告Artifact：[下载Run 45588745895验证报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45588745895/artifacts/15008764661)。生成报告不更改测试状态，也不代表企业验收。
+- **实施/数据修正提交：**
+  - `2375517199ba6bd744d0b75c7c1b99f58abb5e24`（事件时间、PCN reset group等修正），[Run 45587839338](https://github.com/rexyll/cnc-knowledge/actions/runs/45587839338) completed/success。
+  - `d885c17ded62aebcd7edec529539d11cc7592f22`（校验器、测试与CI集成初版），[Run 45588189699](https://github.com/rexyll/cnc-knowledge/actions/runs/45588189699) 首轮有1项单元测试断言文案不匹配，未通过；该失败已记录并修正。
+  - `235497e56860ebd2b5b14465f8b25f42c12c0e47`（修正诊断信息），[Run 45588285648](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648) completed/success。
+- **计划/索引/报告路径同步提交：** `0a9559ce47b265b6643529e53ffe43cb5e5fa664`，更新根计划、CH17计划（6.14）、章节/资源README、docs导航、覆盖度和CI报告路径；[Run 45588555063](https://github.com/rexyll/cnc-knowledge/actions/runs/45588555063) completed/success。
+- **回归测试强化提交：** `b5d677e4eb67e16bd31166adc4bfad6f779ca958`，新增CSV列宽损坏、映射双向引用异常测试，并验证CLI子进程报告输出；修正KNOW-000032中的报告命令路径。GitHub Actions [Run 45588745895](https://github.com/rexyll/cnc-knowledge/actions/runs/45588745895) completed/success：14/14 unittest、Knowledge structure and data quality、CH12 numerical resource tests均通过。
+- **状态与遗留：** CH17-T004继续IN_PROGRESS。静态夹具验证已完成，但数据集依然DRAFT，22项企业环境检查仍NOT_ASSESSED，30项备件业务测试仍NOT_RUN；没有企业授权非生产环境、SIT/UAT、生产影子、HIL或实机验证。下一阶段需先由企业数据/系统/安全责任角色审批并冻结数据集与环境，再逐项执行测试并保留实际证据。
