@@ -47,3 +47,5 @@
 
 
 备件验收与测试证据见 [数控机床备件端到端验收场景与测试证据规范](spare-parts-end-to-end-acceptance-testing.md)，包含30个未执行测试规格和每次测试的证据记录模板；资源归档于本章 `resouces/17-operation-maintenance-and-repair/`。
+
+备件测试数据与环境准备见 [数控机床备件合成测试数据集与环境就绪规范](spare-parts-synthetic-test-data-and-environment-readiness.md)，配套包含数据集清单、22项环境就绪检查和合成夹具对象/事件交叉引用模板；环境检查初始均为NOT_ASSESSED，不能视作已获企业授权。

@@ -32,6 +32,9 @@
 | spare-parts-raci-approval-matrix-template.csv | CSV矩阵模板 / ASSET-000035 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-physical-flow-and-transaction-controls.md / KNOW-000029 | 16项备件业务活动的建议RACI；角色分配初始PROPOSED，须企业授权制度批准 |
 | spare-parts-end-to-end-acceptance-test-matrix.csv | CSV测试场景矩阵 / ASSET-000036 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-end-to-end-acceptance-testing.md / KNOW-000030 | 30个端到端测试用例/24列，覆盖主数据、BOM、采购收货、库存事务、替代、维修消耗、对账、生命周期与数据权限；初始NOT_RUN |
 | spare-parts-acceptance-test-execution-record-template.csv | CSV测试执行模板 / ASSET-000037 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-end-to-end-acceptance-testing.md / KNOW-000030 | 30列表头空模板，记录环境/数据版本、预期与实际结果、数量影响、追溯/审计证据、缺陷和复测关联 |
+| spare-parts-synthetic-test-dataset-manifest-template.csv | CSV模板 / ASSET-000038 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-test-data-and-environment-readiness.md / KNOW-000031 | 29列表头空模板，登记数据集身份/版本、生成器、种子引用、对象域、覆盖用例、冻结、批准、敏感数据扫描与校验值 |
+| spare-parts-test-environment-readiness-checklist.csv | CSV检查表 / ASSET-000039 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-test-data-and-environment-readiness.md / KNOW-000031 | 22项/11列非生产环境就绪检查，覆盖隔离、权限、秘密管理、备份恢复、mock、事件、日志、安全和清理；全部NOT_ASSESSED |
+| spare-parts-test-fixture-cross-reference-template.csv | CSV模板 / ASSET-000040 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-test-data-and-environment-readiness.md / KNOW-000031 | 27列表头空模板，以合成ID关联主数据、BOM、采购收货、质量、库存、维修、审批和生命周期事件及其时序 |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）

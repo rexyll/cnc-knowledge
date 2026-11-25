@@ -639,3 +639,11 @@
 - **测试范围：** 覆盖主数据键、BOM适用性/修订、采购授权、部分收货、质量隔离/放行、库存桶、在途PO、单位换算、重复事件幂等、替代审批边界、发料与实际安装区分、批次追溯、工单偏差、旧件返修/报废、库存对账、PCN/EOL、权限、SoR冲突、数据最小化和恢复。
 - **验收边界：** 30个用例全部为NOT_RUN；执行记录模板header-only。没有访问企业系统、使用生产数据、执行SIT/UAT或现场/实机测试。阈值、容差、接口SLA、环境和审批角色须由企业批准。
 - **状态：** CH17-T004保持IN_PROGRESS；下一步须在授权非生产环境冻结SoR/映射与合成数据集，逐条执行测试并保留证据。
+
+## CH17-T004 备件合成测试数据与环境就绪规范第五轮（2026-11-25）
+
+- 新增正文 `docs/17-operation-maintenance-and-repair/spare-parts-synthetic-test-data-and-environment-readiness.md`（KNOW-000031），明确合成数据集身份/版本冻结、对象依赖、事务事件时序、L0～L4测试环境隔离、权限、备份恢复和清理要求。
+- 新增三份原创资源：`spare-parts-synthetic-test-dataset-manifest-template.csv`（ASSET-000038，29列表头空模板）；`spare-parts-test-environment-readiness-checklist.csv`（ASSET-000039，22项/11列，初始NOT_ASSESSED）；`spare-parts-test-fixture-cross-reference-template.csv`（ASSET-000040，27列表头空模板）。均归档于 `resouces/17-operation-maintenance-and-repair/`。
+- **数据边界：** 默认只允许纯合成数据；脱敏数据须经数据所有者、隐私/安全和系统责任角色单独批准。禁止使用生产凭证、生产主键或将生产快照伪装成合成数据；业务事务对象保留为测试系统事务/事件，不扩展全库静态实体Schema。
+- **环境边界：** L2/L3要求企业批准的独立非生产环境、身份/网络/数据库/队列隔离、专用最小权限账号、mock/sandbox外部依赖、非生产备份/恢复和清理证据。当前22项环境检查全部NOT_ASSESSED；未生成或冻结实际数据集，未连接企业环境。
+- **验收状态：** 新增KNOW-000031、ASSET-000038～ASSET-000040；本轮仍为规范与模板交付。既有30个备件端到端测试场景仍全部NOT_RUN，未执行企业SIT/UAT或HIL/实机测试。CH17-T004继续IN_PROGRESS。

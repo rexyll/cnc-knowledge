@@ -105,3 +105,11 @@
 - `spare-parts-acceptance-test-execution-record-template.csv`：30列表头空模板，记录测试环境/版本、合成数据集、角色、预期/实际业务结果、库存影响、追溯/审计、结果状态、缺陷、证据和复测链。
 - 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-end-to-end-acceptance-testing.md`；实体KNOW-000030、ASSET-000036～ASSET-000037。
 - 本轮仅定义测试规格，未执行企业SIT/UAT、生产影子运行或实机测试。正式执行前必须获得非生产环境授权，冻结SoR/字段映射并批准测试数据集。
+
+## CH17-T004 备件合成测试数据集与环境就绪第五轮（2026-11-25）
+
+- `spare-parts-synthetic-test-dataset-manifest-template.csv`：29列表头空模板，登记数据集ID/语义版本、生成器和种子引用、对象域/测试用例、冻结审批、敏感数据扫描、保留策略和校验值。
+- `spare-parts-test-environment-readiness-checklist.csv`：22项/11列检查，覆盖环境与租户识别、身份/网络/数据隔离、测试账号/最小权限、秘密管理、数据集冻结、备份恢复、mock端点、时钟/事件回放、日志、HIL边界、清理及证据。所有状态初始NOT_ASSESSED。
+- `spare-parts-test-fixture-cross-reference-template.csv`：27列表头空模板，用合成夹具ID关联MACHINE/MINST/BOM/PART等静态对象以及PO、收货、质检、库存、预留、工单、审批和PCN/EOL事件；事务夹具不因此成为知识库静态实体。
+- 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-synthetic-test-data-and-environment-readiness.md`；实体KNOW-000031、ASSET-000038～ASSET-000040。
+- 本轮不含真实企业数据/ID/账号/凭证；22项就绪检查均未评估，30个端到端测试场景仍为NOT_RUN。L2/L3执行需企业批准的隔离非生产环境和冻结数据集。

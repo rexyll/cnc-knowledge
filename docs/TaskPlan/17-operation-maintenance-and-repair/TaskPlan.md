@@ -186,3 +186,11 @@
 - **场景覆盖：** 外部键/BOM适用性、采购/部分收货、检验放行、库存数量/在途、单位换算、幂等、替代边界、发料与安装消耗、批次追溯、返修报废、盘点差异、PCN/EOL、权限、SoR冲突、敏感字段和事件恢复。
 - **边界：** 30个场景均为NOT_RUN，不代表已执行SIT/UAT或真实业务测试；执行记录模板为空。所有测试须使用获授权的非生产环境和合成/获准脱敏数据。现场维修仍须服从OEM受控程序、人员授权和危险能量控制，不能以测试矩阵替代机床SOP。
 - **状态：** CH17-T004保持IN_PROGRESS；待企业授权系统环境、字段映射/SoR和合成数据集冻结后执行测试并补录证据。
+
+## 6.12 CH17-T004 备件合成测试数据与环境就绪规范第五轮（2026-11-25）
+
+- 新增正文 `docs/17-operation-maintenance-and-repair/spare-parts-synthetic-test-data-and-environment-readiness.md`（KNOW-000031），规定数据集标识/版本/生成器/冻结与校验、合成对象及依赖关系、业务时间/接收时间/重放顺序、L0～L4环境隔离、最小权限、秘密管理、备份恢复、重置和清理。
+- 新增三份原创CSV：`spare-parts-synthetic-test-dataset-manifest-template.csv`（ASSET-000038，29列表头空模板）；`spare-parts-test-environment-readiness-checklist.csv`（ASSET-000039，22项/11列，全部NOT_ASSESSED）；`spare-parts-test-fixture-cross-reference-template.csv`（ASSET-000040，27列表头空模板）。
+- **模型边界：** 复用现有MACHINE/MINST/BOM/PART/PRODUCT/VENDOR等静态概念；PO行、收货、检验、库存流水、预留、维修工单、审批和PCN/EOL事件只作为测试环境事务/夹具，不新增全库实体类型或关系谓词。
+- **安全与环境边界：** 默认纯合成数据；脱敏数据需单独批准。L2/L3必须使用经批准的隔离非生产环境、专用身份、测试端点、秘密管理、非生产快照/恢复及清理证据；禁止生产写入、真实供应商/客户通知和生产机床动作。
+- **未完成项：** 尚未取得企业非生产环境授权、正式角色及网络隔离证据；尚未生成/冻结企业专用合成数据集，也未执行备件30项SIT/UAT（仍全部NOT_RUN）。本轮模板不代表环境就绪或测试通过；CH17-T004保持IN_PROGRESS。
