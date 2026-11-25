@@ -1,0 +1,57 @@
+{
+  "entity_id": "ASSET-000055",
+  "entity_type": "asset_file",
+  "canonical_name": "库存账本读取一致性与代际回收测试矩阵v1",
+  "english_name": "Inventory ledger read consistency and generation garbage-collection test matrix v1",
+  "aliases": [
+    "Inventory ledger reader and generation retention tests v1",
+    "Read/GC concurrency scenarios"
+  ],
+  "description": "10个纯合成场景，覆盖POSIX共享读锁、写者/回收者协调、CURRENT保护、dry-run保留策略、最短保留时间、异常清理恢复和并发读写回收。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "库存账本",
+    "并发读取",
+    "代际回收",
+    "POSIX flock",
+    "合成测试",
+    "ASSET-000055"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T23:03:00+08:00",
+  "updated_at": "2026-11-25T23:03:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-read-gc-test-cases-v1.csv",
+    "file_name": "spare-parts-inventory-ledger-read-gc-test-cases-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000032",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic POSIX reader/collector concurrency and retention test definitions; not production deletion or distributed-lock evidence",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "10个纯合成测试场景；共享读锁覆盖完整恢复装载，GC先取writer lock后取exclusive GC lock；默认dry-run，需显式apply。Windows/网络文件系统/跨主机和企业保留审批语义未验证。"
+}

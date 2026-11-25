@@ -289,3 +289,14 @@
 - CI多进程自检：2个独立写入者、1个COMMITTED、1个CONFLICT，恢复CURRENT成功。Run 45635237388两个Job均success，全库103个unittest方法通过；Artifact ch17-inventory-ledger-concurrency-45635237388。
 - **平台限制：** 当前使用POSIX flock，Windows原生锁未实现；advisory lock要求写入者遵守协议，网络文件系统锁语义需单独验证；不是分布式锁，不保护绕过模块的外部写入。
 - CH17-T004保持IN_PROGRESS；业务断言NOT_EVALUATED；审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## 6.24 CH17-T004 库存账本读取一致性、并发读取与代际生命周期管理第十七轮（2026-11-25）
+
+- **状态：** IN_PROGRESS；仅完成本地POSIX合成模型和静态测试矩阵，不提升CH17-T004整体状态。
+- **实现：** scripts/spare_parts_inventory_ledger_persistence.py 的 recover_current() 在完整读取/验证CURRENT所指代际期间持有 .gc.lock 共享锁；garbage_collect_generations() 先取 .writer.lock 排他锁，再取 .gc.lock 排他锁，避免读取中删除及清理已rename但尚未切换CURRENT的在途代际。
+- **保留策略：** CURRENT始终保留；至少保留最近 keep_last 个已验证代际（最小1）；不删除年龄小于 minimum_age_seconds 的代际。只有COMMIT身份正确且ledger/snapshot摘要一致的目录可被回收；未验证条目跳过。
+- **删除门禁：** 默认 apply=False，CLI默认输出dry-run计划；仅显式 --gc-apply 执行删除。先rename至 .gc-trash-* 再递归删除，后续apply可处理异常退出留下的trash；不自动清理 .staging-*。
+- **测试：** 新增ASSET-000055，10个纯合成测试场景；新增6个unittest方法，全库109项通过。含读写/回收多进程压力和活动读锁阻止GC用例。
+- **CI：** 代码实现与测试修复提交 a9d5b094dddb15b476d9b2e5f9e02f85163b52e8 对应Run 45641575977，Knowledge structure and data quality及CH12 numerical resource tests两个Job均completed/success；持久化self-check报告reader GC exclusion、dry-run、retention/recovery均PASS。
+- **限制：** POSIX advisory flock协作模型；Windows原生文件锁、NFS/SMB、跨主机分布式锁、企业备份/留存期限/删除审批均未验证。纯临时目录、无企业连接/生产写入；业务断言NOT_EVALUATED，execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL。

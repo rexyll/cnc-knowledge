@@ -333,3 +333,16 @@
 - 修复后CI Run 45635237388：completed/success；Knowledge structure and data quality、CH12 numerical resource tests两个Job均success；全库103个unittest通过。并发自检PASS：2个进程、1个提交胜者、1个CAS冲突、CURRENT恢复成功。Artifact ch17-inventory-ledger-concurrency-45635237388。
 - POSIX flock为协作式advisory lock；Windows原生文件锁、网络文件系统锁语义和分布式协调未验证。无企业系统连接或生产写入。
 - CH17-T004保持IN_PROGRESS；business_rule_assertions=NOT_EVALUATED；execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+# 第十七轮：库存账本读取一致性、并发读取与代际生命周期管理（2026-11-25）
+
+- 所在分支：main（未创建新分支）。
+- 修改 scripts/spare_parts_inventory_ledger_persistence.py：recover_current() 在指针解析、代际文件读取、摘要/哈希链/快照校验及内存恢复期间持有 .gc.lock 共享锁；避免CURRENT切换期间读取者引用的旧代际被回收。
+- 新增 garbage_collect_generations()：回收器按writer lock→GC exclusive lock顺序获取锁，避免误删正在发布或正在读取的代际；每次删除前重读CURRENT。
+- 生命周期策略：始终保留CURRENT、最近N个有效代际和未达到最短保留时间的代际；只处理COMMIT与账本/快照SHA-256均有效的目录。默认dry-run，只有CLI显式 --gc-apply 才删除；先原子rename到 .gc-trash-*，异常退出后的trash可由后续显式apply回收；.staging-* 保留人工检查。
+- 新增CLI入口：--gc-root输出计划，--gc-apply才执行；默认保留最近3代且最短保留7天，可显式调整 --keep-last / --minimum-age-seconds。调用者应审阅dry-run清单并确认备份与企业留存政策后再apply。
+- 新增ASSET-000055：读取一致性与代际回收测试矩阵10个场景；新增6项专项unittest，全库109个unittest方法通过。场景覆盖dry-run、最近N代/当前代际、最短年龄、读锁阻止GC、writer/GC协调、异常trash恢复和三进程压力。
+- CI缺陷过程：首次Run 45641486782的Knowledge Job因新增多进程测试辅助函数缺少time导入失败；已补充导入，未将失败Run计为验收通过。
+- 修复后Run 45641575977：completed/success，两个Job（Knowledge structure and data quality、CH12 numerical resource tests）均success；全库109个unittest通过。持久化self-check reader_gc_exclusion、dry_run_non_mutating、retention_and_recovery均PASS。
+- **限制：** POSIX flock协作式本地临时目录模型；Windows原生文件锁、NFS/SMB网络文件系统、跨主机分布式协调、企业备份/保留时限/删除审批均未验证。无企业数据库/API连接、无生产写入。business_rule_assertions仍NOT_EVALUATED，execution_status仍BLOCKED_PENDING_ENTERPRISE_APPROVAL；CH17-T004继续IN_PROGRESS。

@@ -319,9 +319,25 @@ def self_check():
       "database_or_api_writes":False,"business_rule_assertions":"NOT_EVALUATED",
       "execution_status":"BLOCKED_PENDING_ENTERPRISE_APPROVAL"}
 def main():
-    p=argparse.ArgumentParser(); p.add_argument("--self-check",action="store_true"); p.add_argument("--report-json",type=Path); a=p.parse_args()
-    if not a.self_check: p.error("--self-check required; production persistence is unsupported")
-    out=json.dumps(self_check(),ensure_ascii=False,indent=2)+"\n"
-    if a.report_json: a.report_json.parent.mkdir(parents=True,exist_ok=True); a.report_json.write_text(out,encoding="utf-8")
+    p=argparse.ArgumentParser()
+    p.add_argument("--self-check",action="store_true")
+    p.add_argument("--report-json",type=Path)
+    p.add_argument("--gc-root",type=Path,help="local ledger store directory; defaults to a non-mutating GC plan")
+    p.add_argument("--gc-apply",action="store_true",help="explicitly apply the generation retention plan")
+    p.add_argument("--keep-last",type=int,default=3)
+    p.add_argument("--minimum-age-seconds",type=float,default=604800)
+    a=p.parse_args()
+    if a.gc_root is not None:
+        if a.self_check: p.error("--gc-root and --self-check cannot be combined")
+        result=garbage_collect_generations(a.gc_root,keep_last=a.keep_last,
+            minimum_age_seconds=a.minimum_age_seconds,apply=a.gc_apply)
+        out=json.dumps(result,ensure_ascii=False,indent=2)+"\n"
+    else:
+        if a.gc_apply: p.error("--gc-apply requires --gc-root")
+        if not a.self_check: p.error("--self-check or --gc-root required; enterprise persistence is unsupported")
+        out=json.dumps(self_check(),ensure_ascii=False,indent=2)+"\n"
+    if a.report_json:
+        a.report_json.parent.mkdir(parents=True,exist_ok=True)
+        a.report_json.write_text(out,encoding="utf-8")
     print(out,end="")
 if __name__=="__main__": main()

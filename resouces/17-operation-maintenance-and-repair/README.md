@@ -210,3 +210,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - CI Run 45635237388：两个Job成功，全库103个unittest通过；自检为2个写入进程、1个提交成功、1个CAS冲突，恢复CURRENT成功。
 - Artifact：ch17-inventory-ledger-concurrency-45635237388。
 - 平台限制：POSIX flock，Windows原生锁未实现；网络文件系统和分布式锁语义未验证。测试只使用临时目录，不连接企业系统。
+
+
+## CH17-T004 库存账本读取一致性与代际回收第十七轮（2026-11-25）
+
+- spare-parts-inventory-ledger-read-gc-test-cases-v1.csv（ASSET-000055）：10个纯合成场景，覆盖读者共享锁、writer/GC锁顺序、CURRENT保护、dry-run、保留最近N代、最短保留时间、未验证代际保留、异常清理trash恢复和多进程压力。
+- 实现：scripts/spare_parts_inventory_ledger_persistence.py；专项测试：tests/test_spare_parts_inventory_ledger_persistence.py。
+- GC默认dry-run；CLI只有显式 --gc-apply 才会删除。按POSIX advisory lock协作，保留CURRENT、最近N个已验证代际和未达到最短年龄的代际。
+- 所有测试只操作本地临时目录。Windows原生锁、网络文件系统、跨主机并发、企业留存/备份/删除审批均未验证；不连接企业系统或生产目录。

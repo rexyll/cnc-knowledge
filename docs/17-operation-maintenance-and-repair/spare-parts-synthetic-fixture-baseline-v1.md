@@ -219,3 +219,43 @@ CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-
 CI多进程自检启动两个独立写进程，以相同的base代际作为前置条件；预期恰好一个提交成功、另一个收到CAS冲突，随后恢复并验证CURRENT指向获胜代际。自检结果：2个并发写入者、1个提交成功、1个陈旧写入冲突、当前代际恢复PASS。全库103个unittest方法通过，新增5个专项测试；CI Run 45635237388两个Job均成功。
 
 **平台与一致性边界：** 当前锁实现使用POSIX fcntl.flock，仅在提供该接口的POSIX环境验证；Windows原生文件锁尚未实现。flock是协作式advisory lock，所有写入者必须遵循协议；不保护绕过模块直接改文件的进程，也不构成分布式锁。网络文件系统的锁语义需单独验证。当前没有读写锁、并发快照清理、跨主机协调或多节点故障切换。仍为临时目录合成测试，无企业系统连接/生产写入；业务断言NOT_EVALUATED，审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## 17. 库存账本读取一致性、并发读取与代际生命周期
+
+本轮在本地持久化模块中补充读取/回收协调和显式代际清理接口，并扩展专项单元测试。测试场景表为读取一致性与代际回收测试矩阵（ASSET-000055，10个纯合成场景）。
+
+### 17.1 读取一致性协议
+
+- recover_current() 在打开 CURRENT 前取得 .gc.lock 共享锁，持锁贯穿指针解析、代际目录读取、COMMIT/文件摘要校验、哈希链/快照校验与事件账本恢复。
+- CURRENT 采用同目录临时文件加原子 os.replace 发布。并发切换时，读取者只能取得切换前或切换后的完整指针；共享锁保证被选中的代际在整个加载期间不会被回收。
+- 恢复结果被完整装载到内存后释放共享锁；调用方继续使用已恢复对象不再依赖代际目录。未来若增加流式读取或延迟打开文件，必须把reader lease/共享锁生命周期延长至最后一次文件访问结束。
+
+### 17.2 回收协调与锁顺序
+
+回收器采用两阶段锁顺序：先取得现有 .writer.lock 排他锁，阻止新代际处于“已rename但CURRENT尚未切换”的提交窗口；再取得 .gc.lock 排他锁，等待所有正在读取的恢复操作完成。普通写入不需要 .gc.lock，普通读取不需要 .writer.lock，因此读写不被全局串行化。该锁序没有反向获取路径：写者只持有writer lock，读者只持有GC共享锁，回收器按writer→GC顺序获取两者。
+
+### 17.3 保留策略与明确删除门禁
+
+garbage_collect_generations() 支持：
+- 始终保留 CURRENT 指向的代际；
+- 至少保留按目录修改时间排序的最近 keep_last 个已验证代际，参数最小为1；
+- 只有超过 minimum_age_seconds 且不属于上述保留集合的代际才列为候选；
+- 只处理COMMIT身份正确且账本/快照摘要匹配的代际；损坏、缺文件、符号链接或无法识别的目录失败关闭并列入skipped；
+- 对候选代际先原子rename至 .gc-trash-*，再递归删除。若进程在rename后异常退出，后续显式apply的GC可清理残留trash目录；未完成的 .staging-* 不自动删除，保留给人工检查。
+
+默认 apply=False，生成dry-run候选清单，不删除任何代际。CLI默认只输出计划，例如：
+
+python scripts/spare_parts_inventory_ledger_persistence.py --gc-root /path/to/local-ledger-store --keep-last 3 --minimum-age-seconds 604800
+
+只有明确提供 --gc-apply 才执行文件删除；执行前应审阅dry-run清单并确认存储路径、备份与保留要求：
+
+python scripts/spare_parts_inventory_ledger_persistence.py --gc-root /path/to/local-ledger-store --keep-last 3 --minimum-age-seconds 604800 --gc-apply
+
+--gc-apply 会阻塞新的写者，并等待活跃读取者结束；锁超时失败关闭，不会绕过锁继续删除。
+
+### 17.4 测试结果和边界
+
+新增6项unittest方法及10个矩阵场景，覆盖dry-run无代际删除、最近N代与CURRENT保留、最短保留时间、活动读者阻止GC、writer/GC提交窗口协调、CURRENT再检查、未验证目录保留、异常中断trash恢复及读者/写者/回收者多进程压力。全库109个unittest方法通过；GitHub Actions Run 45641575977的两个Job均completed/success。持久化self-check报告读取者排斥、dry-run、代际保留与恢复均PASS。
+
+**严格边界：** 所有测试只使用POSIX临时目录和虚构账本数据，不连接企业数据库/API、不写生产数据、不删除项目资源目录。flock为协作式POSIX advisory lock，不是分布式锁；Windows原生锁、NFS/SMB等网络文件系统锁/rename/fsync语义及跨主机多节点并发未验证。GC不等于WORM或法律审计留存策略；企业保留期限、备份与恢复目标、删除审批和职责分离必须另行确认。业务断言继续NOT_EVALUATED，企业审批门禁继续BLOCKED_PENDING_ENTERPRISE_APPROVAL。
