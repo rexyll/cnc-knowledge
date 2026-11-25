@@ -44,3 +44,6 @@
 
 
 备件实物流转及事务控制见 [数控机床备件实物流转、事务控制与责任矩阵](spare-parts-physical-flow-and-transaction-controls.md)，包括生命周期控制矩阵和企业待批准的RACI责任矩阵，资源位于本章 `resouces/17-operation-maintenance-and-repair/`。
+
+
+备件验收与测试证据见 [数控机床备件端到端验收场景与测试证据规范](spare-parts-end-to-end-acceptance-testing.md)，包含30个未执行测试规格和每次测试的证据记录模板；资源归档于本章 `resouces/17-operation-maintenance-and-repair/`。

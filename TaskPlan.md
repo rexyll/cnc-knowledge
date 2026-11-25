@@ -630,3 +630,12 @@
 - 新增两份资源：`spare-parts-transaction-lifecycle-control-matrix.csv`（ASSET-000034，16个控制节点/23列）；`spare-parts-raci-approval-matrix-template.csv`（ASSET-000035，16项活动/16列）。RACI预填角色建议但所有活动状态为PROPOSED，须企业批准。
 - **控制边界：** 区分实物移动、系统过账和技术/质量放行；使用源事务事件ID实现幂等，使用冲销/补偿事件纠正历史；不将库存业务事务伪装为静态知识实体。现场安装须遵循具体机床OEM受控程序及风险/危险能量控制，不提供型号级危险操作步骤或通用验收阈值。
 - **验收与状态：** 远程复读流程矩阵为16条/23列、RACI矩阵为16条/16列；各数据行列宽一致。RACI每项活动恰有一个建议A和至少一个R，但岗位分配未经企业授权确认。CH17-T004继续IN_PROGRESS；未导入实际库存/维修/采购事件，也未启用企业授权流程。
+
+
+## CH17-T004 备件端到端验收场景与测试证据第四轮（2026-11-25）
+
+- 新增正文 `docs/17-operation-maintenance-and-repair/spare-parts-end-to-end-acceptance-testing.md`（KNOW-000030），定义L0结构/静态、L1组件/规则、L2集成/SIT、L3业务/UAT、L4上线准备的验收层级及环境隔离、合成数据集、缺陷等级、证据要求和发布门槛。
+- 新增两份资源：`spare-parts-end-to-end-acceptance-test-matrix.csv`（ASSET-000036，30个测试用例/24列）；`spare-parts-acceptance-test-execution-record-template.csv`（ASSET-000037，30列表头空模板）。
+- **测试范围：** 覆盖主数据键、BOM适用性/修订、采购授权、部分收货、质量隔离/放行、库存桶、在途PO、单位换算、重复事件幂等、替代审批边界、发料与实际安装区分、批次追溯、工单偏差、旧件返修/报废、库存对账、PCN/EOL、权限、SoR冲突、数据最小化和恢复。
+- **验收边界：** 30个用例全部为NOT_RUN；执行记录模板header-only。没有访问企业系统、使用生产数据、执行SIT/UAT或现场/实机测试。阈值、容差、接口SLA、环境和审批角色须由企业批准。
+- **状态：** CH17-T004保持IN_PROGRESS；下一步须在授权非生产环境冻结SoR/映射与合成数据集，逐条执行测试并保留证据。

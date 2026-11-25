@@ -97,3 +97,11 @@
 - `spare-parts-raci-approval-matrix-template.csv`：16列表头、16项活动，按资产所有者、维修、工程、质量、安全、采购、仓储、OEM授权服务、数据所有者和IT集成角色预置建议RACI；每项活动有一个建议A和至少一个R，但所有分配都需企业正式批准。
 - 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-physical-flow-and-transaction-controls.md`；实体KNOW-000029、ASSET-000034～ASSET-000035。
 - 不代表已建立企业流程、接口或授权。真实状态、系统SoR、事务和审批需结合企业制度与受控设备资料确认。
+
+
+## CH17-T004 备件端到端验收与测试证据第四轮（2026-11-25）
+
+- `spare-parts-end-to-end-acceptance-test-matrix.csv`：24列、30个测试规格，覆盖外部键/BOM适用性、采购/收货/质量放行、库存数量/在途、单位换算、重复事件幂等、替代范围、发料与安装、批次追溯、旧件返修报废、盘点、PCN/EOL、权限、SoR、敏感数据和事件恢复。所有执行状态初始为NOT_RUN。
+- `spare-parts-acceptance-test-execution-record-template.csv`：30列表头空模板，记录测试环境/版本、合成数据集、角色、预期/实际业务结果、库存影响、追溯/审计、结果状态、缺陷、证据和复测链。
+- 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-end-to-end-acceptance-testing.md`；实体KNOW-000030、ASSET-000036～ASSET-000037。
+- 本轮仅定义测试规格，未执行企业SIT/UAT、生产影子运行或实机测试。正式执行前必须获得非生产环境授权，冻结SoR/字段映射并批准测试数据集。

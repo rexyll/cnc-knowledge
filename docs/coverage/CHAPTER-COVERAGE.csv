@@ -15,7 +15,7 @@ CH13,13-cad-cam-programming-and-process,0,not_started,0,0,0,0,0,,按章节TaskPl
 CH14,14-performance-metrology-and-acceptance,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH15,15-standards-safety-and-compliance,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH16,16-manufacturing-assembly-installation,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
-CH17,17-operation-maintenance-and-repair,2,foundational,9,28,0,9,28,2026-11-25,CH17-T001/T002待目标机型与现行OEM资料映射；CH17-T003待型号级更换和现场复验；CH17-T004待受控BOM、真实ERP/CMMS/EAM事务样本、库存/消耗流水、供应商交期/PCN/EOL及企业审批,IN_PROGRESS,已建立操作准备、维修闭环、计划维护、通用/专项部件更换、备件生命周期、系统数据治理和实物流转事务控制框架；9篇KNOW条目处于in_review，28项资源记录已登记，SRC去重9条。16个事务控制节点和16项RACI建议均为PROPOSED，未连接企业系统或导入真实业务事件。
+CH17,17-operation-maintenance-and-repair,2,foundational,10,30,0,9,30,2026-11-25,CH17-T001/T002待目标机型与现行OEM资料映射；CH17-T003待型号级更换和现场复验；CH17-T004待受控BOM、企业ERP/CMMS/EAM授权环境、真实/脱敏事件样本及测试执行证据,IN_PROGRESS,已建立操作准备、维修闭环、计划维护、通用/专项部件更换、备件生命周期、系统数据治理、实物流转事务控制和端到端验收测试规格；10篇KNOW条目处于in_review，30项资源记录已登记，SRC去重9条。30个备件测试场景均为NOT_RUN，未执行企业SIT/UAT或实机测试。
 CH18,18-fault-diagnosis-and-reliability,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH19,19-manufacturers-products-and-supply-chain,2,foundational,4,43,72,44,0,2026-11-22,CH03-T001：建立整机功能架构,IN_PROGRESS,23个组织+16个产品+4个KNOW；含26条制造事实关系和46条文章索引边；去重SRC 44条。新增供应链比较/替代验证/风险方法框架；未对具体产品或地区完成兼容、库存、交期和售后实证。
 CH20,20-bom-drawings-and-technical-documents,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。

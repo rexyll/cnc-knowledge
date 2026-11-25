@@ -34,6 +34,7 @@
   - [备件管理、替代审批与生命周期闭环](17-operation-maintenance-and-repair/spare-parts-management-and-lifecycle.md)
   - [备件系统集成、字段映射与数据治理](17-operation-maintenance-and-repair/spare-parts-system-integration-and-data-governance.md)
   - [备件实物流转、事务控制与责任矩阵](17-operation-maintenance-and-repair/spare-parts-physical-flow-and-transaction-controls.md)
+  - [备件端到端验收场景与测试证据](17-operation-maintenance-and-repair/spare-parts-end-to-end-acceptance-testing.md)
 - [18. 故障诊断与可靠性](./18-fault-diagnosis-and-reliability/README.md) — 机械、电气、数控、伺服、通信、软件和加工质量故障，以及根因分析、可靠性、可维护性和故障统计。
 - [19. 厂商、产品与供应链](./19-manufacturers-products-and-supply-chain/README.md) — 数控机床整机厂、数控系统、伺服驱动、主轴、导轨丝杠、轴承、刀具、传感器及备件供应商和产品目录。
 - [20. BOM、图纸与工程技术文档](./20-bom-drawings-and-technical-documents/README.md) — 整机/子系统BOM、零件清单、电气BOM、图纸、规格书、手册、技术变更、文档版本和数据关联。
