@@ -1,0 +1,56 @@
+{
+  "entity_id": "ASSET-000022",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床ATC刀库/换刀机械手/刀塔专项更换工作包模板",
+  "english_name": null,
+  "aliases": [],
+  "description": "自动换刀、刀库、刀套、机械手、传动和刀塔专项模板，含20条检查项和35列。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH05",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "专业维修与部件更换",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "项目原创维修资源",
+    "专项更换工作包",
+    "ASSET-000022"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T14:56:00+08:00",
+  "updated_at": "2026-11-25T14:56:00+08:00",
+  "verified_at": "2026-11-25T14:56:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/atc-tool-magazine-turret-replacement-work-package-template.csv",
+    "file_name": "atc-tool-magazine-turret-replacement-work-package-template.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000026",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original component-specific blank work package template",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "原创空白专项工作包；不含真实设备记录、已批准替代件或现场验证步骤。OEM程序、关键值和验收判据必须按具体机床文件填写。"
+}

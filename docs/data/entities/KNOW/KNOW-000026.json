@@ -1,0 +1,74 @@
+{
+  "entity_id": "KNOW-000026",
+  "entity_type": "knowledge_article",
+  "canonical_name": "刀库换刀机构、卡盘夹持与液压气动单元专项更换工作包模板",
+  "english_name": "CNC ATC, chuck workholding and hydraulic pneumatic unit specialized replacement work package templates",
+  "aliases": [
+    "刀库换刀机构专项工作包",
+    "卡盘工件夹持专项工作包",
+    "液压气动动力单元专项工作包"
+  ],
+  "description": "为自动换刀/刀库/刀塔、卡盘与工件夹持系统、液压/气动动力单元建立专项更换工作包模板，覆盖设备身份、OEM依据、兼容性、危险能量、复验和放行证据。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH05",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "专业维修与部件更换",
+    "关键部件专项更换工作包"
+  ],
+  "tags": [
+    "CH17",
+    "刀库",
+    "自动换刀",
+    "刀塔",
+    "卡盘",
+    "工件夹持",
+    "液压",
+    "气动",
+    "更换工作包",
+    "维修后验证"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T14:56:00+08:00",
+  "updated_at": "2026-11-25T14:56:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000382"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/atc-chuck-hydraulic-specialized-replacement-work-packages.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "ATC/刀库/刀塔、卡盘夹持、液压/气动单元专项更换工作包、接口兼容、危险能量审查及维修后复验",
+    "article_status": "model_agnostic_specialized_work_package_templates",
+    "machine_specific_procedures_defined": false,
+    "universal_torque_or_preload_values_defined": false,
+    "universal_pressure_or_clamping_values_defined": false,
+    "universal_speed_or_load_limits_defined": false,
+    "universal_acceptance_limits_defined": false,
+    "component_substitution_approvals_defined": false,
+    "field_execution_validation": false,
+    "hardware_validation": false,
+    "linked_templates": [
+      "自动换刀/刀库/刀塔",
+      "卡盘/夹持系统",
+      "液压/气动动力单元"
+    ]
+  },
+  "notes": "三份原创专项模板均为待评估/未测试；拆装、泄压、蓄能器处置、动态测试及技术值必须由具体机床OEM文件和现场批准程序定义。"
+}
