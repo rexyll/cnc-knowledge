@@ -1,0 +1,12 @@
+case_id,category,assertion,expected_result,execution_scope,status
+ILP-001,round-trip,Committed generation restores ledger and snapshot,RECOVERED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-002,atomicity,Interruption after ledger write does not publish CURRENT,OLD_CURRENT_OR_NONE,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-003,atomicity,Interruption after snapshot write does not publish CURRENT,OLD_CURRENT_OR_NONE,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-004,atomicity,Orphan generation after directory rename is ignored without CURRENT,NOT_COMMITTED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-005,atomicity,Failed pointer replacement preserves previous committed generation,OLD_GENERATION_RECOVERED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-006,integrity,Changed ledger payload detected by file digest,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-007,commit-marker,Missing commit marker rejected,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-008,path-safety,Path traversal generation identifier rejected,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-009,version,Unknown pointer version rejected,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-010,idempotency,Existing generation cannot be overwritten,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILP-011,governance,Recovery does not approve business rules,NOT_EVALUATED_AND_BLOCKED,SYNTHETIC_TEST_ONLY,NOT_RUN
