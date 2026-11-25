@@ -1,0 +1,73 @@
+{
+  "entity_id": "KNOW-000024",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床关键部件更换影响分析与复验矩阵",
+  "english_name": "CNC machine tool critical component replacement impact and verification matrix",
+  "aliases": [
+    "关键部件更换影响分析",
+    "部件更换复验矩阵"
+  ],
+  "description": "按主轴、伺服反馈、滚珠丝杠、直线导轨、刀库、工件夹持、液压气动、润滑冷却排屑及CNC/PLC控制模块等部件族，建立更换影响问题、基线证据、兼容性审查、复验域和停工条件的结构化矩阵。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH05",
+    "CH06",
+    "CH07",
+    "CH08",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "专业维修与部件更换",
+    "关键部件影响分析与复验"
+  ],
+  "tags": [
+    "CH17",
+    "部件更换",
+    "影响分析",
+    "维修后复验",
+    "主轴",
+    "伺服",
+    "滚珠丝杠",
+    "直线导轨",
+    "刀库",
+    "夹持系统",
+    "液压气动",
+    "CNC",
+    "PLC"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T13:51:32+08:00",
+  "updated_at": "2026-11-25T13:51:32+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000382",
+    "SRC-000390"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/component-family-impact-assessment-and-verification.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "九类关键部件族、接口/安全/软件/介质/几何影响问题、拆前基线、兼容性证据、维修后验证域、停工条件与矩阵使用方式",
+    "article_status": "model_agnostic_review_framework",
+    "machine_specific_procedures_defined": false,
+    "component_substitution_approvals_defined": false,
+    "universal_acceptance_limits_defined": false,
+    "field_execution_validation": false,
+    "hardware_validation": false,
+    "matrix_rows": 57,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/component-family-impact-verification-matrix-template.csv"
+    ]
+  },
+  "notes": "57条矩阵记录为审查提示，不表示各项对所有机床均适用。全部初始状态为TO_BE_ASSESSED/NOT_TESTED；具体程序、技术值、测试方法和判据必须映射到目标机型现行OEM文件或批准工程资料。"
+}
