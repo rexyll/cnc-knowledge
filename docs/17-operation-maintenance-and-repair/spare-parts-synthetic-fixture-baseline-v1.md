@@ -142,3 +142,12 @@ python scripts/spare_parts_scenario_runner.py --root . \
 **结果语义必须区分：** `simulation_status=PASS` 只表示场景包内部完整、来源一致、事件期望投影符合上述静态约束；`business_rule_assertions=NOT_EVALUATED`、`business_test_status=NOT_RUN`。执行器不会调用真实业务规则，也不会把夹具里的期望数量当成实际账面事务。CI模拟通过不能替代企业SIT/UAT、生产影子、HIL或机床实机验收。
 
 CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-spare-parts-offline-simulation` 报告Artifact。用户本地报告应写入本章 `resouces/17-operation-maintenance-and-repair/generated/` 目录；动态报告不默认提交进Git。
+## 10. 独立库存状态机内核与转移契约
+
+新增 [库存状态机内核](../../scripts/spare_parts_inventory_state_model.py)、[22类事件转移契约表](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-state-transition-contract-v1.csv) 和 [专项单元测试](../../tests/test_spare_parts_inventory_state_model.py)。
+
+内核采用双边转移：每笔内部库存转移必须同时指定来源账户、目标账户、数量和单位；来源账户余额不得为负；成功转移前后总量必须相等；失败操作保持原状态不变。外部收货/报废等事件也必须以显式外部账户作为另一条腿，避免无依据地凭空增加或消失数量。
+
+**当前契约全部为 NOT_APPROVED。** 现有夹具的 expected_inventory_bucket/expected_quantity_delta 只描述单桶期望变化，不足以确定双边分录；快照说明也没有提供物料、批次、库位等可执行的完整期初余额。因此本轮不从事件类型推断来源/目标账户，不生成业务期末库存，也不声称业务规则通过。CI只验证22类事件契约唯一、审批门禁关闭和内核的通用数学性质。
+
+契约只有在企业库存数据所有者确认库存账户字典、物料/批次/库位维度、单位、期初余额、外部账户、预留/分配语义及冲销规则后，逐项填写来源/目标账户并记录批准人和依据，才可进入可执行状态。

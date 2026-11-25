@@ -149,3 +149,9 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 新增 `tests/test_spare_parts_scenario_runner.py` 11项测试，包含全30包、包篡改、缺失文件、重复事件零增量、非库存事件零变更、冲销/乱序关联和CLI JSON报告；CI当前全量单测33项通过。
 - CI在生成30个场景包后运行离线执行器；本轮日志确认30/30模拟完成、0失败。报告Artifact与包Artifact分别归档。
 - **严格状态边界：** 模拟PASS仅是包完整性与期望事件投影一致，不等于业务规则正确；`business_rule_assertions=NOT_EVALUATED`、30项企业业务测试仍NOT_RUN。数据集DRAFT、22项环境检查NOT_ASSESSED，未连接/修改任何企业系统。
+
+## CH17-T004 库存状态机内核与转移契约第十轮（2026-11-25）
+
+- `spare-parts-inventory-state-transition-contract-v1.csv`：22类事件契约，全部NOT_APPROVED；未猜测库存桶之间的转移关系。
+- `scripts/spare_parts_inventory_state_model.py`：独立双边转移内核，使用Decimal、来源余额非负、双边数量守恒、失败原子性；没有企业系统连接或写入能力。
+- 当前数据仅支持单桶期望增量投影，尚不足以构建企业业务期望状态；须先批准账户字典、维度、期初余额和预留/分配/冲销语义。

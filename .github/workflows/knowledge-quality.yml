@@ -29,6 +29,19 @@ jobs:
           python-version: "3.12"
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+      - name: Check CH17 inventory state-transition contract readiness
+        run: >-
+          python scripts/spare_parts_inventory_state_model.py
+          --root .
+          --report-json "$RUNNER_TEMP/ch17-inventory-state-model-readiness.json"
+      - name: Upload CH17 inventory state-model readiness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch17-inventory-state-model-readiness-${{ github.run_id }}
+          path: ${{ runner.temp }}/ch17-inventory-state-model-readiness.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Validate CH17 synthetic spare-parts fixture baseline
         run: >-
           python scripts/spare_parts_fixture_validator.py

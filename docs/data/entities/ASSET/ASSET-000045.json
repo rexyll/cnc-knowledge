@@ -1,0 +1,54 @@
+{
+  "entity_id": "ASSET-000045",
+  "entity_type": "asset_file",
+  "canonical_name": "备件库存状态机双边转移契约v1",
+  "english_name": "Spare parts inventory state machine double-entry transition contracts v1",
+  "aliases": [
+    "Inventory transition contracts v1"
+  ],
+  "description": "22类备件事件的双边库存账户转移契约；来源/目标账户、单位字段和批准证据留空，全部NOT_APPROVED。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "库存状态机",
+    "双边转移",
+    "项目原创资源",
+    "ASSET-000045"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T20:20:00+08:00",
+  "updated_at": "2026-11-25T20:20:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-state-transition-contract-v1.csv",
+    "file_name": "spare-parts-inventory-state-transition-contract-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000032",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Manually authored event contract skeleton; all account mappings require enterprise approval",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "22类事件契约。所有账户映射和审批信息留空，approval_status=NOT_APPROVED；不可作为实际业务过账指令。"
+}

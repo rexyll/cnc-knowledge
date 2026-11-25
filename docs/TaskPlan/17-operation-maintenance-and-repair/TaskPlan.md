@@ -226,3 +226,10 @@
 - 使用Decimal对夹具声明的期望数量变化做reset_group隔离投影；无企业初始库存快照和库存口径，不计算期末库存/可用量，也不跨组求和。
 - 新增11项执行器专项测试；CI共33项单测通过，生成并检查30个场景包，离线模拟30/30、0失败，报告Artifact归档。
 - **边界：** simulation PASS不是业务验收，business_rule_assertions=NOT_EVALUATED，30项业务测试NOT_RUN；无企业系统适配器、无数据库/API写入、无SIT/UAT/HIL/实机运行。CH17-T004保持IN_PROGRESS。
+
+## 6.17 CH17-T004 独立库存状态机内核与双边转移契约第十轮（2026-11-25）
+
+- 新增 `scripts/spare_parts_inventory_state_model.py`：通用双边库存账户转移内核，采用Decimal，检查账户完整性、正数数量、单位、来源余额非负、数量守恒及失败原子性；内核无企业系统适配器。
+- 新增 `spare-parts-inventory-state-transition-contract-v1.csv`（ASSET-000045，22类事件）。来源账户、目标账户、单位字段、批准人和批准依据均未预填，状态全部NOT_APPROVED。
+- 新增9项专项测试；CI校验22类事件契约唯一、审批门禁失败关闭，并上传就绪报告Artifact。
+- **模型边界：** 现有单桶期望增量不具备双边分录信息；库存快照缺少完整物料/批次/库位期初余额。不得由模型自行推断业务规则或期末库存。CH17-T004保持IN_PROGRESS。
