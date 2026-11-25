@@ -3,6 +3,8 @@ from __future__ import annotations
 import csv
 import json
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -104,13 +106,46 @@ class SparePartsFixtureValidatorTests(unittest.TestCase):
         self.assertTrue(any("invalid business/ingestion time" in error for error in report["errors"]))
 
     def test_report_json_is_reproducible_and_serializable(self) -> None:
-        report = validator.validate_dataset(self.root)
         target = self.root / "validation-report.json"
-        target.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "scripts" / "spare_parts_fixture_validator.py"),
+                "--root",
+                str(self.root),
+                "--report-json",
+                str(target),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("RESULT: PASS", result.stdout)
         loaded = json.loads(target.read_text(encoding="utf-8"))
         self.assertEqual(loaded["result"], "PASS")
         self.assertEqual(loaded["dataset_id"], "SPAREPARTS-SYN-BASE-001")
         self.assertEqual(len(loaded["files"]), 4)
+
+    def test_malformed_csv_row_width_fails(self) -> None:
+        fixture_path = self.root / validator.FIXTURES
+        with fixture_path.open("a", encoding="utf-8") as stream:
+            stream.write("broken,row\\n")
+        report = validator.validate_dataset(self.root)
+        self.assertEqual(report["result"], "FAIL")
+        self.assertTrue(any("has 2 columns; expected 27" in error for error in report["errors"]))
+
+    def test_mapping_reference_must_be_bidirectional(self) -> None:
+        def mutate(rows):
+            for row in rows:
+                if row["test_case_id"] == "SPAT-001":
+                    row["positive_fixture_ids"] = "FX-PART-002"
+                    return
+            self.fail("SPAT-001 row not found")
+        self._mutate_csv(validator.COVERAGE, mutate)
+        report = validator.validate_dataset(self.root)
+        self.assertEqual(report["result"], "FAIL")
+        self.assertTrue(any("fixture test_case_ids omits this case" in error for error in report["errors"]))
 
 
 if __name__ == "__main__":

@@ -63,7 +63,7 @@
     "enterprise_uat_executed": false,
     "hardware_or_machine_test_executed": false,
     "validation_tool_path": "scripts/spare_parts_fixture_validator.py",
-    "validation_report_command": "python scripts/spare_parts_fixture_validator.py --root . --json --report-json resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-validation-report-v1.json",
+    "validation_report_command": "python scripts/spare_parts_fixture_validator.py --root . --json --report-json resouces/17-operation-maintenance-and-repair/generated/spare-parts-fixture-validation-report-v1.json",
     "validation_scope": "local static validation only; no enterprise integration or test execution"
   },
   "notes": "纯合成静态夹具数据包，DRAFT未获企业环境批准；数值仅供软件逻辑测试，不能作为真实库存/供应链/机床参数。30项SPAT用例均未执行。"
