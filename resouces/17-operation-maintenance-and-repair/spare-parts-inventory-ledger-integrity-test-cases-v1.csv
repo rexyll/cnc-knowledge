@@ -1,0 +1,16 @@
+case_id,category,assertion,expected_result,execution_scope,status
+ILH-001,canonicalization,Equivalent Decimal scales and offset timestamps serialize identically,Stable canonical hash,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-002,integrity,Valid continuous SHA-256 chain verifies,PASS,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-003,tampering,Changed event payload detected,MISMATCH_REJECTED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-004,sequence,Deleted record or sequence gap detected,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-005,ordering,Reordered records detected,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-006,chain,Changed chain head or predecessor detected,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-007,identity,Duplicate event identity detected,FAIL_CLOSED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-008,snapshot,Valid snapshot digest verified,SNAPSHOT_VALID,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-009,snapshot,Modified snapshot balance detected,SNAPSHOT_TAMPER_REJECTED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-010,version,Unknown snapshot version rejected,VERSION_REJECTED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-011,restore,Snapshot prefix hash must match ledger,CHAIN_MISMATCH_REJECTED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-012,incremental,Eligible suffix replay equals full replay,PROJECTION_EQUAL,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-013,late-arrival,Back-dated suffix invalidating snapshot rejected,REBUILD_REQUIRED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-014,cutoff,Backward business cutoff rejected,CUTOFF_REJECTED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILH-015,governance,Math PASS does not approve business contracts,NOT_EVALUATED_AND_BLOCKED,SYNTHETIC_TEST_ONLY,NOT_RUN
