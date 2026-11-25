@@ -128,3 +128,12 @@
 
 - **实施提交：** 698efeecde445e2f63fba7c561c28d7f686369d8；计划/索引/覆盖度同步提交：eb296e24f92a800ac89474da3e7eda9ac719ccb4。
 - **CI验收：** 实施提交Run 45556482627和同步提交Run 45556547468均completed/success；两次运行的知识结构/数据质量、strict lint及CH12数值资源Job全部通过。该CI不代表CH17现场或实机维修验证。
+
+
+## 6.6 CH17-T003 主轴、伺服与滚珠丝杠专项更换工作包（2026-11-25）
+
+- 新增正文 docs/17-operation-maintenance-and-repair/spindle-servo-ballscrew-specialized-replacement-work-packages.md（KNOW-000025），分别细化主轴单元、伺服电机/编码器、滚珠丝杠/支撑轴承的基线、兼容性、风险控制、参数恢复和维修后复验边界。
+- 新增三份原创专项CSV工作包：spindle-replacement-work-package-template.csv（ASSET-000019，18检查项/35列）；servo-motor-encoder-replacement-work-package-template.csv（ASSET-000020，17检查项/35列）；ballscrew-support-bearing-replacement-work-package-template.csv（ASSET-000021，17检查项/35列）。
+- 三份表采用相同的35字段骨架，将工作包元数据、部件身份、旧/新件替代批准、OEM程序、关键值来源、验收判据、责任专业、危险能量停工点、实测结果与偏差记录分开；各专项检查内容不同。
+- **安全与适用边界：** 未提供型号级拆装顺序、吊装/支撑方法、放电/隔离步骤、紧固扭矩、轴承/螺母预紧、润滑介质或验收阈值。必须映射到具体机床序列范围、OEM受控文件和现场风险评估。
+- **状态：** CH17-T003保持IN_PROGRESS；本轮只完成三个部件族的通用专项工作包模板，尚无用户目标机型和现场更换证据。

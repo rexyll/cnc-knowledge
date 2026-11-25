@@ -588,3 +588,11 @@
 - **状态：** CH17-T003保持IN_PROGRESS；后续需依据指定设备型号、序列范围、选件和受控OEM服务手册映射条目，并取得适用现场复验记录。
 
 - **提交与CI验收补记：** 实施提交 `698efeecde445e2f63fba7c561c28d7f686369d8` 对应 [Run 45556482627](https://github.com/rexyll/cnc-knowledge/actions/runs/45556482627)；计划/索引同步提交 `eb296e24f92a800ac89474da3e7eda9ac719ccb4` 对应 [Run 45556547468](https://github.com/rexyll/cnc-knowledge/actions/runs/45556547468)。两个Run的全部Job均success；CI不代表CH17现场或实机维修验证。
+
+
+## CH17-T003 主轴、伺服与滚珠丝杠专项更换工作包里程碑（2026-11-25）
+
+- 新增 docs/17-operation-maintenance-and-repair/spindle-servo-ballscrew-specialized-replacement-work-packages.md（KNOW-000025），围绕主轴单元、伺服电机/编码器、滚珠丝杠/支撑轴承建立专项工作包和审查边界。
+- 新增三份原创CSV：spindle-replacement-work-package-template.csv（ASSET-000019，18检查项/35列）、servo-motor-encoder-replacement-work-package-template.csv（ASSET-000020，17检查项/35列）、ballscrew-support-bearing-replacement-work-package-template.csv（ASSET-000021，17检查项/35列）。
+- 各模板均记录设备/部件身份、拆前基线、兼容性证据、OEM程序、关键值来源、验收判据、风险/停工点、实测结果和偏差；具体拆装和数值全部留给匹配的OEM受控文件。
+- **状态：** CH17-T003保持IN_PROGRESS；尚无目标机床型号和现行OEM服务文件，未形成现场维修步骤或验收记录。

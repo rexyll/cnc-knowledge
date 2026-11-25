@@ -14,7 +14,7 @@
 
 [打开本章 TaskPlan](../TaskPlan/17-operation-maintenance-and-repair/TaskPlan.md)
 
-本章知识内容按任务计划逐步研究，不预填未经核实的技术参数或结论。第一版框架见 [机床操作、维护与维修总览](overview.md)；维修闭环见 [数控机床维修工作流、工单与维修后复验](repair-workflow-and-records.md)；计划维护体系见 [数控机床计划维护体系与维护任务管理](maintenance-management-system.md)；部件更换工作包见 [数控机床零部件更换工作包与复验框架](component-replacement-work-package.md)。 关键部件族审查见 [关键部件更换影响分析与复验矩阵](component-family-impact-assessment-and-verification.md)。开机准备检查、维修工单、维修后复验矩阵、维护任务矩阵、维护卡和耗材登记均位于本章resouces目录。
+本章知识内容按任务计划逐步研究，不预填未经核实的技术参数或结论。第一版框架见 [机床操作、维护与维修总览](overview.md)；维修闭环见 [数控机床维修工作流、工单与维修后复验](repair-workflow-and-records.md)；计划维护体系见 [数控机床计划维护体系与维护任务管理](maintenance-management-system.md)；部件更换工作包见 [数控机床零部件更换工作包与复验框架](component-replacement-work-package.md)。 关键部件族审查见 [关键部件更换影响分析与复验矩阵](component-family-impact-assessment-and-verification.md)。 主轴/伺服/丝杠专项模板见 [主轴、伺服与滚珠丝杠专项更换工作包](spindle-servo-ballscrew-specialized-replacement-work-packages.md)。开机准备检查、维修工单、维修后复验矩阵、维护任务矩阵、维护卡和耗材登记均位于本章resouces目录。
 
 ## 建议正文结构
 
