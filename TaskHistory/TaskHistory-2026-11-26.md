@@ -1,8 +1,8 @@
-# TaskHistory — 2026-11-25
+# TaskHistory — 2026-11-26
 
 ## CH17-T001 机床操作、维护与维修第一轮框架
 
-- **实际完成时间：** 2026-11-26T01:00:00+08:00（Asia/Shanghai；本条记录以2026-11-25项目工作日归档）
+- **实际完成时间：** 2026-11-26T01:00:00+08:00（Asia/Shanghai）
 - **分支：** main（未创建其他分支）
 - **实施提交：** 031a257996a9a45766ee30f4a5bb3fe4ce131621
 - **新增正文：** docs/17-operation-maintenance-and-repair/overview.md
