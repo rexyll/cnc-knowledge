@@ -3,7 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 from scripts.spare_parts_inventory_event_ledger import AppendOnlyEventLedger, LedgerEvent
 from scripts.spare_parts_inventory_ledger_integrity import create_snapshot
-from scripts.spare_parts_inventory_ledger_persistence import PersistenceError, PersistenceConflict, publish_generation, recover_current, self_check, _exclusive_store_lock
+from scripts.spare_parts_inventory_ledger_persistence import PersistenceError, PersistenceConflict, publish_generation, recover_current, self_check, _exclusive_store_lock, _gc_coordination_lock, garbage_collect_generations
 import multiprocessing, os
 from scripts.spare_parts_multidimensional_inventory import BalanceKey
 
@@ -20,6 +20,39 @@ def _race_writer(root,generation,queue):
  except Exception as exc: queue.put("ERROR:"+type(exc).__name__)
 def _crash_while_locked(root):
  with _exclusive_store_lock(root): os._exit(23)
+
+
+def _gc_stress_writer(root,start_event,queue):
+ try:
+  start_event.wait(5)
+  expected="base"
+  for i in range(12):
+   l,s=fixture(); gid=f"stress-{i:02d}"
+   publish_generation(root,l,s,gid,expected_current_generation=expected,lock_timeout_seconds=10)
+   expected=gid
+   time.sleep(0.002)
+  queue.put("writer:PASS")
+ except Exception as exc: queue.put("writer:ERROR:"+repr(exc))
+
+def _gc_stress_reader(root,start_event,queue):
+ try:
+  start_event.wait(5)
+  for _ in range(45):
+   recovered=recover_current(root)
+   if recovered["ledger_record_count"]!=1: raise AssertionError("reader observed incomplete generation")
+   time.sleep(0.001)
+  queue.put("reader:PASS")
+ except Exception as exc: queue.put("reader:ERROR:"+repr(exc))
+
+def _gc_stress_collector(root,start_event,queue):
+ try:
+  start_event.wait(5)
+  for _ in range(16):
+   garbage_collect_generations(root,keep_last=2,minimum_age_seconds=0,apply=True,lock_timeout_seconds=10)
+   time.sleep(0.002)
+  queue.put("collector:PASS")
+ except Exception as exc: queue.put("collector:ERROR:"+repr(exc))
+
 class PersistenceTests(unittest.TestCase):
  def test_publish_and_recover_round_trip(self):
   with tempfile.TemporaryDirectory() as t:
@@ -104,6 +137,77 @@ class PersistenceTests(unittest.TestCase):
    root=Path(t)/"store"; l,s=fixture()
    with self.assertRaises(PersistenceError): publish_generation(root,l,s,"g1",failure_stage="after_lock")
    self.assertEqual(publish_generation(root,l,s,"g2",lock_timeout_seconds=1)["result"],"COMMITTED")
+
+
+ def test_gc_dry_run_and_retention_policy(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture()
+   publish_generation(root,l,s,"g1")
+   publish_generation(root,l,s,"g2",expected_current_generation="g1")
+   publish_generation(root,l,s,"g3",expected_current_generation="g2")
+   os.utime(root/"generation-g1",(1,1))
+   plan=garbage_collect_generations(root,keep_last=2,minimum_age_seconds=0)
+   self.assertEqual(plan["result"],"DRY_RUN")
+   self.assertEqual(plan["eligible_generations"],["g1"])
+   self.assertTrue((root/"generation-g1").exists())
+   done=garbage_collect_generations(root,keep_last=2,minimum_age_seconds=0,apply=True)
+   self.assertEqual(done["deleted_generations"],["g1"])
+   self.assertFalse((root/"generation-g1").exists())
+   self.assertTrue((root/"generation-g2").exists())
+   self.assertEqual(recover_current(root)["generation_id"],"g3")
+
+ def test_gc_respects_minimum_age(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture()
+   publish_generation(root,l,s,"g1")
+   publish_generation(root,l,s,"g2",expected_current_generation="g1")
+   os.utime(root/"generation-g1",(1,1))
+   plan=garbage_collect_generations(root,keep_last=1,minimum_age_seconds=10**12)
+   self.assertEqual(plan["eligible_generations"],[])
+   self.assertTrue((root/"generation-g1").exists())
+
+ def test_active_reader_excludes_generation_gc(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"g1")
+   os.utime(root/"generation-g1",(1,1))
+   with _gc_coordination_lock(root,shared=True):
+    with self.assertRaises(PersistenceConflict):
+     garbage_collect_generations(root,keep_last=1,minimum_age_seconds=0,
+                                 apply=True,lock_timeout_seconds=0.03)
+    self.assertTrue((root/"generation-g1").exists())
+   self.assertEqual(recover_current(root)["generation_id"],"g1")
+
+ def test_gc_recovers_interrupted_trash_cleanup(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"current")
+   trash=root/".gc-trash-old-123"; trash.mkdir(); (trash/"partial").write_text("synthetic")
+   result=garbage_collect_generations(root,apply=True)
+   self.assertIn(".gc-trash-old-123",result["reaped_interrupted_cleanup"])
+   self.assertFalse(trash.exists())
+   self.assertEqual(recover_current(root)["generation_id"],"current")
+
+ def test_unverified_generation_is_never_collected(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"current")
+   bad=root/"generation-unverified"; bad.mkdir(); (bad/"COMMIT.json").write_text("{}")
+   result=garbage_collect_generations(root,keep_last=1,minimum_age_seconds=0,apply=True)
+   self.assertIn("generation-unverified",result["skipped_unverified_entries"])
+   self.assertTrue(bad.exists())
+
+ def test_concurrent_reader_writer_and_gc_stress(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"base")
+   start=multiprocessing.Event(); q=multiprocessing.Queue()
+   ps=[
+    multiprocessing.Process(target=_gc_stress_writer,args=(root,start,q)),
+    multiprocessing.Process(target=_gc_stress_reader,args=(root,start,q)),
+    multiprocessing.Process(target=_gc_stress_collector,args=(root,start,q)),
+   ]
+   [p.start() for p in ps]; start.set(); [p.join(20) for p in ps]
+   self.assertTrue(all(p.exitcode==0 for p in ps),[p.exitcode for p in ps])
+   results=[q.get(timeout=3) for _ in ps]
+   self.assertEqual(sorted(results),["collector:PASS","reader:PASS","writer:PASS"])
+   self.assertEqual(recover_current(root)["generation_id"],"stress-11")
 
  def test_gate_stays_blocked(self):
   r=self_check(); self.assertEqual(r["execution_status"],"BLOCKED_PENDING_ENTERPRISE_APPROVAL")
