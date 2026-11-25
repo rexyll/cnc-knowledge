@@ -127,3 +127,18 @@
 - **计划/索引同步提交：** `62746a5342983f96ad28680b3c085728ce0e8fc7`；GitHub Actions [Run 45570215559](https://github.com/rexyll/cnc-knowledge/actions/runs/45570215559) completed/success，两个Job均成功。
 - **资源索引落位修正：** `e5d1372bef4da6c6a3d82bd3b5d2bab6ca407575`；将新增ASSET-000031～ASSET-000033记录放回ASSET-INDEX资源表内；GitHub Actions [Run 45570300758](https://github.com/rexyll/cnc-knowledge/actions/runs/45570300758) completed/success，两个Job均成功。
 - **状态与遗留：** 尚无用户企业ERP/CMMS/EAM/PLM字段清单、接口授权、脱敏样本、真实BOM/库存/采购/工单/供应商交期/PCN/EOL资料；未确定字段级SoR、映射转换、对账容差/频率/SLA、企业RACI、库存参数或替代件批准。所有16条规则维持PROPOSED，不能直接视作生产阻断规则。CI只验证仓库结构/数据质量及CH12既有数值资源，不代表企业系统集成、库存盘点、现场维修或实机验证。
+
+
+## CH17-T004 备件实物流转、事务控制与责任矩阵第三轮
+
+- **实际完成时间：** 2026-11-25T16:05:25+08:00（Asia/Shanghai；TaskHistory补录时间）
+- **所在分支：** `main`（未创建其他分支）
+- **新增正文：** `docs/17-operation-maintenance-and-repair/spare-parts-physical-flow-and-transaction-controls.md`（KNOW-000029，`verification_status=in_review`）。
+- **新增资源：** `spare-parts-transaction-lifecycle-control-matrix.csv`（ASSET-000034，16个控制节点/23列）；`spare-parts-raci-approval-matrix-template.csv`（ASSET-000035，16项活动/16列），均归档于 `resouces/17-operation-maintenance-and-repair/`。
+- **流程范围：** 需求提出、技术/配置适用性、采购下单、到货接收、来料检验、上架储存、库存盘点、预留、拣配发料、现场交接、实际安装/消耗、旧件回收、返修处置、报废、库存对账及PCN/EOL影响评估；明确实物事实、系统过账事实和技术/质量放行事实的分离。
+- **结构化实体与索引：** 新增KNOW-000029、ASSET-000034～ASSET-000035；更新根TaskPlan、CH17 TaskPlan（新增6.10）、章节README、docs总入口、资源README、ASSET-INDEX和CHAPTER-COVERAGE。覆盖度更新为9篇KNOW条目、28项资源记录、SRC去重9条；CH17-T004继续IN_PROGRESS。
+- **数据/安全边界：** 16个事务控制节点和16项RACI分配均为建议/PROPOSED，不代表企业流程、系统接口、授权RACI或真实库存事务已建立。每项RACI建议恰有一个A且至少一个R。现场维修依具体机床OEM受控程序、合格授权人员、现场风险评估和危险能量控制要求；模板不提供危险拆装步骤或通用技术阈值。
+- **CSV/JSON验收：** 远程复读流程矩阵为16条数据/23列，RACI矩阵为16条数据/16列，所有行与表头列宽一致；本地预提交检查每项RACI恰有一个A和至少一个R。KNOW-000029及ASSET-000034～ASSET-000035 JSON均可解析，`linked_templates`、`file_path`和`related_knowledge_id`路径关联一致。
+- **实施提交：** `305b7a5e057926dab2540a510aeaca8040c9c636`；GitHub Actions [Run 45573023428](https://github.com/rexyll/cnc-knowledge/actions/runs/45573023428) completed/success，Knowledge structure and data quality与CH12 numerical resource tests均成功。
+- **计划/索引同步提交：** `23b5bfec010166a8c5b7b277c27e4db4d770b7c5`；GitHub Actions [Run 45573116169](https://github.com/rexyll/cnc-knowledge/actions/runs/45573116169) completed/success，两个Job均成功。
+- **状态与遗留：** 尚无真实企业ERP/CMMS/EAM状态字典、交易接口、收货/库存/工单样本、正式企业组织授权RACI、目标机型受控BOM/OEM和现场维修证据；未导入真实采购/收货/库存移动/领退料记录，未确定企业实际审批权限、盘点频率/容差或异常SLA。CI仅验证仓库结构/数据质量及CH12既有数值资源，不代表企业事务集成、库存盘点、现场维修或实机验收。
