@@ -3,7 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 from scripts.spare_parts_inventory_event_ledger import AppendOnlyEventLedger, LedgerEvent
 from scripts.spare_parts_inventory_ledger_integrity import create_snapshot
-from scripts.spare_parts_inventory_ledger_persistence import PersistenceError, PersistenceConflict, publish_generation, recover_current, self_check, _exclusive_store_lock, _gc_coordination_lock, garbage_collect_generations
+from scripts.spare_parts_inventory_ledger_persistence import PersistenceError, PersistenceConflict, publish_generation, recover_current, self_check, _exclusive_store_lock, _gc_coordination_lock, garbage_collect_generations, create_backup, verify_backup, restore_backup
 import multiprocessing, os, time
 from scripts.spare_parts_multidimensional_inventory import BalanceKey
 
@@ -208,6 +208,76 @@ class PersistenceTests(unittest.TestCase):
    results=[q.get(timeout=3) for _ in ps]
    self.assertEqual(sorted(results),["collector:PASS","reader:PASS","writer:PASS"])
    self.assertEqual(recover_current(root)["generation_id"],"stress-11")
+
+
+ def test_backup_verify_and_restore_after_source_generation_gc(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; backup_parent=Path(t)/"backups"; target=Path(t)/"restored"; l,s=fixture()
+   publish_generation(root,l,s,"g1")
+   backup=create_backup(root,backup_parent,"b1")
+   self.assertEqual(verify_backup(backup["backup_path"])["result"],"VERIFIED")
+   publish_generation(root,l,s,"g2",expected_current_generation="g1")
+   os.utime(root/"generation-g1",(1,1))
+   garbage_collect_generations(root,keep_last=1,minimum_age_seconds=0,apply=True)
+   self.assertFalse((root/"generation-g1").exists())
+   restored=restore_backup(backup["backup_path"],target)
+   state=recover_current(target)
+   self.assertEqual(restored["result"],"RESTORED")
+   self.assertEqual(state["generation_id"],"g1")
+   self.assertEqual(state["ledger_record_count"],1)
+   self.assertFalse((root/"generation-g1").exists())
+
+ def test_backup_payload_corruption_rejected(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"g1")
+   backup=create_backup(root,Path(t)/"backups","b1")
+   ledger=Path(backup["backup_path"])/"ledger.json"
+   ledger.write_text(ledger.read_text().replace('"quantity":"2"','"quantity":"9"'))
+   with self.assertRaises(PersistenceError): verify_backup(backup["backup_path"])
+
+ def test_backup_manifest_corruption_rejected(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"g1")
+   backup=create_backup(root,Path(t)/"backups","b1")
+   manifest=Path(backup["backup_path"])/"BACKUP.json"
+   doc=json.loads(manifest.read_text()); doc["source_generation_id"]="other"
+   manifest.write_text(json.dumps(doc))
+   with self.assertRaises(PersistenceError): verify_backup(backup["backup_path"])
+
+ def test_backup_creation_interruption_leaves_no_published_backup(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"g1")
+   parent=Path(t)/"backups"
+   with self.assertRaises(PersistenceError):
+    create_backup(root,parent,"b1",failure_stage="before_backup_publish")
+   self.assertFalse((parent/"backup-b1").exists())
+   self.assertFalse((parent/".backup-staging-b1").exists())
+
+ def test_restore_refuses_nonempty_target_without_overwrite(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"g1")
+   backup=create_backup(root,Path(t)/"backups","b1")
+   target=Path(t)/"target"; target.mkdir(); marker=target/"keep.txt"; marker.write_text("untouched")
+   with self.assertRaises(PersistenceConflict): restore_backup(backup["backup_path"],target)
+   self.assertEqual(marker.read_text(),"untouched")
+
+ def test_restore_interruption_does_not_publish_current(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"g1")
+   backup=create_backup(root,Path(t)/"backups","b1")
+   target=Path(t)/"target"
+   with self.assertRaises(PersistenceError):
+    restore_backup(backup["backup_path"],target,failure_stage="after_generation_rename")
+   self.assertTrue((target/"generation-g1"/"COMMIT.json").exists())
+   self.assertFalse((target/"CURRENT").exists())
+
+ def test_backup_requires_separate_destination_and_reader_lock(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t)/"store"; l,s=fixture(); publish_generation(root,l,s,"g1")
+   with self.assertRaises(PersistenceError): create_backup(root,root/"nested","bad")
+   with _gc_coordination_lock(root,shared=False):
+    with self.assertRaises(PersistenceConflict):
+     create_backup(root,Path(t)/"backups","locked",lock_timeout_seconds=0.02)
 
  def test_gate_stays_blocked(self):
   r=self_check(); self.assertEqual(r["execution_status"],"BLOCKED_PENDING_ENTERPRISE_APPROVAL")
