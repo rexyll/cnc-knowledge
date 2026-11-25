@@ -151,3 +151,14 @@ CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-
 **当前契约全部为 NOT_APPROVED。** 现有夹具的 expected_inventory_bucket/expected_quantity_delta 只描述单桶期望变化，不足以确定双边分录；快照说明也没有提供物料、批次、库位等可执行的完整期初余额。因此本轮不从事件类型推断来源/目标账户，不生成业务期末库存，也不声称业务规则通过。CI只验证22类事件契约唯一、审批门禁关闭和内核的通用数学性质。
 
 契约只有在企业库存数据所有者确认库存账户字典、物料/批次/库位维度、单位、期初余额、外部账户、预留/分配语义及冲销规则后，逐项填写来源/目标账户并记录批准人和依据，才可进入可执行状态。
+
+## 11. 期初状态、账户分类与库存维度候选模型
+
+本轮新增四项资源：
+
+- [候选库存账户字典](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-account-catalog-candidates-v1.csv)：区分实物数量账户、外部对方账户、非实物备忘/承诺账户及仅观察记录。尤其将预留/分配和采购未交承诺与实物库存分开建模，避免在未获批准时重复扣减或重复累计。
+- [候选库存维度字典](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-dimension-dictionary-candidates-v1.csv)：提出物料、批次、库位、所有权、质量状态、计量单位，以及工单/采购行等候选身份维度；是否必填、适用范围和规范化规则均待企业批准。
+- [期初余额空白模板](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-opening-balance-template-v1.csv)：仅提供字段表头，不填充示例余额。每条余额需关联数据源、源记录、提取时间、截止时点、时区、SHA-256、单位换算和审批依据。
+- [期初状态场景矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-opening-state-scenario-matrix-v1.csv)：针对SPAT-006/008/010/012/017/019/020/021/022/023定义期初输入要求与待审批守恒断言。所有场景保持PROPOSED_NOT_APPROVED和NOT_RUN。
+
+**重要边界：** 账户代码和维度集合只是候选设计，不是企业库存政策。可用、待检、隔离、返修、现场保管、在途、待报废属于候选实物账户；预留/分配和PO未交属于候选非实物承诺；盘点差异属于观察记录。企业可能采用不同账户/子账结构，必须由库存数据所有者确认。当前没有任何可用的企业期初余额数据，本轮不生成库存余额、不激活转移契约、不计算业务期末量。

@@ -55,3 +55,7 @@
 | SRC-000388 | Haas Automation | Lathe Maintenance | 型号/产品族专属维护计划示例 | 仅适用对应Haas车床配置 |
 
 所有外部来源于2026-11-25核验。原始法规、标准和制造商手册未复制到本目录；保存全文需另行核验授权及再分发许可。
+| spare-parts-inventory-account-catalog-candidates-v1.csv | CSV候选账户字典 / ASSET-000046 | 项目原创 | 2026-11-25 | 原创，候选分类待企业批准 | CH17-T004 / KNOW-000032 | 13类实物、外部对方、备忘承诺及观察账户候选；全部PROPOSED_NOT_APPROVED，不构成生产账户定义 |
+| spare-parts-inventory-dimension-dictionary-candidates-v1.csv | CSV候选维度字典 / ASSET-000047 | 项目原创 | 2026-11-25 | 原创，候选维度待企业批准 | CH17-T004 / KNOW-000032 | 物料、批次、库位、所有权、状态、单位、工单、采购行维度候选；全部PROPOSED_NOT_APPROVED |
+| spare-parts-inventory-opening-balance-template-v1.csv | CSV空白模板 / ASSET-000048 | 项目原创 | 2026-11-25 | 原创空白模板 | CH17-T004 / KNOW-000032 | 期初余额模板仅含表头，不含任何预填数量或库存快照 |
+| spare-parts-inventory-opening-state-scenario-matrix-v1.csv | CSV场景矩阵 / ASSET-000049 | 项目原创 | 2026-11-25 | 原创，场景预期待批准 | CH17-T004 / KNOW-000032 | 9个场景的期初输入需求、账户候选和守恒断言；全部PROPOSED_NOT_APPROVED/NOT_RUN |

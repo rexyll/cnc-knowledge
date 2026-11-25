@@ -59,3 +59,5 @@
 备件合成夹具增加 [离线场景包校验与事件期望投影工具](../../scripts/spare_parts_scenario_runner.py)。它逐场景验证包哈希/依赖/事件顺序，并按reset_group独立列出夹具声明的数量增量。模拟结果PASS仅代表静态包和期望事件投影一致；业务规则未执行，30项测试仍NOT_RUN。
 
 库存状态机内核见 [独立双边转移模型](../../scripts/spare_parts_inventory_state_model.py)，配套 [22类事件转移契约](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-state-transition-contract-v1.csv) 当前均未获批准，CI只验证内核性质与审批门禁，不代表业务状态机已激活。
+
+新增 [候选库存账户字典](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-account-catalog-candidates-v1.csv)、[候选维度字典](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-dimension-dictionary-candidates-v1.csv)、[期初余额空白模板](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-opening-balance-template-v1.csv) 和 [期初状态场景矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-opening-state-scenario-matrix-v1.csv)。这些资源只提出候选分类与数据字段，不预设企业库存账户、维度或期初数量；全部业务语义须经企业库存数据所有者批准。

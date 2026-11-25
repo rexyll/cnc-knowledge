@@ -1,0 +1,1 @@
+opening_snapshot_id,snapshot_version,snapshot_status,effective_at,account_code,item_id,item_revision,lot_id,serial_id,site_id,warehouse_id,location_id,owner_id,condition_code,quantity,uom,base_quantity,conversion_rule_id,source_system,source_record_id,source_extract_at,source_sha256,cutoff_timezone,approved_by,approval_reference,synthetic_only,reset_group,notes

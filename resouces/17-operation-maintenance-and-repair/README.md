@@ -155,3 +155,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - `spare-parts-inventory-state-transition-contract-v1.csv`：22类事件契约，全部NOT_APPROVED；未猜测库存桶之间的转移关系。
 - `scripts/spare_parts_inventory_state_model.py`：独立双边转移内核，使用Decimal、来源余额非负、双边数量守恒、失败原子性；没有企业系统连接或写入能力。
 - 当前数据仅支持单桶期望增量投影，尚不足以构建企业业务期望状态；须先批准账户字典、维度、期初余额和预留/分配/冲销语义。
+
+## CH17-T004 期初状态与库存维度候选模型第十一轮（2026-11-25）
+
+- `spare-parts-inventory-account-catalog-candidates-v1.csv`：新增候选资源；13类账户候选，明确实物账户与备忘/观察账户不可混算。
+- `spare-parts-inventory-dimension-dictionary-candidates-v1.csv`：新增候选资源；列出物料、批次、库位、所有权、状态、单位及工单/采购行候选维度。
+- `spare-parts-inventory-opening-balance-template-v1.csv`：新增候选资源；仅有表头，不含预填余额；要求来源记录、截止时点、时区、哈希和批准依据。
+- `spare-parts-inventory-opening-state-scenario-matrix-v1.csv`：新增候选资源；映射9个代表性场景的期初输入和守恒断言，全部未批准且未执行。
+
+所有账户、维度和场景均为讨论候选，未获得企业批准，不得据此过账或生成业务期末库存。
