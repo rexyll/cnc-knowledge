@@ -1,0 +1,63 @@
+{
+  "entity_id": "KNOW-000030",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件端到端验收场景与测试证据规范",
+  "english_name": "CNC machine tool spare parts end-to-end acceptance scenarios and test evidence specification",
+  "aliases": [
+    "备件流程验收测试矩阵",
+    "备件系统SIT/UAT测试规范",
+    "备件测试证据模板"
+  ],
+  "description": "为备件主数据、采购收货、质量放行、库存事务、替代件、维修消耗、旧件处置、库存对账和跨系统映射建立端到端测试场景、执行记录和发布验收门槛。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21",
+    "CH14",
+    "CH15"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试证据"
+  ],
+  "tags": [
+    "CH17",
+    "备件验收",
+    "SIT",
+    "UAT",
+    "测试用例",
+    "库存对账",
+    "数据质量",
+    "端到端测试",
+    "测试证据"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T16:16:48+08:00",
+  "updated_at": "2026-11-25T16:16:48+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-end-to-end-acceptance-testing.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "测试层级、隔离测试环境、合成数据集、30个E2E场景、执行结果状态、证据/缺陷管理和上线验收门槛",
+    "article_status": "vendor_neutral_acceptance_test_specification",
+    "scenario_count": 30,
+    "scenario_execution_status": "NOT_RUN",
+    "enterprise_sit_executed": false,
+    "enterprise_uat_executed": false,
+    "production_data_used": false,
+    "physical_machine_test_executed": false,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-parts-end-to-end-acceptance-test-matrix.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-acceptance-test-execution-record-template.csv"
+    ]
+  },
+  "notes": "项目内部测试规格，不代表已连接或验证任何用户企业系统。30个场景均未执行；真实阈值、容差、环境和授权需由企业批准。测试规格不替代OEM维修程序、现场风险评估及实机安全/性能验收。"
+}

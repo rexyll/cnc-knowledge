@@ -1,0 +1,50 @@
+{
+  "entity_id": "ASSET-000036",
+  "entity_type": "asset_file",
+  "canonical_name": "备件端到端验收测试场景矩阵",
+  "english_name": null,
+  "aliases": [],
+  "description": "30个备件管理端到端测试用例规格，覆盖主数据/BOM、采购收货、检验放行、库存分桶、幂等、预留发料、替代、安装消耗、旧件返修报废、对账、PCN/EOL、权限和敏感数据最小化。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试证据",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件验收测试",
+    "项目原创资源",
+    "ASSET-000036"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T16:16:48+08:00",
+  "updated_at": "2026-11-25T16:16:48+08:00",
+  "verified_at": "2026-11-25T16:16:48+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-end-to-end-acceptance-test-matrix.csv",
+    "file_name": "spare-parts-end-to-end-acceptance-test-matrix.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000030",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original project acceptance test matrix and evidence log template",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "测试规格矩阵，所有用例初始NOT_RUN；不是自动化测试脚本，未执行任何企业系统集成或UAT。"
+}

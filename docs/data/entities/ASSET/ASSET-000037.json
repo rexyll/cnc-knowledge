@@ -1,0 +1,50 @@
+{
+  "entity_id": "ASSET-000037",
+  "entity_type": "asset_file",
+  "canonical_name": "备件验收测试执行与证据记录模板",
+  "english_name": null,
+  "aliases": [],
+  "description": "记录单次备件测试执行的环境版本、合成数据集、角色、预期/实际业务结果、库存影响、追溯/审计证据、结果状态、缺陷和复测关联。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试证据",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件验收测试",
+    "项目原创资源",
+    "ASSET-000037"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T16:16:48+08:00",
+  "updated_at": "2026-11-25T16:16:48+08:00",
+  "verified_at": "2026-11-25T16:16:48+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-acceptance-test-execution-record-template.csv",
+    "file_name": "spare-parts-acceptance-test-execution-record-template.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000030",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original project acceptance test matrix and evidence log template",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "原创空白测试执行记录模板；header-only，不包含虚构执行结果或个人信息。"
+}
