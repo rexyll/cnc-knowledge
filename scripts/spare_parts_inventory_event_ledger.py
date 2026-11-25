@@ -192,8 +192,8 @@ class AppendOnlyEventLedger:
                         "check business_time and known_at_cutoff"
                     )
                 effective = InventoryEvent(
-                    event.event_id, record.ledger_sequence, event.destination,
-                    event.source, event.quantity, "SYNTHETIC_LEDGER_REVERSAL",
+                    event.event_id, record.ledger_sequence, event.source,
+                    event.destination, event.quantity, "SYNTHETIC_LEDGER_REVERSAL",
                 )
             ledger.transfer(effective)
             applied.append(event.event_id)

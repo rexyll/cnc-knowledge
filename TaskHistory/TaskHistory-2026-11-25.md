@@ -287,3 +287,9 @@
 - 新增17个纯合成断言场景及专项测试；CI自检上传JSON Artifact。报告execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED；无外部连接和数据库/API写入。
 - 文档更新：KNOW-000032第13节、ASSET-000051、资源/章节README、ASSET-INDEX、CH17 TaskPlan第6.20节、根TaskPlan、coverage和本TaskHistory。
 - **明确限制：** 当前为内存模拟，不是持久化WORM存储；没有签名、权限/职责分离、并发/跨进程控制、企业审计保留或消息队列交付保证。事件语义、部分冲销、SoR与期初快照审批仍待企业确认；CH17-T004继续IN_PROGRESS。
+
+## 第十三轮CI缺陷修复记录（2026-11-25）
+
+- 首轮CI（Run 45623563238）发现冲销重建方向重复反转，导致原余额未恢复；已修正为按REVERSAL记录中显式反向的source/destination直接入账。
+- 原“知识时点可见冲销但不可见原事件”测试与账本追加顺序（冲销必须引用已存在事件）矛盾，改为验证知识截止时点尚未接收冲销时，只投影原转移，冲销仍保留在账本但不影响该时点余额。
+- 保留业务时间/接收时间双截止语义，不放宽事件引用约束。

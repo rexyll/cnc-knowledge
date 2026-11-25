@@ -149,17 +149,21 @@ class InventoryEventLedgerTests(unittest.TestCase):
                                 source=available, destination=hold,
                                 event_type="REVERSAL", reference="E1"))
 
-    def test_rebuild_detects_reversal_without_visible_target(self):
+    def test_reversal_not_yet_known_is_excluded_at_knowledge_cutoff(self):
         ledger = AppendOnlyEventLedger()
         hold, available = keys()
-        ledger.append(event("E1", "I1", business="2026-01-01T10:00:00+08:00"))
+        ledger.append(event("E1", "I1", business="2026-01-01T10:00:00+08:00",
+                            ingested="2026-01-01T10:01:00+08:00"))
         ledger.append(event("R1", "IR1", business="2026-01-01T11:00:00+08:00",
+                            ingested="2026-01-01T11:01:00+08:00",
                             source=available, destination=hold,
                             event_type="REVERSAL", reference="E1"))
-        with self.assertRaises(EventLedgerError):
-            ledger.rebuild({hold: Decimal("5"), available: Decimal("0")},
-                           "2026-01-01T12:00:00+08:00",
-                           "2026-01-01T10:30:00+08:00")
+        rebuilt = ledger.rebuild({hold: Decimal("5"), available: Decimal("0")},
+                                 "2026-01-01T12:00:00+08:00",
+                                 "2026-01-01T10:30:00+08:00")
+        self.assertEqual(rebuilt["applied_event_ids"], ["E1"])
+        self.assertEqual(rebuilt["balances"][hold], Decimal("3"))
+        self.assertEqual(rebuilt["balances"][available], Decimal("2"))
 
     def test_rebuild_failure_does_not_mutate_event_ledger(self):
         ledger = AppendOnlyEventLedger()
