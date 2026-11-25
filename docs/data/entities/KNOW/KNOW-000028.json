@@ -1,0 +1,65 @@
+{
+  "entity_id": "KNOW-000028",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件系统集成、字段映射与数据治理",
+  "english_name": "CNC machine tool spare parts system integration, field mapping and data governance",
+  "aliases": [
+    "备件ERP/CMMS/EAM字段映射",
+    "备件数据质量与库存对账",
+    "备件库存策略数据治理"
+  ],
+  "description": "定义备件管理与ERP、CMMS、EAM、PLM/PDM及知识库之间的系统边界、字段映射、规范对象关联、库存对账、数据质量规则、库存策略决策输入和审批治理。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21",
+    "CH14",
+    "CH15"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统集成与数据治理"
+  ],
+  "tags": [
+    "CH17",
+    "备件管理",
+    "ERP",
+    "CMMS",
+    "EAM",
+    "字段映射",
+    "系统集成",
+    "数据质量",
+    "库存对账",
+    "库存策略",
+    "数据治理"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T15:41:02+08:00",
+  "updated_at": "2026-11-25T15:41:02+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-system-integration-and-data-governance.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "系统边界与SoR、主数据/事务对象映射、字段级映射原则、库存事件桥接与对账、数据质量规则、库存策略决策输入、RACI与状态控制、集成实施验收",
+    "article_status": "vendor_neutral_data_governance_framework",
+    "enterprise_system_integration_implemented": false,
+    "real_enterprise_records_imported": false,
+    "field_level_system_of_record_assigned": false,
+    "inventory_parameters_approved": false,
+    "substitution_approvals_created": false,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-parts-enterprise-system-field-mapping-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-data-quality-and-reconciliation-rules.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-stock-policy-decision-template.csv"
+    ]
+  },
+  "notes": "厂商中立项目参考框架与原创模板。没有连接用户企业ERP/CMMS/EAM/PLM，也未确定SoR、接口、库存参数或组织审批角色；建议规则和状态词汇不宣称为行业标准。"
+}

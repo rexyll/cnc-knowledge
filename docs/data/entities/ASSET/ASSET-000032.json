@@ -1,0 +1,51 @@
+{
+  "entity_id": "ASSET-000032",
+  "entity_type": "asset_file",
+  "canonical_name": "备件数据质量与对账规则目录",
+  "english_name": null,
+  "aliases": [],
+  "description": "包含16条建议的数据身份、引用完整性、配置适用性、库存事务、批次追溯、替代审批、生命周期、工单消耗、审计和保密控制规则。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统集成与数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件系统集成",
+    "项目原创资源",
+    "ASSET-000032"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T15:41:02+08:00",
+  "updated_at": "2026-11-25T15:41:02+08:00",
+  "verified_at": "2026-11-25T15:41:02+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-data-quality-and-reconciliation-rules.csv",
+    "file_name": "spare-parts-data-quality-and-reconciliation-rules.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000028",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original project data governance template/catalog",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "项目建议规则目录，所有规则初始PROPOSED；阻断方式、阈值/容差、频率、所有者和SLA需由企业批准后启用。"
+}
