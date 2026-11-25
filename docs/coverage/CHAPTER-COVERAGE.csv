@@ -15,7 +15,7 @@ CH13,13-cad-cam-programming-and-process,0,not_started,0,0,0,0,0,,按章节TaskPl
 CH14,14-performance-metrology-and-acceptance,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH15,15-standards-safety-and-compliance,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH16,16-manufacturing-assembly-installation,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
-CH17,17-operation-maintenance-and-repair,2,foundational,2,7,0,9,7,2026-11-25,CH17-T002：选定目标机型并映射OEM维护手册、周期和耗材；再推进T003关键部件更换指导,IN_PROGRESS,已建立操作准备/维修闭环/计划维护三类通用框架；2篇KNOW条目处于in_review，7项原创或有来源限定的资源已登记，SRC去重9条。无目标机型激活的维护周期、油液规格、阈值、真实保养记录或现场验证。
+CH17,17-operation-maintenance-and-repair,2,foundational,3,10,0,9,10,2026-11-25,CH17-T001/T002仍待目标机型与现行OEM资料映射；CH17-T003继续补充型号级更换指导和现场验证；随后推进T004备件闭环,IN_PROGRESS,已建立操作准备/维修闭环/计划维护/部件更换四类通用框架；3篇KNOW条目处于in_review，10项原创或有限摘要资源已登记，SRC去重9条。三份新模板只提供追溯字段，不构成型号级SOP；无目标机型激活的拆装步骤、替代批准、技术值或现场验证。
 CH18,18-fault-diagnosis-and-reliability,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH19,19-manufacturers-products-and-supply-chain,2,foundational,4,43,72,44,0,2026-11-22,CH03-T001：建立整机功能架构,IN_PROGRESS,23个组织+16个产品+4个KNOW；含26条制造事实关系和46条文章索引边；去重SRC 44条。新增供应链比较/替代验证/风险方法框架；未对具体产品或地区完成兼容、库存、交期和售后实证。
 CH20,20-bom-drawings-and-technical-documents,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。

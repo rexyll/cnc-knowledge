@@ -9,6 +9,9 @@
 | maintenance-card-template.csv | CSV模板 / ASSET-000012 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T002 / maintenance-management-system.md / KNOW-000022 | 单项维护执行、测量、耗材和复核记录 |
 | maintenance-consumables-register-template.csv | CSV模板 / ASSET-000013 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T002 / maintenance-management-system.md / KNOW-000022 | 润滑剂、冷却液、滤芯等规格、批次、有效期、库存和替代审批追溯 |
 | haas-lathe-rd0035-selected-maintenance-examples.csv | 维护计划示例CSV / ASSET-000014 | Haas Automation官方手册摘要 | 2026-11-25 | 事实性有限摘要+官方链接；非手册副本 | CH17-T002 / maintenance-management-system.md / KNOW-000022 | RD0035 Revision A-04/2026精选任务/周期，仅限匹配的Haas车床配置，不得泛化 |
+| component-replacement-work-package-template.csv | CSV模板 / ASSET-000015 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / component-replacement-work-package.md / KNOW-000023 | 单次零部件更换的设备身份、OEM依据、作业授权、前置停工点、拆前基线、复装与放行字段 |
+| component-tool-and-measurement-register-template.csv | CSV模板 / ASSET-000016 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / component-replacement-work-package.md / KNOW-000023 | 工具、吊装器具、测量和诊断设备身份、能力、检验/校准状态追溯 |
+| component-interface-and-replacement-compatibility-template.csv | CSV模板 / ASSET-000017 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / component-replacement-work-package.md / KNOW-000023 | 机械、电气、流体、控制、软件、热/润滑和安全接口的替代兼容性审查 |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）

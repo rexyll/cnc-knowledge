@@ -46,7 +46,7 @@
 - **交付物：** 更换指导文档、工具清单、检查点和资源附件。
 - **验收标准：** 仅整理具备来源且适合授权人员执行的指导；危险作业明确资质、隔离和安全边界。
 - **依赖：** CH04、CH16
-- **状态：** `TODO`
+- **状态：** `IN_PROGRESS`
 
 ### CH17-T004 — 建立维修和备件闭环
 
@@ -104,3 +104,12 @@
 - **实施提交：** `ecc70ca326fccacab6ed3036fdf5802309c7bb95`；CSV字段对齐修正提交：`97340c9dfa1f6c77a5120c85c40e772b29b16eca`。
 - **CI验收：** 修正后的提交 `97340c9dfa1f6c77a5120c85c40e772b29b16eca` 对应 GitHub Actions [Run 45548286906](https://github.com/rexyll/cnc-knowledge/actions/runs/45548286906) completed/success。Knowledge structure and data quality：5/5单元测试通过、`knowledge_lint --strict` 为 PASS（0 errors），检查22章、138个Markdown、450条内部链接、152条实体、240条关系、387条来源、727处来源引用和22条覆盖记录；CH12 numerical resource tests：143/143通过。该CI不代表CH17现场保养或实机验证。
 - **状态：** CH17-T002保持IN_PROGRESS；待目标机型和受控OEM维护手册确定后继续型号级映射与现场流程审查。
+
+
+## 6.4 CH17-T003 部件更换工作包框架第一轮（2026-11-25）
+
+- 新增正文 docs/17-operation-maintenance-and-repair/component-replacement-work-package.md（KNOW-000023），建立单次部件更换工作包、作业前置停工点、设备/部件身份、OEM文件映射、风险与授权、拆前基线、工具量具、替代兼容性、复装记录、校准、维修后验证和放行闭环。
+- 新增三份原创空白CSV资源：component-replacement-work-package-template.csv（ASSET-000015）、component-tool-and-measurement-register-template.csv（ASSET-000016）、component-interface-and-replacement-compatibility-template.csv（ASSET-000017），均归档于本章 resouces 目录。
+- 内容只定义记录和审核框架；拆卸/安装顺序、吊装方法、紧固/预紧数值、介质规格、参数和验收阈值均要求引用目标机型现行OEM文件或批准工程资料。缺少关键证据时保持BLOCKED。
+- **未完成项：** 用户尚未指定机床型号、序列范围、选件、控制系统版本和受控OEM服务手册；未形成任何型号级拆装步骤、部件替代批准或真实维修/校准/实机验收记录。
+- **状态：** CH17-T003保持IN_PROGRESS；本轮只完成通用框架和空白模板，不表示关键部件更换研究或现场维修指导完成。
