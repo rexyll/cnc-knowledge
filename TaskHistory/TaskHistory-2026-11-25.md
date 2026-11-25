@@ -236,3 +236,16 @@
 - **正文/索引/计划同步：** `cae586530cdb07b7b522159cde45b2937577e022`更新KNOW-000032、夹具基线正文第9节、CH17和Docs导航、资源README、根TaskPlan、CH17 TaskPlan 6.16和coverage；`9262fa7ad80ac074b634051da7f64a19828f05cf`修正本地运行命令示例。同步提交的GitHub Actions [Run 45592782629](https://github.com/rexyll/cnc-knowledge/actions/runs/45592782629) completed/success，两个Job均通过。
 - **结构化覆盖统计：** CH17维持12篇KNOW、39个登记实体、37项资源记录、SRC去重9条；新增代码工具不增加技术知识文章或测试资产实体。
 - **状态与遗留：** CH17-T004仍为IN_PROGRESS。数据集为DRAFT，22项企业环境就绪检查仍NOT_ASSESSED，30项企业业务测试仍NOT_RUN；离线模拟没有评估业务规则，不代表SIT/UAT、生产影子、HIL或实机验证。后续若要验证真实库存守恒和业务断言，必须先取得企业批准的非生产环境、SoR/库存口径、期初快照和独立业务预期，再开发明确授权的系统适配器。
+## CH17-T004 独立库存状态机内核与双边转移契约第十轮
+
+- **实际完成时间：** 2026-11-25T20:35:00+08:00（Asia/Shanghai）
+- **所在分支：** `main`（未创建其他分支）
+- **新增内核：** `scripts/spare_parts_inventory_state_model.py`。实现独立、纯内存的双边账户转移：来源/目标账户必须明确且不同，数量必须为有限正数，单位必填，来源余额不得为负，转移前后数量总和必须相等；失败操作不修改输入状态。无数据库/API/队列/ERP/WMS/CMMS连接和写操作。
+- **新增契约资源：** `spare-parts-inventory-state-transition-contract-v1.csv`（ASSET-000045，22类事件）。为每类事件预留来源账户、目标账户、数量字段、单位、守恒维度、批准人和批准依据。当前22项全部`NOT_APPROVED`，不从单桶expected delta推断双边账户。
+- **模型输入缺口：** 现有夹具仅提供单桶`expected_inventory_bucket + expected_quantity_delta`，不足以确定完整的转入/转出分录；库存快照只在说明文本中给出汇总值，缺少按物料/批次/库位维度的期初余额。预留/分配语义、外部供应商/报废账户、退料和冲销规则也需要企业数据所有者批准。因此当前模型执行状态为`BLOCKED`是预期门禁，不是CI错误。
+- **新增测试：** `tests/test_spare_parts_inventory_state_model.py`新增9项，覆盖内部转移守恒、输入不可变、来源余额不足、负数/零/非有限数量拒绝、账户校验、单位校验、失败原子性和22项审批门禁。
+- **CI实施提交：** `a0a364bdab25e834505bf7f234112a133dbe2159`新增内核、测试与22类契约；`59b033782afb0dc38b748097cf8f41bcbb9c48d5`集成CI、资源登记、ASSET-000045、正文第10节、TaskPlan第6.17节和coverage；首轮CI因CSV列错位失败并已记录；`e620c38802bf6b3ace4912aeb74637e97d6fa3ad`修正契约CSV字段位置。
+- **CI验收：** GitHub Actions [Run 45614737126](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126) completed/success；Knowledge Quality与CH12 numerical resource tests两个Job均成功；全量单元测试42/42通过；22类契约读取成功，报告`execution_status=BLOCKED`、`business_rule_assertions=NOT_EVALUATED`；此前CSV列错位失败保留在CI历史，不隐藏。
+- **CI产物：** [库存状态模型就绪/审批门禁报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126/artifacts/15022026919)；[静态夹具验证报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126/artifacts/15022166087)；[30个场景包](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126/artifacts/15022265662)；[离线事件期望投影报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126/artifacts/15021792830)。
+- **覆盖统计：** CH17更新为12篇KNOW、40个登记实体、38项资源记录、SRC去重9条。新增ASSET-000045为待批准契约资源；未新增技术知识文章。
+- **遗留与状态：** CH17-T004继续IN_PROGRESS。当前内核只证明通用双边转移的数学性质，不表示库存业务状态机已获批准或执行；22项转移契约均NOT_APPROVED，企业环境检查22项NOT_ASSESSED，30项业务测试NOT_RUN。下一阶段须由企业库存数据所有者批准账户字典、库存维度、期初快照、单位换算、预留/分配、退料、冲销和外部账户映射后，才能生成可执行期望模型。
