@@ -1,6 +1,8 @@
 """Synthetic multiprocess writer race and recovery self-check."""
-import argparse,json,tempfile,multiprocessing
+import argparse,json,tempfile,multiprocessing,sys
 from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 from decimal import Decimal
 from scripts.spare_parts_inventory_ledger_persistence import publish_generation,recover_current,PersistenceConflict
 from scripts.spare_parts_inventory_event_ledger import AppendOnlyEventLedger,LedgerEvent
