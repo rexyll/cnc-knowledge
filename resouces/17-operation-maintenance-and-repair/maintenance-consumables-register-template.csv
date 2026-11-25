@@ -1,0 +1,9 @@
+consumable_record_id,machine_instance_id,machine_model_id,subsystem,component_scope,consumable_category,applicability,manufacturer,manufacturer_part_number,manufacturer_specification,product_name,grade_or_class,viscosity_or_concentration,base_material_or_fluid_type,material_compatibility_reference,mixing_or_substitution_restriction,quantity_or_fill_amount,unit,approved_supplier,safety_data_sheet_reference,storage_condition,shelf_life,lot_or_batch_number,received_at,opened_at,installed_at,expiry_date,change_due_rule,removed_or_disposed_at,disposal_procedure_reference,approved_substitute,substitute_approval_reference,oem_document_id,oem_revision,oem_section,source_id,stock_location,reorder_point,stock_quantity,status,notes
+LUB-001,,,进给轴/润滑,导轨/滚珠丝杠,导轨丝杠润滑剂,OPTION_CHECK,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OEM_SPEC_REQUIRED,
+LUB-002,,,主轴单元,主轴润滑系统,主轴润滑油/脂,OPTION_CHECK,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OEM_SPEC_REQUIRED,
+LUB-003,,,变速箱/传动,齿轮箱/传动箱,齿轮油/传动油,OPTION_CHECK,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OEM_SPEC_REQUIRED,
+LUB-004,,,液压系统,液压动力单元,液压油,OPTION_CHECK,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OEM_SPEC_REQUIRED,
+COOL-001,,,冷却系统,切削液系统,冷却液浓缩液/添加剂,OPTION_CHECK,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OEM_SPEC_REQUIRED,
+GRE-001,,,工件夹持,卡盘/夹头/尾座,专用润滑脂,OPTION_CHECK,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OEM_SPEC_REQUIRED,
+FLT-001,,,过滤系统,液压/润滑/冷却过滤器,滤芯/滤袋/滤网,OPTION_CHECK,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OEM_PART_NO_REQUIRED,
+PNE-001,,,气动系统,过滤调压润滑单元,气动润滑耗材（如配置）,OPTION_CHECK,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OEM_SPEC_REQUIRED

@@ -1,0 +1,67 @@
+{
+  "entity_id": "KNOW-000022",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床计划维护体系与维护任务管理",
+  "english_name": "CNC machine tool planned maintenance system and task management",
+  "aliases": [
+    "计划保养体系",
+    "预防性维护矩阵"
+  ],
+  "description": "建立数控机床计划维护策略分类、维护触发依据、周期配置、任务编排、状态监测、保养记录及耗材追溯框架，并引用制造商专属维护计划实例。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH06",
+    "CH08",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "计划维护与保养",
+    "维护任务管理"
+  ],
+  "tags": [
+    "CH17",
+    "计划维护",
+    "预防性维护",
+    "状态维护",
+    "保养记录",
+    "耗材追溯",
+    "维护周期"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T12:45:00+08:00",
+  "updated_at": "2026-11-25T12:45:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000388",
+    "SRC-000389"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/maintenance-management-system.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "计划维护策略分类、维护周期/计数器/状态/事件触发、适用范围与配置、延期管理、子系统维护任务分类、Haas RD0035专属实例、状态监测记录、保养卡、耗材追溯",
+    "article_status": "model_agnostic_framework_with_manufacturer_specific_example",
+    "machine_specific_schedule_defined": false,
+    "generic_default_intervals_defined": false,
+    "machine_parameters_defined": false,
+    "field_execution_validation": false,
+    "hardware_validation": false,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/maintenance-task-matrix-template.csv",
+      "resouces/17-operation-maintenance-and-repair/maintenance-card-template.csv",
+      "resouces/17-operation-maintenance-and-repair/maintenance-consumables-register-template.csv",
+      "resouces/17-operation-maintenance-and-repair/haas-lathe-rd0035-selected-maintenance-examples.csv"
+    ]
+  },
+  "notes": "通用维护框架不设置跨品牌周期、油液规格或限值。Haas RD0035示例仅适用于匹配的Haas车床型号/选件/修订；用户目标机型尚未指定，具体维护任务未激活。"
+}

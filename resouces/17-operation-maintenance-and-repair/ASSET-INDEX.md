@@ -5,6 +5,10 @@
 | operation-readiness-checklist.csv | CSV模板 / ASSET-000008 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T001 / overview.md / KNOW-000021 | 25项设备识别、开机准备、运行监视和维护维修边界检查项；结果初始为NOT_ASSESSED，不含型号级阈值或周期 |
 | repair-work-order-template.csv | CSV模板 / ASSET-000009 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T001 / repair-workflow-and-records.md / KNOW-000021 | 维修工单身份、风险、授权、诊断、维修、备件、参数变更、复验和放行记录字段 |
 | post-repair-verification-matrix.csv | CSV模板 / ASSET-000010 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T001 / repair-workflow-and-records.md / KNOW-000021 | 维修影响驱动的系统复验覆盖矩阵；无通用阈值，判据必须绑定OEM/合同/标准 |
+| maintenance-task-matrix-template.csv | CSV模板 / ASSET-000011 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T002 / maintenance-management-system.md / KNOW-000022 | 维护任务、触发机制、OEM条款、责任角色和结果字段；周期及阈值留空 |
+| maintenance-card-template.csv | CSV模板 / ASSET-000012 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T002 / maintenance-management-system.md / KNOW-000022 | 单项维护执行、测量、耗材和复核记录 |
+| maintenance-consumables-register-template.csv | CSV模板 / ASSET-000013 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T002 / maintenance-management-system.md / KNOW-000022 | 润滑剂、冷却液、滤芯等规格、批次、有效期、库存和替代审批追溯 |
+| haas-lathe-rd0035-selected-maintenance-examples.csv | 维护计划示例CSV / ASSET-000014 | Haas Automation官方手册摘要 | 2026-11-25 | 事实性有限摘要+官方链接；非手册副本 | CH17-T002 / maintenance-management-system.md / KNOW-000022 | RD0035 Revision A-04/2026精选任务/周期，仅限匹配的Haas车床配置，不得泛化 |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）

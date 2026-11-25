@@ -557,3 +557,11 @@
 - CH17-T001仍为IN_PROGRESS；T002～T004维持TODO。下一优先项是确定具体机床系列并取得现行OEM服务/维护手册，再形成型号级维护与维修资料。
 
 - **CI验收补记（2026-11-25）：** CH17维修框架提交 `5cd0082d1e9322ef6b3990a8cab906c7ab2dd67d` 的 GitHub Actions [Run 45546453542](https://github.com/rexyll/cnc-knowledge/actions/runs/45546453542) 两个Job均success；知识库5/5单元测试、strict lint（0 errors）及仓库CH12数值资源143/143测试通过。该结果是仓库结构/回归测试，不构成机床维修现场、HIL或实机验收。
+
+
+## CH17-T002 计划维护体系第一轮（2026-11-25）
+
+- 新增计划维护正文 `docs/17-operation-maintenance-and-repair/maintenance-management-system.md`，定义维护策略、触发与周期证据、任务管理、延期控制、状态监测、耗材追溯和保养记录。
+- 在 `resouces/17-operation-maintenance-and-repair/` 新增维护任务矩阵、维护卡、耗材登记三份原创模板，以及Haas车床RD0035官方计划的有限精选示例；同步建立ASSET-000011～ASSET-000014和KNOW-000022。
+- SRC-000388更新至官方RD0035 A-04/2026维护页面，SRC-000389继续作为状态监测一般指南入口。通用模板不预置跨品牌周期、阈值或油液规格。
+- CH17-T002设为IN_PROGRESS；因用户目标机型尚未指定，型号级任务激活、维护周期/耗材映射和现场验证仍未完成。

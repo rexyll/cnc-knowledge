@@ -1,0 +1,54 @@
+{
+  "entity_id": "ASSET-000012",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床维护保养卡模板",
+  "english_name": null,
+  "aliases": [],
+  "description": "单项维护任务执行、实测、耗材批次、异常、复核和下次到期记录模板。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "计划维护与保养",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "项目原创维护资源",
+    "计划维护"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T12:45:00+08:00",
+  "updated_at": "2026-11-25T12:45:00+08:00",
+  "verified_at": "2026-11-25T12:45:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000388",
+    "SRC-000389"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/maintenance-card-template.csv",
+    "file_name": "maintenance-card-template.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original_or_factual_extract_with_source",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000022",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original template or limited manufacturer fact summary",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "资源用途和权利边界见CH17 ASSET-INDEX.md。模板不含真实设备数据；制造商示例仅限指定产品族并保留来源和版本。"
+}
