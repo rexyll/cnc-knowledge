@@ -221,3 +221,18 @@
 - **CI产物：** [30个场景包Artifact](https://github.com/rexyll/cnc-knowledge/actions/runs/45589763906/artifacts/15009054417)；[静态校验报告Artifact](https://github.com/rexyll/cnc-knowledge/actions/runs/45589763906/artifacts/15009508463)。Artifact用于审查和本地/测试环境适配准备，不是企业数据导入结果。
 - **结构化登记：** 新增ASSET-000044，CH17覆盖度调整为12篇KNOW、39个登记实体、37项资源记录、SRC去重9条。30行重置配置字段/列数与ASSET-INDEX一致。
 - **状态与遗留：** CH17-T004保持IN_PROGRESS。合成数据集仍DRAFT，22项企业环境就绪检查仍NOT_ASSESSED，30项业务测试仍NOT_RUN；尚无企业批准的非生产环境，目标系统适配器未开发，未执行SIT/UAT、生产影子、HIL或实机验证。下一步需先取得企业数据/系统/安全责任角色批准，再按目标系统设计适配器和执行证据闭环。
+
+## CH17-T004 场景包完整性校验与离线事件期望投影第九轮
+
+- **实际完成时间：** 2026-11-25T18:07:00+08:00（Asia/Shanghai）
+- **所在分支：** `main`（未创建其他分支）
+- **新增执行器：** `scripts/spare_parts_scenario_runner.py`。从固定数据集、30项用例映射和场景重置配置确定性重建每个场景包，逐字节核对六份输出文件；检查源文件及生成文件SHA-256、夹具/对象/事件身份、依赖闭包、纯合成标记、事件分区、目录结构和加载/接收顺序。缺失/额外文件、内容漂移、符号链接及未知事件类型失败关闭。
+- **离线事件契约：** 对22类合成事件定义显式处理类型：期望库存桶增量、重复消息幂等零增量、恢复/冲销零增量，以及非库存事件不改库存桶。重复消息需引用原始收货事件；迟到冲销保留原始事件引用；乱序事件需有明确标记且实际呈现业务时间回退。
+- **库存投影边界：** 使用Python `Decimal` 投影夹具声明的期望数量增量，按 `reset_group` 隔离输出，不跨组求和、不输出全局库存余额。当前数据集没有获批期初库存快照和企业库存桶语义，执行器不计算期末库存/可用量，也不把预期夹具值当作实际交易。
+- **结果状态语义：** `simulation_status=PASS`仅表示包完整性和期望事件投影符合静态约束；报告始终写入 `business_rule_assertions=NOT_EVALUATED`、`business_test_status=NOT_RUN`。执行器无数据库/API/队列适配器，无业务写操作，不访问CNC硬件。
+- **新增测试：** `tests/test_spare_parts_scenario_runner.py` 11项专项测试，覆盖30包全量运行、单场景重复事件零增量、reset group隔离、迟到冲销与乱序标记、包篡改/缺失文件拒绝、未知事件拒绝、重复消息非零增量拒绝、非库存事件库存桶修改拒绝、源夹具只读和CLI JSON报告。CI全量单元测试共33项通过。
+- **实施/CI集成提交：** `f283d903eb818831fd7a573845dce1894b0f75e5` 新增执行器与首版测试；`bb6bee5df5cc1c5fb2c199c50705f7a80741bb54`强化事件契约回归、符号链接检查并集成CI执行与报告Artifact。GitHub Actions [Run 45592581657](https://github.com/rexyll/cnc-knowledge/actions/runs/45592581657) completed/success：33/33 unittest通过；静态夹具校验通过；30个包全部生成；离线模拟 `RESULT: PASS; simulated=30; failed=0`；Knowledge Quality与CH12数值资源两个Job均成功。
+- **CI产物：** [静态夹具校验报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45592581657/artifacts/15011722205)；[30个独立场景包](https://github.com/rexyll/cnc-knowledge/actions/runs/45592581657/artifacts/15011677420)；[离线期望事件投影报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45592581657/artifacts/15011981592)。
+- **正文/索引/计划同步：** `cae586530cdb07b7b522159cde45b2937577e022`更新KNOW-000032、夹具基线正文第9节、CH17和Docs导航、资源README、根TaskPlan、CH17 TaskPlan 6.16和coverage；`9262fa7ad80ac074b634051da7f64a19828f05cf`修正本地运行命令示例。同步提交的GitHub Actions [Run 45592782629](https://github.com/rexyll/cnc-knowledge/actions/runs/45592782629) completed/success，两个Job均通过。
+- **结构化覆盖统计：** CH17维持12篇KNOW、39个登记实体、37项资源记录、SRC去重9条；新增代码工具不增加技术知识文章或测试资产实体。
+- **状态与遗留：** CH17-T004仍为IN_PROGRESS。数据集为DRAFT，22项企业环境就绪检查仍NOT_ASSESSED，30项企业业务测试仍NOT_RUN；离线模拟没有评估业务规则，不代表SIT/UAT、生产影子、HIL或实机验证。后续若要验证真实库存守恒和业务断言，必须先取得企业批准的非生产环境、SoR/库存口径、期初快照和独立业务预期，再开发明确授权的系统适配器。
