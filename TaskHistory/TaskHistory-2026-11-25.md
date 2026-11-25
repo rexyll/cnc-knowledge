@@ -66,3 +66,18 @@
 - **实施提交：** 698efeecde445e2f63fba7c561c28d7f686369d8；计划/索引/覆盖度同步提交：eb296e24f92a800ac89474da3e7eda9ac719ccb4。
 - **CI验收：** 实施提交对应GitHub Actions [Run 45556482627](https://github.com/rexyll/cnc-knowledge/actions/runs/45556482627)，计划/索引同步提交对应 [Run 45556547468](https://github.com/rexyll/cnc-knowledge/actions/runs/45556547468)，两个Run的全部Job均completed/success；知识结构与数据质量检查、strict lint及CH12数值资源回归Job均成功。CH12回归只验证仓库既有数值资源，不构成CH17现场维修、HIL或实机验收。
 - **状态与遗留：** CH17-T003保持IN_PROGRESS；下一步需取得目标机床系列、序列范围、选件和受控OEM服务文件，将适用矩阵行逐项映射到OEM条款、批准的替代关系、验证方法和现场证据。
+
+
+## CH17-T003 主轴、伺服与滚珠丝杠专项更换工作包第一轮
+
+- **实际完成时间：** 2026-11-25T14:03:49+08:00（Asia/Shanghai；实施及资源同步完成）
+- **所在分支：** main（未创建其他分支）
+- **新增正文：** docs/17-operation-maintenance-and-repair/spindle-servo-ballscrew-specialized-replacement-work-packages.md（KNOW-000025，verification_status=in_review）。
+- **新增资源：** spindle-replacement-work-package-template.csv（ASSET-000019，18条检查项/35列）；servo-motor-encoder-replacement-work-package-template.csv（ASSET-000020，17条检查项/35列）；ballscrew-support-bearing-replacement-work-package-template.csv（ASSET-000021，17条检查项/35列）。全部位于resouces/17-operation-maintenance-and-repair。
+- **专项内容：** 主轴模板审查总成身份、主轴/驱动配套、反馈/定向、刀具夹持、润滑冷却、转子/轴承特殊要求、吊装支撑、安装基准、参数恢复及性能复验；伺服模板审查轴/电机/驱动/编码器配套、制动器、联轴器、电缆接地、诊断基线、参数恢复、反馈/方向和定位复验；丝杠模板审查轴系BOM、丝杠/螺母配套、支撑轴承、几何基线、预紧来源、润滑、重力/搬运风险、轴线/全行程和定位复验。
+- **结构化记录与索引：** 新增KNOW-000025、ASSET-000019～ASSET-000021；更新CH17章节计划、根TaskPlan、章节README、docs入口、资源README、ASSET-INDEX和CHAPTER-COVERAGE。
+- **边界：** 所有模板均为待评估/未测试状态；没有写入通用拆装顺序、吊点/支撑方法、直流母线等待时间、编码器换相值、丝杠/轴承预紧、紧固扭矩、润滑规格或验收限值。所有具体步骤/值需绑定目标机床序列范围和现行OEM文件；未获文件时保持BLOCKED。
+- **CSV验收：** 从GitHub远程复读三份CSV；每行均与35列表头对齐，数据行数分别为18、17、17；三份文件均通过引号/列宽检查。三个ASSET实体均可解析并关联KNOW-000025。
+- **实施提交：** a5c3829d4c8fc4cd63bf1b1dbd0a3a57a52a0fec；章节计划/索引/覆盖度同步提交：8c08cc78f3ccf0497a319b2f01669098e68910ba。
+- **CI验收：** 实施提交对应GitHub Actions [Run 45557662316](https://github.com/rexyll/cnc-knowledge/actions/runs/45557662316)，同步提交对应 [Run 45557733024](https://github.com/rexyll/cnc-knowledge/actions/runs/45557733024)，两个Run的全部Job均completed/success；知识结构与数据质量、strict lint及CH12数值资源回归均成功。CH12回归仅验证仓库既有数值资源，不构成CH17现场维修、台架/HIL或实机验收。
+- **状态与遗留：** CH17-T003保持IN_PROGRESS；尚无目标机床型号、序列范围、选件、控制系统版本和受控OEM服务文件，未形成型号级拆装SOP、已批准替代关系或现场更换/校准记录。

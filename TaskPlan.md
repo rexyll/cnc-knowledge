@@ -596,3 +596,5 @@
 - 新增三份原创CSV：spindle-replacement-work-package-template.csv（ASSET-000019，18检查项/35列）、servo-motor-encoder-replacement-work-package-template.csv（ASSET-000020，17检查项/35列）、ballscrew-support-bearing-replacement-work-package-template.csv（ASSET-000021，17检查项/35列）。
 - 各模板均记录设备/部件身份、拆前基线、兼容性证据、OEM程序、关键值来源、验收判据、风险/停工点、实测结果和偏差；具体拆装和数值全部留给匹配的OEM受控文件。
 - **状态：** CH17-T003保持IN_PROGRESS；尚无目标机床型号和现行OEM服务文件，未形成现场维修步骤或验收记录。
+
+- **专项模板提交与CI验收补记：** 实施提交 `a5c3829d4c8fc4cd63bf1b1dbd0a3a57a52a0fec` 对应 [Run 45557662316](https://github.com/rexyll/cnc-knowledge/actions/runs/45557662316)；计划/索引同步提交 `8c08cc78f3ccf0497a319b2f01669098e68910ba` 对应 [Run 45557733024](https://github.com/rexyll/cnc-knowledge/actions/runs/45557733024)。两个Run全部Job均success；CI不构成现场或实机维修验证。
