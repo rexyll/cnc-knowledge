@@ -71,3 +71,6 @@
 
 
 库存账本持久化新增 [读取一致性、并发读取与旧代际回收](spare-parts-synthetic-fixture-baseline-v1.md#17-库存账本读取一致性并发读取与代际生命周期)：recover_current() 通过POSIX共享锁保护代际加载，GC默认dry-run、至少保留CURRENT与最近N代，并要求显式 --gc-apply 删除。该功能仅用于合成数据的本地临时存储验证。
+
+
+库存账本新增 [可验证备份与隔离恢复演练](spare-parts-synthetic-fixture-baseline-v1.md#18-库存账本可验证备份与隔离恢复演练)：提供备份导出、清单/文件SHA-256校验和空白隔离目录恢复接口；不覆盖既有目标存储，备份目录必须与源存储分离。该实现仅通过本地POSIX合成测试。

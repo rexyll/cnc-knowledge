@@ -259,3 +259,40 @@ python scripts/spare_parts_inventory_ledger_persistence.py --gc-root /path/to/lo
 新增6项unittest方法及10个矩阵场景，覆盖dry-run无代际删除、最近N代与CURRENT保留、最短保留时间、活动读者阻止GC、writer/GC提交窗口协调、CURRENT再检查、未验证目录保留、异常中断trash恢复及读者/写者/回收者多进程压力。全库109个unittest方法通过；GitHub Actions Run 45641575977的两个Job均completed/success。持久化self-check报告读取者排斥、dry-run、代际保留与恢复均PASS。
 
 **严格边界：** 所有测试只使用POSIX临时目录和虚构账本数据，不连接企业数据库/API、不写生产数据、不删除项目资源目录。flock为协作式POSIX advisory lock，不是分布式锁；Windows原生锁、NFS/SMB等网络文件系统锁/rename/fsync语义及跨主机多节点并发未验证。GC不等于WORM或法律审计留存策略；企业保留期限、备份与恢复目标、删除审批和职责分离必须另行确认。业务断言继续NOT_EVALUATED，企业审批门禁继续BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## 18. 库存账本可验证备份与隔离恢复演练
+
+本轮扩展本地持久化模块，增加三个独立接口：create_backup() 创建自包含备份、verify_backup() 验证备份、restore_backup() 将备份恢复到新的空白隔离存储。配套测试矩阵为 spare-parts-inventory-ledger-backup-restore-test-cases-v1.csv（ASSET-000056，10个纯合成场景）。
+
+### 18.1 备份包结构与一致性点
+
+备份只包含一个已提交代际的 COMMIT.json、ledger.json 和 snapshot.json，以及 BACKUP.json 清单。清单记录备份ID、源代际、UTC创建时间、文件长度、每个文件的SHA-256、账本记录数、链头和清单自身的SHA-256。
+
+创建备份时，读取者取得源存储的 .gc.lock 共享锁后读取 CURRENT、校验选定代际，并在锁保护下复制不可变代际文件。普通写者仍可继续发布新代际；GC须等待读者/备份复制完成后才可获得排他锁。备份写入独立目录中的暂存路径，全部文件fsync后再原子rename发布；目标备份已存在或暂存残留时拒绝覆盖。
+
+备份目标目录必须与源账本存储路径分离，避免将备份递归写回账本仓库，也避免源代际清理影响备份文件。
+
+### 18.2 备份验证
+
+verify_backup() 会检查备份目录不含额外条目、所有文件均为普通文件且非符号链接，校验清单摘要、文件大小与SHA-256、COMMIT身份/状态、账本事件哈希链、快照摘要、快照对应的账本前缀，以及账本事件重建结果。任一字段或文件发生变化均失败关闭。
+
+该验证能够发现普通损坏和非一致性修改，但备份清单和SHA-256没有外部信任根、数字签名或密钥保护，不能抵御有权限者同时改写数据与全部摘要；不能将其称为不可篡改备份。
+
+### 18.3 隔离恢复与覆盖保护
+
+restore_backup() 首先验证完整备份并将已验证字节载入内存，然后只允许恢复到一个新建或已经存在但为空的独立存储目录。恢复采用暂存代际、fsync、代际目录原子rename、最后原子发布CURRENT的顺序。恢复不会覆盖已有CURRENT、既有代际或任何非空目标目录。若在代际rename后、CURRENT发布前中断，恢复目录留下未被引用的孤立代际，不会将半完成数据暴露为当前版本，需人工检查后再处理。
+
+CLI用法：
+
+- 创建备份：python scripts/spare_parts_inventory_ledger_persistence.py --backup-root /path/to/ledger-store --backup-parent /path/to/separate-backups --backup-id daily-001
+- 验证备份：python scripts/spare_parts_inventory_ledger_persistence.py --verify-backup /path/to/separate-backups/backup-daily-001
+- 隔离恢复：python scripts/spare_parts_inventory_ledger_persistence.py --restore-backup /path/to/separate-backups/backup-daily-001 --restore-target /path/to/isolated-restore
+
+恢复必须使用空白隔离目录；不要直接指向现有业务存储。生产采用前仍须由企业确定备份介质、加密、异地副本、保留策略、恢复点/恢复时间目标、职责分离和恢复审批。
+
+### 18.4 演练结果与边界
+
+新增6项unittest方法和10个纯合成场景。覆盖备份manifest/文件完整性、篡改拒绝、备份创建中断、备份源代际被GC后仍能独立恢复、非空目录拒绝覆盖、恢复中断不发布CURRENT以及源路径与备份路径隔离。全库116个unittest在CI中通过；备份自检确认清单与文件校验PASS，隔离恢复PASS，源代际被清理后备份仍可恢复PASS。
+
+**严格边界：** 所有操作只使用合成账本、POSIX临时目录和本地文件系统；不连接企业数据库/API，不写生产数据，不创建真实备份任务。没有验证Windows文件锁、网络/对象存储、离线介质、异地容灾、加密密钥托管、签名/外部信任根、真实备份介质耐久性或企业RPO/RTO。企业30项备件业务用例仍NOT_RUN；business_rule_assertions=NOT_EVALUATED，execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL。

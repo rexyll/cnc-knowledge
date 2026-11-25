@@ -1,0 +1,58 @@
+{
+  "entity_id": "ASSET-000056",
+  "entity_type": "asset_file",
+  "canonical_name": "库存账本备份完整性与隔离恢复测试矩阵v1",
+  "english_name": "Inventory ledger backup integrity and isolated restore test matrix v1",
+  "aliases": [
+    "Inventory ledger backup and recovery test cases v1",
+    "Backup manifest verification and isolated restore"
+  ],
+  "description": "10个纯合成场景，覆盖备份包生成、清单/文件摘要与长度校验、账本链和快照语义、篡改拒绝、源代际回收后的独立恢复和中断恢复。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "库存账本",
+    "备份",
+    "恢复演练",
+    "SHA-256",
+    "隔离恢复",
+    "合成测试",
+    "ASSET-000056"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T23:03:00+08:00",
+  "updated_at": "2026-11-25T23:03:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-backup-restore-test-cases-v1.csv",
+    "file_name": "spare-parts-inventory-ledger-backup-restore-test-cases-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000032",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic backup-manifest validation and isolated restore test definitions; not offsite or enterprise disaster-recovery evidence",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "10个纯合成场景；备份清单与负载哈希/长度校验，验证账本事件链和快照前缀；恢复只写入空白隔离存储且不覆盖现有数据。未验证加密、签名、异地副本、WORM、对象存储或企业RPO/RTO。"
+}

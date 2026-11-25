@@ -66,3 +66,5 @@
 | spare-parts-inventory-ledger-concurrency-test-cases-v1.csv | CSV并发写入/多进程恢复测试矩阵 / ASSET-000054 | 项目原创 | 2026-11-25 | 原创纯合成测试定义 | CH17-T004 / KNOW-000032 | 10个场景，覆盖POSIX跨进程锁、锁超时、CAS冲突、并发唯一胜者、进程崩溃释放锁和恢复；不构成跨主机/生产并发验收证据 |
 
 | spare-parts-inventory-ledger-read-gc-test-cases-v1.csv | CSV读取一致性与代际回收测试矩阵 / ASSET-000055 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | 10个纯合成场景，覆盖共享读锁、writer/GC协调、CURRENT保护、dry-run、最近N代与最短年龄保留、异常清理恢复和读写回收压力；不构成跨平台/生产删除验收证据 |
+
+| spare-parts-inventory-ledger-backup-restore-test-cases-v1.csv | CSV备份完整性与隔离恢复测试矩阵 / ASSET-000056 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | 10个纯合成场景，覆盖版本化备份清单、负载SHA-256/长度校验、账本链与快照验证、篡改拒绝、源代际回收后的独立恢复及中断恢复；不构成异地/生产灾备验收 |

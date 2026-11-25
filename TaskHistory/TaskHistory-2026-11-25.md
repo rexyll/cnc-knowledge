@@ -346,3 +346,14 @@
 - CI缺陷过程：首次Run 45641486782的Knowledge Job因新增多进程测试辅助函数缺少time导入失败；已补充导入，未将失败Run计为验收通过。
 - 修复后Run 45641575977：completed/success，两个Job（Knowledge structure and data quality、CH12 numerical resource tests）均success；全库109个unittest通过。持久化self-check reader_gc_exclusion、dry_run_non_mutating、retention_and_recovery均PASS。
 - **限制：** POSIX flock协作式本地临时目录模型；Windows原生文件锁、NFS/SMB网络文件系统、跨主机分布式协调、企业备份/保留时限/删除审批均未验证。无企业数据库/API连接、无生产写入。business_rule_assertions仍NOT_EVALUATED，execution_status仍BLOCKED_PENDING_ENTERPRISE_APPROVAL；CH17-T004继续IN_PROGRESS。
+
+
+# 第十八轮：库存账本可验证备份与隔离恢复演练（2026-11-25）
+
+- 所在分支：main（未创建新分支）。
+- 新增 create_backup()：在源账本.gc.lock共享锁保护下读取CURRENT所指有效代际，将COMMIT.json、ledger.json和snapshot.json复制到独立备份目录，生成BACKUP.json清单；每个负载记录size_bytes与SHA-256，清单自身也计算SHA-256；备份暂存目录完成fsync后原子rename发布，拒绝覆盖既有备份。
+- 新增 verify_backup()：要求备份目录只含四个预期普通文件，拒绝符号链接/额外文件；验证清单哈希、负载长度/哈希、COMMIT状态/代际身份、事件哈希链、快照摘要、快照账本前缀和事件重建。
+- 新增 restore_backup()：先校验备份，再仅恢复到新建或空白隔离存储；不覆盖既有数据。恢复先发布代际目录，最后原子发布CURRENT；代际发布后中断不会暴露为当前代际。
+- 新增CLI：--backup-root/--backup-parent/--backup-id创建；--verify-backup验证；--restore-backup/--restore-target隔离恢复。
+- 新增ASSET-000056：10个纯合成备份/恢复测试场景；新增6项专项unittest。首轮CI Run 45643219363：Knowledge structure and data quality Job成功，全库116个unittest通过；持久化self-check的备份清单/负载验证、隔离恢复、源代际GC后仍能恢复均PASS。另一CH12 Job及文档同步提交CI需最终复核。
+- 严格边界：POSIX临时目录合成模型，无企业系统连接/生产写入；不含加密/签名/外部信任根、异地副本、对象存储/WORM、备份介质恢复、RPO/RTO、企业留存审批或生产灾备实测。30项企业业务测试仍NOT_RUN，business_rule_assertions仍NOT_EVALUATED，execution_status仍BLOCKED_PENDING_ENTERPRISE_APPROVAL；CH17-T004保持IN_PROGRESS。

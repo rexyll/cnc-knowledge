@@ -58,7 +58,8 @@
       "resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-test-dataset-manifest-template.csv",
       "resouces/17-operation-maintenance-and-repair/spare-parts-test-fixture-cross-reference-template.csv",
       "resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-reset-profiles-v1.csv",
-      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-read-gc-test-cases-v1.csv"
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-read-gc-test-cases-v1.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-backup-restore-test-cases-v1.csv"
     ],
     "enterprise_environment_approved": false,
     "enterprise_sit_executed": false,
@@ -74,5 +75,5 @@
     "business_rule_assertions": "NOT_EVALUATED",
     "business_test_status": "NOT_RUN"
   },
-  "notes": "纯合成静态夹具数据包，DRAFT未获企业环境批准；数值仅供软件逻辑测试，不能作为真实库存/供应链/机床参数。30项SPAT用例均未执行。库存账本读取/回收测试矩阵仅验证POSIX本地并发协调与临时目录清理，不代表生产留存/删除策略。"
+  "notes": "纯合成静态夹具数据包，DRAFT未获企业环境批准；数值仅供软件逻辑测试，不能作为真实库存/供应链/机床参数。30项SPAT用例均未执行。库存账本读取/回收与备份/隔离恢复测试矩阵仅验证POSIX本地临时目录模型，不代表生产留存、异地备份或灾备策略。"
 }

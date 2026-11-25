@@ -218,3 +218,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 实现：scripts/spare_parts_inventory_ledger_persistence.py；专项测试：tests/test_spare_parts_inventory_ledger_persistence.py。
 - GC默认dry-run；CLI只有显式 --gc-apply 才会删除。按POSIX advisory lock协作，保留CURRENT、最近N个已验证代际和未达到最短年龄的代际。
 - 所有测试只操作本地临时目录。Windows原生锁、网络文件系统、跨主机并发、企业留存/备份/删除审批均未验证；不连接企业系统或生产目录。
+
+
+## CH17-T004 库存账本备份、完整性验证与隔离恢复第十八轮（2026-11-25）
+
+- spare-parts-inventory-ledger-backup-restore-test-cases-v1.csv（ASSET-000056）：10个纯合成场景，覆盖备份创建、清单/文件长度和SHA-256、账本/快照语义校验、备份损坏、备份源代际GC后恢复、非空目标拒绝覆盖和恢复中断。
+- scripts/spare_parts_inventory_ledger_persistence.py 提供 create_backup()、verify_backup()、restore_backup() 及对应CLI。
+- 备份包包含BACKUP.json、COMMIT.json、ledger.json、snapshot.json；清单自校验并记录各负载哈希。备份路径必须与源账本存储分离；恢复只允许新建/空白目标目录。
+- 当前为本地POSIX临时目录合成演练，不是异地备份、加密备份、WORM或企业灾备验收；无外部系统连接或生产写入。

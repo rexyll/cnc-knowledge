@@ -300,3 +300,14 @@
 - **测试：** 新增ASSET-000055，10个纯合成测试场景；新增6个unittest方法，全库109项通过。含读写/回收多进程压力和活动读锁阻止GC用例。
 - **CI：** 代码实现与测试修复提交 a9d5b094dddb15b476d9b2e5f9e02f85163b52e8 对应Run 45641575977，Knowledge structure and data quality及CH12 numerical resource tests两个Job均completed/success；持久化self-check报告reader GC exclusion、dry-run、retention/recovery均PASS。
 - **限制：** POSIX advisory flock协作模型；Windows原生文件锁、NFS/SMB、跨主机分布式锁、企业备份/留存期限/删除审批均未验证。纯临时目录、无企业连接/生产写入；业务断言NOT_EVALUATED，execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## 6.25 CH17-T004 库存账本备份完整性与隔离恢复演练第十八轮（2026-11-25）
+
+- **状态：** IN_PROGRESS；新增本地纯合成备份/校验/恢复机制，不改变企业审批门禁。
+- **实现：** create_backup() 从CURRENT指向的已提交代际创建独立备份目录；BACKUP.json清单包含backup ID、源代际、UTC时间、文件大小/SHA-256、账本记录数、链头及清单自身摘要。创建过程持有源存储.gc.lock共享锁，备份暂存目录fsync后原子发布。
+- **验证：** verify_backup() 检查目录精确文件集合、普通文件/非符号链接、清单摘要、文件大小和SHA-256、COMMIT身份、事件哈希链、快照和对应账本前缀以及事件重建。
+- **恢复：** restore_backup() 只接受新建或空白隔离目标目录；验证后恢复原代际文件，先发布代际目录，最后原子切换CURRENT；不覆盖非空目录。中断在CURRENT之前时只留下孤立代际。
+- **资源与测试：** 新增ASSET-000056，10个纯合成测试场景；新增6个专项unittest，全库CI共116项测试通过。覆盖备份篡改、清单篡改、创建中断、源代际被GC后恢复、非空目标拒绝覆盖、恢复中断和路径隔离。
+- **CI：** 实现提交 0fdef80a2da217c0fbd622f3185fb820287be8f5 对应Run 45643219363；Knowledge structure and data quality Job为success，全库116个unittest通过，备份验证/隔离恢复self-check均PASS；等待另一Job最终状态及文档同步提交复验。
+- **限制：** 未实现备份加密、数字签名/外部信任根、异地副本、对象存储/WORM、介质恢复、企业RPO/RTO或真实灾备演练。仅POSIX本地临时目录合成数据，无企业连接/生产写入；30项企业业务测试仍NOT_RUN，业务断言NOT_EVALUATED，审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
