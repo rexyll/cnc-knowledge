@@ -202,3 +202,11 @@
 - **数据与事务边界：** 所有ID均为虚构SYN-/FX-/EVT-标识，没有导入生产或脱敏源数据。采购、收货、库存、维修工单、审批和生命周期项目仅作为测试夹具/业务事件，不扩展全库静态知识实体Schema。数量和换算比例只用于测试逻辑，不是企业库存策略或机械技术参数。
 - **版本和BOM边界：** 数据集版本1.0.0，当前DRAFT、未获批准、未冻结至环境。BOM R1在2026-01-01至2026-06-30（含）有效，R2自2026-07-01起有效，仅供日期边界测试。
 - **未完成项：** 尚未开发/运行fixture validator，未批准企业非生产环境，未执行任何SPAT用例；30项状态保持NOT_RUN。CH17-T004继续IN_PROGRESS。
+
+## 6.14 CH17-T004 备件合成夹具本地静态校验器第七轮（2026-11-25）
+
+- 新增 `scripts/spare_parts_fixture_validator.py`，纯Python标准库、本地静态运行；验证四份输入CSV的列结构/字段、数据集ID与版本、合成标记、ID唯一、对象引用、30项用例覆盖和双向夹具引用、BOM有效期不重叠、事件时间戳/时区/接收顺序/序号及显式乱序标记。
+- 新增 `tests/test_spare_parts_fixture_validator.py`，新增7项回归测试；CI现自动执行单元测试、夹具校验及JSON报告Artifact归档。
+- 运行报告数据：89条夹具（67对象/22事件）、89个唯一ID、30项用例映射、2个BOM修订、17个重置组；10项校验PASS、0错误。发现5条延迟投递、1条显式乱序事件。
+- **状态边界：** 校验器只证明夹具文件内部结构与映射一致；数据集仍DRAFT，企业环境和测试层级未批准，30项业务用例仍NOT_RUN。未连接企业系统、未执行SIT/UAT/HIL/实机测试。
+- **CI：** [Run 45588285648](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648)两个Job均成功；报告Artifact [JSON验证报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648/artifacts/15009916943)。

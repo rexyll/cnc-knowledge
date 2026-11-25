@@ -121,3 +121,14 @@
 - `spare-parts-synthetic-fixture-test-case-coverage-v1.csv`：30行/11列，覆盖全部SPAT-001～SPAT-030，列出正向/负向夹具、事件和预期断言；全部NOT_RUN。
 - 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-baseline-v1.md`；实体KNOW-000032、ASSET-000041～ASSET-000043。
 - 所有数量、BOM日期与单位换算只是虚构测试值，不代表真实机床、企业库存政策或产品规格。当前未批准/冻结数据集，未执行企业SIT/UAT或现场测试。
+
+## CH17-T004 合成夹具静态校验报告
+
+运行 `python scripts/spare_parts_fixture_validator.py --root .` 可在本地只读校验数据集；运行以下命令可在资源目录生成机器可读JSON报告：
+
+```bash
+python scripts/spare_parts_fixture_validator.py --root . \
+  --report-json resouces/17-operation-maintenance-and-repair/generated/spare-parts-fixture-validation-report-v1.json
+```
+
+报告会记录输入文件SHA-256、检查项、数据集身份、计数、警告和错误。CI同样执行校验并把本次报告以Artifact归档。生成报告不修改夹具CSV，也不会将DRAFT数据集升级为APPROVED/FROZEN；提交生成报告时需按项目规则另行登记资源实体。

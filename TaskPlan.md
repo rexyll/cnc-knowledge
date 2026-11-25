@@ -657,3 +657,13 @@
 - **一致性修正：** BOM R1有效期设为2026-01-01至2026-06-30（含），R2自2026-07-01起，供SPAT-004边界测试使用；两者均为虚构修订日期。
 - **验收边界：** 89个Fixture ID唯一，父/关联对象引用无悬空；30个测试用例ID唯一且覆盖完整，所有夹具/事件映射引用均存在。全部30项执行状态仍为NOT_RUN；本轮没有运行企业SIT/UAT、自动化系统集成、生产影子、HIL或实机测试。后续需本地fixture validator及企业批准的非生产环境。
 - **状态：** CH17-T004继续IN_PROGRESS；本轮仅建立DRAFT合成样例与用例映射，不等于企业数据集审批或测试通过。
+
+## CH17-T004 备件合成夹具本地静态校验器第七轮（2026-11-25）
+
+- 新增 `scripts/spare_parts_fixture_validator.py`，采用Python标准库实现，不访问网络或企业系统；检查manifest/CSV表头与列宽、数据集身份/版本、纯合成标记、Fixture/Event ID唯一、父/关联引用、测试用例令牌、30项SPAT完整映射和双向引用、BOM有效期重叠、事件时间/时区/序号/乱序标记。
+- 新增 `tests/test_spare_parts_fixture_validator.py`，包含基线通过、重复ID、悬空引用、用例映射缺失、BOM窗口重叠、事件时间缺失和JSON报告序列化等回归用例；并把本地校验器纳入Knowledge Quality CI及报告Artifact上传。
+- 夹具数据补齐全部22个事件时间戳，将重复/迟到事件关联原始收货事件，并将PCN与未证实EOL拆为独立reset group；用例映射反向同步至各Fixture的test_case_ids字段。
+- **校验结果：** CI在2026-11-25对数据集SPAREPARTS-SYN-BASE-001 v1.0.0执行，10项静态检查全部PASS、0 errors；89条夹具（67对象+22事件）、89个唯一ID、30项映射、2个BOM修订、17个reset group，识别5条延迟投递与1条明确标记的乱序事件。JSON报告作为Actions Artifact上传。
+- **重要警告：** 报告保留5项警告：数据集仍DRAFT、无获批企业环境、无获批测试层级、30个业务测试仍NOT_RUN、manifest内容校验值仍pending。静态校验PASS不构成数据集批准、企业SIT/UAT或机床验证。
+- **CI：** 首轮测试仅有1项测试断言文案不匹配，修正诊断信息后复跑成功；成功运行 [GitHub Actions Run 45588285648](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648)，Knowledge structure and data quality与CH12 numerical resource tests均completed/success；验证报告Artifact [下载](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648/artifacts/15009916943)。
+- **状态：** CH17-T004继续IN_PROGRESS；后续须在企业授权的隔离非生产环境中审核/批准并冻结数据集，然后执行30项测试并记录真实证据。

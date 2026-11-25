@@ -80,7 +80,7 @@ python scripts/spare_parts_fixture_validator.py --root .
 
 ```bash
 python scripts/spare_parts_fixture_validator.py --root . --json \
-  --report-json resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-validation-report-v1.json
+  --report-json resouces/17-operation-maintenance-and-repair/generated/spare-parts-fixture-validation-report-v1.json
 ```
 
 报告包含数据集身份、各项检查结果、记录数、源文件SHA-256、警告和错误。当前数据集DRAFT、无已批准环境以及30项测试尚未执行均以WARNING/状态字段保留；静态校验PASS不代表SIT/UAT通过、数据集获批或机床实机验证。CI的Knowledge Quality Job会自动运行校验器并上传JSON报告Artifact。
