@@ -65,9 +65,9 @@
     "field_execution_validation": false,
     "hardware_validation": false,
     "linked_templates": [
-      "自动换刀/刀库/刀塔",
-      "卡盘/夹持系统",
-      "液压/气动动力单元"
+      "resouces/17-operation-maintenance-and-repair/atc-tool-magazine-turret-replacement-work-package-template.csv",
+      "resouces/17-operation-maintenance-and-repair/chuck-workholding-replacement-work-package-template.csv",
+      "resouces/17-operation-maintenance-and-repair/hydraulic-pneumatic-unit-replacement-work-package-template.csv"
     ]
   },
   "notes": "三份原创专项模板均为待评估/未测试；拆装、泄压、蓄能器处置、动态测试及技术值必须由具体机床OEM文件和现场批准程序定义。"
