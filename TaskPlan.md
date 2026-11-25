@@ -667,3 +667,11 @@
 - **重要警告：** 报告保留5项警告：数据集仍DRAFT、无获批企业环境、无获批测试层级、30个业务测试仍NOT_RUN、manifest内容校验值仍pending。静态校验PASS不构成数据集批准、企业SIT/UAT或机床验证。
 - **CI：** 首轮测试仅有1项测试断言文案不匹配，修正诊断信息后复跑成功；成功运行 [GitHub Actions Run 45588285648](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648)，Knowledge structure and data quality与CH12 numerical resource tests均completed/success；验证报告Artifact [下载](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648/artifacts/15009916943)。
 - **状态：** CH17-T004继续IN_PROGRESS；后续须在企业授权的隔离非生产环境中审核/批准并冻结数据集，然后执行30项测试并记录真实证据。
+
+## CH17-T004 备件测试场景重置配置与本地包生成器第八轮（2026-11-25）
+
+- 新增 `spare-parts-synthetic-fixture-reset-profiles-v1.csv`（ASSET-000044，30行/15列），逐用例登记正/负夹具、事件、依赖闭包、reset group、稳定幂等键、父先子后加载和本地包清理策略，作用域固定FILESYSTEM_STAGING_ONLY。
+- 新增 `scripts/spare_parts_fixture_loader.py` 和 `tests/test_spare_parts_fixture_loader.py`；本地loader校验静态基线和重置配置，生成每个SPAT场景的manifest、fixtures/objects/events CSV、load-plan和PLAN_ONLY reset-plan；默认拒绝覆盖已存在的场景目录。
+- 每场景包只写指定本地目录，无数据库/API/队列/ERP/WMS/CMMS/EAM/QMS连接，不执行企业导入、重置或删除；adapter保持NOT_IMPLEMENTED。CI全量打包30场景并归档Artifact。
+- 本轮更新KNOW-000032关联、docs导航、CH17 README、资源README、ASSET-INDEX及coverage；CH17新增ASSET-000044，统计12篇KNOW、39个实体、37项资源。
+- **验收边界：** loader测试覆盖单场景、30场景全量生成、依赖顺序、PLAN_ONLY清理顺序、未知用例、拒绝覆盖、配置不一致和源文件只读。生成包不是SIT/UAT结果；数据集仍DRAFT、30项业务测试仍NOT_RUN。

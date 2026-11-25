@@ -132,3 +132,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 ```
 
 报告会记录输入文件SHA-256、检查项、数据集身份、计数、警告和错误。CI同样执行校验并把本次报告以Artifact归档。生成报告不修改夹具CSV，也不会将DRAFT数据集升级为APPROVED/FROZEN；提交生成报告时需按项目规则另行登记资源实体。
+
+## CH17-T004 场景重置配置与本地包生成器第八轮（2026-11-25）
+
+- `spare-parts-synthetic-fixture-reset-profiles-v1.csv`：30行/15列场景重置配置，逐用例登记正向/负向夹具、事件、依赖闭包、reset group、稳定幂等键、装载顺序和本地包清理范围；执行范围固定为FILESYSTEM_STAGING_ONLY。
+- `scripts/spare_parts_fixture_loader.py`：纯Python标准库本地场景包生成器。只读取源数据，校验配置与依赖后，在用户指定目录写入单场景或全部30场景包；若目标场景目录已存在则拒绝覆盖。
+- 每个场景包包括scenario-manifest.json、fixtures.csv、objects.csv、events.csv、load-plan.json和reset-plan.json；reset计划固定PLAN_ONLY，清理范围仅限生成的本地包。
+- 不连接数据库/API/队列，不执行导入、业务事务、企业环境重置或删除。目标系统适配器NOT_IMPLEMENTED；生成场景包不改变源测试用例的NOT_RUN状态。
+- CI单元测试和静态夹具校验已完成；全量30场景打包和Artifact归档已纳入CI。

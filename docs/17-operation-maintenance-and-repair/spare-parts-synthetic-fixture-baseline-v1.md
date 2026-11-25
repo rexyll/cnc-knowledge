@@ -84,3 +84,34 @@ python scripts/spare_parts_fixture_validator.py --root . --json \
 ```
 
 报告包含数据集身份、各项检查结果、记录数、源文件SHA-256、警告和错误。当前数据集DRAFT、无已批准环境以及30项测试尚未执行均以WARNING/状态字段保留；静态校验PASS不代表SIT/UAT通过、数据集获批或机床实机验证。CI的Knowledge Quality Job会自动运行校验器并上传JSON报告Artifact。
+
+## 8. 场景重置配置与本地fixture loader
+
+本地工具 `scripts/spare_parts_fixture_loader.py` 根据 [30项用例映射](../../resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-test-case-coverage-v1.csv) 和 [30条场景重置配置](../../resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-reset-profiles-v1.csv) 生成隔离的文件系统场景包。配置中的依赖闭包、重置组和清理策略由源映射与夹具引用确定性推导；loader会重新推导并比对，拒绝不一致的配置。
+
+准备单个场景：
+
+```bash
+python scripts/spare_parts_fixture_loader.py --root . \
+  --test-case SPAT-017 \
+  --output-dir /tmp/ch17-spare-parts-scenarios
+```
+
+准备全部30个场景：
+
+```bash
+python scripts/spare_parts_fixture_loader.py --root . --all \
+  --output-dir /tmp/ch17-spare-parts-scenarios
+```
+
+每个场景目录包含：
+
+- `scenario-manifest.json`：数据集/用例/场景身份、来源文件SHA-256、生成文件哈希、纳入夹具ID和状态边界。
+- `fixtures.csv`：按父对象在先、子对象在后、事件最后的顺序整理的场景夹具。
+- `objects.csv` 与 `events.csv`：对象/事件分离视图；事件按接收时间及序号整理。
+- `load-plan.json`：仅说明未来在获批测试适配器中所需的装载步骤；当前适配器状态为NOT_IMPLEMENTED。
+- `reset-plan.json`：仅列出该场景的reset group、加载顺序和本地包清理顺序；`PLAN_ONLY`，不执行删除或重置。
+
+工具默认拒绝覆盖已有场景目录，所有操作只写用户指定的本地输出目录，不修改原始夹具、映射或企业系统。CI会对30个场景全部生成包并上传Artifact。
+
+**严格限制：** “loader”在当前版本仅指本地文件场景包生成器，不是数据库导入器，不提供ERP/WMS/CMMS/EAM/QMS或消息队列适配器。即使全部30个包都生成成功，业务测试状态仍为NOT_RUN；数据集仍为DRAFT，必须取得企业数据/系统/安全责任人批准后，才能开发目标系统适配器和执行SIT/UAT。

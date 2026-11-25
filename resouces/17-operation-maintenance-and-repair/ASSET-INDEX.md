@@ -38,6 +38,7 @@
 | spare-parts-synthetic-fixture-baseline-v1-manifest.csv | CSV数据集清单 / ASSET-000041 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | SPAREPARTS-SYN-BASE-001 v1.0.0元数据；单行清单，当前DRAFT，环境/测试层级未获批准 |
 | spare-parts-synthetic-fixture-baseline-v1.csv | CSV合成夹具 / ASSET-000042 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | 89条固定合成记录（67对象+22事件），27列；SYN-/FX-/EVT-虚构标识，测试重置组隔离 |
 | spare-parts-synthetic-fixture-test-case-coverage-v1.csv | CSV用例映射 / ASSET-000043 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | SPAT-001～SPAT-030共30行/11列，逐项关联正负夹具和事件；执行状态均NOT_RUN |
+| spare-parts-synthetic-fixture-reset-profiles-v1.csv | CSV场景重置配置 / ASSET-000044 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | 30行/15列，逐用例登记直接夹具、依赖闭包、reset group、父先子后装载、反向本地包清理、幂等键和NOT_RUN状态；FILESYSTEM_STAGING_ONLY |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）

@@ -53,3 +53,5 @@
 备件合成测试夹具基线见 [备件合成测试夹具基线 v1.0.0](spare-parts-synthetic-fixture-baseline-v1.md)：包括89条静态对象/事件记录和SPAT-001～SPAT-030逐项映射。该数据集当前为DRAFT，所有测试仍NOT_RUN，不可视作已获企业环境批准。
 
 备件合成夹具基线附带 [本地静态校验工具](../../scripts/spare_parts_fixture_validator.py) 和 [单元测试](../../tests/test_spare_parts_fixture_validator.py)。工具只读取本地CSV，不连接企业系统；CI会生成JSON验证报告Artifact。
+
+备件合成夹具现提供 [30项场景重置配置](../../resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-reset-profiles-v1.csv) 与 [本地场景包生成器](../../scripts/spare_parts_fixture_loader.py)。该工具仅在指定目录生成文件系统场景包和PLAN_ONLY重置计划，不连接或写入企业数据库；CI会生成全部30个场景包供审查。

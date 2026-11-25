@@ -210,3 +210,11 @@
 - 运行报告数据：89条夹具（67对象/22事件）、89个唯一ID、30项用例映射、2个BOM修订、17个重置组；10项校验PASS、0错误。发现5条延迟投递、1条显式乱序事件。
 - **状态边界：** 校验器只证明夹具文件内部结构与映射一致；数据集仍DRAFT，企业环境和测试层级未批准，30项业务用例仍NOT_RUN。未连接企业系统、未执行SIT/UAT/HIL/实机测试。
 - **CI：** [Run 45588285648](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648)两个Job均成功；报告Artifact [JSON验证报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45588285648/artifacts/15009916943)。
+
+## 6.15 CH17-T004 备件测试场景重置配置与本地包生成器第八轮（2026-11-25）
+
+- 新增 `spare-parts-synthetic-fixture-reset-profiles-v1.csv`（ASSET-000044，30行/15列），逐SPAT用例明确直接夹具、依赖闭包、事件、reset group、幂等键和文件包清理范围；由场景映射和夹具关系确定性推导。
+- 新增 `scripts/spare_parts_fixture_loader.py`，校验源数据集与重置配置一致后生成单用例或全部30个本地场景包；对象按父先子后排序，事件按接收时间/序号排序。
+- 每个本地场景包包含scenario-manifest、fixtures/objects/events CSV、load-plan和PLAN_ONLY reset-plan；目标目录存在时拒绝覆盖。工具没有企业系统适配器，不访问数据库/API/队列，不执行任何企业重置/删除。
+- 新增 `tests/test_spare_parts_fixture_loader.py`，验证单场景、全30场景、父子顺序、重置计划、未知用例、拒绝覆盖、配置篡改和源数据不变；CI全量打包和Artifact归档。
+- **边界：** 30项业务测试仍NOT_RUN；数据集仍DRAFT；22项环境检查仍NOT_ASSESSED。CH17-T004保持IN_PROGRESS。
