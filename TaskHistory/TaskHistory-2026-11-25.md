@@ -171,3 +171,19 @@
 - **实施提交：** `9b7b20b3acabde5032ca98249775e0c5dde74fa8`；GitHub Actions [Run 45581158205](https://github.com/rexyll/cnc-knowledge/actions/runs/45581158205) completed/success，Knowledge structure and data quality与CH12 numerical resource tests两个Job均success。
 - **计划/索引同步提交：** `5ed043b580d05ec88157c43f6004120c136245d5`；GitHub Actions [Run 45581324072](https://github.com/rexyll/cnc-knowledge/actions/runs/45581324072) completed/success，两个Job均success。
 - **状态与遗留：** 22项环境检查仍为NOT_ASSESSED；尚未取得企业授权非生产环境清单、网络隔离/角色/备份恢复证据，也未生成或冻结企业专用合成数据集。既有30项备件端到端测试仍全部NOT_RUN；未执行企业SIT/UAT、生产影子运行、HIL或实机测试。CH17-T004保持IN_PROGRESS。CI只证明仓库结构/数据质量及CH12既有数值资源回归成功，不代表企业系统、库存业务或机床现场验收。
+
+## CH17-T004 备件合成测试夹具基线与30项用例映射第六轮
+
+- **实际完成时间：** 2026-11-25T17:20:35+08:00（Asia/Shanghai；实施、BOM修正及计划/索引同步CI全部通过后补录）
+- **所在分支：** `main`（未创建其他分支）
+- **新增正文：** `docs/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-baseline-v1.md`（KNOW-000032，`verification_status=in_review`）。
+- **新增资源：** `spare-parts-synthetic-fixture-baseline-v1-manifest.csv`（ASSET-000041，29列/1数据行，数据集DRAFT）；`spare-parts-synthetic-fixture-baseline-v1.csv`（ASSET-000042，89条/27列，其中67对象+22事件）；`spare-parts-synthetic-fixture-test-case-coverage-v1.csv`（ASSET-000043，30行/11列，覆盖SPAT-001～SPAT-030）。全部位于 `resouces/17-operation-maintenance-and-repair/`。
+- **数据集定义：** `SPAREPARTS-SYN-BASE-001` v1.0.0，固定静态CSV和稳定ID，不依赖运行时随机数。使用虚构SYN-/FX-/EVT-标识；未使用生产/脱敏源数据，不含真实机床、供应商、人员、客户、采购主键、账号或凭证。所有样例数量/单位换算只用于软件逻辑验证，不构成企业库存政策、产品规格或工程阈值。
+- **场景覆盖：** 组织/仓库、虚构机床配置与BOM修订、物料外部键冲突、采购授权/部分收货、质量放行/隔离、库存桶/预留/分配/在途PO、单位换算、替代件范围/有效期、发料与安装、批次追溯、旧件返修/报废、库存对账、PCN/EOL、权限、SoR、字段最小化和重复/迟到/乱序/冲销事件。
+- **BOM修订修正：** R1有效期为2026-01-01至2026-06-30（含）；R2从2026-07-01起生效。仅为虚构数据，服务SPAT-004日期边界场景。
+- **结构化记录与索引：** 新增KNOW-000032、ASSET-000041～ASSET-000043；更新根TaskPlan、CH17 TaskPlan（新增6.13）、章节README、docs总入口、资源README、ASSET-INDEX和CHAPTER-COVERAGE。覆盖度为12篇知识文章、38个登记实体、36项资源记录、SRC去重9条；CH17-T004继续IN_PROGRESS。
+- **远端数据验收：** 89个Fixture ID唯一；67个对象/22个事件；父/关联引用无悬空；30个测试用例ID唯一且映射齐全，映射引用的正向/负向夹具和事件全部存在。使用支持引号转义的CSV解析复读：manifest 1行/29列，fixture 89行/27列，coverage 30行/11列；新增KNOW/ASSET四份JSON可解析，资源路径与KNOW关联一致。
+- **实施提交：** `08f7188bd8fd0198ceac3cae97cd1c3d31b766da`；GitHub Actions [Run 45584153406](https://github.com/rexyll/cnc-knowledge/actions/runs/45584153406) completed/success，知识结构与数据质量、CH12数值回归两个Job均成功。
+- **BOM日期修正提交：** `0cb9514d30f2874dc5f642ae7704b94578b15d13`；GitHub Actions [Run 45584246386](https://github.com/rexyll/cnc-knowledge/actions/runs/45584246386) completed/success，两个Job均成功。
+- **计划/索引同步提交：** `4121f6777a2bce84e42e012375688c4ef6e80aed`；GitHub Actions [Run 45584345318](https://github.com/rexyll/cnc-knowledge/actions/runs/45584345318) completed/success，两个Job均成功。
+- **状态与遗留：** 数据集清单保持DRAFT，未获企业批准/冻结；未开发或执行自动fixture validator；22项环境检查仍NOT_ASSESSED；30项测试仍NOT_RUN。未连接ERP/WMS/QMS/CMMS/EAM，未执行企业SIT/UAT、生产影子、HIL或实机验证。后续需先完成本地fixture validator，并取得获批的隔离非生产环境后再运行测试。
