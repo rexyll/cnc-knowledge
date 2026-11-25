@@ -298,3 +298,5 @@
 
 
 - 第十三轮补充：将投影核对从单纯输出重建余额改为必须与调用者显式提供的独立合成期望余额逐维比较；新增匹配与不匹配两条测试断言，避免将“成功重建”误称为“对账一致”。测试矩阵扩展为18个断言场景。
+
+- **最终CI验收：** Run 45624471980 completed/success；Knowledge structure and data quality、CH12 numerical resource tests两个Job均success。Knowledge Job全库74个unittest方法通过；CH17库存事件账本18个专项测试方法通过；账本self-check与多维余额self-check JSON Artifact均成功上传。CI数学自检仍声明BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED。最终提交为 `f7e7c793fe780aa4d9ed6057e41b3af36f83340d`。
