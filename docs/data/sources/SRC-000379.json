@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000379",
+  "source_type": "manufacturer_manual",
+  "title": "Haas Owners — Operators Manuals (official manual index)",
+  "publisher": "Haas Automation, Inc.",
+  "author": null,
+  "url": "https://haascnc.com/owners/Service/operators-manual.html",
+  "version": "Official web index updated 2026-11-04; accessed 2026-11-25.",
+  "published_on": null,
+  "accessed_on": "2026-11-25",
+  "locator": "Manufacturer index for product-family operator manuals and related service documentation.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used as an example of a manufacturer-maintained, product-family-specific manual index. Select the actual machine model, configuration and document revision; do not generalize Haas documentation to other brands.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

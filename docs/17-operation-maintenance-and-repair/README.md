@@ -14,7 +14,7 @@
 
 [打开本章 TaskPlan](../TaskPlan/17-operation-maintenance-and-repair/TaskPlan.md)
 
-本章知识内容按任务计划逐步研究，不在初始化阶段预填未经核实的技术参数或结论。
+本章知识内容按任务计划逐步研究，不预填未经核实的技术参数或结论。第一版框架见 [机床操作、维护与维修总览](overview.md)；可填写的开机准备检查模板位于 resouces/17-operation-maintenance-and-repair/operation-readiness-checklist.csv。
 
 ## 建议正文结构
 

@@ -530,3 +530,11 @@
 - h/8路径误差RMS/峰值约7.999/12.201mm，速度误差RMS/峰值0.07703/0.12480m/s；自由终点0.723431m，参考0.735m。约束反力峰值/RMS约50.312/35.739N，约束功0.0161883J。
 - 应用限值全为null，状态`COMPLETED_REPORT_ONLY`、决策`DESCRIPTIVE_ONLY`，不判定跟踪/驱动力工程合格。GitHub Actions [Run 45419174116](https://github.com/rexyll/cnc-knowledge/actions/runs/45419174116)两个Job success，136/136资源测试和所有RK4/ENE/PATH数值步骤成功；三文件归档提交`f7798c801d792a78d1f27f5522671ab370b07d4b`。
 - RK4-01～04、ENE-01～03、PATH-01均完成合成报告态筛查；CH12-T003仍IN_PROGRESS，真实设备/HIL工作未完成。
+
+
+## CH17-T001 初始框架里程碑（2026-11-25）
+
+- 开始推进“机床操作、维护与维修”（CH17），新增 docs/17-operation-maintenance-and-repair/overview.md，明确操作、操作者日常维护、计划/状态维护和授权维修的范围与责任边界。
+- 在 resouces/17-operation-maintenance-and-repair/ 新增25项空白开机准备检查表及资源索引；结果均为NOT_ASSESSED，不含型号级参数、维护周期、润滑剂规格或合格限值。
+- 新增SRC-000375～SRC-000381，登记OSHA危险能量控制法规、ISO机床安全标准目录和Haas官方手册/维护计划入口；只引用与具体管辖、标准范围和产品族匹配的资料。
+- CH17-T001状态为IN_PROGRESS；待确定目标机床型号/控制系统/配置并取得现行官方手册后，才能继续形成型号级操作与维护条目。CH17-T002～T004仍TODO。所有提交仅在main。

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000381",
+  "source_type": "manufacturer_manual",
+  "title": "Haas Lathe — Maintenance (Interactive Service Manual)",
+  "publisher": "Haas Automation, Inc.",
+  "author": null,
+  "url": "https://haascnc.com/service/online-manuals/lathe---interactive-service-manual/lathe---maintenance",
+  "version": "Revision A-04/2026; accessed 2026-11-25.",
+  "published_on": null,
+  "accessed_on": "2026-11-25",
+  "locator": "Haas lathe product-family maintenance schedule and task descriptions; applicable model/options must be checked against the selected manual.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to demonstrate that preventive-maintenance intervals are model/product-family-specific and revision-controlled. Do not apply its intervals, fluids, or parts to other machine families.",
+  "authority_tier": "A",
+  "evidence_kind": "manufacturer_declaration"
+}
