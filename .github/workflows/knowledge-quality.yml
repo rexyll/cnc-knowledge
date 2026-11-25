@@ -55,6 +55,19 @@ jobs:
           path: ${{ runner.temp }}/ch17-inventory-event-ledger-self-check.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Run CH17 inventory ledger concurrency self-check
+        run: >-
+          python scripts/spare_parts_inventory_ledger_concurrency.py
+          --self-check
+          --report-json "$RUNNER_TEMP/ch17-inventory-ledger-concurrency.json"
+      - name: Upload CH17 inventory ledger concurrency report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch17-inventory-ledger-concurrency-${{ github.run_id }}
+          path: ${{ runner.temp }}/ch17-inventory-ledger-concurrency.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Run CH17 inventory ledger persistence self-check
         run: >-
           python scripts/spare_parts_inventory_ledger_persistence.py

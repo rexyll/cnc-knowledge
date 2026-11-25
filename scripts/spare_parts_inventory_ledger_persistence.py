@@ -1,6 +1,6 @@
 """Local synthetic-only generation-based persistence for ledger and snapshots."""
 from __future__ import annotations
-import argparse, hashlib, json, os, re, shutil, tempfile, sys
+import argparse, hashlib, json, os, re, tempfile, sys, time, fcntl
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
@@ -12,6 +12,31 @@ from scripts.spare_parts_multidimensional_inventory import BalanceKey
 FORMAT_VERSION=1
 GENERATION_RE=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 class PersistenceError(ValueError): pass
+class PersistenceConflict(PersistenceError): pass
+from contextlib import contextmanager
+@contextmanager
+def _exclusive_store_lock(root, timeout_seconds=5.0):
+    fd=os.open(Path(root)/".writer.lock",os.O_CREAT|os.O_RDWR,0o600)
+    acquired=False
+    deadline=time.monotonic()+timeout_seconds
+    try:
+        while True:
+            try:
+                fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB); acquired=True; break
+            except BlockingIOError:
+                if time.monotonic()>=deadline: raise PersistenceConflict("writer lock timeout")
+                time.sleep(0.02)
+        yield
+    finally:
+        if acquired: fcntl.flock(fd,fcntl.LOCK_UN)
+        os.close(fd)
+def _read_current_generation(root):
+    current=Path(root)/"CURRENT"
+    if not current.exists(): return None
+    if current.is_symlink() or not current.is_file(): raise PersistenceError("CURRENT pointer is unsafe")
+    pointer=_read_json(current)
+    if pointer.get("format_version")!=FORMAT_VERSION: raise PersistenceError("unsupported CURRENT pointer version")
+    return _safe_generation(pointer.get("generation_id"))
 
 def _json_bytes(value):
     return (json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(",",":"),allow_nan=False)+"\n").encode("utf-8")
@@ -29,43 +54,43 @@ def _safe_generation(value):
         raise PersistenceError("invalid generation identifier")
     return value
 
-def publish_generation(root,ledger,snapshot,generation_id,*,failure_stage=None):
-    """Publish immutable generation; CURRENT is the sole atomic commit pointer."""
+def publish_generation(root,ledger,snapshot,generation_id,*,failure_stage=None,
+                       expected_current_generation="*",lock_timeout_seconds=5.0):
+    """Serialize writers with a kernel lock; CURRENT remains the atomic commit pointer."""
     root=Path(root)
-    if failure_stage not in {None,"after_ledger","after_snapshot","after_generation_rename","before_pointer_replace"}:
+    if failure_stage not in {None,"after_lock","after_ledger","after_snapshot","after_generation_rename","before_pointer_replace"}:
         raise PersistenceError("unsupported synthetic fault stage")
     gid=_safe_generation(generation_id)
     root.mkdir(parents=True,exist_ok=True)
     if root.is_symlink(): raise PersistenceError("storage root cannot be a symlink")
-    final=root/("generation-"+gid)
-    stage=root/(".staging-"+gid)
-    if final.exists() or stage.exists(): raise PersistenceError("generation already exists or staging residue requires inspection")
-    chain=seal(ledger.records); verify_chain(chain); verify_snapshot(snapshot)
-    ledger_bytes=_json_bytes(chain); snapshot_bytes=_json_bytes(snapshot)
-    stage.mkdir()
-    try:
-        _write_sync(stage/"ledger.json",ledger_bytes)
-        if failure_stage=="after_ledger": raise PersistenceError("injected interruption after ledger write")
-        _write_sync(stage/"snapshot.json",snapshot_bytes)
-        if failure_stage=="after_snapshot": raise PersistenceError("injected interruption after snapshot write")
-        commit={"format_version":FORMAT_VERSION,"generation_id":gid,"commit_state":"COMMITTED",
-          "ledger_sha256":_sha(ledger_bytes),"snapshot_sha256":_sha(snapshot_bytes),
-          "ledger_record_count":chain["record_count"],"snapshot_ledger_sequence":snapshot["ledger_sequence"]}
-        _write_sync(stage/"COMMIT.json",_json_bytes(commit))
-        _fsync_dir(stage)
-        os.replace(stage,final)
-        _fsync_dir(root)
-        if failure_stage=="after_generation_rename": raise PersistenceError("injected interruption after generation publish, before CURRENT")
-        pointer_tmp=root/(".CURRENT-"+gid+".tmp")
-        _write_sync(pointer_tmp,_json_bytes({"format_version":FORMAT_VERSION,"generation_id":gid}))
-        if failure_stage=="before_pointer_replace": raise PersistenceError("injected interruption before CURRENT atomic replace")
-        os.replace(pointer_tmp,root/"CURRENT")
-        _fsync_dir(root)
-        return {"result":"COMMITTED","generation_id":gid,"ledger_record_count":chain["record_count"],
-          "ledger_sha256":_sha(ledger_bytes),"snapshot_sha256":_sha(snapshot_bytes)}
-    except Exception:
-        # Staging remnants are intentionally retained for diagnosis; recovery ignores them.
-        raise
+    with _exclusive_store_lock(root,lock_timeout_seconds):
+        actual=_read_current_generation(root)
+        if expected_current_generation!="*" and actual!=expected_current_generation:
+            raise PersistenceConflict("CURRENT generation changed; compare-and-swap rejected")
+        final=root/("generation-"+gid); stage=root/(".staging-"+gid)
+        if final.exists() or stage.exists(): raise PersistenceError("generation already exists or staging residue requires inspection")
+        chain=seal(ledger.records); verify_chain(chain); verify_snapshot(snapshot)
+        ledger_bytes=_json_bytes(chain); snapshot_bytes=_json_bytes(snapshot)
+        stage.mkdir()
+        try:
+            if failure_stage=="after_lock": raise PersistenceError("injected interruption while holding writer lock")
+            _write_sync(stage/"ledger.json",ledger_bytes)
+            if failure_stage=="after_ledger": raise PersistenceError("injected interruption after ledger write")
+            _write_sync(stage/"snapshot.json",snapshot_bytes)
+            if failure_stage=="after_snapshot": raise PersistenceError("injected interruption after snapshot write")
+            commit={"format_version":FORMAT_VERSION,"generation_id":gid,"commit_state":"COMMITTED",
+              "ledger_sha256":_sha(ledger_bytes),"snapshot_sha256":_sha(snapshot_bytes),
+              "ledger_record_count":chain["record_count"],"snapshot_ledger_sequence":snapshot["ledger_sequence"]}
+            _write_sync(stage/"COMMIT.json",_json_bytes(commit)); _fsync_dir(stage)
+            os.replace(stage,final); _fsync_dir(root)
+            if failure_stage=="after_generation_rename": raise PersistenceError("injected interruption after generation publish, before CURRENT")
+            pointer_tmp=root/(".CURRENT-"+gid+".tmp")
+            _write_sync(pointer_tmp,_json_bytes({"format_version":FORMAT_VERSION,"generation_id":gid}))
+            if failure_stage=="before_pointer_replace": raise PersistenceError("injected interruption before CURRENT atomic replace")
+            os.replace(pointer_tmp,root/"CURRENT"); _fsync_dir(root)
+            return {"result":"COMMITTED","generation_id":gid,"ledger_record_count":chain["record_count"],
+              "ledger_sha256":_sha(ledger_bytes),"snapshot_sha256":_sha(snapshot_bytes),"previous_generation":actual}
+        except Exception: raise
 
 def _read_json(path):
     try: return json.loads(path.read_text(encoding="utf-8"))
@@ -92,6 +117,7 @@ def _restore_ledger(chain):
 def recover_current(root):
     root=Path(root)
     if root.is_symlink(): raise PersistenceError("storage root cannot be a symlink")
+    if (root/"CURRENT").is_symlink(): raise PersistenceError("CURRENT pointer cannot be a symlink")
     pointer=_read_json(root/"CURRENT")
     if pointer.get("format_version")!=FORMAT_VERSION: raise PersistenceError("unsupported CURRENT pointer version")
     gid=_safe_generation(pointer.get("generation_id"))
