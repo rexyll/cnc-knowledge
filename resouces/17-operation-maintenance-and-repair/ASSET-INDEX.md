@@ -60,3 +60,4 @@
 | spare-parts-inventory-opening-balance-template-v1.csv | CSV空白模板 / ASSET-000048 | 项目原创 | 2026-11-25 | 原创空白模板 | CH17-T004 / KNOW-000032 | 期初余额模板仅含表头，不含任何预填数量或库存快照 |
 | spare-parts-inventory-opening-state-scenario-matrix-v1.csv | CSV场景矩阵 / ASSET-000049 | 项目原创 | 2026-11-25 | 原创，场景预期待批准 | CH17-T004 / KNOW-000032 | 9个场景的期初输入需求、账户候选和守恒断言；全部PROPOSED_NOT_APPROVED/NOT_RUN |
 | spare-parts-multidimensional-inventory-model-test-cases-v1.csv | CSV模型测试矩阵 / ASSET-000050 | 项目原创 | 2026-11-25 | 原创纯合成测试定义 | CH17-T004 / KNOW-000032 | 17项多维库存余额模型数学性质测试；不构成企业业务验收证据 |
+| spare-parts-inventory-event-ledger-test-cases-v1.csv | CSV事件账本测试矩阵 / ASSET-000051 | 项目原创 | 2026-11-25 | 原创纯合成测试定义 | CH17-T004 / KNOW-000032 | 17个事件账本断言场景；不构成企业业务验收证据 |

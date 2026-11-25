@@ -170,3 +170,9 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - spare-parts-multidimensional-inventory-model-test-cases-v1.csv（ASSET-000050）：17项纯合成数学性质测试，覆盖多维余额键、同单位守恒、跨库位/物料/批次/所有权拒绝、单位换算审批、期初快照隔离、事件ID/序号及整批回放原子性。
 - 模型代码：scripts/spare_parts_multidimensional_inventory.py；专项测试：tests/test_spare_parts_multidimensional_inventory.py。
 - CI自检报告：Artifact ch17-multidimensional-inventory-self-check。自检仅验证虚构余额上的数学性质，execution_status固定为BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+## CH17-T004 第十三轮：不可变库存事件账本与时点重建
+
+- `spare-parts-inventory-event-ledger-test-cases-v1.csv`（ASSET-000051）：17个纯合成断言场景，覆盖事件追加、幂等键、重复/迟到/乱序、业务时间与知识时间、冲销和重建一致性。
+- 模型：`../../scripts/spare_parts_inventory_event_ledger.py`；测试：`../../tests/test_spare_parts_inventory_event_ledger.py`。
+- CI报告：Artifact `ch17-inventory-event-ledger-self-check`。只验证纯合成数学性质，业务断言保持NOT_EVALUATED。

@@ -250,3 +250,12 @@
 - 新增事件顺序与ID检查、整批回放原子性；新增14个专项unittest方法，覆盖ASSET-000050中的17个断言场景。
 - CI运行模型自检并归档报告；自检状态BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
 - **边界：** 不执行企业业务规则、不计算企业期末库存、不连接外部系统。CH17-T004继续IN_PROGRESS。
+
+## 6.20 CH17-T004 不可变库存事件账本与时点重建第十三轮（2026-11-25）
+
+- 新增 `scripts/spare_parts_inventory_event_ledger.py`：内存追加式账本，记录event_id、business_event_id、source_system_id、idempotency_key、business_time、ingestion_time、事件类型、双边余额键、Decimal数量及冲销引用。
+- 同幂等键同载荷重复投递为NO_OP；幂等键载荷冲突、跨幂等键重复event_id拒绝。迟到/乱序事件按接收顺序留档，余额重建按业务时间与账本序号排序；可选known_at_cutoff还原某知识时点。
+- 冲销只能新增REVERSAL事件，必须引用已存在TRANSFER、精确反向键和相同数量；原事件不可修改。当前模型仅支持一次完整冲销，不定义部分冲销/多次补偿政策。
+- 从显式合成期初余额重建截止时点投影，提供账本记录与余额投影核对；禁止跨单位、跨reset group或全局总额汇总。
+- 新增17个断言场景及专项测试，CI运行self-check并上传JSON报告；报告保持BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED。
+- **边界：** 仅内存、非持久化WORM账本；不连接消息队列/ERP/WMS/CMMS，不提供企业审计留存、并发/权限或签名能力。CH17-T004继续IN_PROGRESS。

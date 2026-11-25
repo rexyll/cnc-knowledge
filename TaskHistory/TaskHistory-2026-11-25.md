@@ -274,3 +274,16 @@
 - CI：Knowledge Quality增加模型self-check与JSON Artifact；自检报告声明execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED，不连接企业系统、不写数据库/API。
 - 文档登记：更新KNOW-000032第12节、章节README、资源README、ASSET-INDEX、根TaskPlan、CH17 TaskPlan第6.19节和coverage。CH17覆盖统计12篇KNOW、45个实体、43项资源、9条去重来源。
 - 遗留：22类事件转移契约、13类候选账户及候选维度均未获企业批准；期初余额模板无正式数据；30项业务测试NOT_RUN。数学自检PASS不构成企业业务验收，CH17-T004继续IN_PROGRESS。
+
+## CH17-T004 不可变库存事件账本与时点重建第十三轮（2026-11-25）
+
+- 实际完成时间：2026-11-25T23:10:00+08:00（Asia/Shanghai）。
+- 所在分支：main（未创建新分支）。
+- 新增 `scripts/spare_parts_inventory_event_ledger.py`：追加式内存账本，事件记录包含event_id、business_event_id、source_system_id、idempotency_key、business_time、ingestion_time、TRANSFER/REVERSAL类型、双边多维键、Decimal数量及冲销引用。
+- 幂等与身份：同幂等键同载荷重复投递返回NO_OP；同键异载荷、不同幂等键复用event_id均拒绝。账本序号单调递增，记录只读tuple暴露。
+- 迟到/乱序：按接收顺序追加保留，不覆盖原事件；余额重建按business_time与ledger_sequence排序。可选known_at_cutoff重现特定知识时点收到的事件集合；所有时间戳要求显式时区。
+- 冲销：新增REVERSAL记录引用已存在TRANSFER，要求相反余额键、相同数量、业务时间不早于原事件；不修改原始事件。当前模型只支持一次完整冲销，部分冲销/多次补偿待企业定义。
+- 重建与核对：从显式提供的合成期初余额重建业务截止时点投影，输出已应用事件ID和余额；失败不修改账本。禁止跨单位、跨reset group或全局库存总额汇总。
+- 新增17个纯合成断言场景及专项测试；CI自检上传JSON Artifact。报告execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED；无外部连接和数据库/API写入。
+- 文档更新：KNOW-000032第13节、ASSET-000051、资源/章节README、ASSET-INDEX、CH17 TaskPlan第6.20节、根TaskPlan、coverage和本TaskHistory。
+- **明确限制：** 当前为内存模拟，不是持久化WORM存储；没有签名、权限/职责分离、并发/跨进程控制、企业审计保留或消息队列交付保证。事件语义、部分冲销、SoR与期初快照审批仍待企业确认；CH17-T004继续IN_PROGRESS。

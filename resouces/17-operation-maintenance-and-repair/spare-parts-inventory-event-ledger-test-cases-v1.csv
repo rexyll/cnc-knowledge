@@ -1,0 +1,18 @@
+test_id,scope,assertion,expected_result,execution_evidence,approval_status,notes
+IEL-001,"Append assigns immutable monotonic ledger sequence",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-002,"Stored records are exposed through immutable tuple",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-003,"Duplicate delivery with same idempotency key and payload is a no-op",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-004,"Idempotency key reuse with changed payload is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-005,"Event ID reuse with another idempotency key is rejected",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-006,"Required event identity fields are validated",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-007,"Business and ingestion timestamps require explicit UTC offset",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-008,"Late-arriving event remains stored and knowledge cutoff controls visibility",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-009,"Out-of-order arrival rebuilds in business-time order",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-010,"Business cutoff excludes later events",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-011,"Reversal is a new immutable opposite event",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-012,"Reversal requires an existing target and exact opposite dimensions",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-013,"An original transfer can be reversed only once in this synthetic model",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-014,"Rebuild detects reversal whose target is not visible at knowledge cutoff",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-015,"Failed rebuild does not mutate the source event ledger",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-016,"Reconciliation report never calculates a global inventory total",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-017,"Self-check remains blocked pending enterprise approval",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence

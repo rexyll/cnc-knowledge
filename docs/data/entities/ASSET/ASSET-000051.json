@@ -1,0 +1,54 @@
+{
+  "entity_id": "ASSET-000051",
+  "entity_type": "asset_file",
+  "canonical_name": "库存不可变事件账本测试矩阵v1",
+  "english_name": "Inventory append-only event ledger test matrix v1",
+  "aliases": [
+    "Inventory transition contracts v1"
+  ],
+  "description": "17个纯合成断言场景，覆盖不可变追加、幂等、迟到/乱序事件、业务时点与知识时点重建、显式冲销及投影核对。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "库存状态机",
+    "双边转移",
+    "项目原创资源",
+    "ASSET-000045"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T23:10:00+08:00",
+  "updated_at": "2026-11-25T23:10:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-event-ledger-test-cases-v1.csv",
+    "file_name": "spare-parts-inventory-event-ledger-test-cases-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000032",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic mathematical test matrix; not enterprise acceptance evidence",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "17个CI断言场景映射表；不构成企业业务规则批准、库存账本验收或生产审计证据。"
+}
