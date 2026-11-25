@@ -249,3 +249,15 @@
 - **CI产物：** [库存状态模型就绪/审批门禁报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126/artifacts/15022026919)；[静态夹具验证报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126/artifacts/15022166087)；[30个场景包](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126/artifacts/15022265662)；[离线事件期望投影报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45614737126/artifacts/15021792830)。
 - **覆盖统计：** CH17更新为12篇KNOW、40个登记实体、38项资源记录、SRC去重9条。新增ASSET-000045为待批准契约资源；未新增技术知识文章。
 - **遗留与状态：** CH17-T004继续IN_PROGRESS。当前内核只证明通用双边转移的数学性质，不表示库存业务状态机已获批准或执行；22项转移契约均NOT_APPROVED，企业环境检查22项NOT_ASSESSED，30项业务测试NOT_RUN。下一阶段须由企业库存数据所有者批准账户字典、库存维度、期初快照、单位换算、预留/分配、退料、冲销和外部账户映射后，才能生成可执行期望模型。
+## CH17-T004 库存账户分类、维度字典与期初状态场景设计第十一轮
+
+- **实际完成时间：** 2026-11-25T21:25:00+08:00（Asia/Shanghai）
+- **所在分支：** `main`（未创建其他分支）
+- **新增候选账户字典：** `spare-parts-inventory-account-catalog-candidates-v1.csv`（ASSET-000046），13类候选账户，区分内部实物数量账户、外部对方账户、非实物备忘/承诺账户和观察记录。预留/分配不默认重复计入实物库存；PO未交承诺不混入实物库存；盘点差异观察不自动调整账面。
+- **新增候选维度字典：** `spare-parts-inventory-dimension-dictionary-candidates-v1.csv`（ASSET-000047），提出物料、批次、库位、所有权、质量状态、计量单位及工单/采购行等候选维度。必填性、适用范围和规范化规则均未获企业批准。
+- **新增期初余额空白模板：** `spare-parts-inventory-opening-balance-template-v1.csv`（ASSET-000048），仅有表头，无预填库存数量；要求来源系统/记录、截止时点/时区、提取时间、SHA-256、单位换算版本和批准依据。
+- **新增期初状态场景矩阵：** `spare-parts-inventory-opening-state-scenario-matrix-v1.csv`（ASSET-000049），覆盖SPAT-006/008/010/012/017/019/020/021/022/023的期初输入要求与候选守恒断言；均为PROPOSED_NOT_APPROVED、NOT_RUN。
+- **结构化登记：** 新增ASSET-000046～ASSET-000049四项资源实体；更新ASSET-INDEX、资源README、章节README、KNOW-000032第11节、根TaskPlan、CH17 TaskPlan第6.18节和CHAPTER-COVERAGE。CH17统计12篇KNOW、44个登记实体、42项资源记录、SRC去重9条。
+- **CI验收：** GitHub Actions [Run 45617936840](https://github.com/rexyll/cnc-knowledge/actions/runs/45617936840) completed/success；Knowledge structure and data quality与CH12 numerical resource tests两个Job均成功；全量单元测试42/42通过；22类转移契约继续全部NOT_APPROVED，库存模型就绪状态仍为BLOCKED。
+- **CI产物：** [库存状态模型就绪/审批门禁报告](https://github.com/rexyll/cnc-knowledge/actions/runs/45617936840/artifacts/15022767310)。
+- **边界与遗留：** 本轮只建立候选账户/维度结构和期初输入模板，不推断企业库存政策、不填充期初数量、不启用双边转移契约、不计算业务期末库存。企业库存数据所有者仍需批准账户字典、维度组合、所有权/质量状态、单位换算、预留/分配语义、期初快照及外部账户。数据集DRAFT、22项环境检查NOT_ASSESSED、30项业务测试NOT_RUN；CH17-T004继续IN_PROGRESS。
