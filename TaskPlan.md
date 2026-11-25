@@ -612,3 +612,13 @@
 - 新增 `docs/17-operation-maintenance-and-repair/spare-parts-management-and-lifecycle.md`（KNOW-000027），将备件主数据、关键度评估、库存与补货、替代审批、PCN/EOL生命周期及维修工单消耗反馈纳入统一闭环。
 - 新增六份原创CSV模板（ASSET-000025～ASSET-000030），归档于 `resouces/17-operation-maintenance-and-repair/`，并同步章节计划、README、ASSET-INDEX与CHAPTER-COVERAGE。
 - **状态：** CH17-T004为IN_PROGRESS。尚无目标机型BOM/OEM备件目录、库存和消耗历史、正式交期/PCN/EOL资料，因此未定义真实库存参数、关键度阈值、替代批准或最后采购数量。
+
+
+
+## CH17-T004 备件系统集成与数据治理第二轮（2026-11-25）
+
+- 新增正文 `docs/17-operation-maintenance-and-repair/spare-parts-system-integration-and-data-governance.md`（KNOW-000028），明确ERP/CMMS/EAM/PLM/PDM与知识库的职责边界、字段级SoR、外部键和有效期映射、主数据与事务对象边界、库存事件桥接/对账、数据质量规则、库存策略决策输入、RACI和状态控制。
+- 新增三份原创资源：字段映射空模板 `spare-parts-enterprise-system-field-mapping-template.csv`（ASSET-000031，27列）；数据质量与对账规则目录 `spare-parts-data-quality-and-reconciliation-rules.csv`（ASSET-000032，16条建议规则/14列）；库存策略决策空模板 `spare-parts-stock-policy-decision-template.csv`（ASSET-000033，35列）。全部归档于 `resouces/17-operation-maintenance-and-repair/`。
+- **数据模型边界：** 复用已有MACHINE、MINST、BOM、PART、PRODUCT、VENDOR、DOC、ASSET及既有关系谓词；不把库存流水、PO行、收货、维修工单或审批实例虚构为静态实体，不新增全库Schema/关系谓词，也不创建无真实对象支持的REL记录。
+- **验收边界：** 规则目录所有记录初始为PROPOSED；策略、阈值/容差、SoR、映射方向、RACI、SLA和对账频率均需企业结合真实系统及批准政策确定。未连接ERP/CMMS/EAM/PLM，无真实库存/采购/工单数据，也未批准任何替代件或库存参数。
+- **状态：** CH17-T004继续IN_PROGRESS；待获得经授权的目标机型BOM/OEM目录和脱敏业务系统字段、库存流水、采购/收货、维修工单及PCN/EOL资料后，才能进入企业级字段映射与策略审批。

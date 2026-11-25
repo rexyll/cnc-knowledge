@@ -38,3 +38,6 @@
 
 
 备件管理与数据闭环见 [数控机床备件管理、替代审批与生命周期闭环](spare-parts-management-and-lifecycle.md)，六份备件主数据、关键度、库存补货、替代审批、生命周期及维修消耗反馈模板位于本章 `resouces/17-operation-maintenance-and-repair/`。
+
+
+备件跨系统数据治理见 [数控机床备件系统集成、字段映射与数据治理](spare-parts-system-integration-and-data-governance.md)，字段映射、数据质量/对账规则和库存策略决策模板位于本章 `resouces/17-operation-maintenance-and-repair/`。

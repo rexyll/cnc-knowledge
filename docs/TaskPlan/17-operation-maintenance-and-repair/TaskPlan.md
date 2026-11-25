@@ -157,3 +157,14 @@
 - **数据与安全边界：** 模板不创建真实PART/PRODUCT/MINST，不填备件料号、供应商、采购价格、交期、库存余额、关键度评分、补货参数或替代结论。安全相关部件的决策必须服从适用法规、OEM/合同与企业风险审批；替代件需限定机型/序列/配置/BOM范围并取得适用技术审批和验证。
 - **未完成项：** 尚无目标机型受控BOM/OEM备件目录、企业库存/消耗历史、正式供应商交期、PCN/EOL通知和真实维修工单，尚未激活具体库存策略或替代批准。
 - **状态：** CH17-T004保持IN_PROGRESS；后续需导入授权数据并由设备、工程、质量、采购和仓储角色完成审核与系统映射。
+
+
+
+## 6.9 CH17-T004 备件系统集成、字段映射与数据治理第二轮（2026-11-25）
+
+- 新增正文 `docs/17-operation-maintenance-and-repair/spare-parts-system-integration-and-data-governance.md`（KNOW-000028），补充ERP/CMMS/EAM/PLM/PDM系统职责候选、字段级SoR与外部键、静态知识对象和业务事务对象边界、库存事件对账、数据质量规则、库存策略输入及RACI/状态治理。
+- 新增 `spare-parts-enterprise-system-field-mapping-template.csv`（ASSET-000031，27列表头空模板）、`spare-parts-data-quality-and-reconciliation-rules.csv`（ASSET-000032，16条/14列建议规则）、`spare-parts-stock-policy-decision-template.csv`（ASSET-000033，35列表头空模板）。
+- **规则及参数边界：** 16条规则均为PROPOSED，需企业数据所有者确认适用性、阻断模式、检测频率、阈值/容差来源和处置责任；库存策略模板不填写安全库存、订货点、最小/最大量、MOQ或复核周期数值。字段权威系统、映射和RACI均未预先指定。
+- **模型边界：** 复用当前已有MACHINE、MINST、BOM、PART、PRODUCT、VENDOR、DOC、ASSET及其支持的关系类型。采购单行、收货、库存移动、批次、预留、维修工单和审批实例仍属于源系统事务对象，不伪装成知识实体；本轮不修改全库Schema。
+- **未完成项：** 尚未连接任何ERP/CMMS/EAM/PLM，不含真实企业记录、设备配置、供应商交期、库存、交易、工单或经批准的库存策略；企业级映射和对账需待授权数据输入后完成。
+- **状态：** CH17-T004保持IN_PROGRESS。

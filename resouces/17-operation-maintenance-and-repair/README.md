@@ -80,3 +80,12 @@
 - `repair-spare-consumption-feedback-template.csv`：将维修工单、设备实例、旧/新件批次、库存事务、复验结果、补货请求和故障反馈关联。
 - 所有文件为项目原创空白模板，不含真实料号、供应商、库存、价格、交期、阈值、批准的替代件或现场维修数据。
 - 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-management-and-lifecycle.md`；实体KNOW-000027、ASSET-000025～ASSET-000030。
+
+
+## CH17-T004 备件系统集成与数据治理第二轮（2026-11-25）
+
+- `spare-parts-enterprise-system-field-mapping-template.csv`：27列空白模板，逐字段记录源系统对象/字段、规范对象/字段、数据类型与单位、外部键作用域、字段级SoR、转换/空值/有效期规则、同步方向、质量规则、敏感等级和审批。
+- `spare-parts-data-quality-and-reconciliation-rules.csv`：16条项目建议规则，覆盖源键唯一、引用完整性、BOM配置适用性、修订有效期、单位转换、库存分桶、事务数量守恒、幂等、采购在途、批次追溯、替代审批、PCN/EOL、工单消耗、状态权限、来源审计和敏感数据最小化。所有规则均为PROPOSED，不能未经企业批准直接作为生产阻断规则。
+- `spare-parts-stock-policy-decision-template.csv`：35列表头空模板，收集需求窗口、消耗与安装基数来源、供应商交期证据、关键度、策略方法版本、库存参数、适用配置、审批和复核字段；没有预填安全库存、订货点、最小/最大量、MOQ或周期。
+- 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-system-integration-and-data-governance.md`；实体KNOW-000028、ASSET-000031～ASSET-000033。
+- 本轮不代表企业ERP/CMMS/EAM/PLM接口已建立；实际映射与规则启用需取得授权数据，并由业务、工程、质量、采购、仓储和信息化责任角色批准。
