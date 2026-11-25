@@ -202,3 +202,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 11个故障场景覆盖写入中断、代际孤立、旧版本保持、文件篡改、提交标记缺失、版本不兼容和路径安全。
 - CI Run 45631566264：两个Job均成功，全库98个unittest方法通过；Artifact ch17-inventory-ledger-persistence-45631566264。
 - 所有测试使用临时目录；不连接企业系统、不写生产状态。原子rename/fsync依赖操作系统和文件系统，不等于数据库事务、WORM或防篡改存储。
+
+## CH17-T004 库存账本并发写入控制与多进程恢复第十六轮（2026-11-25）
+
+- 新增POSIX flock跨进程写锁及CURRENT compare-and-swap（CAS），防止协作式写入者基于过期CURRENT覆盖新代际。
+- 新增10个合成测试场景；5个新增unittest方法覆盖两个进程竞争、陈旧写入、锁超时、进程崩溃后内核释放锁及中断恢复。
+- CI Run 45635237388：两个Job成功，全库103个unittest通过；自检为2个写入进程、1个提交成功、1个CAS冲突，恢复CURRENT成功。
+- Artifact：ch17-inventory-ledger-concurrency-45635237388。
+- 平台限制：POSIX flock，Windows原生锁未实现；网络文件系统和分布式锁语义未验证。测试只使用临时目录，不连接企业系统。

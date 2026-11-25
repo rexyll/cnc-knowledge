@@ -323,3 +323,13 @@
 - CI Run 45631566264：Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库98个unittest方法通过（新增11项持久化故障测试）。Artifact ch17-inventory-ledger-persistence-45631566264。
 - 限制：文件系统原子rename/fsync耐久性依赖运行环境；没有多进程写锁、数据库事务、WORM、签名、外部信任根或异机复制。纯临时目录合成测试，无企业系统连接或生产写入。
 - CH17-T004保持IN_PROGRESS；business_rule_assertions=NOT_EVALUATED；execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+# 第十六轮：库存账本并发写入控制与多进程恢复一致性（2026-11-25）
+
+- 所在分支：main（未创建新分支）。
+- 在本地持久化模块增加POSIX flock跨进程排他锁、锁超时和CURRENT代际CAS；写入全流程位于锁临界区，陈旧代际提交拒绝。
+- 新增5个专项测试：双进程CAS竞争、唯一胜者/冲突、陈旧写入拒绝、锁超时、进程异常退出后锁自动释放及中断后再提交。
+- 首次CI Run 45635025633：全库103个unittest通过，但Knowledge self-check入口缺少仓库根目录导入路径，失败；已补充sys.path初始化。保留失败记录，不将其视为验收通过。
+- 修复后CI Run 45635237388：completed/success；Knowledge structure and data quality、CH12 numerical resource tests两个Job均success；全库103个unittest通过。并发自检PASS：2个进程、1个提交胜者、1个CAS冲突、CURRENT恢复成功。Artifact ch17-inventory-ledger-concurrency-45635237388。
+- POSIX flock为协作式advisory lock；Windows原生文件锁、网络文件系统锁语义和分布式协调未验证。无企业系统连接或生产写入。
+- CH17-T004保持IN_PROGRESS；business_rule_assertions=NOT_EVALUATED；execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL。

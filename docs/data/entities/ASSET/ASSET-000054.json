@@ -1,0 +1,56 @@
+{
+  "entity_id": "ASSET-000054",
+  "entity_type": "asset_file",
+  "canonical_name": "库存账本并发写入与多进程恢复测试矩阵v1",
+  "english_name": "Inventory ledger concurrent writers and multiprocess recovery test matrix v1",
+  "aliases": [
+    "Inventory ledger concurrency test cases v1"
+  ],
+  "description": "10个纯合成场景，覆盖POSIX flock、锁超时、CURRENT代际CAS、并发唯一胜者、进程崩溃释放锁和恢复一致性。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "库存账本",
+    "并发写入",
+    "POSIX flock",
+    "CAS",
+    "项目原创资源",
+    "ASSET-000054"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T22:35:00+08:00",
+  "updated_at": "2026-11-25T22:35:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-concurrency-test-cases-v1.csv",
+    "file_name": "spare-parts-inventory-ledger-concurrency-test-cases-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000032",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic POSIX multiprocess concurrency test matrix; not production or distributed-lock evidence",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "10个并发与恢复场景；POSIX advisory lock要求协作式访问，Windows/网络文件系统/跨主机语义未验证。"
+}

@@ -280,3 +280,12 @@
 - 故障注入覆盖账本写后、快照写后、代际目录rename后、CURRENT替换前；证明未发布代际不会成为当前版本，旧CURRENT在下一代发布失败时仍可恢复。增加损坏文件、缺失提交标记、未知版本、路径穿越和重复代际测试。
 - 新增ASSET-000053及11个纯合成故障场景，11个专项unittest方法；CI自检只在临时目录完成，不写生产数据。
 - **边界：** 原子rename/fsync耐久性依赖OS/文件系统/挂载/设备；无多进程锁、数据库事务、分布式共识、WORM、签名、外部信任根、异机复制和密钥管理。CH17-T004继续IN_PROGRESS，业务规则NOT_EVALUATED，审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+## 6.23 CH17-T004 库存账本并发写入控制与多进程恢复一致性第十六轮（2026-11-25）
+
+- 在本地代际持久化中引入POSIX fcntl.flock跨进程排他锁；锁超时失败关闭，进程退出/崩溃由内核释放锁。锁文件保留不等于锁占用。
+- 增加expected_current_generation compare-and-swap：持锁后读取CURRENT并与调用者预期比较；过期写入者拒绝提交。默认*不启用CAS，None要求当前无提交代际。
+- 新增并发两个进程竞争、CAS唯一胜者、陈旧写入冲突、锁超时、进程崩溃自动释放和中断后再提交测试；新增5个专项unittest方法。
+- CI多进程自检：2个独立写入者、1个COMMITTED、1个CONFLICT，恢复CURRENT成功。Run 45635237388两个Job均success，全库103个unittest方法通过；Artifact ch17-inventory-ledger-concurrency-45635237388。
+- **平台限制：** 当前使用POSIX flock，Windows原生锁未实现；advisory lock要求写入者遵守协议，网络文件系统锁语义需单独验证；不是分布式锁，不保护绕过模块的外部写入。
+- CH17-T004保持IN_PROGRESS；业务断言NOT_EVALUATED；审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。

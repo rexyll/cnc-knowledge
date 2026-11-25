@@ -1,0 +1,11 @@
+case_id,category,assertion,expected_result,execution_scope,status
+ILC-001,locking,Two independent processes cannot enter the writer critical section simultaneously,EXCLUSIVE_LOCK,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-002,timeout,Writer lock wait exceeding timeout fails closed,LOCK_TIMEOUT,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-003,CAS,Expected CURRENT generation matches and commit succeeds,COMMITTED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-004,CAS,Stale expected CURRENT generation is rejected,CONFLICT,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-005,race,Two processes with same expected generation produce exactly one winner,ONE_COMMIT_ONE_CONFLICT,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-006,crash,Kernel releases advisory lock when owning process exits,LOCK_AVAILABLE,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-007,recovery,Current generation restores after concurrent winner selected,RECOVERED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-008,interruption,Exception inside critical section releases lock,LOCK_AVAILABLE,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-009,governance,Concurrency self-check does not approve business rules,NOT_EVALUATED,SYNTHETIC_TEST_ONLY,NOT_RUN
+ILC-010,platform,POSIX flock assumption is explicit and Windows lock is not claimed,PLATFORM_LIMIT_DOCUMENTED,SYNTHETIC_TEST_ONLY,NOT_RUN
