@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000389",
+  "source_type": "standard_catalog",
+  "title": "ISO 17359:2018 — Condition monitoring and diagnostics of machines — General guidelines",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/71194.html",
+  "version": "Edition 3, 2018-01; ISO catalogue last reviewed and confirmed 2023; accessed 2026-11-25.",
+  "published_on": null,
+  "accessed_on": "2026-11-25",
+  "locator": "Official catalogue abstract and lifecycle status; general procedures for establishing a machine condition-monitoring programme.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official catalogue confirms published edition 3 and current status after 2023 review. Used only as a general programme-planning reference; it does not define CNC machine-specific monitoring intervals, alarm thresholds, acceptance limits or root causes.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

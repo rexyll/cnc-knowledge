@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000390",
+  "source_type": "standard_catalog",
+  "title": "ISO 230-2:2014 — Test code for machine tools — Part 2: Determination of accuracy and repeatability of positioning of numerically controlled axes",
+  "publisher": "International Organization for Standardization (ISO)",
+  "author": null,
+  "url": "https://www.iso.org/standard/55295.html",
+  "version": "Edition 4, 2014-05; Amendment 1:2016 (https://www.iso.org/standard/63976.html); ISO catalogue last reviewed and confirmed 2025; accessed 2026-11-25.",
+  "published_on": null,
+  "accessed_on": "2026-11-25",
+  "locator": "Official catalogue abstract and lifecycle status; direct measurement of individual linear or rotary numerically controlled axes.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official catalogue confirms ISO 230-2:2014 was reviewed and confirmed in 2025; Amendment 1:2016 is a separate published amendment. The method concerns positioning accuracy and repeatability of individual axes; it is not a simultaneous multi-axis test and does not create universal post-repair release limits.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

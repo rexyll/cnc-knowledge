@@ -547,3 +547,11 @@
 - GitHub Actions [Run 45517202862](https://github.com/rexyll/cnc-knowledge/actions/runs/45517202862) success：CH12资源测试143/143，RK4/ENE/PATH/SCURVE步骤、仓库单测、strict lint和归档全部通过。
 - 补齐S曲线论文、五轴CNC轴/笛卡尔空间约束论文、LinuxCNC路径混合及look-ahead官方文档来源SRC-000375～SRC-000378。该结果仅为标量合成参考，不含多轴逆运动学、look-ahead/拐角混合、伺服或机床验收。
 - CH12-T003仍为IN_PROGRESS；真实控制器适配、机床参数、台架、HIL和实机验证仍需独立完成。
+
+
+## CH17-T001 维修工作流与记录闭环扩展（2026-11-25）
+
+- 新增CH17维修流程正文：`docs/17-operation-maintenance-and-repair/repair-workflow-and-records.md`，覆盖报修、证据固化、风险与危险能量控制、OEM文件/人员授权、诊断接口、维修变更追溯、维修后复验、放行和关闭。
+- 在 `resouces/17-operation-maintenance-and-repair/` 新增维修工单及维修后复验CSV模板，并将原开机准备清单一并补登记为ASSET实体；来源新增SRC-000389～SRC-000390。
+- CH17覆盖度更新为2级基础知识框架；仅代表有来源支持的通用维修流程，不代表型号级可执行SOP或现场验证。
+- CH17-T001仍为IN_PROGRESS；T002～T004维持TODO。下一优先项是确定具体机床系列并取得现行OEM服务/维护手册，再形成型号级维护与维修资料。

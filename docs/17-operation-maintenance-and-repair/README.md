@@ -14,7 +14,7 @@
 
 [打开本章 TaskPlan](../TaskPlan/17-operation-maintenance-and-repair/TaskPlan.md)
 
-本章知识内容按任务计划逐步研究，不预填未经核实的技术参数或结论。第一版框架见 [机床操作、维护与维修总览](overview.md)；可填写的开机准备检查模板位于 resouces/17-operation-maintenance-and-repair/operation-readiness-checklist.csv。
+本章知识内容按任务计划逐步研究，不预填未经核实的技术参数或结论。第一版框架见 [机床操作、维护与维修总览](overview.md)；维修闭环见 [数控机床维修工作流、工单与维修后复验](repair-workflow-and-records.md)。开机准备检查、维修工单和维修后复验矩阵分别位于 resouces/17-operation-maintenance-and-repair/operation-readiness-checklist.csv、repair-work-order-template.csv 和 post-repair-verification-matrix.csv。
 
 ## 建议正文结构
 

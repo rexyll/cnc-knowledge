@@ -25,6 +25,7 @@
 - [15. 行业标准、安全与合规](./15-standards-safety-and-compliance/README.md) — 数控机床相关国家/行业/国际标准、机械安全、电气安全、功能安全、EMC、环境要求和合规管理。
 - [16. 制造、装配、安装与调试](./16-manufacturing-assembly-installation/README.md) — 机床制造流程、精密装配、安装基础、运输就位、精度恢复、电气接线、上电、调试和交付。
 - [17. 操作、维护与维修](./17-operation-maintenance-and-repair/README.md) — 机床操作规范、开停机、加工准备、日常保养、计划维护、零部件拆装更换、备件策略和维修记录。
+  - [维修工作流、工单与维修后复验](17-operation-maintenance-and-repair/repair-workflow-and-records.md)
 - [18. 故障诊断与可靠性](./18-fault-diagnosis-and-reliability/README.md) — 机械、电气、数控、伺服、通信、软件和加工质量故障，以及根因分析、可靠性、可维护性和故障统计。
 - [19. 厂商、产品与供应链](./19-manufacturers-products-and-supply-chain/README.md) — 数控机床整机厂、数控系统、伺服驱动、主轴、导轨丝杠、轴承、刀具、传感器及备件供应商和产品目录。
 - [20. BOM、图纸与工程技术文档](./20-bom-drawings-and-technical-documents/README.md) — 整机/子系统BOM、零件清单、电气BOM、图纸、规格书、手册、技术变更、文档版本和数据关联。

@@ -1,0 +1,66 @@
+{
+  "entity_id": "KNOW-000021",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床维修工作流、工单与维修后复验",
+  "english_name": "CNC machine tool repair workflow, work orders and post-repair verification",
+  "aliases": [
+    "机床维修闭环",
+    "维修工单与复验流程"
+  ],
+  "description": "定义数控机床维修活动的风险控制、工单、资料/人员授权、诊断接口、部件和配置追溯、维修后复验及放行关闭流程。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与服务管理",
+    "维修闭环与维修后验证"
+  ],
+  "tags": [
+    "CH17",
+    "机修",
+    "维修工单",
+    "维修后复验",
+    "LOTO",
+    "参数追溯",
+    "备件追溯"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T12:20:00+08:00",
+  "updated_at": "2026-11-25T12:20:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000382",
+    "SRC-000386",
+    "SRC-000387",
+    "SRC-000388",
+    "SRC-000389",
+    "SRC-000390"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/repair-workflow-and-records.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "机床维修风险评估、工单字段、诊断接口、OEM文档审查、维修执行追溯、维修后复验矩阵、状态监测与单轴定位测试标准入口、放行关闭",
+    "article_status": "model_agnostic_repair_workflow_framework",
+    "machine_specific_procedures": false,
+    "machine_parameters_defined": false,
+    "maintenance_intervals_defined": false,
+    "field_execution_validation": false,
+    "hardware_validation": false,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/repair-work-order-template.csv",
+      "resouces/17-operation-maintenance-and-repair/post-repair-verification-matrix.csv"
+    ]
+  },
+  "notes": "本文定义维修管理与证据闭环，不替代目标机型OEM服务手册、现场风险评估或适用法规；CH18负责详细故障诊断；所有机型级步骤、参数、周期和验收限值均待指定设备及受控资料后核实。"
+}

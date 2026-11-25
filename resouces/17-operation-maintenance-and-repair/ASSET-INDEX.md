@@ -2,7 +2,9 @@
 
 | 文件 | 类型 | 来源/作者 | 日期 | 权利状态 | 关联内容 | 说明 |
 |---|---|---|---|---|---|---|
-| operation-readiness-checklist.csv | CSV模板 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T001 / overview.md | 25项设备识别、开机准备、运行监视和维护维修边界检查项；结果初始为NOT_ASSESSED，不含型号级阈值或周期 |
+| operation-readiness-checklist.csv | CSV模板 / ASSET-000008 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T001 / overview.md / KNOW-000021 | 25项设备识别、开机准备、运行监视和维护维修边界检查项；结果初始为NOT_ASSESSED，不含型号级阈值或周期 |
+| repair-work-order-template.csv | CSV模板 / ASSET-000009 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T001 / repair-workflow-and-records.md / KNOW-000021 | 维修工单身份、风险、授权、诊断、维修、备件、参数变更、复验和放行记录字段 |
+| post-repair-verification-matrix.csv | CSV模板 / ASSET-000010 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T001 / repair-workflow-and-records.md / KNOW-000021 | 维修影响驱动的系统复验覆盖矩阵；无通用阈值，判据必须绑定OEM/合同/标准 |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）

@@ -1,0 +1,54 @@
+{
+  "entity_id": "ASSET-000008",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床开机准备检查表",
+  "english_name": null,
+  "aliases": [],
+  "description": "25项通用开机准备与运行监视空白检查模板。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与维护记录",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "项目原创CSV模板",
+    "维修记录"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T12:20:00+08:00",
+  "updated_at": "2026-11-25T12:20:00+08:00",
+  "verified_at": "2026-11-25T12:20:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000382",
+    "SRC-000386",
+    "SRC-000387",
+    "SRC-000388"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/operation-readiness-checklist.csv",
+    "file_name": "operation-readiness-checklist.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000021",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original CSV template authored for this knowledge base",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "原创空白模板；不含真实机床/客户数据，不包含未经核实的机型参数、周期或验收阈值。实际记录须存入企业受控维护系统。"
+}
