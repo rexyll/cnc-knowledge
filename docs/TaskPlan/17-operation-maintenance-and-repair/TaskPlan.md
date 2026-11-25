@@ -116,3 +116,12 @@
 
 - **实施提交：** 852bf193dffc7cc3dda31ae9de7da61961267e4c；计划、索引与覆盖度同步提交：200620804124e88a7adf97f78908aabb69f8e3ff。
 - **CI验收：** 实施提交Run 45551283372、同步提交Run 45551345376均completed/success；两个Run的知识结构与数据质量、CH12数值资源回归Job全部通过。此CI不表示现场或实机维修验证。
+
+
+## 6.5 CH17-T003 关键部件族影响分析与复验矩阵（2026-11-25）
+
+- 新增正文 docs/17-operation-maintenance-and-repair/component-family-impact-assessment-and-verification.md（KNOW-000024），将关键部件更换审查细化为九类部件族：主轴、伺服/编码器/驱动、滚珠丝杠/支撑轴承、直线导轨、刀库/换刀/刀塔、卡盘/夹持、液压/气动、润滑/冷却/排屑、CNC/PLC/I/O/传感器。
+- 新增原创资源 component-family-impact-verification-matrix-template.csv（ASSET-000018），共57条审查项目、20列；逐项预留拆前基线、兼容性证据、OEM程序、危险能量/风险审核、复验域、验证方法、接受准则、责任专业、停工点、适用性和结果字段。
+- 矩阵仅为审查提示，初始适用性/结果为TO_BE_ASSESSED/NOT_TESTED；不表示全部行均适用，不给出机型级拆装动作、吊装/扭矩/预紧参数、润滑介质或验收限值。
+- **未完成项：** 尚未指定目标机床和配置，也未取得现行OEM服务文件，故没有完成型号级映射、部件替代批准、实际测量或现场/实机验证。
+- **状态：** CH17-T003保持IN_PROGRESS。

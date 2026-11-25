@@ -578,3 +578,11 @@
 - **状态：** CH17-T003为IN_PROGRESS；仍需基于指定机床系列和现行OEM服务文件建立经审核的型号级部件更换指导，并取得适用的现场/实机验证证据。
 
 - **提交与CI验收补记：** 实施提交 `852bf193dffc7cc3dda31ae9de7da61961267e4c` 对应 [Run 45551283372](https://github.com/rexyll/cnc-knowledge/actions/runs/45551283372)；计划/索引同步提交 `200620804124e88a7adf97f78908aabb69f8e3ff` 对应 [Run 45551345376](https://github.com/rexyll/cnc-knowledge/actions/runs/45551345376)。两次运行的所有Job均success；CI只说明仓库结构/数值资源回归通过，不代表CH17现场或实机验证。
+
+
+## CH17-T003 关键部件族影响分析与复验矩阵里程碑（2026-11-25）
+
+- 新增 docs/17-operation-maintenance-and-repair/component-family-impact-assessment-and-verification.md（KNOW-000024），覆盖主轴、伺服/反馈、滚珠丝杠/支撑轴承、直线导轨、刀库/刀塔、卡盘/夹持、液压气动、润滑冷却排屑及CNC/PLC/I/O/传感器九类部件。
+- 新增 resouces/17-operation-maintenance-and-repair/component-family-impact-verification-matrix-template.csv（ASSET-000018），共57条审查记录、20列；包含拆前基线、兼容性证据、OEM程序、危险能量/风险审查、复验域、验证方法、判据来源、责任专业和停工点。
+- 矩阵默认TO_BE_ASSESSED/NOT_TESTED，仅为通用审查提示；无目标机床配置和现行OEM文件，不能作为型号级SOP或验收标准。
+- **状态：** CH17-T003保持IN_PROGRESS；后续需依据指定设备型号、序列范围、选件和受控OEM服务手册映射条目，并取得适用现场复验记录。

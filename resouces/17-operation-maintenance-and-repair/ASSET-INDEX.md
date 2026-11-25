@@ -12,6 +12,7 @@
 | component-replacement-work-package-template.csv | CSV模板 / ASSET-000015 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / component-replacement-work-package.md / KNOW-000023 | 单次零部件更换的设备身份、OEM依据、作业授权、前置停工点、拆前基线、复装与放行字段 |
 | component-tool-and-measurement-register-template.csv | CSV模板 / ASSET-000016 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / component-replacement-work-package.md / KNOW-000023 | 工具、吊装器具、测量和诊断设备身份、能力、检验/校准状态追溯 |
 | component-interface-and-replacement-compatibility-template.csv | CSV模板 / ASSET-000017 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / component-replacement-work-package.md / KNOW-000023 | 机械、电气、流体、控制、软件、热/润滑和安全接口的替代兼容性审查 |
+| component-family-impact-verification-matrix-template.csv | CSV矩阵模板 / ASSET-000018 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / component-family-impact-assessment-and-verification.md / KNOW-000024 | 九类关键部件共57条影响审查与复验项目；初始待评估/未测试，不是型号级执行SOP |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）
