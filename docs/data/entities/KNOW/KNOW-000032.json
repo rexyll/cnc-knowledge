@@ -1,0 +1,67 @@
+{
+  "entity_id": "KNOW-000032",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件合成测试夹具基线与30项用例映射",
+  "english_name": "CNC machine tool spare parts synthetic fixture baseline and 30-case coverage mapping",
+  "aliases": [
+    "备件合成数据集v1",
+    "SPAREPARTS-SYN-BASE-001",
+    "备件测试夹具基线"
+  ],
+  "description": "建立版本化纯合成备件测试夹具，覆盖虚构设备配置/BOM、物料、供应来源、采购收货、质量、库存、替代、维修、生命周期、权限和事件，并将SPAT-001～SPAT-030逐项映射。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "合成测试夹具"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "合成夹具",
+    "SPAT",
+    "库存事务",
+    "BOM适用性",
+    "测试数据"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T17:02:00+08:00",
+  "updated_at": "2026-11-25T17:02:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-baseline-v1.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "dataset_id": "SPAREPARTS-SYN-BASE-001",
+    "dataset_version": "1.0.0",
+    "dataset_status": "DRAFT",
+    "synthetic_only": true,
+    "source_data_used": false,
+    "fixture_record_count": 89,
+    "test_case_count": 30,
+    "execution_status": "NOT_RUN",
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-baseline-v1-manifest.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-baseline-v1.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-test-case-coverage-v1.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-test-dataset-manifest-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-test-fixture-cross-reference-template.csv"
+    ],
+    "enterprise_environment_approved": false,
+    "enterprise_sit_executed": false,
+    "enterprise_uat_executed": false,
+    "hardware_or_machine_test_executed": false
+  },
+  "notes": "纯合成静态夹具数据包，DRAFT未获企业环境批准；数值仅供软件逻辑测试，不能作为真实库存/供应链/机床参数。30项SPAT用例均未执行。"
+}
