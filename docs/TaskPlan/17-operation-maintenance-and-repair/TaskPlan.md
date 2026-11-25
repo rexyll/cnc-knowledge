@@ -168,3 +168,12 @@
 - **模型边界：** 复用当前已有MACHINE、MINST、BOM、PART、PRODUCT、VENDOR、DOC、ASSET及其支持的关系类型。采购单行、收货、库存移动、批次、预留、维修工单和审批实例仍属于源系统事务对象，不伪装成知识实体；本轮不修改全库Schema。
 - **未完成项：** 尚未连接任何ERP/CMMS/EAM/PLM，不含真实企业记录、设备配置、供应商交期、库存、交易、工单或经批准的库存策略；企业级映射和对账需待授权数据输入后完成。
 - **状态：** CH17-T004保持IN_PROGRESS。
+
+
+## 6.10 CH17-T004 备件实物流转、事务控制与责任矩阵第三轮（2026-11-25）
+
+- 新增正文 `docs/17-operation-maintenance-and-repair/spare-parts-physical-flow-and-transaction-controls.md`（KNOW-000029），定义备件从需求提出、配置确认、采购收货、质量放行、仓储预留/发料、现场安装、旧件回收/返修/报废、盘点对账至PCN/EOL评估的业务控制链。
+- 新增 `spare-parts-transaction-lifecycle-control-matrix.csv`（ASSET-000034，16事件/23列）和 `spare-parts-raci-approval-matrix-template.csv`（ASSET-000035，16活动/16列）。RACI中的角色分配是项目建议，全部PROPOSED，须企业组织与授权制度批准。
+- **流程控制：** 区分物理事件、系统过账和技术/质量状态；明确定义事件身份、业务时间、过账时间、数量/单位、库存状态桶、设备/BOM/工单关联、证据、幂等和冲销链。未检/隔离物料不可计为可用；未批准/超范围替代不可发放；旧件不得直接返可用库存。
+- **边界：** 流程矩阵不代表已连接ERP/CMMS/EAM或创建真实事务；没有定义企业实际状态代码、盘点频率/容差、授权人员和例外SLA。机型级维修动作必须遵循OEM受控程序、现场风险评估和危险能量控制，不以模板替代SOP。
+- **状态：** CH17-T004继续IN_PROGRESS，待真实系统事件样本、企业授权RACI、受控BOM/OEM及现场维修工单映射后继续。

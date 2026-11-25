@@ -89,3 +89,11 @@
 - `spare-parts-stock-policy-decision-template.csv`：35列表头空模板，收集需求窗口、消耗与安装基数来源、供应商交期证据、关键度、策略方法版本、库存参数、适用配置、审批和复核字段；没有预填安全库存、订货点、最小/最大量、MOQ或周期。
 - 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-system-integration-and-data-governance.md`；实体KNOW-000028、ASSET-000031～ASSET-000033。
 - 本轮不代表企业ERP/CMMS/EAM/PLM接口已建立；实际映射与规则启用需取得授权数据，并由业务、工程、质量、采购、仓储和信息化责任角色批准。
+
+
+## CH17-T004 备件实物流转与事务控制第三轮（2026-11-25）
+
+- `spare-parts-transaction-lifecycle-control-matrix.csv`：23列表头、16个控制节点，覆盖需求提出、技术/配置确认、采购下单、收货、检验放行、上架、盘点、预留、发料、现场转运、安装消耗、旧件回收、返修处置、报废、库存对账和PCN/EOL评估。记录前置条件、身份键、证据、审批、物理/系统状态、库存桶影响、异常处置、幂等键和冲销规则；节点均为PROPOSED。
+- `spare-parts-raci-approval-matrix-template.csv`：16列表头、16项活动，按资产所有者、维修、工程、质量、安全、采购、仓储、OEM授权服务、数据所有者和IT集成角色预置建议RACI；每项活动有一个建议A和至少一个R，但所有分配都需企业正式批准。
+- 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-physical-flow-and-transaction-controls.md`；实体KNOW-000029、ASSET-000034～ASSET-000035。
+- 不代表已建立企业流程、接口或授权。真实状态、系统SoR、事务和审批需结合企业制度与受控设备资料确认。

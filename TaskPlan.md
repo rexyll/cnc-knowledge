@@ -622,3 +622,11 @@
 - **数据模型边界：** 复用已有MACHINE、MINST、BOM、PART、PRODUCT、VENDOR、DOC、ASSET及既有关系谓词；不把库存流水、PO行、收货、维修工单或审批实例虚构为静态实体，不新增全库Schema/关系谓词，也不创建无真实对象支持的REL记录。
 - **验收边界：** 规则目录所有记录初始为PROPOSED；策略、阈值/容差、SoR、映射方向、RACI、SLA和对账频率均需企业结合真实系统及批准政策确定。未连接ERP/CMMS/EAM/PLM，无真实库存/采购/工单数据，也未批准任何替代件或库存参数。
 - **状态：** CH17-T004继续IN_PROGRESS；待获得经授权的目标机型BOM/OEM目录和脱敏业务系统字段、库存流水、采购/收货、维修工单及PCN/EOL资料后，才能进入企业级字段映射与策略审批。
+
+
+## CH17-T004 备件实物流转、事务控制与责任矩阵第三轮（2026-11-25）
+
+- 新增正文 `docs/17-operation-maintenance-and-repair/spare-parts-physical-flow-and-transaction-controls.md`（KNOW-000029），把备件需求、技术/配置确认、采购、收货、检验、上架、预留、发料、现场安装、旧件返还、返修/报废、盘点对账和PCN/EOL影响分析串联为端到端控制链。
+- 新增两份资源：`spare-parts-transaction-lifecycle-control-matrix.csv`（ASSET-000034，16个控制节点/23列）；`spare-parts-raci-approval-matrix-template.csv`（ASSET-000035，16项活动/16列）。RACI预填角色建议但所有活动状态为PROPOSED，须企业批准。
+- **控制边界：** 区分实物移动、系统过账和技术/质量放行；使用源事务事件ID实现幂等，使用冲销/补偿事件纠正历史；不将库存业务事务伪装为静态知识实体。现场安装须遵循具体机床OEM受控程序及风险/危险能量控制，不提供型号级危险操作步骤或通用验收阈值。
+- **验收与状态：** 远程复读流程矩阵为16条/23列、RACI矩阵为16条/16列；各数据行列宽一致。RACI每项活动恰有一个建议A和至少一个R，但岗位分配未经企业授权确认。CH17-T004继续IN_PROGRESS；未导入实际库存/维修/采购事件，也未启用企业授权流程。

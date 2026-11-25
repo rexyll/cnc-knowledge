@@ -41,3 +41,6 @@
 
 
 备件跨系统数据治理见 [数控机床备件系统集成、字段映射与数据治理](spare-parts-system-integration-and-data-governance.md)，字段映射、数据质量/对账规则和库存策略决策模板位于本章 `resouces/17-operation-maintenance-and-repair/`。
+
+
+备件实物流转及事务控制见 [数控机床备件实物流转、事务控制与责任矩阵](spare-parts-physical-flow-and-transaction-controls.md)，包括生命周期控制矩阵和企业待批准的RACI责任矩阵，资源位于本章 `resouces/17-operation-maintenance-and-repair/`。

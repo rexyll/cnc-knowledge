@@ -28,6 +28,8 @@
 | spare-parts-enterprise-system-field-mapping-template.csv | CSV模板 / ASSET-000031 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | ERP/CMMS/EAM/PLM字段映射、SoR、外部键、单位/代码集、同步、有效期、数据责任和审批字段 |
 | spare-parts-data-quality-and-reconciliation-rules.csv | CSV规则目录 / ASSET-000032 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | 16条建议数据质量与对账规则；初始PROPOSED，阈值、阻断方式、频率和责任人待企业批准 |
 | spare-parts-stock-policy-decision-template.csv | CSV模板 / ASSET-000033 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | 按备件/地点/机型配置记录需求、交期、供应风险、策略版本、库存参数审批及复核依据；数值留空 |
+| spare-parts-transaction-lifecycle-control-matrix.csv | CSV控制矩阵 / ASSET-000034 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-physical-flow-and-transaction-controls.md / KNOW-000029 | 16个备件生命周期事务控制节点，覆盖触发、前置、证据、审批、状态、库存桶、异常、幂等与冲销字段 |
+| spare-parts-raci-approval-matrix-template.csv | CSV矩阵模板 / ASSET-000035 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-physical-flow-and-transaction-controls.md / KNOW-000029 | 16项备件业务活动的建议RACI；角色分配初始PROPOSED，须企业授权制度批准 |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）
