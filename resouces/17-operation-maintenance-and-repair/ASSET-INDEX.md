@@ -14,7 +14,7 @@
 | SRC-000384 | ISO | ISO/WD 16090-1 | 第三版工作草案状态 | 工作草案不是已发布标准 |
 | SRC-000385 | ISO | ISO 23125:2015 | 车床/车削中心安全标准范围与版本 | 不复制标准全文；目录显示正在修订 |
 | SRC-000386 | Haas Automation | Operators Manuals官方索引 | 按产品族检索操作和服务手册 | Haas资料示例，不泛化 |
-| SRC-000380 | Haas Automation | Mill Operators Manual — Safety | 操作者维护与专业服务边界示例 | 仅适用对应Haas铣床资料 |
+| SRC-000387 | Haas Automation | Mill Operators Manual — Safety | 操作者维护与专业服务边界示例 | 仅适用对应Haas铣床资料 |
 | SRC-000388 | Haas Automation | Lathe Maintenance | 型号/产品族专属维护计划示例 | 仅适用对应Haas车床配置 |
 
 所有外部来源于2026-11-25核验。原始法规、标准和制造商手册未复制到本目录；保存全文需另行核验授权及再分发许可。

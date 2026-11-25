@@ -698,5 +698,5 @@ SCURVE-01是独立的轨迹参考剖面软件筛查，不属于龙门联合ODE�
 
 - **合成输入：** 位移0.25m、最大速度0.2m/s、最大加速度1m/s²、最大跃度10m/s³、采样周期0.001s。所有数值均标记为SYNTHETIC_FIXTURE。
 - **解析结果：** 七段结构，巡航0.95s，总时间1.55s，峰值速度/加速度/跃度为0.2m/s、1m/s²、10m/s³；终点位置0.25m、速度和加速度为0；1551个采样点。
-- **方法区别：** 经典三阶七段S曲线使用分段常值跃度，跃度在切换点发生跃变；四阶十五段方法可构造跃度连续曲线，两者不可混称。[SRC-000375](../../data/sources/SRC-000375.json) 五轴CNC轴/关节空间速度、加速度、跃度约束与笛卡尔空间弦误差约束属于不同约束空间，需由运动学映射联合处理。[SRC-000376](../../data/sources/SRC-000376.json) LinuxCNC的G61/G61.1/G64路径控制及P/Q容差是特定控制器语义示例。[SRC-000377](../../data/sources/SRC-000377.json) LinuxCNC的`ARC_BLEND_OPTIMIZATION_DEPTH`是该轨迹规划器的look-ahead段数设置，不能推广为所有CNC控制器参数。[SRC-000378](../../data/sources/SRC-000378.json)
+- **方法区别：** 经典三阶七段S曲线使用分段常值跃度，跃度在切换点发生跃变；四阶十五段方法可构造跃度连续曲线，两者不可混称。[SRC-000375](../data/sources/SRC-000375.json) 五轴CNC轴/关节空间速度、加速度、跃度约束与笛卡尔空间弦误差约束属于不同约束空间，需由运动学映射联合处理。[SRC-000376](../data/sources/SRC-000376.json) LinuxCNC的G61/G61.1/G64路径控制及P/Q容差是特定控制器语义示例。[SRC-000377](../data/sources/SRC-000377.json) LinuxCNC的`ARC_BLEND_OPTIMIZATION_DEPTH`是该轨迹规划器的look-ahead段数设置，不能推广为所有CNC控制器参数。[SRC-000378](../data/sources/SRC-000378.json)
 - **CI与判定：** Actions Run 45517202862通过143/143项CH12资源测试；SCURVE-01输出状态为`COMPLETED_REPORT_ONLY`，验收决策为`DESCRIPTIVE_ONLY`。归档包括时序CSV（1551行/8列）、分段CSV（7行/12列）、汇总CSV（1行/19列）和manifest。该运行不是多轴逆运动学、块段look-ahead算法实现、拐角混合、四阶jerk-continuous/Snap限制、伺服动力学或机床验收。
