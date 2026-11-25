@@ -312,3 +312,14 @@
 
 
 - **第十四轮CI复验成功：** Run 45629680465 completed/success；Knowledge structure and data quality、CH12 numerical resource tests两个Job均success；全库87个unittest方法通过（新增13项完整性/快照专项测试通过）。完整性self-check PASS，2条事件完成哈希链封装，快照后增量回放1条并与全量重放一致；Artifact ch17-inventory-ledger-integrity-45629680465。第十四轮交付记录补齐；本轮首轮Run 45628703377的入口导入路径失败已修复，不隐藏失败历史。
+
+
+# 第十五轮：库存事件账本本地持久化与故障恢复（2026-11-25）
+
+- 所在分支：main（未创建新分支）。
+- 新增本地持久化模块、11个专项单元测试、ASSET-000053及11个纯合成故障场景矩阵。
+- 采用代际目录+原子CURRENT指针：每代存储账本、快照和COMMIT；完成文件flush/fsync及目录同步后发布代际，再原子切换CURRENT。恢复时校验COMMIT、文件SHA-256、账本哈希链、快照摘要及代际元数据。
+- 故障注入覆盖账本写入后、快照写入后、代际目录rename后、CURRENT替换前中断；旧CURRENT仍指向上一已提交代际。另覆盖损坏文件、缺失COMMIT、未知版本、路径穿越、重复代际。
+- CI Run 45631566264：Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库98个unittest方法通过（新增11项持久化故障测试）。Artifact ch17-inventory-ledger-persistence-45631566264。
+- 限制：文件系统原子rename/fsync耐久性依赖运行环境；没有多进程写锁、数据库事务、WORM、签名、外部信任根或异机复制。纯临时目录合成测试，无企业系统连接或生产写入。
+- CH17-T004保持IN_PROGRESS；business_rule_assertions=NOT_EVALUATED；execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL。

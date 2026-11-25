@@ -194,3 +194,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 完整性self-check：PASS；2条事件进入哈希链；快照后增量回放1条事件；与全量重放结果一致。
 - Artifact：ch17-inventory-ledger-integrity-45629680465。
 - 业务断言保持NOT_EVALUATED；审批状态保持BLOCKED_PENDING_ENTERPRISE_APPROVAL；无企业系统连接或数据库/API写入。
+
+
+## CH17-T004 库存事件账本本地持久化与故障恢复第十五轮（2026-11-25）
+
+- 新增版本化代际目录与原子CURRENT指针持久化模型；账本、快照、COMMIT清单分别落盘，恢复校验文件摘要、哈希链、快照摘要和代际元数据。
+- 11个故障场景覆盖写入中断、代际孤立、旧版本保持、文件篡改、提交标记缺失、版本不兼容和路径安全。
+- CI Run 45631566264：两个Job均成功，全库98个unittest方法通过；Artifact ch17-inventory-ledger-persistence-45631566264。
+- 所有测试使用临时目录；不连接企业系统、不写生产状态。原子rename/fsync依赖操作系统和文件系统，不等于数据库事务、WORM或防篡改存储。

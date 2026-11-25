@@ -724,3 +724,12 @@
 - 所有样例为SYNTHETIC_TEST_ONLY；不接企业系统，不产生数据库/API写入。哈希链不等于签名/WORM，无法抵御有权限者同时重写数据和哈希。
 
 - CI Run 45629680465：两个workflow Job均completed/success；全库87项unittest通过；完整性自检PASS，快照增量回放与全量重放一致。业务断言保持NOT_EVALUATED，企业审批门禁保持BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## CH17-T004 第十五轮：库存事件账本本地持久化与故障恢复
+
+- 使用版本化代际目录，每代包含规范化账本、快照和COMMIT清单；先完成文件写入与fsync，再原子rename发布代际，最后原子替换CURRENT指针。
+- 恢复只接受CURRENT引用且提交标记/文件摘要/账本链/快照摘要全部匹配的代际；孤立代际、暂存残留不会自动升级为已提交版本。
+- 故障注入模拟中断于账本写入后、快照写入后、代际目录rename后、CURRENT替换前；验证旧提交版本仍可恢复。覆盖文件篡改、COMMIT缺失、未知版本、路径穿越和重复代际。
+- 所有测试仅使用本地临时目录和SYNTHETIC_TEST_ONLY数据，不写项目资源目录的生产状态、不接企业系统。
+- 限制：本地原子rename/fsync受OS/文件系统/存储设备语义影响；不是数据库事务、分布式共识、WORM或防篡改系统；无多进程锁、异机复制、签名或外部信任根。

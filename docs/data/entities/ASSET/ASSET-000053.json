@@ -1,0 +1,55 @@
+{
+  "entity_id": "ASSET-000053",
+  "entity_type": "asset_file",
+  "canonical_name": "库存事件账本本地持久化与故障恢复测试矩阵v1",
+  "english_name": "Inventory event ledger local persistence and failure recovery test matrix v1",
+  "aliases": [
+    "Inventory ledger persistence fault-injection cases v1"
+  ],
+  "description": "11个纯合成故障场景，覆盖代际目录提交、原子CURRENT指针、写入中断、旧代际恢复、文件篡改、提交标记缺失、版本与路径安全。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "库存事件账本",
+    "本地持久化",
+    "故障注入",
+    "项目原创资源",
+    "ASSET-000053"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T22:10:00+08:00",
+  "updated_at": "2026-11-25T22:10:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-persistence-test-cases-v1.csv",
+    "file_name": "spare-parts-inventory-ledger-persistence-test-cases-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000032",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic local persistence and failure-injection matrix; not production durability evidence",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "11个临时目录故障注入场景；文件系统原子rename/fsync语义依赖运行环境，不构成数据库事务、WORM或防篡改证明。"
+}

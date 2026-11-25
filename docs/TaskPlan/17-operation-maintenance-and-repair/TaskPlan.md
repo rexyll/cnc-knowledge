@@ -271,3 +271,12 @@
 - **限制：** 哈希链不是数字签名、WORM或法律意义防篡改；不具备外部信任根、生产持久化、访问控制、职责分离和并发保护。业务规则仍NOT_EVALUATED，审批门禁保持BLOCKED_PENDING_ENTERPRISE_APPROVAL，CH17-T004继续IN_PROGRESS。
 
 - **CI验收：** GitHub Actions Run 45629680465 completed/success；Knowledge structure and data quality与CH12 numerical resource tests两个Job均成功；全库87个unittest方法通过，完整性/快照专项13项通过。自检报告显示2条事件封链、快照后增量回放1条、与全量重放一致。Artifact ch17-inventory-ledger-integrity-45629680465。
+
+
+## 6.22 CH17-T004 库存事件账本本地持久化与故障恢复第十五轮（2026-11-25）
+
+- 新增 scripts/spare_parts_inventory_ledger_persistence.py：代际目录写入ledger.json、snapshot.json和COMMIT.json；对文件执行flush/fsync并同步目录，最后通过同目录临时CURRENT指针+os.replace原子发布已提交代际。
+- 恢复只读取CURRENT指定代际，验证指针版本、generation标识、COMMIT状态、账本/快照文件SHA-256、事件链、快照摘要和提交元数据，再重建AppendOnlyEventLedger。
+- 故障注入覆盖账本写后、快照写后、代际目录rename后、CURRENT替换前；证明未发布代际不会成为当前版本，旧CURRENT在下一代发布失败时仍可恢复。增加损坏文件、缺失提交标记、未知版本、路径穿越和重复代际测试。
+- 新增ASSET-000053及11个纯合成故障场景，11个专项unittest方法；CI自检只在临时目录完成，不写生产数据。
+- **边界：** 原子rename/fsync耐久性依赖OS/文件系统/挂载/设备；无多进程锁、数据库事务、分布式共识、WORM、签名、外部信任根、异机复制和密钥管理。CH17-T004继续IN_PROGRESS，业务规则NOT_EVALUATED，审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。

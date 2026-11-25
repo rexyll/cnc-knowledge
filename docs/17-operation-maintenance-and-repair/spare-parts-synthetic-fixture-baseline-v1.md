@@ -198,3 +198,14 @@ CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-
 
 
 第十四轮CI复验结果：GitHub Actions Run 45629680465 completed/success，Knowledge structure and data quality 与 CH12 numerical resource tests 两个Job均成功；全库87个unittest方法通过，其中新增完整性/快照专项13项通过。账本完整性自检PASS，增量回放1条事件并与全量重放一致；Artifact为ch17-inventory-ledger-integrity-45629680465。该结果只代表合成模型测试通过，业务规则仍NOT_EVALUATED、企业审批门禁仍BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## 15. 库存事件账本本地持久化与故障恢复
+
+新增本地持久化模块（../../scripts/spare_parts_inventory_ledger_persistence.py）、专项测试（../../tests/test_spare_parts_inventory_ledger_persistence.py）和测试矩阵（../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-persistence-test-cases-v1.csv，ASSET-000053，11个纯合成场景）。
+
+存储采用版本化代际目录：每代包含ledger.json、snapshot.json和最后写入的COMMIT.json；写入文件后flush/fsync并同步目录，再将暂存目录原子rename为generation目录。最后在同一存储目录写入临时CURRENT指针文件并通过os.replace原子发布。恢复只读取CURRENT指向的代际，验证提交标记、文件SHA-256、账本哈希链、快照摘要和元数据后才重建内存事件账本。未被CURRENT引用的孤立代际和暂存残留不会自动成为已提交版本。
+
+故障注入覆盖账本写入后中断、快照写入后中断、代际目录发布后但CURRENT更新前中断、CURRENT替换前中断；并验证旧CURRENT继续指向上一已提交代际。另覆盖账本文件损坏、提交标记缺失、未知指针版本、路径穿越和重复代际写入。
+
+**持久化边界：** 这是本地文件系统原子发布协议的合成测试实现，不是数据库事务、分布式共识、跨进程锁、WORM或防篡改存储。原子rename/fsync的实际耐久性依赖操作系统、文件系统、挂载选项和存储设备；当前没有多进程并发写保护、保留/清理策略、异机复制、密钥管理、数字签名或外部信任根。测试使用临时目录，不写项目资源目录中的生产状态，也不连接企业系统。业务规则仍NOT_EVALUATED，审批门禁仍BLOCKED_PENDING_ENTERPRISE_APPROVAL。
