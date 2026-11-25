@@ -60,3 +60,27 @@
 5. 本轮没有执行自动化、企业SIT/UAT、生产影子运行、HIL或实机验证；全部30项测试仍为NOT_RUN。
 
 后续建议先开发纯本地静态fixture validator：检查CSV列宽、Fixture ID唯一、父/关联引用、30项用例完整覆盖、事件ID/序号/时间一致性及隔离组，然后再申请企业非生产环境批准。
+
+## 7. 纯本地静态校验器
+
+仓库提供 `scripts/spare_parts_fixture_validator.py`，只依赖Python标准库，不连接ERP/WMS/QMS/CMMS/EAM，也不会导入、写入或变更任何业务系统。它检查：
+
+- 三份夹具CSV及源测试矩阵的表头、行宽、数据集ID/版本、合成标记和唯一Fixture/Event ID；
+- 父/关联引用、测试用例ID、正向/负向夹具与事件引用，以及夹具声明和用例映射之间的双向一致性；
+- SPAT-001～SPAT-030完整覆盖、标题/分类/前置条件/执行状态与原测试矩阵一致；
+- BOM修订时间窗的时区、有效期和重叠；事件业务时间/接收时间、正时序号、重复ID、乱序显式标记和重置组内序号。
+
+从仓库根目录执行：
+
+```bash
+python scripts/spare_parts_fixture_validator.py --root .
+```
+
+输出JSON并写出可归档报告：
+
+```bash
+python scripts/spare_parts_fixture_validator.py --root . --json \
+  --report-json resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-validation-report-v1.json
+```
+
+报告包含数据集身份、各项检查结果、记录数、源文件SHA-256、警告和错误。当前数据集DRAFT、无已批准环境以及30项测试尚未执行均以WARNING/状态字段保留；静态校验PASS不代表SIT/UAT通过、数据集获批或机床实机验证。CI的Knowledge Quality Job会自动运行校验器并上传JSON报告Artifact。
