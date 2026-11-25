@@ -176,3 +176,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - `spare-parts-inventory-event-ledger-test-cases-v1.csv`（ASSET-000051）：18个纯合成断言场景，覆盖事件追加、幂等键、重复/迟到/乱序、业务时间与知识时间、冲销和重建一致性。
 - 模型：`../../scripts/spare_parts_inventory_event_ledger.py`；测试：`../../tests/test_spare_parts_inventory_event_ledger.py`。
 - CI报告：Artifact `ch17-inventory-event-ledger-self-check`。只验证纯合成数学性质，业务断言保持NOT_EVALUATED。
+
+
+## CH17-T004 库存事件账本完整性链与快照恢复第十四轮（2026-11-25）
+
+- 新增规范化事件序列化、逐事件SHA-256、前序链哈希、连续序号/唯一身份校验。
+- 新增版本化合成快照：记录账本截止序号、链头、业务/知识截止时点、期初余额、快照余额和摘要；恢复时校验前缀并增量回放，与全量重放逐维比较。
+- 对影响快照历史窗口的迟到事件、向后移动的业务截止时点、链头不匹配、摘要损坏及未知版本失败关闭；迟到事件要求全量重建。
+- 新增ASSET-000052、15个纯合成断言场景及13个专项unittest方法；首轮CI中全库87项测试通过，但self-check入口因缺少仓库根目录导入路径失败，已定位并修复，需复跑确认。
+- **安全边界：** 哈希链不是数字签名或WORM；无法抵御有权限者同时重写数据与哈希。无外部信任根、企业权限/职责分离、持久化、并发或生产连接。CH17-T004继续IN_PROGRESS。

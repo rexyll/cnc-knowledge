@@ -184,3 +184,14 @@ CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-
 重建从调用者显式提供的合成期初余额开始，按截止时点回放事件，并返回事件清单、余额投影和审计计数；不计算跨单位/跨reset group/全局库存总额。失败重建不会修改账本。投影核对接口将重建余额与调用者独立提供的合成期望投影逐维比较，输出匹配/差异键和数量；不代表独立企业SoR对账。
 
 **边界：** 内存账本不是持久化WORM存储，不提供数字签名、权限/职责分离、跨进程并发控制、企业审计留存或消息中间件交付保证。自检报告固定为BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED；所有事件均为SYNTHETIC_TEST_ONLY。企业事件语义、部分冲销、事件保留政策及期初快照审批仍待业务所有者确认。
+
+
+## 14. 库存事件账本完整性链与快照恢复
+
+新增完整性/快照模型（../../scripts/spare_parts_inventory_ledger_integrity.py）、专项测试（../../tests/test_spare_parts_inventory_ledger_integrity.py）和测试场景矩阵（../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-integrity-test-cases-v1.csv，ASSET-000052，15个纯合成断言场景）。
+
+规范化序列化明确编码七维余额键、Decimal数量、事件类型/引用、业务时间和接收时间。时间戳统一规范为UTC微秒ISO-8601；Decimal按规范化定点字符串编码。每条事件计算SHA-256内容摘要，并以“前序链头 + 当前事件摘要”构造链哈希；验证器检查序号连续、事件ID/幂等键唯一、事件摘要、前序链和最终链头。
+
+快照包含schema_version、截止ledger_sequence、前序事件链头、业务/知识截止时点、合成期初余额、快照余额和快照摘要。恢复时先校验快照摘要和账本前缀，再回放增量事件，并与从期初余额全量重放的结果逐维比较。任何业务时间不晚于快照截止时点的迟到增量都会拒绝恢复并要求全量重建；截止时点不能倒退。未知版本、前缀链头不符、序号缺口和摘要异常均失败关闭。
+
+**安全限制：** SHA-256链只能检测内容/顺序/链头不一致，不能证明事件来源真实性，也不能抵御有权限者同时重写账本及全部哈希。该实现没有数字签名、外部信任根、WORM/不可变存储、访问控制或跨进程并发保护；不能称为法律意义的防篡改审计账本。CI PASS只表示模型测试通过，business_rule_assertions仍为NOT_EVALUATED，execution_status仍为BLOCKED_PENDING_ENTERPRISE_APPROVAL。

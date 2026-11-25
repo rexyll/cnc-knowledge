@@ -300,3 +300,12 @@
 - 第十三轮补充：将投影核对从单纯输出重建余额改为必须与调用者显式提供的独立合成期望余额逐维比较；新增匹配与不匹配两条测试断言，避免将“成功重建”误称为“对账一致”。测试矩阵扩展为18个断言场景。
 
 - **最终CI验收：** Run 45624471980 completed/success；Knowledge structure and data quality、CH12 numerical resource tests两个Job均success。Knowledge Job全库74个unittest方法通过；CH17库存事件账本18个专项测试方法通过；账本self-check与多维余额self-check JSON Artifact均成功上传。CI数学自检仍声明BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED。最终提交为 `f7e7c793fe780aa4d9ed6057e41b3af36f83340d`。
+
+
+## 第十四轮：库存事件账本完整性链与快照恢复（2026-11-25）
+
+- 所在分支：main（未创建新分支）。
+- 新增完整性模块、13个专项单元测试和ASSET-000052测试矩阵（15个断言场景）；首轮CI中全库87项unittest均通过（既有74项+新增13项），但脚本直接执行阶段因未显式加入仓库根目录而出现ModuleNotFoundError: No module named 'scripts'。
+- 已定位并修复入口导入路径初始化；后续必须重新运行CI确认模块self-check、两个workflow Job和Artifact全部成功，未把首轮失败标记为通过。
+- 功能包括规范化JSON/Decimal/UTC时间编码、SHA-256事件内容摘要及前序哈希链、账本连续序号/唯一身份检查、版本化快照、前缀校验、增量回放与全量重放比较；对影响快照历史窗口的迟到事件失败关闭并要求全量重建。
+- 安全边界：哈希链不等于签名/WORM，不具备外部信任根、生产持久化、访问控制或并发保护；纯合成、无企业连接/数据库API写入。CH17-T004保持IN_PROGRESS，business_rule_assertions=NOT_EVALUATED、审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。

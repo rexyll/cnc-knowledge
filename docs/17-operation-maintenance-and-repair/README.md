@@ -65,3 +65,6 @@
 新增 [多维库存余额模型测试矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-multidimensional-inventory-model-test-cases-v1.csv)；模型实现位于 [spare_parts_multidimensional_inventory.py](../../scripts/spare_parts_multidimensional_inventory.py)，专项测试位于 [test_spare_parts_multidimensional_inventory.py](../../tests/test_spare_parts_multidimensional_inventory.py)。模型仅接受显式合成测试快照，不自动换算单位，不跨库位/物料/批次/所有权转移；企业业务规则未获批准时保持阻断。
 
 新增 [不可变库存事件账本测试矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-event-ledger-test-cases-v1.csv)；模型实现位于 [spare_parts_inventory_event_ledger.py](../../scripts/spare_parts_inventory_event_ledger.py)，专项测试位于 [test_spare_parts_inventory_event_ledger.py](../../tests/test_spare_parts_inventory_event_ledger.py)。事件账本仅驻留内存，使用合成事件；重复投递幂等、迟到事件保留、按业务时间重建、冲销以新事件追加；不提供企业数据库/API连接。
+
+
+新增库存事件账本完整性与恢复模型（../../scripts/spare_parts_inventory_ledger_integrity.py），配套15项测试场景矩阵及专项测试。该模型用于纯合成完整性检测与增量快照回放，不是签名/WORM存储或生产审计系统。

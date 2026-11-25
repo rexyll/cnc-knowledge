@@ -1,0 +1,55 @@
+{
+  "entity_id": "ASSET-000052",
+  "entity_type": "asset_file",
+  "canonical_name": "库存事件账本完整性与快照恢复测试矩阵v1",
+  "english_name": "Inventory event ledger integrity and snapshot recovery test matrix v1",
+  "aliases": [
+    "Inventory ledger hash-chain test cases v1"
+  ],
+  "description": "15个纯合成断言场景，覆盖规范化序列化、SHA-256事件链、内容篡改/序号缺口/乱序检测、版本化快照、前缀校验、增量恢复及全量重放对比。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "库存事件账本",
+    "SHA-256",
+    "快照恢复",
+    "项目原创资源",
+    "ASSET-000052"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T21:45:00+08:00",
+  "updated_at": "2026-11-25T21:45:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-ledger-integrity-test-cases-v1.csv",
+    "file_name": "spare-parts-inventory-ledger-integrity-test-cases-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000032",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic integrity and snapshot test matrix; not production audit evidence",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "15个CI断言场景映射表；SHA-256链仅检测数据/顺序变化，不构成数字签名、WORM或法律意义防篡改。"
+}

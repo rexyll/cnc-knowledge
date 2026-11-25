@@ -259,3 +259,13 @@
 - 从显式合成期初余额重建截止时点投影，提供账本记录与余额投影核对；禁止跨单位、跨reset group或全局总额汇总。
 - 新增18个断言场景及专项测试，CI运行self-check并上传JSON报告；报告保持BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED。
 - **边界：** 仅内存、非持久化WORM账本；不连接消息队列/ERP/WMS/CMMS，不提供企业审计留存、并发/权限或签名能力。CH17-T004继续IN_PROGRESS。
+
+
+## 6.21 CH17-T004 库存事件账本完整性链与快照恢复第十四轮（2026-11-25）
+
+- 新增 scripts/spare_parts_inventory_ledger_integrity.py：规范化JSON序列化；时间统一UTC微秒ISO-8601，Decimal统一定点字符串，维度键字段显式编码。
+- 每条事件计算SHA-256内容摘要，并将前序链头与当前摘要组合为链哈希；校验ledger_sequence连续性、事件ID/幂等键唯一性、事件内容、前序链和最终链头。
+- 快照记录schema_version、ledger_sequence、链头、业务/知识截止时点、合成期初余额、余额投影及snapshot_hash。恢复先验证快照和账本前缀，再回放后续事件，并与全量重放结果比较。
+- 若后续到达事件的business_time不晚于快照截止时点，恢复失败并要求从期初余额全量重建；业务截止时点不得倒退。未知版本、链头不匹配、摘要损坏和序号缺口均失败关闭。
+- 新增ASSET-000052及15个纯合成测试场景，13个专项unittest方法；CI运行自检并归档报告。
+- **限制：** 哈希链不是数字签名、WORM或法律意义防篡改；不具备外部信任根、生产持久化、访问控制、职责分离和并发保护。业务规则仍NOT_EVALUATED，审批门禁保持BLOCKED_PENDING_ENTERPRISE_APPROVAL，CH17-T004继续IN_PROGRESS。

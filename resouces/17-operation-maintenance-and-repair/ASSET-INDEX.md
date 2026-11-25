@@ -61,3 +61,4 @@
 | spare-parts-inventory-opening-state-scenario-matrix-v1.csv | CSV场景矩阵 / ASSET-000049 | 项目原创 | 2026-11-25 | 原创，场景预期待批准 | CH17-T004 / KNOW-000032 | 9个场景的期初输入需求、账户候选和守恒断言；全部PROPOSED_NOT_APPROVED/NOT_RUN |
 | spare-parts-multidimensional-inventory-model-test-cases-v1.csv | CSV模型测试矩阵 / ASSET-000050 | 项目原创 | 2026-11-25 | 原创纯合成测试定义 | CH17-T004 / KNOW-000032 | 17项多维库存余额模型数学性质测试；不构成企业业务验收证据 |
 | spare-parts-inventory-event-ledger-test-cases-v1.csv | CSV事件账本测试矩阵 / ASSET-000051 | 项目原创 | 2026-11-25 | 原创纯合成测试定义 | CH17-T004 / KNOW-000032 | 17个事件账本断言场景；不构成企业业务验收证据 |
+| spare-parts-inventory-ledger-integrity-test-cases-v1.csv | CSV完整性/快照测试矩阵 / ASSET-000052 | 项目原创 | 2026-11-25 | 原创纯合成测试定义 | CH17-T004 / KNOW-000032 | 15个断言场景，覆盖规范化序列化、事件SHA-256链、篡改/缺失/乱序检测、版本化快照、前缀校验、增量恢复与全量重放对比；不构成生产审计证据 |
