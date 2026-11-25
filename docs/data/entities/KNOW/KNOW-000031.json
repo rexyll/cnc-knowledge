@@ -1,0 +1,58 @@
+{
+  "entity_id": "KNOW-000031",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件合成测试数据集与环境就绪规范",
+  "english_name": "CNC machine tool spare parts synthetic test dataset and environment readiness specification",
+  "aliases": [
+    "备件测试数据集治理规范",
+    "备件SIT/UAT环境就绪检查规范"
+  ],
+  "description": "定义备件端到端测试的合成数据集身份/版本/依赖/事件时序、非生产环境隔离、权限、备份恢复、数据清理和执行前就绪门槛。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH19",
+    "CH20",
+    "CH21",
+    "CH15"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "合成数据",
+    "测试环境",
+    "SIT",
+    "UAT",
+    "数据治理",
+    "环境隔离"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T16:58:00+08:00",
+  "updated_at": "2026-11-25T16:58:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-synthetic-test-data-and-environment-readiness.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "合成数据集身份和冻结、主数据/事务对象依赖、事件时序、L0-L4环境隔离、身份权限、备份恢复、清理与企业验收边界",
+    "article_status": "vendor_neutral_test_data_and_environment_specification",
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-test-dataset-manifest-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-test-environment-readiness-checklist.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-test-fixture-cross-reference-template.csv"
+    ],
+    "synthetic_dataset_created": false,
+    "enterprise_environment_assessed": false,
+    "enterprise_sit_executed": false,
+    "enterprise_uat_executed": false
+  },
+  "notes": "本条目只定义数据与环境准备规范，不含真实企业数据、账号、凭证、系统地址或执行结果。L2/L3授权环境尚未提供；现有30个测试用例仍为NOT_RUN。"
+}
