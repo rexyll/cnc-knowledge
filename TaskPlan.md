@@ -605,3 +605,10 @@
 - 在 `docs/17-operation-maintenance-and-repair/` 新增ATC刀库/换刀/刀塔、卡盘夹持、液压/气动单元专项工作包正文（KNOW-000026）；在 `resouces/17-operation-maintenance-and-repair/` 新增三份原创35列专项CSV（ASSET-000022～ASSET-000024）。
 - 专项审查覆盖设备与BOM身份、刀位/夹持接口、机械与流体接口、I/O/反馈、安全互锁、备份与参数、搬运/储能/残压风险、OEM验证条件及放行记录。
 - CH17-T003仍为IN_PROGRESS。模板不包含型号级拆装/泄压/蓄能器处置/动态试验步骤，不设通用夹持力、压力、转速、流量、温度或验收阈值；须基于指定设备及现行OEM受控文件完成后续映射。
+
+
+## CH17-T004 备件管理与生命周期闭环第一轮（2026-11-25）
+
+- 新增 `docs/17-operation-maintenance-and-repair/spare-parts-management-and-lifecycle.md`（KNOW-000027），将备件主数据、关键度评估、库存与补货、替代审批、PCN/EOL生命周期及维修工单消耗反馈纳入统一闭环。
+- 新增六份原创CSV模板（ASSET-000025～ASSET-000030），归档于 `resouces/17-operation-maintenance-and-repair/`，并同步章节计划、README、ASSET-INDEX与CHAPTER-COVERAGE。
+- **状态：** CH17-T004为IN_PROGRESS。尚无目标机型BOM/OEM备件目录、库存和消耗历史、正式交期/PCN/EOL资料，因此未定义真实库存参数、关键度阈值、替代批准或最后采购数量。

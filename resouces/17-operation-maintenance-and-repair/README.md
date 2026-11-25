@@ -68,3 +68,15 @@
 - `hydraulic-pneumatic-unit-replacement-work-package-template.csv`：泵阀、执行器、管路接头、过滤/介质、蓄能器、残压、保护阀、传感器校准、泄漏与功能复验，共20项、35列。
 - 三份模板均为项目原创，默认TO_BE_ASSESSED/NOT_TESTED；不包含通用换刀动作、泄压/蓄能器操作、压力/夹持力/转速/流量/温度或验收值。必须依据具体设备OEM受控文件和现场安全程序填写。
 - 关联正文：`docs/17-operation-maintenance-and-repair/atc-chuck-hydraulic-specialized-replacement-work-packages.md`；实体KNOW-000026、ASSET-000022～ASSET-000024。
+
+
+## CH17-T004 备件管理与生命周期闭环模板（2026-11-25）
+
+- `spare-part-master-data-template.csv`：每个零件/修订/适用范围一条，记录OEM/内部料号、BOM位置、机型序列适用性及技术/储存来源。
+- `spare-part-criticality-assessment-template.csv`：按指定设备范围记录安全、生产、质量、冗余、可检测性、修复能力和供应风险；评分方法/权重须采用企业批准规则。
+- `spare-part-inventory-and-replenishment-template.csv`：按零件/仓库/库位/批次记录库存分桶、需求窗口、交期证据、补货参数和盘点差异；所有库存阈值留空。
+- `spare-part-substitution-approval-template.csv`：记录原件与候选件范围、接口/材料/电气/流体/软件/安全证据、工程和OEM审批及验证结果。
+- `spare-part-lifecycle-and-obsolescence-template.csv`：记录PCN/EOL、last-time-buy、最后发货、服务支持、安装基数、替代迁移和缓解计划。
+- `repair-spare-consumption-feedback-template.csv`：将维修工单、设备实例、旧/新件批次、库存事务、复验结果、补货请求和故障反馈关联。
+- 所有文件为项目原创空白模板，不含真实料号、供应商、库存、价格、交期、阈值、批准的替代件或现场维修数据。
+- 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-management-and-lifecycle.md`；实体KNOW-000027、ASSET-000025～ASSET-000030。

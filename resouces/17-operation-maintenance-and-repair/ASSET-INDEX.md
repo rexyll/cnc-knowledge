@@ -19,6 +19,12 @@
 | atc-tool-magazine-turret-replacement-work-package-template.csv | CSV模板 / ASSET-000022 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / atc-chuck-hydraulic-specialized-replacement-work-packages.md / KNOW-000026 | ATC刀库/换刀机械手/刀塔专项工作包，20项检查/35列；OEM步骤与关键值待机型映射 |
 | chuck-workholding-replacement-work-package-template.csv | CSV模板 / ASSET-000023 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / atc-chuck-hydraulic-specialized-replacement-work-packages.md / KNOW-000026 | 卡盘/夹持专项工作包，18项检查/35列；夹持力、压力、转速及工件边界无通用值 |
 | hydraulic-pneumatic-unit-replacement-work-package-template.csv | CSV模板 / ASSET-000024 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / atc-chuck-hydraulic-specialized-replacement-work-packages.md / KNOW-000026 | 液压/气动动力单元专项工作包，20项检查/35列；介质、压力、蓄能器和设定值待OEM映射 |
+| spare-part-master-data-template.csv | CSV模板 / ASSET-000025 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | 备件身份、OEM料号/修订、BOM位号、机型/序列适用性、供应与储存来源字段 |
+| spare-part-criticality-assessment-template.csv | CSV模板 / ASSET-000026 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | 安全、生产、质量、冗余、可检测性、修复能力及供应风险评估字段；评分方法由企业批准 |
+| spare-part-inventory-and-replenishment-template.csv | CSV模板 / ASSET-000027 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | 库存分桶、需求窗口、交期证据、补货点/安全库存/最小最大量及盘点字段；不预填数值 |
+| spare-part-substitution-approval-template.csv | CSV模板 / ASSET-000028 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | 原件/候选件适用范围、机械电气流体软件安全兼容、工程批准和验证记录 |
+| spare-part-lifecycle-and-obsolescence-template.csv | CSV模板 / ASSET-000029 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | PCN/EOL、last-time-buy、服务支持、安装基数、替代迁移和缓解计划追踪 |
+| repair-spare-consumption-feedback-template.csv | CSV模板 / ASSET-000030 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | 工单、设备实例、拆下/安装件批次、领用/返修、补货和故障反馈关联 |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）
