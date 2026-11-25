@@ -15,7 +15,7 @@ CH13,13-cad-cam-programming-and-process,0,not_started,0,0,0,0,0,,按章节TaskPl
 CH14,14-performance-metrology-and-acceptance,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH15,15-standards-safety-and-compliance,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH16,16-manufacturing-assembly-installation,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
-CH17,17-operation-maintenance-and-repair,2,foundational,11,34,0,9,33,2026-11-25,CH17-T001/T002待目标机型与现行OEM资料映射；CH17-T003待型号级更换和现场复验；CH17-T004待受控BOM、企业授权非生产环境、冻结合成数据集及测试执行证据,IN_PROGRESS,已建立操作准备、维修闭环、计划维护、通用/专项部件更换、备件生命周期、系统数据治理、实物流转事务控制、端到端验收测试及合成测试数据/环境准备规范；11篇KNOW条目、33项资源记录、SRC去重9条。30个备件端到端场景均为NOT_RUN，22项环境就绪检查均为NOT_ASSESSED，未执行企业SIT/UAT或实机测试。
+CH17,17-operation-maintenance-and-repair,2,foundational,12,38,0,9,36,2026-11-25,CH17-T001/T002待目标机型与现行OEM资料映射；CH17-T003待型号级更换和现场复验；CH17-T004待企业授权非生产环境、批准并冻结合成数据集、fixture validator及30项测试执行证据,IN_PROGRESS,已建立操作准备、维修闭环、计划维护、通用/专项部件更换、备件生命周期、系统数据治理、实物流转事务控制、端到端测试规范、合成数据/环境治理及SPAREPARTS-SYN-BASE-001 v1.0.0合成夹具基线；12篇KNOW条目、36项资源记录、SRC去重9条。基线含89条固定合成记录和30项用例映射，数据集仍DRAFT；22项环境检查NOT_ASSESSED，30项测试NOT_RUN，未执行企业SIT/UAT或实机测试。
 CH18,18-fault-diagnosis-and-reliability,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。
 CH19,19-manufacturers-products-and-supply-chain,2,foundational,4,43,72,44,0,2026-11-22,CH03-T001：建立整机功能架构,IN_PROGRESS,23个组织+16个产品+4个KNOW；含26条制造事实关系和46条文章索引边；去重SRC 44条。新增供应链比较/替代验证/风险方法框架；未对具体产品或地区完成兼容、库存、交期和售后实证。
 CH20,20-bom-drawings-and-technical-documents,0,not_started,0,0,0,0,0,,按章节TaskPlan推进,TODO,初始化基线；目录和计划不计入知识覆盖度。

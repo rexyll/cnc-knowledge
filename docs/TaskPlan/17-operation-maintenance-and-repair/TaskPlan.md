@@ -194,3 +194,11 @@
 - **模型边界：** 复用现有MACHINE/MINST/BOM/PART/PRODUCT/VENDOR等静态概念；PO行、收货、检验、库存流水、预留、维修工单、审批和PCN/EOL事件只作为测试环境事务/夹具，不新增全库实体类型或关系谓词。
 - **安全与环境边界：** 默认纯合成数据；脱敏数据需单独批准。L2/L3必须使用经批准的隔离非生产环境、专用身份、测试端点、秘密管理、非生产快照/恢复及清理证据；禁止生产写入、真实供应商/客户通知和生产机床动作。
 - **未完成项：** 尚未取得企业非生产环境授权、正式角色及网络隔离证据；尚未生成/冻结企业专用合成数据集，也未执行备件30项SIT/UAT（仍全部NOT_RUN）。本轮模板不代表环境就绪或测试通过；CH17-T004保持IN_PROGRESS。
+
+## 6.13 CH17-T004 备件合成测试夹具基线与30项用例映射第六轮（2026-11-25）
+
+- 新增 `docs/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-baseline-v1.md`（KNOW-000032），建立数据集 `SPAREPARTS-SYN-BASE-001` v1.0.0 的固定静态合成夹具、隔离重置、使用限制和事件时间语义。
+- 新增 `spare-parts-synthetic-fixture-baseline-v1-manifest.csv`（ASSET-000041，29列/1行，DRAFT）；`spare-parts-synthetic-fixture-baseline-v1.csv`（ASSET-000042，89条记录/27列，67对象+22事件）；`spare-parts-synthetic-fixture-test-case-coverage-v1.csv`（ASSET-000043，30用例/11列，SPAT-001～SPAT-030全部映射）。
+- **数据与事务边界：** 所有ID均为虚构SYN-/FX-/EVT-标识，没有导入生产或脱敏源数据。采购、收货、库存、维修工单、审批和生命周期项目仅作为测试夹具/业务事件，不扩展全库静态知识实体Schema。数量和换算比例只用于测试逻辑，不是企业库存策略或机械技术参数。
+- **版本和BOM边界：** 数据集版本1.0.0，当前DRAFT、未获批准、未冻结至环境。BOM R1在2026-01-01至2026-06-30（含）有效，R2自2026-07-01起有效，仅供日期边界测试。
+- **未完成项：** 尚未开发/运行fixture validator，未批准企业非生产环境，未执行任何SPAT用例；30项状态保持NOT_RUN。CH17-T004继续IN_PROGRESS。

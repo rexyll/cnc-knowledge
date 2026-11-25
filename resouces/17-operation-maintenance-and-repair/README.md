@@ -113,3 +113,11 @@
 - `spare-parts-test-fixture-cross-reference-template.csv`：27列表头空模板，用合成夹具ID关联MACHINE/MINST/BOM/PART等静态对象以及PO、收货、质检、库存、预留、工单、审批和PCN/EOL事件；事务夹具不因此成为知识库静态实体。
 - 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-synthetic-test-data-and-environment-readiness.md`；实体KNOW-000031、ASSET-000038～ASSET-000040。
 - 本轮不含真实企业数据/ID/账号/凭证；22项就绪检查均未评估，30个端到端测试场景仍为NOT_RUN。L2/L3执行需企业批准的隔离非生产环境和冻结数据集。
+
+## CH17-T004 备件合成测试夹具基线第六轮（2026-11-25）
+
+- `spare-parts-synthetic-fixture-baseline-v1-manifest.csv`：SPAREPARTS-SYN-BASE-001 v1.0.0元数据，单行/29列，状态DRAFT，未获企业批准。
+- `spare-parts-synthetic-fixture-baseline-v1.csv`：89条/27列固定合成对象与事件记录，包括67个对象及22个事件；所有标识为虚构SYN-/FX-/EVT-，按reset_group隔离。
+- `spare-parts-synthetic-fixture-test-case-coverage-v1.csv`：30行/11列，覆盖全部SPAT-001～SPAT-030，列出正向/负向夹具、事件和预期断言；全部NOT_RUN。
+- 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-baseline-v1.md`；实体KNOW-000032、ASSET-000041～ASSET-000043。
+- 所有数量、BOM日期与单位换算只是虚构测试值，不代表真实机床、企业库存政策或产品规格。当前未批准/冻结数据集，未执行企业SIT/UAT或现场测试。

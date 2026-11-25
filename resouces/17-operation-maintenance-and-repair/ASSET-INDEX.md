@@ -35,6 +35,9 @@
 | spare-parts-synthetic-test-dataset-manifest-template.csv | CSV模板 / ASSET-000038 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-test-data-and-environment-readiness.md / KNOW-000031 | 29列表头空模板，登记数据集身份/版本、生成器、种子引用、对象域、覆盖用例、冻结、批准、敏感数据扫描与校验值 |
 | spare-parts-test-environment-readiness-checklist.csv | CSV检查表 / ASSET-000039 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-test-data-and-environment-readiness.md / KNOW-000031 | 22项/11列非生产环境就绪检查，覆盖隔离、权限、秘密管理、备份恢复、mock、事件、日志、安全和清理；全部NOT_ASSESSED |
 | spare-parts-test-fixture-cross-reference-template.csv | CSV模板 / ASSET-000040 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-test-data-and-environment-readiness.md / KNOW-000031 | 27列表头空模板，以合成ID关联主数据、BOM、采购收货、质量、库存、维修、审批和生命周期事件及其时序 |
+| spare-parts-synthetic-fixture-baseline-v1-manifest.csv | CSV数据集清单 / ASSET-000041 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | SPAREPARTS-SYN-BASE-001 v1.0.0元数据；单行清单，当前DRAFT，环境/测试层级未获批准 |
+| spare-parts-synthetic-fixture-baseline-v1.csv | CSV合成夹具 / ASSET-000042 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | 89条固定合成记录（67对象+22事件），27列；SYN-/FX-/EVT-虚构标识，测试重置组隔离 |
+| spare-parts-synthetic-fixture-test-case-coverage-v1.csv | CSV用例映射 / ASSET-000043 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | SPAT-001～SPAT-030共30行/11列，逐项关联正负夹具和事件；执行状态均NOT_RUN |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）
