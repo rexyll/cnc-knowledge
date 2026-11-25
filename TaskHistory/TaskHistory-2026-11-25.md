@@ -284,7 +284,7 @@
 - 迟到/乱序：按接收顺序追加保留，不覆盖原事件；余额重建按business_time与ledger_sequence排序。可选known_at_cutoff重现特定知识时点收到的事件集合；所有时间戳要求显式时区。
 - 冲销：新增REVERSAL记录引用已存在TRANSFER，要求相反余额键、相同数量、业务时间不早于原事件；不修改原始事件。当前模型只支持一次完整冲销，部分冲销/多次补偿待企业定义。
 - 重建与核对：从显式提供的合成期初余额重建业务截止时点投影，输出已应用事件ID和余额；失败不修改账本。禁止跨单位、跨reset group或全局库存总额汇总。
-- 新增17个纯合成断言场景及专项测试；CI自检上传JSON Artifact。报告execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED；无外部连接和数据库/API写入。
+- 新增18个纯合成断言场景及专项测试；CI自检上传JSON Artifact。报告execution_status=BLOCKED_PENDING_ENTERPRISE_APPROVAL、business_rule_assertions=NOT_EVALUATED；无外部连接和数据库/API写入。
 - 文档更新：KNOW-000032第13节、ASSET-000051、资源/章节README、ASSET-INDEX、CH17 TaskPlan第6.20节、根TaskPlan、coverage和本TaskHistory。
 - **明确限制：** 当前为内存模拟，不是持久化WORM存储；没有签名、权限/职责分离、并发/跨进程控制、企业审计保留或消息队列交付保证。事件语义、部分冲销、SoR与期初快照审批仍待企业确认；CH17-T004继续IN_PROGRESS。
 
@@ -295,3 +295,6 @@
 - 保留业务时间/接收时间双截止语义，不放宽事件引用约束。
 
 - 后续CI复核：73项全库unittest已全部通过；self-check直接脚本执行时因Python脚本入口未将仓库根目录加入sys.path而无法导入同仓库模块。已补充与既有场景运行器一致的仓库根路径初始化，修复仅涉及本地模块导入，不改变账本语义。
+
+
+- 第十三轮补充：将投影核对从单纯输出重建余额改为必须与调用者显式提供的独立合成期望余额逐维比较；新增匹配与不匹配两条测试断言，避免将“成功重建”误称为“对账一致”。测试矩阵扩展为18个断言场景。

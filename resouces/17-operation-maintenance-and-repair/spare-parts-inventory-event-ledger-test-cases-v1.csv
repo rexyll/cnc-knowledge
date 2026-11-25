@@ -16,3 +16,4 @@ IEL-014,"Rebuild detects reversal whose target is not visible at knowledge cutof
 IEL-015,"Failed rebuild does not mutate the source event ledger",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
 IEL-016,"Reconciliation report never calculates a global inventory total",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
 IEL-017,"Self-check remains blocked pending enterprise approval",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence
+IEL-018,"Independent synthetic balance projection comparison detects mismatches",PASS,PASS,CI unit test,NOT_APPLICABLE,synthetic mathematical property only; not enterprise acceptance evidence

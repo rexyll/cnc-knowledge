@@ -6,7 +6,7 @@
   "aliases": [
     "Inventory transition contracts v1"
   ],
-  "description": "17个纯合成断言场景，覆盖不可变追加、幂等、迟到/乱序事件、业务时点与知识时点重建、显式冲销及投影核对。",
+  "description": "18个纯合成断言场景，覆盖不可变追加、幂等、迟到/乱序事件、业务时点与知识时点重建、显式冲销及独立余额投影核对。",
   "primary_chapter": "CH17",
   "related_chapters": [
     "CH17",
@@ -50,5 +50,5 @@
     "sha256": null,
     "file_size": null
   },
-  "notes": "17个CI断言场景映射表；不构成企业业务规则批准、库存账本验收或生产审计证据。"
+  "notes": "18个CI断言场景映射表；不构成企业业务规则批准、库存账本验收或生产审计证据。"
 }

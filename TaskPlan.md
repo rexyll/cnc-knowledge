@@ -704,12 +704,12 @@
 - 单位换算必须使用显式APPROVED记录及批准人/依据；不自动推断换算关系。
 - 期初余额装载仅接受synthetic_only=TRUE且snapshot_status=SYNTHETIC_TEST_ONLY的合成数据，并要求独立reset_group。
 - 事件ID唯一、序号严格递增，批量事件回放原子性；失败时不提交任何批次余额变化。
-- 17个纯合成断言场景进入CI；自检报告始终保持BLOCKED_PENDING_ENTERPRISE_APPROVAL，企业业务规则未评估。
+- 18个纯合成断言场景进入CI；自检报告始终保持BLOCKED_PENDING_ENTERPRISE_APPROVAL，企业业务规则未评估。
 
 ## CH17-T004 第十三轮：不可变库存事件账本与时点重建
 
 - 建立追加式内存事件账本，事件保留event_id、business_event_id、source_system_id、idempotency_key、业务发生时间、系统接收时间、双边维度和数量。
 - 同幂等键同载荷重复消息为NO_OP；同键异载荷及重复event_id拒绝。迟到/乱序消息保留接收顺序，按业务时间重建；支持knowledge-time截止重建。
 - 冲销必须新增引用原事件的反向事件，不覆盖原记录；当前模型只模拟一次完整冲销，不代表企业政策。
-- 从合成期初余额重建业务截止时点余额，输出事件投影与一致性报告，不计算跨reset group或全局库存总量。
-- 17个合成断言场景进入CI；自检报告保持BLOCKED_PENDING_ENTERPRISE_APPROVAL。企业业务测试仍NOT_RUN。
+- 从合成期初余额重建业务截止时点余额，与独立期望余额投影比较并输出一致性报告，不计算跨reset group或全局库存总量。
+- 18个合成断言场景进入CI；自检报告保持BLOCKED_PENDING_ENTERPRISE_APPROVAL。企业业务测试仍NOT_RUN。

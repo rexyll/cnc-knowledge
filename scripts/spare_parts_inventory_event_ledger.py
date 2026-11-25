@@ -219,14 +219,30 @@ class AppendOnlyEventLedger:
         self,
         opening_balances: dict[BalanceKey, Decimal],
         business_cutoff: str,
+        expected_projection: dict[BalanceKey, Decimal],
     ) -> dict[str, object]:
-        """Compare a replayed projection to a separately supplied synthetic projection."""
+        """Compare replayed balances to an independently supplied synthetic projection."""
         rebuilt = self.rebuild(opening_balances, business_cutoff)
+        expected = InventoryLedger(expected_projection).balances
+        actual = rebuilt["balances"]
+        keys = sorted(set(actual) | set(expected))
+        mismatches = [
+            {
+                "balance_key": "|".join(key.__dict__.values()),
+                "replayed_quantity": str(actual.get(key, Decimal("0"))),
+                "expected_quantity": str(expected.get(key, Decimal("0"))),
+            }
+            for key in keys
+            if actual.get(key, Decimal("0")) != expected.get(key, Decimal("0"))
+        ]
         return {
-            "rebuild_result": "PASS",
+            "rebuild_result": "PASS" if not mismatches else "MISMATCH",
+            "projection_matches": not mismatches,
+            "mismatch_count": len(mismatches),
+            "mismatches": mismatches,
             "balance_projection": {
                 "|".join(key.__dict__.values()): str(value)
-                for key, value in sorted(rebuilt["balances"].items())
+                for key, value in sorted(actual.items())
             },
             "reconciled_event_count": rebuilt["applied_event_count"],
             "global_inventory_total": None,

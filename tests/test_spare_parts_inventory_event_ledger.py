@@ -173,13 +173,33 @@ class InventoryEventLedgerTests(unittest.TestCase):
             ledger.rebuild({keys()[0]: Decimal("5")}, "2026-01-02T00:00:00+08:00")
         self.assertEqual(ledger.records, before)
 
-    def test_reconcile_report_never_emits_global_total(self):
+    def test_reconcile_compares_rebuilt_projection_without_global_total(self):
         ledger = AppendOnlyEventLedger()
+        hold, available = keys()
         ledger.append(event("E1", "I1"))
-        result = ledger.reconcile({keys()[0]: Decimal("5")}, "2026-01-02T00:00:00+08:00")
+        result = ledger.reconcile(
+            {hold: Decimal("5"), available: Decimal("0")},
+            "2026-01-02T00:00:00+08:00",
+            {hold: Decimal("3"), available: Decimal("2")},
+        )
         self.assertEqual(result["rebuild_result"], "PASS")
+        self.assertTrue(result["projection_matches"])
+        self.assertEqual(result["mismatch_count"], 0)
         self.assertIsNone(result["global_inventory_total"])
         self.assertEqual(result["business_rule_assertions"], "NOT_EVALUATED")
+
+    def test_reconcile_reports_projection_mismatch(self):
+        ledger = AppendOnlyEventLedger()
+        hold, available = keys()
+        ledger.append(event("E1", "I1"))
+        result = ledger.reconcile(
+            {hold: Decimal("5"), available: Decimal("0")},
+            "2026-01-02T00:00:00+08:00",
+            {hold: Decimal("4"), available: Decimal("1")},
+        )
+        self.assertEqual(result["rebuild_result"], "MISMATCH")
+        self.assertFalse(result["projection_matches"])
+        self.assertEqual(result["mismatch_count"], 2)
 
     def test_self_check_fails_closed(self):
         report = synthetic_self_check()

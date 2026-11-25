@@ -173,6 +173,6 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 ## CH17-T004 第十三轮：不可变库存事件账本与时点重建
 
-- `spare-parts-inventory-event-ledger-test-cases-v1.csv`（ASSET-000051）：17个纯合成断言场景，覆盖事件追加、幂等键、重复/迟到/乱序、业务时间与知识时间、冲销和重建一致性。
+- `spare-parts-inventory-event-ledger-test-cases-v1.csv`（ASSET-000051）：18个纯合成断言场景，覆盖事件追加、幂等键、重复/迟到/乱序、业务时间与知识时间、冲销和重建一致性。
 - 模型：`../../scripts/spare_parts_inventory_event_ledger.py`；测试：`../../tests/test_spare_parts_inventory_event_ledger.py`。
 - CI报告：Artifact `ch17-inventory-event-ledger-self-check`。只验证纯合成数学性质，业务断言保持NOT_EVALUATED。

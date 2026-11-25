@@ -165,7 +165,7 @@ CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-
 
 ## 12. 多维库存余额内核与期初快照隔离
 
-新增 [多维库存余额模型测试矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-multidimensional-inventory-model-test-cases-v1.csv)（ASSET-000050，17个纯合成断言场景）。
+新增 [多维库存余额模型测试矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-multidimensional-inventory-model-test-cases-v1.csv)（ASSET-000050，18个纯合成断言场景）。
 
 实现位于 [多维库存内核](../../scripts/spare_parts_multidimensional_inventory.py)，专项测试位于 [多维库存测试](../../tests/test_spare_parts_multidimensional_inventory.py)。余额键固定包含账户、物料、批次、库位、所有权、质量状态和计量单位。普通双边转移只允许在同物料/批次/库位/所有权/单位下改变账户或状态；跨库位移动、物料/批次变更和所有权变更必须由独立业务事件建模。不同单位禁止直接转移；只有显式提供包含批准人和批准依据的APPROVED换算记录，才可调用独立换算函数。模型不自动应用换算，也不从BOX/EA示例推断换算。
 
@@ -175,12 +175,12 @@ CI会先生成30个场景包，再运行全量离线执行器，并上传 `ch17-
 
 ## 13. 不可变库存事件账本、幂等与时点重建
 
-新增 [事件账本测试矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-event-ledger-test-cases-v1.csv)（ASSET-000051，17个纯合成断言场景）。实现位于 [库存事件账本内核](../../scripts/spare_parts_inventory_event_ledger.py)，专项测试位于 [事件账本测试](../../tests/test_spare_parts_inventory_event_ledger.py)。
+新增 [事件账本测试矩阵](../../resouces/17-operation-maintenance-and-repair/spare-parts-inventory-event-ledger-test-cases-v1.csv)（ASSET-000051，18个纯合成断言场景）。实现位于 [库存事件账本内核](../../scripts/spare_parts_inventory_event_ledger.py)，专项测试位于 [事件账本测试](../../tests/test_spare_parts_inventory_event_ledger.py)。
 
 事件记录携带event_id、business_event_id、source_system_id、idempotency_key、business_time、ingestion_time、event_type、双边维度键、Decimal数量和可选reference_event_id。账本只提供追加接口，记录以不可变tuple视图导出；同幂等键且同载荷的重复投递返回NO_OP，幂等键载荷冲突或event_id跨幂等键重复均拒绝。
 
 迟到/乱序事件仍按接收顺序保留在账本，余额重建按business_time及不可变ledger_sequence排序。可选known_at_cutoff用于还原某个知识时点实际已收到的事件集合。冲销以新的REVERSAL记录表达，必须引用已存在的原TRANSFER、使用完全相反的余额键及相同数量；原记录永不修改。当前模型对每笔原始转移最多允许一次完整冲销，不代表企业部分冲销或多次补偿政策。
 
-重建从调用者显式提供的合成期初余额开始，按截止时点回放事件，并返回事件清单、余额投影和审计计数；不计算跨单位/跨reset group/全局库存总额。失败重建不会修改账本。投影核对接口输出重建结果和余额投影，不代表独立企业SoR对账。
+重建从调用者显式提供的合成期初余额开始，按截止时点回放事件，并返回事件清单、余额投影和审计计数；不计算跨单位/跨reset group/全局库存总额。失败重建不会修改账本。投影核对接口将重建余额与调用者独立提供的合成期望投影逐维比较，输出匹配/差异键和数量；不代表独立企业SoR对账。
 
 **边界：** 内存账本不是持久化WORM存储，不提供数字签名、权限/职责分离、跨进程并发控制、企业审计留存或消息中间件交付保证。自检报告固定为BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED；所有事件均为SYNTHETIC_TEST_ONLY。企业事件语义、部分冲销、事件保留政策及期初快照审批仍待业务所有者确认。
