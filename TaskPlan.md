@@ -598,3 +598,10 @@
 - **状态：** CH17-T003保持IN_PROGRESS；尚无目标机床型号和现行OEM服务文件，未形成现场维修步骤或验收记录。
 
 - **专项模板提交与CI验收补记：** 实施提交 `a5c3829d4c8fc4cd63bf1b1dbd0a3a57a52a0fec` 对应 [Run 45557662316](https://github.com/rexyll/cnc-knowledge/actions/runs/45557662316)；计划/索引同步提交 `8c08cc78f3ccf0497a319b2f01669098e68910ba` 对应 [Run 45557733024](https://github.com/rexyll/cnc-knowledge/actions/runs/45557733024)。两个Run全部Job均success；CI不构成现场或实机维修验证。
+
+
+## CH17-T003 第二组关键部件专项更换工作包（2026-11-25）
+
+- 在 `docs/17-operation-maintenance-and-repair/` 新增ATC刀库/换刀/刀塔、卡盘夹持、液压/气动单元专项工作包正文（KNOW-000026）；在 `resouces/17-operation-maintenance-and-repair/` 新增三份原创35列专项CSV（ASSET-000022～ASSET-000024）。
+- 专项审查覆盖设备与BOM身份、刀位/夹持接口、机械与流体接口、I/O/反馈、安全互锁、备份与参数、搬运/储能/残压风险、OEM验证条件及放行记录。
+- CH17-T003仍为IN_PROGRESS。模板不包含型号级拆装/泄压/蓄能器处置/动态试验步骤，不设通用夹持力、压力、转速、流量、温度或验收阈值；须基于指定设备及现行OEM受控文件完成后续映射。

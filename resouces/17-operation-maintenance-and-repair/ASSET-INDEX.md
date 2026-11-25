@@ -16,6 +16,9 @@
 | spindle-replacement-work-package-template.csv | CSV模板 / ASSET-000019 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / spindle-servo-ballscrew-specialized-replacement-work-packages.md / KNOW-000025 | 主轴单元专项更换工作包，18项检查/35列；OEM值与步骤待机型映射 |
 | servo-motor-encoder-replacement-work-package-template.csv | CSV模板 / ASSET-000020 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / spindle-servo-ballscrew-specialized-replacement-work-packages.md / KNOW-000025 | 伺服电机/编码器专项更换工作包，17项检查/35列；无通用换相或参数值 |
 | ballscrew-support-bearing-replacement-work-package-template.csv | CSV模板 / ASSET-000021 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / spindle-servo-ballscrew-specialized-replacement-work-packages.md / KNOW-000025 | 滚珠丝杠/支撑轴承专项更换工作包，17项检查/35列；无通用预紧/扭矩值 |
+| atc-tool-magazine-turret-replacement-work-package-template.csv | CSV模板 / ASSET-000022 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / atc-chuck-hydraulic-specialized-replacement-work-packages.md / KNOW-000026 | ATC刀库/换刀机械手/刀塔专项工作包，20项检查/35列；OEM步骤与关键值待机型映射 |
+| chuck-workholding-replacement-work-package-template.csv | CSV模板 / ASSET-000023 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / atc-chuck-hydraulic-specialized-replacement-work-packages.md / KNOW-000026 | 卡盘/夹持专项工作包，18项检查/35列；夹持力、压力、转速及工件边界无通用值 |
+| hydraulic-pneumatic-unit-replacement-work-package-template.csv | CSV模板 / ASSET-000024 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T003 / atc-chuck-hydraulic-specialized-replacement-work-packages.md / KNOW-000026 | 液压/气动动力单元专项工作包，20项检查/35列；介质、压力、蓄能器和设定值待OEM映射 |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）

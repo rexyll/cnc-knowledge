@@ -140,3 +140,11 @@
 
 - **实施提交：** a5c3829d4c8fc4cd63bf1b1dbd0a3a57a52a0fec；计划/索引/覆盖度同步提交：8c08cc78f3ccf0497a319b2f01669098e68910ba。
 - **CI验收：** 实施提交Run 45557662316和同步提交Run 45557733024均completed/success；知识结构/数据质量、strict lint及CH12数值资源回归Job全部通过。该CI不代表CH17现场或实机维修验证。
+
+
+## 6.7 CH17-T003 刀库/换刀、卡盘夹持与液压气动专项更换工作包（2026-11-25）
+
+- 新增正文 `docs/17-operation-maintenance-and-repair/atc-chuck-hydraulic-specialized-replacement-work-packages.md`（KNOW-000026），将自动换刀/刀库/刀塔、卡盘/工件夹持、液压/气动动力单元细化为三个专项审查域，并定义G0–G7控制门。
+- 新增三份原创35列CSV：`atc-tool-magazine-turret-replacement-work-package-template.csv`（ASSET-000022，20项）、`chuck-workholding-replacement-work-package-template.csv`（ASSET-000023，18项）、`hydraulic-pneumatic-unit-replacement-work-package-template.csv`（ASSET-000024，20项）。
+- 模板仅为待评估/未测试审查入口；不提供刀库相位/换刀步骤、夹持力/压力/转速、液压设定、蓄能器处置、泄压/排气动作或通用验收限值。所有技术数据和现场步骤需绑定具体机床序列范围、OEM受控文件、批准工程变更与风险评估。
+- **状态：** CH17-T003保持IN_PROGRESS；无目标机型和现行OEM服务文件，未形成型号级维修SOP、替代批准或现场/实机验证。

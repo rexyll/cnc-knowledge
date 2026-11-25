@@ -32,3 +32,6 @@
 ## 来源与审查
 
 事实性内容需记录来源、版本、适用机型/系统、核验日期和证据等级；未知项显式标记待核实。安全、版权和保密要求遵循根目录 `TaskPlan.md`。
+
+
+本轮新增 [刀库/换刀、卡盘夹持与液压气动专项更换工作包](atc-chuck-hydraulic-specialized-replacement-work-packages.md)，对应三份CSV模板位于本章 `resouces/17-operation-maintenance-and-repair/`。
