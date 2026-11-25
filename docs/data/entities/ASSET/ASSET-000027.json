@@ -1,0 +1,51 @@
+{
+  "entity_id": "ASSET-000027",
+  "entity_type": "asset_file",
+  "canonical_name": "数控机床备件库存与补货模板",
+  "english_name": null,
+  "aliases": [],
+  "description": "按仓库/库位/批次记录库存分桶、补货参数、需求窗口、供应交期和盘点证据的模板。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "项目原创备件管理资源",
+    "ASSET-000027"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T15:30:00+08:00",
+  "updated_at": "2026-11-25T15:30:00+08:00",
+  "verified_at": "2026-11-25T15:30:00+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-part-inventory-and-replenishment-template.csv",
+    "file_name": "spare-part-inventory-and-replenishment-template.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000027",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original blank spare parts management template",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "原创空白字段模板，不含真实料号、设备实例、库存、采购、供应商、替代批准或现场维修记录；实际数据应来自受控企业系统和正式OEM/供应证据。"
+}

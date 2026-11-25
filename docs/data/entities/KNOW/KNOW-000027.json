@@ -1,0 +1,68 @@
+{
+  "entity_id": "KNOW-000027",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件管理、替代审批与生命周期闭环",
+  "english_name": "CNC machine tool spare parts management, substitution approval and lifecycle control",
+  "aliases": [
+    "备件管理闭环",
+    "机床备件主数据与库存管理",
+    "备件替代与停产风险管理"
+  ],
+  "description": "建立数控机床备件主数据、关键度评估、库存补货、替代审批、生命周期停产风险和维修工单消耗反馈之间的追溯框架。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH04",
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件生命周期与维修反馈"
+  ],
+  "tags": [
+    "CH17",
+    "备件管理",
+    "备件主数据",
+    "关键备件",
+    "库存补货",
+    "替代件审批",
+    "停产风险",
+    "维修消耗",
+    "生命周期"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T15:30:00+08:00",
+  "updated_at": "2026-11-25T15:30:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-management-and-lifecycle.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "备件身份与BOM适用性、关键度评估、库存分桶与补货口径、替代件技术审批、PCN/EOL生命周期、工单领用与维修反馈闭环",
+    "article_status": "model_agnostic_spare_parts_management_framework",
+    "machine_specific_spare_part_numbers_defined": false,
+    "real_inventory_records_created": false,
+    "universal_criticality_thresholds_defined": false,
+    "universal_reorder_parameters_defined": false,
+    "cross_model_substitutions_approved": false,
+    "field_execution_validation": false,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-part-master-data-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-part-criticality-assessment-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-part-inventory-and-replenishment-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-part-substitution-approval-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-part-lifecycle-and-obsolescence-template.csv",
+      "resouces/17-operation-maintenance-and-repair/repair-spare-consumption-feedback-template.csv"
+    ]
+  },
+  "notes": "原创管理框架与空白模板；未提供目标机型BOM、OEM备件目录、真实采购/消耗/库存、供应商交期或停产通知。不得据此推定料号、库存参数或替代兼容性。"
+}
