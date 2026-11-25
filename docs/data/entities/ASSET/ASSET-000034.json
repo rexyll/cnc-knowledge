@@ -1,0 +1,51 @@
+{
+  "entity_id": "ASSET-000034",
+  "entity_type": "asset_file",
+  "canonical_name": "备件实物流转与事务控制矩阵",
+  "english_name": null,
+  "aliases": [],
+  "description": "包含16个备件生命周期业务事件的触发、前置条件、身份键、证据、审批、实物/系统状态、库存桶影响、异常处置、幂等及冲销控制字段。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件实物流转与事务控制",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "备件事务控制",
+    "项目原创资源",
+    "ASSET-000034"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "verified",
+  "created_at": "2026-11-25T16:03:30+08:00",
+  "updated_at": "2026-11-25T16:03:30+08:00",
+  "verified_at": "2026-11-25T16:03:30+08:00",
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-transaction-lifecycle-control-matrix.csv",
+    "file_name": "spare-parts-transaction-lifecycle-control-matrix.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000029",
+    "generated_on": "2026-11-25",
+    "version": "1.0",
+    "authoring_method": "Original project process-control/RACI template",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "项目建议的事务控制矩阵，所有节点初始PROPOSED；不代表已连接企业业务系统或建立实际库存流水。"
+}

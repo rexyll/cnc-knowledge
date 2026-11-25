@@ -1,0 +1,64 @@
+{
+  "entity_id": "KNOW-000029",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件实物流转、事务控制与责任矩阵",
+  "english_name": "CNC machine tool spare parts physical flow, transaction controls and responsibility matrix",
+  "aliases": [
+    "备件生命周期业务流程",
+    "备件收货领料返修报废流程",
+    "备件事务控制与RACI"
+  ],
+  "description": "定义数控机床备件从需求、采购、收货、检验、入库、预留、发料、安装、旧件返还、返修/报废到盘点对账的事件控制、异常补偿和建议RACI职责。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH14",
+    "CH15",
+    "CH16",
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件实物流转与责任治理"
+  ],
+  "tags": [
+    "CH17",
+    "备件",
+    "库存事务",
+    "收货",
+    "检验",
+    "领料",
+    "安装消耗",
+    "返修",
+    "报废",
+    "库存对账",
+    "RACI"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-25T16:03:30+08:00",
+  "updated_at": "2026-11-25T16:03:30+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-physical-flow-and-transaction-controls.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-25",
+    "content_scope": "需求至采购、收货检验、库存上架/预留/发料、现场安装、旧件回收返修/报废、盘点对账、PCN/EOL触发、异常补偿和RACI",
+    "article_status": "vendor_neutral_process_control_framework",
+    "enterprise_process_approved": false,
+    "real_transactions_created": false,
+    "corporate_raci_approved": false,
+    "system_integration_implemented": false,
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-parts-transaction-lifecycle-control-matrix.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-raci-approval-matrix-template.csv"
+    ]
+  },
+  "notes": "项目内部的通用流程控制建议和角色建议，不宣称行业标准、ERP/CMMS内置流程或用户企业现行制度；未导入真实事务、库存、维修记录或企业组织授权。"
+}

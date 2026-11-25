@@ -1,0 +1,17 @@
+activity_id,activity_name,role_asset_owner,role_maintenance_lead,role_engineering,role_quality,role_safety,role_procurement,role_warehouse,role_oem_authorized_service,role_data_owner,role_it_integration,proposed_accountable_role,approval_or_evidence_reference,assignment_status,notes
+RACI-001,备件主数据新建/变更,C,C,C,C,I,R,C,I,A,R,DATA_OWNER,主数据规则/数据质量审批,PROPOSED,建议分配；企业需确认数据所有者职责和字段级SoR
+RACI-002,BOM与设备配置适用性确认,C,C,A/R,C,C,I,I,C,I,I,ENGINEERING,受控BOM/工程变更/配置评审,PROPOSED,机型、序列、选件和版本适用性由工程权威角色确认
+RACI-003,采购申请、供应商及PO批准,C,C,C,C,I,A/R,I,C,I,I,PROCUREMENT,采购授权/报价/交期/合同引用,PROPOSED,正式授权额度和供应商资格标准须由组织提供
+RACI-004,收货、数量核对与身份登记,I,I,C,C,I,C,A/R,I,I,I,WAREHOUSE,PO行/收货凭证/批次扫描,PROPOSED,收货岗位与采购岗位的分离要求按企业制度确认
+RACI-005,来料检验与质量放行,I,C,C,A/R,C,I,R,C,I,I,QUALITY,检验计划/结果/不合格处置/放行引用,PROPOSED,检验判据与抽样方式不得由本模板预设
+RACI-006,上架、储存和库位管理,I,I,C,C,I,I,A/R,I,I,I,WAREHOUSE,库位/储存条件/保管记录,PROPOSED,特殊储存要求需由OEM/材料规范确认
+RACI-007,关键度评估与库存策略制定,A,R,R,C,C,R,R,C,C,I,ASSET_OWNER,关键度评估/需求数据/交期证据/策略版本,PROPOSED,这是建议A角色；企业也可指定资产或服务业务负责人
+RACI-008,库存预留、拣配及发料,I,C,C,C,I,I,A/R,I,I,I,WAREHOUSE,工单/配置适用性/替代批准/出库事务,PROPOSED,未放行或超范围的替代件不得发放
+RACI-009,设备现场安装与实际消耗登记,C,A/R,C,C,C,I,R,C,I,I,MAINT_LEAD,维修工作包/OEM程序/安装和复验记录,PROPOSED,真实现场人员资质和安全许可依OEM/现场程序
+RACI-010,备件替代技术批准,C,C,A/R,R,C,I,I,C,I,I,ENGINEERING,兼容性分析/风险审查/ECO/OEM依据/验证报告,PROPOSED,涉及安全功能或保修时必须追加相应独立审批
+RACI-011,PCN/EOL通知接收与影响分析,C,C,R,C,I,A/R,I,C,I,I,PROCUREMENT,OEM/正式供应商通知/受影响配置清单,PROPOSED,采购负责渠道信息，技术影响需工程确认
+RACI-012,旧件返修、质量处置或报废,I,R,C,A,C,C,R,C,I,I,QUALITY,返修报告/检验结果/报废审批/库存处置,PROPOSED,若企业分拆返修技术责任和报废授权，需增加活动行
+RACI-013,库存盘点、差异复核和账面调整,C,I,I,C,I,C,A/R,I,C,I,WAREHOUSE,盘点证据/差异分析/授权调整事务,PROPOSED,盘点人与调整批准权限是否分离需单独确认
+RACI-014,SoR/字段映射与接口规则批准,C,C,C,C,I,C,C,I,A,R,DATA_OWNER,字段映射版本/接口设计/数据分类/测试结果,PROPOSED,接口变更的生产发布另需IT变更授权
+RACI-015,数据质量异常与跨系统对账关闭,C,C,C,C,I,C,R,I,A,R,DATA_OWNER,差异单/源记录/对账结果/更正事务,PROPOSED,根据异常涉及对象由相应业务所有者承担R或会签
+RACI-016,紧急缺件与例外采购处置,A,R,C,C,C,R,C,C,I,I,PROCUREMENT,紧急需求证据/授权例外/后续审计,PROPOSED,紧急采购不得跳过安全相关部件的技术/质量批准
