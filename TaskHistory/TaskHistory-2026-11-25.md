@@ -205,3 +205,19 @@
 - **计划/索引/报告路径同步提交：** `0a9559ce47b265b6643529e53ffe43cb5e5fa664`，更新根计划、CH17计划（6.14）、章节/资源README、docs导航、覆盖度和CI报告路径；[Run 45588555063](https://github.com/rexyll/cnc-knowledge/actions/runs/45588555063) completed/success。
 - **回归测试强化提交：** `b5d677e4eb67e16bd31166adc4bfad6f779ca958`，新增CSV列宽损坏、映射双向引用异常测试，并验证CLI子进程报告输出；修正KNOW-000032中的报告命令路径。GitHub Actions [Run 45588745895](https://github.com/rexyll/cnc-knowledge/actions/runs/45588745895) completed/success：14/14 unittest、Knowledge structure and data quality、CH12 numerical resource tests均通过。
 - **状态与遗留：** CH17-T004继续IN_PROGRESS。静态夹具验证已完成，但数据集依然DRAFT，22项企业环境检查仍NOT_ASSESSED，30项备件业务测试仍NOT_RUN；没有企业授权非生产环境、SIT/UAT、生产影子、HIL或实机验证。下一阶段需先由企业数据/系统/安全责任角色审批并冻结数据集与环境，再逐项执行测试并保留实际证据。
+
+## CH17-T004 备件测试场景重置配置与本地fixture loader第八轮
+
+- **实际完成时间：** 2026-11-25T17:54:45+08:00（Asia/Shanghai；30场景本地打包及两个CI Job完成后补录）
+- **所在分支：** `main`（未创建其他分支）
+- **新增重置配置：** `resouces/17-operation-maintenance-and-repair/spare-parts-synthetic-fixture-reset-profiles-v1.csv`（ASSET-000044，30行/15列），逐用例登记正向/负向夹具、事件、依赖闭包、reset group、装载/清理策略、稳定幂等键、执行状态及FILESYSTEM_STAGING_ONLY范围。配置由标准用例映射和夹具父/关联依赖确定性生成；loader运行时重新推导并比对。
+- **新增工具：** `scripts/spare_parts_fixture_loader.py`，纯Python标准库本地文件包生成器。运行前复用KNOW-000032静态验证；校验30份重置配置；递归装入父/关联依赖闭包；对象按父先子后拓扑排序，事件按接收时间/序号排序；为选定场景输出独立文件包。若目标场景目录已存在则拒绝覆盖。
+- **每个场景包：** `scenario-manifest.json`（数据集/用例/源文件哈希/生成文件哈希）；`fixtures.csv`（有序全集）；`objects.csv`、`events.csv`；`load-plan.json`（适配器NOT_IMPLEMENTED、仅计划）；`reset-plan.json`（PLAN_ONLY、反向本地包清理顺序、未执行）。
+- **安全边界：** loader只写用户指定的本地输出目录，不连接或写入数据库、API、事件队列、ERP、WMS、CMMS、EAM、QMS或CNC硬件；不执行企业系统导入、事务、重置或删除。清理范围仅为生成的本地场景包，不包含外部系统数据。所有30个源测试状态继续NOT_RUN。
+- **新增测试：** `tests/test_spare_parts_fixture_loader.py` 8项测试，覆盖单场景、全30场景生成、父子依赖顺序、PLAN_ONLY及逆序清理、未知场景、拒绝覆盖、重置配置篡改、源夹具只读。CI全量单元测试共22项通过。
+- **CI全量行为：** Knowledge Quality Job先执行22项unittest、静态夹具校验和严格知识库lint，再生成SPAT-001～SPAT-030全部30个本地场景包；包全部输出到Runner临时目录并作为Artifact上传。日志确认 `STAGED: 30 local package(s)`、external connections=NO、mutations=NO。
+- **实施提交：** `0505bba51ad455e839a4159049e2d2d2fd3106ed`；[Run 45589600573](https://github.com/rexyll/cnc-knowledge/actions/runs/45589600573) completed/success，22项测试通过，知识结构/数据质量Job通过。
+- **计划/文档/CI同步提交：** `c9163756363309a2f8e056fac2938cb95b136c6a`；新增CH17任务6.15，更新根TaskPlan、KNOW-000032、CH17/Docs/Resource README、ASSET-INDEX、coverage及CI全量打包和Artifact上传；[Run 45589763906](https://github.com/rexyll/cnc-knowledge/actions/runs/45589763906) completed/success，Knowledge structure and data quality与CH12 numerical resource tests两个Job均成功。
+- **CI产物：** [30个场景包Artifact](https://github.com/rexyll/cnc-knowledge/actions/runs/45589763906/artifacts/15009054417)；[静态校验报告Artifact](https://github.com/rexyll/cnc-knowledge/actions/runs/45589763906/artifacts/15009508463)。Artifact用于审查和本地/测试环境适配准备，不是企业数据导入结果。
+- **结构化登记：** 新增ASSET-000044，CH17覆盖度调整为12篇KNOW、39个登记实体、37项资源记录、SRC去重9条。30行重置配置字段/列数与ASSET-INDEX一致。
+- **状态与遗留：** CH17-T004保持IN_PROGRESS。合成数据集仍DRAFT，22项企业环境就绪检查仍NOT_ASSESSED，30项业务测试仍NOT_RUN；尚无企业批准的非生产环境，目标系统适配器未开发，未执行SIT/UAT、生产影子、HIL或实机验证。下一步需先取得企业数据/系统/安全责任角色批准，再按目标系统设计适配器和执行证据闭环。
