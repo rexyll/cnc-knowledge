@@ -25,6 +25,9 @@
 | spare-part-substitution-approval-template.csv | CSV模板 / ASSET-000028 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | 原件/候选件适用范围、机械电气流体软件安全兼容、工程批准和验证记录 |
 | spare-part-lifecycle-and-obsolescence-template.csv | CSV模板 / ASSET-000029 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | PCN/EOL、last-time-buy、服务支持、安装基数、替代迁移和缓解计划追踪 |
 | repair-spare-consumption-feedback-template.csv | CSV模板 / ASSET-000030 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-management-and-lifecycle.md / KNOW-000027 | 工单、设备实例、拆下/安装件批次、领用/返修、补货和故障反馈关联 |
+| spare-parts-enterprise-system-field-mapping-template.csv | CSV模板 / ASSET-000031 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | ERP/CMMS/EAM/PLM字段映射、SoR、外部键、单位/代码集、同步、有效期、数据责任和审批字段 |
+| spare-parts-data-quality-and-reconciliation-rules.csv | CSV规则目录 / ASSET-000032 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | 16条建议数据质量与对账规则；初始PROPOSED，阈值、阻断方式、频率和责任人待企业批准 |
+| spare-parts-stock-policy-decision-template.csv | CSV模板 / ASSET-000033 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | 按备件/地点/机型配置记录需求、交期、供应风险、策略版本、库存参数审批及复核依据；数值留空 |
 | README.md | 资源目录说明 | 项目原创 | 2026-11-25 | 原创 | CH17资源归档规则 | 目录用途、归档和来源登记要求 |
 
 ## 外部来源（只登记元数据与官方链接）
@@ -40,6 +43,3 @@
 | SRC-000388 | Haas Automation | Lathe Maintenance | 型号/产品族专属维护计划示例 | 仅适用对应Haas车床配置 |
 
 所有外部来源于2026-11-25核验。原始法规、标准和制造商手册未复制到本目录；保存全文需另行核验授权及再分发许可。
-| spare-parts-enterprise-system-field-mapping-template.csv | CSV模板 / ASSET-000031 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | ERP/CMMS/EAM/PLM字段映射、SoR、外部键、单位/代码集、同步、有效期、数据责任和审批字段 |
-| spare-parts-data-quality-and-reconciliation-rules.csv | CSV规则目录 / ASSET-000032 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | 16条建议数据质量与对账规则；初始PROPOSED，阈值、阻断方式、频率和责任人待企业批准 |
-| spare-parts-stock-policy-decision-template.csv | CSV模板 / ASSET-000033 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-system-integration-and-data-governance.md / KNOW-000028 | 按备件/地点/机型配置记录需求、交期、供应风险、策略版本、库存参数审批及复核依据；数值留空 |
