@@ -81,3 +81,18 @@
 - **实施提交：** a5c3829d4c8fc4cd63bf1b1dbd0a3a57a52a0fec；章节计划/索引/覆盖度同步提交：8c08cc78f3ccf0497a319b2f01669098e68910ba。
 - **CI验收：** 实施提交对应GitHub Actions [Run 45557662316](https://github.com/rexyll/cnc-knowledge/actions/runs/45557662316)，同步提交对应 [Run 45557733024](https://github.com/rexyll/cnc-knowledge/actions/runs/45557733024)，两个Run的全部Job均completed/success；知识结构与数据质量、strict lint及CH12数值资源回归均成功。CH12回归仅验证仓库既有数值资源，不构成CH17现场维修、台架/HIL或实机验收。
 - **状态与遗留：** CH17-T003保持IN_PROGRESS；尚无目标机床型号、序列范围、选件、控制系统版本和受控OEM服务文件，未形成型号级拆装SOP、已批准替代关系或现场更换/校准记录。
+
+
+## CH17-T003 刀库/换刀、卡盘夹持与液压气动专项更换工作包第二轮
+
+- **实际完成时间：** 2026-11-25T15:05:29+08:00（Asia/Shanghai；最终CI通过后补录）
+- **所在分支：** `main`（未创建其他分支）
+- **新增正文：** `docs/17-operation-maintenance-and-repair/atc-chuck-hydraulic-specialized-replacement-work-packages.md`（KNOW-000026，`verification_status=in_review`）。
+- **新增资源：** `atc-tool-magazine-turret-replacement-work-package-template.csv`（ASSET-000022，20条检查项/35列）；`chuck-workholding-replacement-work-package-template.csv`（ASSET-000023，18条检查项/35列）；`hydraulic-pneumatic-unit-replacement-work-package-template.csv`（ASSET-000024，20条检查项/35列），均归档于 `resouces/17-operation-maintenance-and-repair/`。
+- **专项内容：** ATC模板覆盖刀位/刀具映射、刀套/保持接口、换刀机械手/凸轮/链传动、刀塔/动力刀具适用性、流体/电气/I/O反馈、防护互锁、拆前基线、备份、搬运支撑、空运行和换刀验证；卡盘模板覆盖主轴接口、适配盘、爪/夹具、拉杆、执行缸/旋转接头、夹持确认、工件包络、夹持力/压力/转速/质量等OEM值来源、跳动及受控动态复验；液压气动模板覆盖泵阀/执行机构、管路、介质与过滤、蓄能器、残压、保护阀、压力/流量/温度传感器、校准、泄漏和系统复验。
+- **结构化记录与索引：** 新增KNOW-000026、ASSET-000022～ASSET-000024；更新CH17章节计划、根TaskPlan、章节README、docs入口、资源README、ASSET-INDEX和CHAPTER-COVERAGE。覆盖度更新为6篇知识文章、17项资源记录、9条去重来源；CH17仍为IN_PROGRESS。
+- **安全/适用边界：** 三份模板均初始 `TO_BE_ASSESSED/NOT_TESTED`，没有通用换刀相位/步骤、夹持力/压力/转速/流量/温度/蓄能器预充、泄压/排气/储能处置动作、紧固值或验收阈值；禁止旁路防护和安全互锁。所有具体动作和技术值必须映射到机床型号/序列范围、现行OEM受控文件、批准工程变更及现场风险评估。SRC-000382（OSHA 29 CFR 1910.147）仅作为其法定适用范围内危险能量控制参考。
+- **CSV/实体验收：** 从GitHub远程复读三份CSV；数据行数分别为20、18、20，表头及每个数据行均为35列。KNOW-000026及ASSET-000022～000024 JSON均可解析，三个资源路径和实体关联一致；远程确认临时根目录文件`0`/`1`/`2`已删除。
+- **提交与修正记录：** 初始实施提交 `46a1a69042e3aeceb82a3db1dfd1fc15b976cfb6`；该提交中CSV路径误落到根目录临时文件`0`/`1`/`2`，其CI Run 45565074614的Knowledge lint失败（CH12数值资源Job成功）。已通过修正提交 `a8c024973d9b07194e675a7f60185d8002c4842d` 将三份CSV迁移至约定资源目录、删除误放文件并修正KNOW-000026的`linked_templates`；计划/索引同步提交为 `8a5333cbc4ee248587f5d24ac8d24d3f94cbb55d`。
+- **CI验收：** 修正提交对应 [Run 45565219082](https://github.com/rexyll/cnc-knowledge/actions/runs/45565219082) completed/success；计划与索引同步提交对应 [Run 45565331120](https://github.com/rexyll/cnc-knowledge/actions/runs/45565331120) completed/success。两个Run的Knowledge structure and data quality与CH12 numerical resource tests均成功；CH12回归只验证仓库数值资源，不构成CH17现场维修、HIL或实机验收。
+- **状态与遗留：** CH17-T003保持IN_PROGRESS；仍未指定目标机床型号、序列范围、选件、CNC/PLC软件版本和受控OEM服务手册，未形成型号级拆装SOP、替代件批准、真实工单或现场更换/校准/实机复验记录。
