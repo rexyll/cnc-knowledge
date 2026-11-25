@@ -101,4 +101,6 @@
 - 更新SRC-000388的官方维护页URL、文档修订和章节定位；保留SRC-000389作为状态监测通用指南入口。
 - **边界：** 通用矩阵的OEM周期/阈值/规格全部留空；Haas精选实例只用于说明制造商维护计划具有产品族/配置特异性，不得推广到其他品牌或未核对的Haas机型。无用户目标机床型号，因此尚未激活具体设备维护任务。
 - **未完成项：** 未取得用户目标机型手册、未建立该机型运行小时/循环计数映射、未填写具体油液/滤芯料号和储存参数，也没有真实保养记录或现场执行证据。
+- **实施提交：** `ecc70ca326fccacab6ed3036fdf5802309c7bb95`；CSV字段对齐修正提交：`97340c9dfa1f6c77a5120c85c40e772b29b16eca`。
+- **CI验收：** 修正后的提交 `97340c9dfa1f6c77a5120c85c40e772b29b16eca` 对应 GitHub Actions [Run 45548286906](https://github.com/rexyll/cnc-knowledge/actions/runs/45548286906) completed/success。Knowledge structure and data quality：5/5单元测试通过、`knowledge_lint --strict` 为 PASS（0 errors），检查22章、138个Markdown、450条内部链接、152条实体、240条关系、387条来源、727处来源引用和22条覆盖记录；CH12 numerical resource tests：143/143通过。该CI不代表CH17现场保养或实机验证。
 - **状态：** CH17-T002保持IN_PROGRESS；待目标机型和受控OEM维护手册确定后继续型号级映射与现场流程审查。

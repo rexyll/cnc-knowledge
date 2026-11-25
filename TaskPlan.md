@@ -565,3 +565,6 @@
 - 在 `resouces/17-operation-maintenance-and-repair/` 新增维护任务矩阵、维护卡、耗材登记三份原创模板，以及Haas车床RD0035官方计划的有限精选示例；同步建立ASSET-000011～ASSET-000014和KNOW-000022。
 - SRC-000388更新至官方RD0035 A-04/2026维护页面，SRC-000389继续作为状态监测一般指南入口。通用模板不预置跨品牌周期、阈值或油液规格。
 - CH17-T002设为IN_PROGRESS；因用户目标机型尚未指定，型号级任务激活、维护周期/耗材映射和现场验证仍未完成。
+
+
+- **CH17-T002 CI验收补记（2026-11-25）：** 修正提交 `97340c9dfa1f6c77a5120c85c40e772b29b16eca` 对应 [GitHub Actions Run 45548286906](https://github.com/rexyll/cnc-knowledge/actions/runs/45548286906) success；知识库5/5单元测试、strict lint 0 errors、CH12数值资源143/143通过。知识检查统计22章、138个Markdown、450条内部链接、152条实体、240条关系、387条来源及727处正文来源引用。CSV矩阵和耗材模板还通过独立列宽检查；CI不代表机床现场维护验证。
