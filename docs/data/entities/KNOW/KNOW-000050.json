@@ -92,7 +92,10 @@
     "store_port": "CoordinatorAuthorityStore",
     "application_service_port": "DurableCoordinatorAuthorityBackend",
     "etcd_backend_design_article": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-backend-contract-and-etcd-v3.md",
-    "real_etcd_integrated": false
+    "real_etcd_integrated": false,
+    "round_37_knowledge_article": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-backend-contract-and-etcd-v3.md",
+    "round_37_store_module": "scripts/spare_parts_provider_authority_store.py",
+    "round_37_test": "tests/test_spare_parts_provider_authority_store.py"
   },
-  "notes": "该知识条目实现的是同一主机本地SQLite WAL参考权威，不是分布式共识服务。Coordinator以BEGIN IMMEDIATE持久分配tenant-qualified scope token和operation sequence，Leader epoch用于拒绝旧进程prepare/confirm/renew及新proof签发。activation/revocation/publish均先持久化pending，再依据受信任Provider Gateway强一致read-back/receipt确认。数据库恢复必须获得独立外部token、sequence和Leader epoch下限；reference字符串本身不是证据。无多主机线性一致性、远程HTTP/gRPC、KMS/HSM、云对象存储SDK/IAM或生产备份启用。ASSET-000081的16项场景均PROPOSED_NOT_APPROVED/NOT_RUN。 最终代码CI Run 45769331991与文档同步CI Run 45769584662均completed/success；全库283项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。CI未验证多主机、云Provider/KMS/IAM或企业灾备。 第三十七轮新增KNOW-000051：定义Coordinator服务与存储后端端口，增加etcd v3注入式适配器设计；但SQLite领域服务仍直接使用SQL，尚未迁移到通用store port，真实etcd集群未接入。"
+  "notes": "该知识条目实现的是同一主机本地SQLite WAL参考权威，不是分布式共识服务。Coordinator以BEGIN IMMEDIATE持久分配tenant-qualified scope token和operation sequence，Leader epoch用于拒绝旧进程prepare/confirm/renew及新proof签发。activation/revocation/publish均先持久化pending，再依据受信任Provider Gateway强一致read-back/receipt确认。数据库恢复必须获得独立外部token、sequence和Leader epoch下限；reference字符串本身不是证据。无多主机线性一致性、远程HTTP/gRPC、KMS/HSM、云对象存储SDK/IAM或生产备份启用。ASSET-000081的16项场景均PROPOSED_NOT_APPROVED/NOT_RUN。 最终代码CI Run 45769331991与文档同步CI Run 45769584662均completed/success；全库283项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。CI未验证多主机、云Provider/KMS/IAM或企业灾备。 第三十七轮新增KNOW-000051：定义Coordinator服务与存储后端端口，增加etcd v3注入式适配器设计；但SQLite领域服务仍直接使用SQL，尚未迁移到通用store port，真实etcd集群未接入。 第三十七轮代码Run 45770717942、文档Run 45770955018均通过；新增接口契约与etcd适配设计，不代表etcd集群已连接。"
 }

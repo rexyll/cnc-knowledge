@@ -174,3 +174,19 @@ etcd多数派失效时不能接受新的集群写；Leader故障/选举期间未
 - SRC-000401：etcd failure modes，Leader故障/选举与多数派故障。
 
 **当前生产状态不变：** `production_backup_enabled=false`，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，`business_rule_assertions=NOT_EVALUATED`。
+
+
+## 9. CI验证记录
+
+- **代码提交：** `e274067e7e601c026252ddf3dacb87db5971bd63`；[GitHub Actions Run 45770717942](https://github.com/rexyll/cnc-knowledge/actions/runs/45770717942)，两个必需Job均completed/success。
+- **文档同步提交：** `3a83763239ec2ecda8607eca0977139c41dd6df9`；[GitHub Actions Run 45770955018](https://github.com/rexyll/cnc-knowledge/actions/runs/45770955018)，两个必需Job均completed/success。
+- 两次最终CI均全库300项unittest、CH12数值资源143项通过；strict knowledge lint PASS（0 errors，5 warnings）；知识结构与数据质量PASS（0 errors）。
+- 测试覆盖本机SQLite参考存储与单进程InMemoryEtcdV3Client API替身。CI没有连接etcd server，也没有验证Raft quorum、mTLS/RBAC、多主机网络分区、云Provider或生产灾备。
+- ASSET-000082的20条验收场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI单元测试通过不改变矩阵状态。
+
+## 10. 当前集成与生产边界
+
+- `DurableCoordinatorAuthorityBackend`是应用服务端口，当前SQLite领域服务通过结构化接口测试。
+- `CoordinatorAuthorityStore`及etcd v3适配器提供底层KV/Txn/Lease原语，但现有SQLite领域状态机仍直接执行SQL；**尚未完成领域服务向该存储端口的迁移**。
+- `EtcdV3Client`只是注入式driver contract；本轮未提供或安装真实gRPC/JSON Gateway客户端，没有真实集群地址、TLS/mTLS证书、认证/RBAC角色或网络连接。
+- 生产备份仍关闭：`production_backup_enabled=false`；`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`；`business_rule_assertions=NOT_EVALUATED`。

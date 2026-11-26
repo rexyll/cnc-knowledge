@@ -63,7 +63,12 @@
     "synthetic_only": true,
     "real_etcd_connected": false,
     "sha256": null,
-    "file_size": null
+    "file_size": null,
+    "code_ci_run": 45770717942,
+    "doc_sync_ci_run": 45770955018,
+    "code_test_count": 300,
+    "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
+    "knowledge_structure_quality": "PASS_0_ERRORS"
   },
-  "notes": "20条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI只运行SQLite本地参考适配器和单进程InMemoryEtcdV3Client合成测试；没有真实etcd集群、Raft quorum、多主机、mTLS/RBAC或云Provider证据。"
+  "notes": "20条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI只运行SQLite本地参考适配器和单进程InMemoryEtcdV3Client合成测试；没有真实etcd集群、Raft quorum、多主机、mTLS/RBAC或云Provider证据。 最终代码Run 45770717942与文档同步Run 45770955018均通过（全库300项、CH12 143项）；此状态不改变20条场景的PROPOSED_NOT_APPROVED / NOT_RUN。"
 }

@@ -616,3 +616,12 @@
 - **外部依据：** 新增SRC-000397～SRC-000401（etcd官方API guarantees、KV Txn/Lease、Election LeaderKey、Lease/Lock边界、failure modes）。
 - **知识与资源：** KNOW-000051；ASSET-000082（20条多主机/etcd要求场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。
 - **集成边界：** EtcdV3Client是注入式API driver接口，不是已安装/连接的gRPC或JSON Gateway客户端。SQLite领域状态机仍直接使用SQL，尚未重构为通过低层store port执行；etcd层也未做真实服务集成。无mTLS/RBAC、真实quorum/网络分区/多主机及Provider故障演练。
+
+
+### 第三十七轮最终代码与文档同步CI验收补记
+
+- **最终代码提交：** `e274067e7e601c026252ddf3dacb87db5971bd63`；[Run 45770717942](https://github.com/rexyll/cnc-knowledge/actions/runs/45770717942)两个必需Job均completed/success。
+- **最终文档提交：** `3a83763239ec2ecda8607eca0977139c41dd6df9`；[Run 45770955018](https://github.com/rexyll/cnc-knowledge/actions/runs/45770955018)两个必需Job均completed/success。
+- **测试与质量：** 两次最终CI均全库300项unittest、CH12数值资源143项通过；strict lint 0 errors/5 warnings；知识结构与数据质量0 errors。
+- **覆盖：** 新增KNOW-000051、ASSET-000082及SRC-000397～SRC-000401；CH17为31篇KNOW、85个登记实体、76项资源、20条去重来源。ASSET-000082的20条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **集成边界：** SQLite业务服务仍SQL专用；etcd v3仅底层注入式客户端适配器设计，未连接真实etcd server、mTLS/RBAC或多主机集群。未做quorum、网络分区、Leader failover或云Provider故障演练。
