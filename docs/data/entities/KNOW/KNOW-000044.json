@@ -35,7 +35,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T12:11:00+08:00",
-  "updated_at": "2026-11-26T04:11:00Z",
+  "updated_at": "2026-11-26T04:29:20Z",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -70,13 +70,20 @@
     "repository_unit_test_count": 221,
     "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
     "latest_code_commit": "38226d4b48a60dfba7a4b59f2951cf37a570f52c",
-    "latest_verified_ci_run": 45753519142,
+    "latest_verified_ci_run": 45755448153,
     "latest_verified_ci_status": "completed/success",
     "provider_adapter_report_artifact_id": 15086063425,
     "ci_jobs": {
       "Knowledge structure and data quality": "completed/success",
       "CH12 numerical resource tests": "completed/success"
-    }
+    },
+    "sqlite_fenced_provider_reference_added": true,
+    "sqlite_fenced_provider_path": "scripts/spare_parts_provider_sqlite_fenced.py",
+    "sqlite_fenced_provider_test_file": "tests/test_spare_parts_provider_sqlite_fenced.py",
+    "sqlite_fenced_provider_self_check_run": 45755448153,
+    "sqlite_fenced_provider_artifact_id": 15087184041,
+    "full_unittest_count": 241,
+    "latest_verified_code_commit": "59b9945a6df16cf2c6851f53b7ea40b20c7f2632"
   },
-  "notes": "严格模式是显式opt-in；默认兼容模式不执行下游fencing。FencedMockObjectStorageProvider仅为同进程内存夹具，模拟一个package scope内的原子高水位/对象写入/分块/receipt提交，不代表真实Provider。真实实现仍需认证和授权绑定、持久高水位、远端条件事务与故障注入。ASSET-000075的12条场景全部PROPOSED_NOT_APPROVED/NOT_RUN。CI Run 45753519142两个Job success，全库221项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings。"
+  "notes": "严格模式是显式opt-in；默认兼容模式不执行下游fencing。FencedMockObjectStorageProvider仅为同进程内存夹具，模拟一个package scope内的原子高水位/对象写入/分块/receipt提交，不代表真实Provider。真实实现仍需认证和授权绑定、持久高水位、远端条件事务与故障注入。ASSET-000075的12条场景全部PROPOSED_NOT_APPROVED/NOT_RUN。CI Run 45753519142两个Job success，全库221项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings。 第三十一轮新增SQLite本地fenced Provider参考实现（KNOW-000045），主体PBKDF2 verifier/tenant-action-prefix ACL，scope high-water、对象/multipart、幂等回执与审计在同一BEGIN IMMEDIATE事务内提交。尚未验证token由可信Coordinator签发的scope-bound attestation；有效本地主体仍可构造较大token。CI Run 45755448153全库241项、CH12 143项通过，strict lint 0 errors/5 warnings，Provider self-check PASS。"
 }
