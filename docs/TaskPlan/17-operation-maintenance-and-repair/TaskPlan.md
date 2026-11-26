@@ -538,3 +538,6 @@
 - **资产：** 新增KNOW-000047和ASSET-000078（22条Ed25519/online status参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。本轮真实KMS/HSM和远程多主机场景不具备凭据/环境，不宣称已测试。
 - **验收：** 代码提交0912a955通过[CI Run 45760844653](https://github.com/rexyll/cnc-knowledge/actions/runs/45760844653)两个必需Job；252项全库、143项CH12通过，strict lint 0 errors/5 warnings；Provider self-check PASS。
 - **安全状态：** HMAC v1仍可用于迁移；生产远端应启用Ed25519/KMS签名、公钥验签、require_online_attestation_status fail-closed，并解决跨事务TOCTOU。真实云Provider/多主机网络仍未接入；生产备份继续关闭，CH17-T004仍IN_PROGRESS。
+
+
+- 第三十三轮文档同步CI：[Run 45761309007](https://github.com/rexyll/cnc-knowledge/actions/runs/45761309007)两个必需Job success；全库252、CH12 143测试通过，strict lint 0 errors/5 warnings；新增KNOW-000047、ASSET-000078并将CH17统计更新为27/77/71。Provider artifact 15089229555，Coordinator 15089968457。
