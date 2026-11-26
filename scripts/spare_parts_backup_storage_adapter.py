@@ -17,7 +17,7 @@ import time
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -41,6 +41,16 @@ class BackupStorageError(ValueError):
 
 class BackupStorageConflict(BackupStorageError):
     """An immutable object key already contains different content."""
+
+
+class ProviderTransientError(BackupStorageError):
+    """Retryable provider error; outcome_unknown means the server may have committed."""
+
+    def __init__(self, message: str, *, retry_after_seconds: float | None = None,
+                 outcome_unknown: bool = False):
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
+        self.outcome_unknown = outcome_unknown
 
 
 @dataclass(frozen=True)
@@ -285,6 +295,11 @@ class MockObjectStorageProvider:
         transport_encryption: bool = False,
         fail_after_puts: int | None = None,
         fail_after_parts: int | None = None,
+        timeout_after_put_number: int | None = None,
+        timeout_after_part_number: int | None = None,
+        timeout_after_complete_commit: bool = False,
+        visibility_delay_reads: int = 0,
+        transient_failures: dict[str, int] | None = None,
         principal_id: str = "mock-backup-writer",
         tenant_id: str = "synthetic-tenant",
         allowed_prefixes: tuple[str, ...] = ("cnc/", "ch17/"),
@@ -300,8 +315,22 @@ class MockObjectStorageProvider:
         self.transport_encryption = transport_encryption
         self.fail_after_puts = fail_after_puts
         self.fail_after_parts = fail_after_parts
+        self.timeout_after_put_number = timeout_after_put_number
+        self.timeout_after_part_number = timeout_after_part_number
+        self.timeout_after_complete_commit = timeout_after_complete_commit
+        self.visibility_delay_reads = visibility_delay_reads
         self._successful_puts = 0
         self._successful_parts = 0
+        self._timeout_after_put_emitted = False
+        self._timeout_after_part_emitted = False
+        self._timeout_after_complete_emitted = False
+        self._reads_by_key: dict[str, int] = {}
+        self._versions: dict[str, dict[str, StoredObject]] = {}
+        self._transient_failures = dict(transient_failures or {})
+        if visibility_delay_reads < 0:
+            raise BackupStorageError("visibility delay cannot be negative")
+        if any(not isinstance(value, int) or value < 0 for value in self._transient_failures.values()):
+            raise BackupStorageError("transient failure counts must be non-negative integers")
         self.principal_id = principal_id
         self.tenant_id = tenant_id
         self.allowed_prefixes = tuple(allowed_prefixes)
@@ -347,8 +376,19 @@ class MockObjectStorageProvider:
             raise BackupStorageError("mock provider authorization denied")
         return normalized
 
+    def _maybe_transient(self, operation: str) -> None:
+        remaining = self._transient_failures.get(operation, 0)
+        if remaining > 0:
+            self._transient_failures[operation] = remaining - 1
+            raise ProviderTransientError(
+                f"injected transient provider failure during {operation}",
+                retry_after_seconds=0.0,
+                outcome_unknown=False,
+            )
+
     def put_if_absent(self, key: str, data: bytes) -> StoredObject:
         normalized = self._authorize("object:write", key)
+        self._maybe_transient("put")
         if not isinstance(data, bytes):
             raise BackupStorageError("object payload must be bytes")
         if self.fail_after_puts is not None and self._successful_puts >= self.fail_after_puts:
@@ -362,17 +402,58 @@ class MockObjectStorageProvider:
         version = f"mock-v{self._successful_puts:08d}" if self.object_versioning else None
         result = _record(normalized, data, version)
         self._objects[normalized] = result
+        if version is not None:
+            self._versions.setdefault(normalized, {})[version] = result
+        if (self.timeout_after_put_number is not None
+                and self._successful_puts == self.timeout_after_put_number
+                and not self._timeout_after_put_emitted):
+            self._timeout_after_put_emitted = True
+            raise ProviderTransientError("mock write committed but response timed out",
+                                         outcome_unknown=True)
         return result
 
     def get_object(self, key: str, *, version_id: str | None = None) -> StoredObject:
         normalized = self._authorize("object:read", key)
+        self._maybe_transient("get")
         try:
-            result = self._objects[normalized]
+            current = self._objects[normalized]
         except KeyError as exc:
             raise BackupStorageError("mock object does not exist") from exc
-        if version_id is not None and version_id != result.version_id:
-            raise BackupStorageError("requested object version does not match the stored version")
+        reads = self._reads_by_key.get(normalized, 0)
+        if reads < self.visibility_delay_reads:
+            self._reads_by_key[normalized] = reads + 1
+            raise ProviderTransientError("mock object is committed but not yet visible to reads",
+                                         retry_after_seconds=0.0)
+        if version_id is not None:
+            if not self.object_versioning:
+                raise BackupStorageError("provider does not support version-specific reads")
+            result = self._versions.get(normalized, {}).get(version_id)
+            if result is None:
+                raise BackupStorageError("requested object version is unavailable")
+            return result
+        return current
+
+    def inject_new_version_for_test(self, key: str, data: bytes) -> StoredObject:
+        normalized = _safe_key(key)
+        if not self.object_versioning:
+            raise BackupStorageError("test version switch requires object versioning")
+        self._successful_puts += 1
+        version = f"mock-external-v{self._successful_puts:08d}"
+        result = _record(normalized, data, version)
+        self._versions.setdefault(normalized, {})[version] = result
+        self._objects[normalized] = result
         return result
+
+    def remove_version_for_test(self, key: str, version_id: str) -> None:
+        normalized = _safe_key(key)
+        self._versions.get(normalized, {}).pop(version_id, None)
+        current = self._objects.get(normalized)
+        if current is not None and current.version_id == version_id:
+            remaining = self._versions.get(normalized, {})
+            if remaining:
+                self._objects[normalized] = list(remaining.values())[-1]
+            else:
+                self._objects.pop(normalized, None)
 
     def begin_multipart_upload(self, key: str, upload_id: str) -> None:
         normalized = self._authorize("multipart:write", key)
@@ -388,6 +469,7 @@ class MockObjectStorageProvider:
         self, key: str, upload_id: str, part_number: int, data: bytes, expected_sha256: str
     ) -> MultipartPart:
         normalized = self._authorize("multipart:write", key)
+        self._maybe_transient("put_part")
         session_key = (normalized, upload_id)
         if session_key not in self._multipart:
             raise BackupStorageError("multipart upload session does not exist")
@@ -407,6 +489,12 @@ class MockObjectStorageProvider:
             raise BackupStorageError("injected mock multipart interruption")
         self._multipart[session_key][part_number] = data
         self._successful_parts += 1
+        if (self.timeout_after_part_number is not None
+                and self._successful_parts == self.timeout_after_part_number
+                and not self._timeout_after_part_emitted):
+            self._timeout_after_part_emitted = True
+            raise ProviderTransientError("mock multipart part committed but response timed out",
+                                         outcome_unknown=True)
         return MultipartPart(part_number, digest, len(data))
 
     def list_multipart_parts(self, key: str, upload_id: str) -> list[MultipartPart]:
@@ -424,6 +512,7 @@ class MockObjectStorageProvider:
         expected_size_bytes: int, expected_sha256: str
     ) -> StoredObject:
         normalized = self._authorize("multipart:write", key)
+        self._maybe_transient("complete")
         session_key = (normalized, upload_id)
         try:
             parts = self._multipart[session_key]
@@ -435,6 +524,10 @@ class MockObjectStorageProvider:
         if len(assembled) != expected_size_bytes or _sha(assembled) != expected_sha256:
             raise BackupStorageError("assembled multipart object size or digest mismatch")
         result = self.put_if_absent(normalized, assembled)
+        if self.timeout_after_complete_commit and not self._timeout_after_complete_emitted:
+            self._timeout_after_complete_emitted = True
+            raise ProviderTransientError("mock multipart completion committed but response timed out",
+                                         outcome_unknown=True)
         del self._multipart[session_key]
         return result
 
@@ -472,12 +565,37 @@ class BackupStorageAdapter:
         *,
         multipart_threshold_bytes: int = 1024 * 1024,
         multipart_part_size_bytes: int = 256 * 1024,
+        retry_max_attempts: int = 4,
+        retry_base_delay_seconds: float = 0.1,
+        retry_max_delay_seconds: float = 2.0,
+        sleep_fn: Callable[[float], None] = time.sleep,
     ):
         if multipart_threshold_bytes < 1 or multipart_part_size_bytes < 1:
             raise BackupStorageError("multipart thresholds and part sizes must be positive")
+        if retry_max_attempts < 1 or retry_base_delay_seconds < 0 or retry_max_delay_seconds < 0:
+            raise BackupStorageError("retry attempts must be positive and delays cannot be negative")
         self.provider = provider
         self.multipart_threshold_bytes = multipart_threshold_bytes
         self.multipart_part_size_bytes = multipart_part_size_bytes
+        self.retry_max_attempts = retry_max_attempts
+        self.retry_base_delay_seconds = retry_base_delay_seconds
+        self.retry_max_delay_seconds = retry_max_delay_seconds
+        self.sleep_fn = sleep_fn
+
+    def _provider_call(self, operation: str, callback: Callable[[], Any]) -> Any:
+        for attempt in range(self.retry_max_attempts):
+            try:
+                return callback()
+            except ProviderTransientError as exc:
+                if attempt + 1 >= self.retry_max_attempts:
+                    raise
+                delay = min(self.retry_max_delay_seconds,
+                            self.retry_base_delay_seconds * (2 ** attempt))
+                if exc.retry_after_seconds is not None:
+                    delay = min(self.retry_max_delay_seconds,
+                                max(delay, exc.retry_after_seconds))
+                self.sleep_fn(delay)
+        raise AssertionError(f"unreachable retry loop for {operation}")
 
     def _upload_payload(self, key: str, data: bytes) -> StoredObject:
         capabilities = self.provider.capabilities
@@ -486,14 +604,17 @@ class BackupStorageAdapter:
             "complete_multipart_upload", "abort_multipart_upload",
         )
         if len(data) < self.multipart_threshold_bytes:
-            return self.provider.put_if_absent(key, data)
+            return self._provider_call("put_if_absent",
+                                        lambda: self.provider.put_if_absent(key, data))
         if capabilities.multipart_upload is not True:
-            return self.provider.put_if_absent(key, data)
+            return self._provider_call("put_if_absent",
+                                       lambda: self.provider.put_if_absent(key, data))
         if any(not callable(getattr(self.provider, name, None)) for name in multipart_methods):
             raise BackupStorageError("provider declares multipart support but omits required multipart methods")
 
         upload_id = "mp-" + _sha((key + ":" + _sha(data)).encode("utf-8"))[:28]
-        self.provider.begin_multipart_upload(key, upload_id)
+        self._provider_call("begin_multipart_upload",
+                            lambda: self.provider.begin_multipart_upload(key, upload_id))
         part_size = self.multipart_part_size_bytes
         parts = [
             data[offset:offset + part_size]
@@ -501,7 +622,10 @@ class BackupStorageAdapter:
         ]
         existing = {
             item.part_number: item
-            for item in self.provider.list_multipart_parts(key, upload_id)
+            for item in self._provider_call(
+                "list_multipart_parts",
+                lambda: self.provider.list_multipart_parts(key, upload_id),
+            )
         }
         if set(existing) - set(range(1, len(parts) + 1)):
             raise BackupStorageConflict("multipart session contains unexpected part numbers")
@@ -512,13 +636,16 @@ class BackupStorageAdapter:
                 if prior.content_sha256 != digest or prior.size_bytes != len(part):
                     raise BackupStorageConflict("resumed multipart part differs from source content")
                 continue
-            self.provider.put_multipart_part(key, upload_id, number, part, digest)
-        result = self.provider.complete_multipart_upload(
-            key,
-            upload_id,
-            expected_part_count=len(parts),
-            expected_size_bytes=len(data),
-            expected_sha256=_sha(data),
+            self._provider_call(
+                "put_multipart_part",
+                lambda: self.provider.put_multipart_part(key, upload_id, number, part, digest),
+            )
+        result = self._provider_call(
+            "complete_multipart_upload",
+            lambda: self.provider.complete_multipart_upload(
+                key, upload_id, expected_part_count=len(parts),
+                expected_size_bytes=len(data), expected_sha256=_sha(data),
+            ),
         )
         if result.content_sha256 != _sha(data) or result.size_bytes != len(data):
             raise BackupStorageError("completed multipart object metadata mismatch")
@@ -530,7 +657,7 @@ class BackupStorageAdapter:
         if not callable(list_objects) or not callable(list_uploads):
             raise BackupStorageError("provider does not support prefix-scoped read-only inventory")
         normalized = _safe_prefix(prefix)
-        objects = list_objects(normalized)
+        objects = self._provider_call("list_objects", lambda: list_objects(normalized))
         grouped: dict[str, list[ObjectMetadata]] = {}
         unclassified: list[str] = []
         marker = normalized + "/backup-"
@@ -582,7 +709,7 @@ class BackupStorageAdapter:
                 "approval_status": "PROPOSED_NOT_APPROVED",
                 "reclamation_executable": False,
             })
-        multipart = list_uploads(normalized)
+        multipart = self._provider_call("list_multipart_uploads", lambda: list_uploads(normalized))
         return {
             "result": "INVENTORY_COMPLETE",
             "prefix": normalized,
@@ -656,7 +783,9 @@ class BackupStorageAdapter:
             }
             receipt = {**receipt_base, "receipt_sha256": _sha(_json_bytes(receipt_base))}
             receipt_data = _json_bytes(receipt)
-            receipt_record = self.provider.put_if_absent(receipt_key, receipt_data)
+            receipt_record = self._provider_call(
+                "put_receipt", lambda: self.provider.put_if_absent(receipt_key, receipt_data)
+            )
 
         checked = self.verify_stored_backup(prefix=prefix, backup_id=backup_id)
         return {
@@ -672,7 +801,7 @@ class BackupStorageAdapter:
         }
 
     def _read_receipt(self, receipt_key: str) -> dict[str, Any]:
-        record = self.provider.get_object(receipt_key)
+        record = self._provider_call("get_receipt", lambda: self.provider.get_object(receipt_key))
         try:
             receipt = json.loads(record.data)
         except (UnicodeError, json.JSONDecodeError) as exc:
@@ -706,7 +835,10 @@ class BackupStorageAdapter:
             expected_key = payload_keys[name]
             if row.get("object_key") != expected_key:
                 raise BackupStorageError("backup receipt object key does not match expected prefix")
-            record = self.provider.get_object(expected_key, version_id=row.get("version_id"))
+            record = self._provider_call(
+                "get_payload",
+                lambda: self.provider.get_object(expected_key, version_id=row.get("version_id")),
+            )
             if record.size_bytes != row.get("size_bytes") or record.content_sha256 != row.get("sha256"):
                 raise BackupStorageError("stored object size or digest differs from receipt")
             (target_dir / name).write_bytes(record.data)
