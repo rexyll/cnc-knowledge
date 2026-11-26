@@ -18,6 +18,7 @@ import tempfile
 import threading
 import time
 import sys
+import uuid
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
@@ -77,6 +78,14 @@ class ProviderAdmissionQueueFullError(ProviderBulkheadFullError):
         self.scope = scope
 
 
+class ProviderAdmissionIdempotencyConflictError(BackupStorageError):
+    """A request ID was reused for a different admission identity."""
+
+
+class ProviderAdmissionRequestFinalizedError(BackupStorageError):
+    """A released or expired request ID cannot be used to create another lease."""
+
+
 class ProviderTaskCancelledError(BackupStorageError):
     """A backup task was cooperatively cancelled before another provider step."""
 
@@ -100,11 +109,13 @@ class ProviderCoordinatorUnavailableError(BackupStorageError):
         self, message: str, *, phase: str,
         outcome_unknown: bool = False,
         reservation_outcome_unknown: bool = False,
+        request_id: str | None = None,
     ):
         super().__init__(message)
         self.phase = phase
         self.outcome_unknown = outcome_unknown
         self.reservation_outcome_unknown = reservation_outcome_unknown
+        self.request_id = request_id
 
 
 class ProviderCoordinatorStateUnknownError(ProviderCoordinatorUnavailableError):
@@ -347,6 +358,7 @@ class ProviderAdmissionCoordinator(Protocol):
         lease_ttl_seconds: float,
         timeout_seconds: float,
         check_task: Callable[[ProviderTaskContext], None],
+        request_id: str | None = None,
     ) -> ProviderAdmissionLease: ...
 
     def renew(self, lease: ProviderAdmissionLease, *, lease_ttl_seconds: float) -> ProviderAdmissionLease | None: ...
@@ -429,6 +441,8 @@ class InMemoryProviderAdmissionCoordinator:
         self.clock_fn = clock_fn
         self._condition = threading.Condition()
         self._leases: dict[str, ProviderAdmissionLease] = {}
+        self._lease_request_ids: dict[str, str] = {}
+        self._requests: dict[str, dict[str, Any]] = {}
         self._waiters: list[_CoordinatorWaiter] = []
         self._next_sequence = 0
         self._next_lease = 0
@@ -467,6 +481,7 @@ class InMemoryProviderAdmissionCoordinator:
 
     def _check_availability_locked(
         self, phase: str, *, reservation_outcome_unknown: bool = False,
+        request_id: str | None = None,
     ) -> None:
         injected = self._injected_failures.get(phase, 0)
         if not self._available or injected:
@@ -480,6 +495,7 @@ class InMemoryProviderAdmissionCoordinator:
                 f"shared provider admission coordinator unavailable during {phase}",
                 phase=phase,
                 reservation_outcome_unknown=reservation_outcome_unknown,
+                request_id=request_id,
             )
 
     def _expire_locked(self, now: float) -> None:
@@ -489,6 +505,9 @@ class InMemoryProviderAdmissionCoordinator:
         ]
         for lease_id in expired:
             del self._leases[lease_id]
+            request_id = self._lease_request_ids.pop(lease_id, None)
+            if request_id is not None and request_id in self._requests:
+                self._requests[request_id]["state"] = "EXPIRED"
         self._expired_lease_count += len(expired)
         if expired:
             self._condition.notify_all()
@@ -549,7 +568,13 @@ class InMemoryProviderAdmissionCoordinator:
         lease_ttl_seconds: float,
         timeout_seconds: float,
         check_task: Callable[[ProviderTaskContext], None],
+        request_id: str | None = None,
     ) -> ProviderAdmissionLease:
+        if request_id is None:
+            request_id = uuid.uuid4().hex
+        if not isinstance(request_id, str) or not request_id.strip():
+            raise BackupStorageError("shared coordinator request ID is required")
+        request_id = request_id.strip()
         if domain not in self.global_limits:
             raise BackupStorageError("unknown shared coordinator domain")
         if not isinstance(owner_id, str) or not owner_id.strip():
@@ -558,8 +583,22 @@ class InMemoryProviderAdmissionCoordinator:
             raise BackupStorageError("shared coordinator lease TTL must be finite and positive")
         started = time.monotonic()
         with self._condition:
-            self._check_availability_locked("acquire")
+            self._check_availability_locked("acquire", request_id=request_id)
             check_task(task)
+            self._expire_locked(self.clock_fn())
+            existing = self._requests.get(request_id)
+            if existing is not None:
+                identity = (owner_id, task.task_id, task.tenant_id, domain)
+                if existing["identity"] != identity:
+                    raise ProviderAdmissionIdempotencyConflictError(
+                        "admission request ID is already bound to a different owner/task/tenant/domain"
+                    )
+                current = self._leases.get(existing["lease_id"])
+                if existing["state"] == "ACTIVE" and current is not None:
+                    return current
+                raise ProviderAdmissionRequestFinalizedError(
+                    "admission request ID is already released or expired; use a new logical request ID"
+                )
             self._next_sequence += 1
             waiter = _CoordinatorWaiter(self._next_sequence, task, domain, self.clock_fn())
             queue_at_capacity = len(self._waiters) >= self.max_waiters
@@ -625,12 +664,18 @@ class InMemoryProviderAdmissionCoordinator:
                             expires_at=now + lease_ttl_seconds,
                         )
                         self._leases[lease.lease_id] = lease
+                        self._lease_request_ids[lease.lease_id] = request_id
+                        self._requests[request_id] = {
+                            "identity": (owner_id, task.task_id, task.tenant_id, domain),
+                            "lease_id": lease.lease_id,
+                            "state": "ACTIVE",
+                        }
                         self._issued_lease_count += 1
                         self._condition.notify_all()
-                        # A response can be lost after the reservation commits.
-                        # The caller must not invoke Provider; the orphan lease expires by TTL.
+                        # Replaying the same request ID returns this exact lease.
                         self._check_availability_locked(
                             "acquire_response", reservation_outcome_unknown=True,
+                            request_id=request_id,
                         )
                         return lease
                     remaining = timeout_seconds - (time.monotonic() - started)
@@ -689,6 +734,9 @@ class InMemoryProviderAdmissionCoordinator:
             if current != lease:
                 return False
             del self._leases[lease.lease_id]
+            request_id = self._lease_request_ids.pop(lease.lease_id, None)
+            if request_id is not None and request_id in self._requests:
+                self._requests[request_id]["state"] = "RELEASED"
             self._condition.notify_all()
             return True
 
@@ -1547,6 +1595,7 @@ class BackupStorageAdapter:
                     lease_ttl_seconds=self.coordinator_lease_ttl_seconds,
                     timeout_seconds=self.bulkhead_acquire_timeout_seconds,
                     check_task=self._check_task_context,
+                    request_id=uuid.uuid4().hex,
                 )
             try:
                 yield
