@@ -465,3 +465,10 @@
 - 修复提交 8d2a36b6240f20b1968a7e2ef148dcc02e745f88 在CLI入口补充仓库根目录sys.path；最终Run 45748707053两个必需Job均completed/success，全库202项unittest通过，CH12数值资源测试143项通过，strict lint 0 errors。
 - SQLite本地持久化自检PASS，Artifact ID 15084821221；Provider Mock adapter self-check PASS，Artifact ID 15084277008。
 - ASSET-000072的10项场景仍PROPOSED_NOT_APPROVED / NOT_RUN；本轮没有真实多主机、NFS/SMB、HA、数据库灾备或下游fencing验证。
+
+
+### 第二十八轮附加诊断回归
+
+- 修复SQLite队列满异常回滚时rejected_queue诊断计数也被回滚的问题；改为准入事务回滚后单独提交计数。
+- 新增1项SQLite unittest，验证拒绝新请求、保留活动租约、清理等待者并持久增加rejected_queue。
+- ASSET-000072新增SACQ-011；11条场景全部保持PROPOSED_NOT_APPROVED / NOT_RUN。

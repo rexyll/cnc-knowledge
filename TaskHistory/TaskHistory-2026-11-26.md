@@ -235,3 +235,10 @@
 - **SQLite独立自检：** CLI返回PASS，Artifact [ch17-provider-admission-sqlite-45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053/artifacts/15084821221)，ID 15084821221。Provider Mock self-check Artifact [15084277008](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053/artifacts/15084277008)。
 - **资源状态：** KNOW-000042、ASSET-000072；10条测试矩阵场景仍全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。SQLite同主机多进程测试只代表GitHub Linux runner本机SQLite合成测试。
 - **严格边界：** 不支持多主机/NFS/SMB/HA；未验证文件系统故障/数据库损坏/灾备还原/静态加密；无自动心跳、QPS令牌桶、下游fencing enforcement或生产容量测量。生产备份关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+
+### 第二十八轮附加诊断指标修复（2026-11-26）
+
+- 在最终验收复核中发现SQLite队列满时rejected_queue计数随准入事务回滚的问题；调整为独立事务持久计数。
+- 新增1项unittest：队列满返回ProviderAdmissionQueueFullError，现有活动租约不受影响，等待队列不残留，rejected_queue从0增至1。
+- ASSET-000072扩展为11条场景，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；新增测试需由下一次CI验证。

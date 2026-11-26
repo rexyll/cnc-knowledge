@@ -161,6 +161,28 @@ class SQLiteProviderAdmissionCoordinatorTests(unittest.TestCase):
         self.assertTrue(reopened.validate(renewed))
         self.assertTrue(reopened.release(renewed))
 
+    def test_queue_overflow_is_fail_fast_and_rejection_counter_persists(self):
+        zero_wait_policy = dict(self.policy)
+        zero_wait_policy["max_waiters"] = 0
+        path = str(Path(self.tmp.name) / "zero-waiters.sqlite3")
+        coordinator = SQLiteProviderAdmissionCoordinator(path, **zero_wait_policy)
+        holder = coordinator.acquire(
+            task=self.task("queue-holder"), domain="read", owner_id="holder",
+            lease_ttl_seconds=30, timeout_seconds=0, check_task=lambda _: None,
+            request_id="queue-holder",
+        )
+        with self.assertRaises(ProviderAdmissionQueueFullError):
+            coordinator.acquire(
+                task=self.task("queue-overflow", "tenant-B"), domain="read",
+                owner_id="overflow", lease_ttl_seconds=30, timeout_seconds=0,
+                check_task=lambda _: None, request_id="queue-overflow",
+            )
+        snapshot = coordinator.snapshot()
+        self.assertEqual(snapshot["active_by_domain"]["read"], 1)
+        self.assertEqual(snapshot["waiting_by_domain"]["read"], 0)
+        self.assertEqual(snapshot["rejected_queue"], 1)
+        self.assertTrue(coordinator.release(holder))
+
     def test_policy_mismatch_is_rejected_for_same_database(self):
         with self.assertRaises(BackupStorageError):
             SQLiteProviderAdmissionCoordinator(

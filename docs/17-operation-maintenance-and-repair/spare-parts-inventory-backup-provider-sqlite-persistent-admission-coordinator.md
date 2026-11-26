@@ -78,3 +78,8 @@ SQLite后端把租约到期时间保存为Unix wall-clock秒数，使进程重�
 - SQLite持久化自检PASS，Artifact [ch17-provider-admission-sqlite-45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053/artifacts/15084821221)，ID 15084821221；Provider Mock self-check PASS，Artifact ID 15084277008。
 
 **未覆盖边界：** 所有SQLite用例仍是GitHub runner同主机本地文件的合成技术测试，不改变ASSET-000072中10条场景的批准/执行状态。未验证多主机/NFS/SMB/HA、数据库文件损坏/备份还原、静态加密、自动心跳、持久QPS令牌桶、下游fencing enforcement或生产容量。完整测试通过不能作为生产Provider、企业安全评审或灾备恢复验收。
+
+
+### 第二十八轮附加回归：队列拒绝计数的事务边界
+
+最终CI自检接入后的代码复核发现，队列满分支在准入事务中先更新rejected_queue再抛出异常，事务回滚会同时撤销该诊断计数。该问题不影响请求被拒绝或活动租约安全，但会使快照少报拒绝次数。现已将计数写入独立事务，并增加SAQQ-011对应的SQLite单元测试：队列满时拒绝新请求、保留活动租约、队列无残留，且rejected_queue持久增加。该测试仍属于本机SQLite合成验证。

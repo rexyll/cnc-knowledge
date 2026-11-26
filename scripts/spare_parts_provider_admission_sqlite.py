@@ -395,6 +395,12 @@ class SQLiteProviderAdmissionCoordinator:
                         f"SQLite shared {domain} concurrency or tenant quota is full"
                     )
                 time.sleep(min(self.poll_interval_seconds, remaining))
+        except ProviderAdmissionQueueFullError:
+            # The queue-full exception rolls back its admission transaction.
+            # Persist the rejection metric separately after rollback.
+            with self._transaction("queue_rejected") as c:
+                self._set_meta_int(c, "rejected_queue", self._meta_int(c, "rejected_queue") + 1)
+            raise
         finally:
             if registered and not admitted:
                 try:
