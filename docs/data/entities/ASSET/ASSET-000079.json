@@ -1,0 +1,55 @@
+{
+  "entity_id": "ASSET-000079",
+  "entity_type": "asset_file",
+  "canonical_name": "备份Provider同库原子lease撤销测试矩阵v1",
+  "english_name": "CNC backup Provider atomic same-database lease revocation test matrix v1",
+  "aliases": [
+    "Atomic lease status transaction test matrix",
+    "ASSET-000079"
+  ],
+  "description": "12条合成参考场景，覆盖严格配置门禁、数据库路径/连接身份、事务前置条件、active/released状态、Coordinator release与Provider写入串行、失败回滚、multipart路径和部署边界；全部未批准/未执行。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "库存备份",
+    "存储适配器",
+    "Object Storage",
+    "Mock Provider",
+    "ASSET-000063"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T13:40:00+08:00",
+  "updated_at": "2026-11-26T05:40:00Z",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-atomic-lease-revocation-test-matrix-v1.csv",
+    "file_name": "spare-parts-inventory-backup-provider-atomic-lease-revocation-test-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000048",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic atomic lease concurrency test matrix; no production/provider acceptance",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "12条测试场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI单元测试仅覆盖实现中的部分代码路径，不会自动批准或执行本矩阵全部验收活动。"
+}
