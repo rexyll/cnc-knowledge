@@ -1,0 +1,82 @@
+{
+  "entity_id": "KNOW-000044",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存备份 Provider 适配器 fencing token 贯穿与备份包范围原子提交",
+  "english_name": "CNC spare-parts inventory backup provider adapter fencing token propagation and package-scoped atomic commit",
+  "aliases": [
+    "Provider适配器fencing token传递",
+    "备份包范围高水位",
+    "multipart fencing",
+    "receipt fencing"
+  ],
+  "description": "在显式严格模式下把Provider admission lease fencing token贯穿对象条件创建、multipart会话/分块/完成及回执最后提交；以备份包object_prefix作为统一scope，阻止同包跨key的旧写入者迟到提交。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "备份Provider适配器fencing集成"
+  ],
+  "tags": [
+    "CH17",
+    "Provider Fencing",
+    "Adapter Integration",
+    "Multipart",
+    "Receipt Commit",
+    "Stale Writer",
+    "Package Scope"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T12:11:00+08:00",
+  "updated_at": "2026-11-26T04:11:00Z",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-adapter-fencing-integration.md",
+    "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "test_file": "tests/test_spare_parts_backup_storage_adapter.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-adapter-fencing-test-matrix-v1.csv",
+    "scenario_definition_count": 12,
+    "added_unittest_methods": 4,
+    "strict_mode_parameter": "BackupStorageAdapter.require_provider_fencing",
+    "default_mode": "LEGACY_COMPATIBILITY_FENCING_NOT_ENFORCED",
+    "strict_mode_requires_coordinator": true,
+    "strict_mode_requires_provider_fencing_capability": true,
+    "fencing_scope": "BACKUP_OBJECT_PREFIX",
+    "fenced_operations": [
+      "PAYLOAD_PUT",
+      "MULTIPART_BEGIN",
+      "MULTIPART_PART",
+      "MULTIPART_COMPLETE",
+      "RECEIPT_PUT"
+    ],
+    "retry_idempotency": "STABLE_OPERATION_KEY_WITH_FRESH_ADMISSION_TOKEN",
+    "stale_scope_token": "REJECT_ACROSS_ALL_OBJECT_KEYS_IN_BACKUP_PACKAGE",
+    "provider_fixture": "FencedMockObjectStorageProvider",
+    "provider_fixture_scope": "SYNTHETIC_IN_PROCESS_MEMORY_ONLY",
+    "real_provider_integration": false,
+    "production_backup_enabled": false,
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "business_rule_assertions": "NOT_EVALUATED",
+    "repository_unit_test_count": 221,
+    "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
+    "latest_code_commit": "38226d4b48a60dfba7a4b59f2951cf37a570f52c",
+    "latest_verified_ci_run": 45753519142,
+    "latest_verified_ci_status": "completed/success",
+    "provider_adapter_report_artifact_id": 15086063425,
+    "ci_jobs": {
+      "Knowledge structure and data quality": "completed/success",
+      "CH12 numerical resource tests": "completed/success"
+    }
+  },
+  "notes": "严格模式是显式opt-in；默认兼容模式不执行下游fencing。FencedMockObjectStorageProvider仅为同进程内存夹具，模拟一个package scope内的原子高水位/对象写入/分块/receipt提交，不代表真实Provider。真实实现仍需认证和授权绑定、持久高水位、远端条件事务与故障注入。ASSET-000075的12条场景全部PROPOSED_NOT_APPROVED/NOT_RUN。CI Run 45753519142两个Job success，全库221项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings。"
+}
