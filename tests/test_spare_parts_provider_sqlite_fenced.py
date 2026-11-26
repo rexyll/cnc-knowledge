@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import sqlite3
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from scripts.spare_parts_backup_storage_adapter import (
 )
 from scripts.spare_parts_inventory_ledger_persistence import create_backup, publish_generation
 from scripts.spare_parts_provider_admission_sqlite import SQLiteProviderAdmissionCoordinator
+from scripts.spare_parts_fencing_attestation import create_fencing_attestation
 from scripts.spare_parts_provider_sqlite_fenced import (
     SQLiteFencedObjectStorageProvider,
     SQLiteProviderAuthorizationError,
@@ -30,6 +32,105 @@ from scripts.spare_parts_provider_sqlite_fenced import (
 SECRET_A = "synthetic-writer-secret-0000001"
 SECRET_B = "synthetic-other-secret-000002"
 SCOPE = "cnc/ch17/backup-reference-001"
+ISSUER_ID = "ci-admission-coordinator"
+KEY_ID = "ci-key-v2"
+OLD_KEY_ID = "ci-key-v1-retiring"
+ATTESTATION_SECRET = "synthetic-hmac-attestation-secret-32-bytes-minimum"
+OLD_ATTESTATION_SECRET = "synthetic-old-hmac-secret-32-bytes-minimum-value"
+
+
+def _proof(
+    *, tenant_id: str, key: str, scope: str, token: int,
+    idempotency_key: str, operation: str, key_id: str = KEY_ID,
+    secret: str = ATTESTATION_SECRET, ttl_seconds: float = 30.0,
+) -> str:
+    issued = time.time()
+    domain = "write" if operation == "object:put_if_absent" else "multipart"
+    return create_fencing_attestation({
+        "v": 1, "iss": ISSUER_ID, "kid": key_id,
+        "lease_id": f"test-lease-{token}-{idempotency_key[:40]}",
+        "owner_id": "synthetic-test-owner", "tenant_id": tenant_id,
+        "domain": domain, "fencing_token": token,
+        "issued_at": issued, "expires_at": issued + ttl_seconds,
+        "lease_expires_at": issued + ttl_seconds,
+        "fencing_scope": scope, "resource_key": key,
+        "operation": operation, "idempotency_key": idempotency_key,
+    }, key_id=key_id, secret=secret)
+
+
+def _wrap_test_attestations(provider):
+    raw = {
+        "put": provider.put_if_absent_fenced,
+        "begin": provider.begin_multipart_upload_fenced,
+        "part": provider.put_multipart_part_fenced,
+        "complete": provider.complete_multipart_upload_fenced,
+    }
+    provider._raw_fenced_methods = raw
+
+    def put(key, data, *, fencing_scope, fencing_token, idempotency_key, fencing_attestation=None):
+        proof = fencing_attestation or _proof(
+            tenant_id=provider.tenant_id, key=key, scope=fencing_scope,
+            token=fencing_token, idempotency_key=idempotency_key,
+            operation="object:put_if_absent",
+        )
+        return raw["put"](
+            key, data, fencing_scope=fencing_scope, fencing_token=fencing_token,
+            idempotency_key=idempotency_key, fencing_attestation=proof,
+        )
+
+    def begin(key, upload_id, *, fencing_scope, fencing_token, idempotency_key, fencing_attestation=None):
+        proof = fencing_attestation or _proof(
+            tenant_id=provider.tenant_id, key=key, scope=fencing_scope,
+            token=fencing_token, idempotency_key=idempotency_key, operation="multipart:begin",
+        )
+        return raw["begin"](
+            key, upload_id, fencing_scope=fencing_scope, fencing_token=fencing_token,
+            idempotency_key=idempotency_key, fencing_attestation=proof,
+        )
+
+    def part(key, upload_id, part_number, data, expected_sha256, *, fencing_scope,
+             fencing_token, idempotency_key, fencing_attestation=None):
+        proof = fencing_attestation or _proof(
+            tenant_id=provider.tenant_id, key=key, scope=fencing_scope,
+            token=fencing_token, idempotency_key=idempotency_key, operation="multipart:put_part",
+        )
+        return raw["part"](
+            key, upload_id, part_number, data, expected_sha256,
+            fencing_scope=fencing_scope, fencing_token=fencing_token,
+            idempotency_key=idempotency_key, fencing_attestation=proof,
+        )
+
+    def complete(key, upload_id, *, expected_part_count, expected_size_bytes,
+                 expected_sha256, fencing_scope, fencing_token, idempotency_key,
+                 fencing_attestation=None):
+        proof = fencing_attestation or _proof(
+            tenant_id=provider.tenant_id, key=key, scope=fencing_scope,
+            token=fencing_token, idempotency_key=idempotency_key,
+            operation="multipart:complete",
+        )
+        return raw["complete"](
+            key, upload_id, expected_part_count=expected_part_count,
+            expected_size_bytes=expected_size_bytes, expected_sha256=expected_sha256,
+            fencing_scope=fencing_scope, fencing_token=fencing_token,
+            idempotency_key=idempotency_key, fencing_attestation=proof,
+        )
+
+    provider.put_if_absent_fenced = put
+    provider.begin_multipart_upload_fenced = begin
+    provider.put_multipart_part_fenced = part
+    provider.complete_multipart_upload_fenced = complete
+    return provider
+
+
+def _new_provider(database: Path, *, principal_id: str = "writer-a", secret: str = SECRET_A):
+    provider = SQLiteFencedObjectStorageProvider(
+        database, principal_id=principal_id, principal_secret=secret,
+        trusted_attestation_keys={
+            KEY_ID: ATTESTATION_SECRET,
+            OLD_KEY_ID: OLD_ATTESTATION_SECRET,
+        },
+    )
+    return _wrap_test_attestations(provider)
 
 
 def _provision(path: Path, *, two_tenants: bool = False) -> None:
@@ -46,7 +147,14 @@ def _provision(path: Path, *, two_tenants: bool = False) -> None:
             "principal_secret": SECRET_B,
             "allowed_prefixes": ["cnc/ch17"],
         })
-    SQLiteFencedObjectStorageProvider.provision_database(path, principals=principals)
+    SQLiteFencedObjectStorageProvider.provision_database(
+        path,
+        principals=principals,
+        trusted_attestation_keys=[
+            {"issuer_id": ISSUER_ID, "key_id": KEY_ID, "algorithm": "HMAC-SHA256", "status": "ACTIVE"},
+            {"issuer_id": ISSUER_ID, "key_id": OLD_KEY_ID, "algorithm": "HMAC-SHA256", "status": "RETIRING"},
+        ],
+    )
 
 
 def _process_writer(
@@ -59,9 +167,7 @@ def _process_writer(
     result_queue: object,
 ) -> None:
     try:
-        provider = SQLiteFencedObjectStorageProvider(
-            database_path, principal_id=principal_id, principal_secret=secret
-        )
+        provider = _new_provider(Path(database_path), principal_id=principal_id, secret=secret)
         barrier.wait(timeout=10)
         provider.put_if_absent_fenced(
             key, f"payload-{token}".encode(),
@@ -90,9 +196,7 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         self.base = Path(self.temp.name)
         self.database = self.base / "provider.sqlite"
         _provision(self.database)
-        self.provider = SQLiteFencedObjectStorageProvider(
-            self.database, principal_id="writer-a", principal_secret=SECRET_A
-        )
+        self.provider = _new_provider(self.database)
 
     def tearDown(self):
         self.temp.cleanup()
@@ -118,6 +222,105 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         self.assertTrue(report["multi_process_same_host"])
         self.assertFalse(report["multi_host_supported"])
         self.assertEqual(report["tenant_id"], "tenant-a")
+
+    def test_unsigned_fenced_write_is_rejected(self):
+        with self.assertRaises(TypeError):
+            self.provider._raw_fenced_methods["put"](
+                "cnc/ch17/backup-reference-001/unsigned.bin", b"unsigned",
+                fencing_scope=SCOPE, fencing_token=1, idempotency_key="unsigned-write",
+            )
+
+    def test_tampered_signature_is_rejected(self):
+        proof = _proof(
+            tenant_id="tenant-a", key="cnc/ch17/backup-reference-001/tampered.bin",
+            scope=SCOPE, token=1, idempotency_key="tampered-write",
+            operation="object:put_if_absent",
+        )
+        tampered = proof[:-1] + ("A" if proof[-1] != "A" else "B")
+        with self.assertRaises(BackupStorageError):
+            self.provider._raw_fenced_methods["put"](
+                "cnc/ch17/backup-reference-001/tampered.bin", b"tampered",
+                fencing_scope=SCOPE, fencing_token=1, idempotency_key="tampered-write",
+                fencing_attestation=tampered,
+            )
+
+    def test_attestation_is_bound_to_tenant_scope_resource_operation_and_idempotency(self):
+        key = "cnc/ch17/backup-reference-001/bound.bin"
+        proof = _proof(
+            tenant_id="tenant-a", key=key, scope=SCOPE, token=1,
+            idempotency_key="bound-idem", operation="object:put_if_absent",
+        )
+        raw = self.provider._raw_fenced_methods["put"]
+        for kwargs in (
+            {"fencing_scope": "cnc/ch17/other-package"},
+            {"idempotency_key": "different-idem"},
+        ):
+            args = {"fencing_scope": SCOPE, "fencing_token": 1, "idempotency_key": "bound-idem"}
+            args.update(kwargs)
+            with self.subTest(kwargs=kwargs), self.assertRaises(BackupStorageError):
+                raw(
+                    key, b"payload", **args, fencing_attestation=proof
+                )
+        wrong_tenant = _proof(
+            tenant_id="tenant-b", key=key, scope=SCOPE, token=1,
+            idempotency_key="bound-idem", operation="object:put_if_absent",
+        )
+        with self.assertRaises(BackupStorageError):
+            raw(
+                key, b"payload", fencing_scope=SCOPE, fencing_token=1,
+                idempotency_key="bound-idem", fencing_attestation=wrong_tenant,
+            )
+
+    def test_expired_attestation_is_rejected(self):
+        key = "cnc/ch17/backup-reference-001/expired.bin"
+        proof = _proof(
+            tenant_id="tenant-a", key=key, scope=SCOPE, token=1,
+            idempotency_key="expired-proof", operation="object:put_if_absent",
+            ttl_seconds=-1,
+        )
+        with self.assertRaises(BackupStorageError):
+            self.provider._raw_fenced_methods["put"](
+                key, b"expired", fencing_scope=SCOPE, fencing_token=1,
+                idempotency_key="expired-proof", fencing_attestation=proof,
+            )
+
+    def test_key_rotation_accepts_retiring_and_active_keys_then_revocation_rejects(self):
+        old_key = "cnc/ch17/backup-reference-001/old-key.bin"
+        old_proof = _proof(
+            tenant_id="tenant-a", key=old_key, scope=SCOPE, token=5,
+            idempotency_key="old-key-write", operation="object:put_if_absent",
+            key_id=OLD_KEY_ID, secret=OLD_ATTESTATION_SECRET,
+        )
+        self.provider._raw_fenced_methods["put"](
+            old_key, b"old-key", fencing_scope=SCOPE, fencing_token=5,
+            idempotency_key="old-key-write", fencing_attestation=old_proof,
+        )
+        new_key = "cnc/ch17/backup-reference-001/new-key.bin"
+        new_proof = _proof(
+            tenant_id="tenant-a", key=new_key, scope=SCOPE, token=6,
+            idempotency_key="new-key-write", operation="object:put_if_absent",
+            key_id=KEY_ID, secret=ATTESTATION_SECRET,
+        )
+        self.provider._raw_fenced_methods["put"](
+            new_key, b"new-key", fencing_scope=SCOPE, fencing_token=6,
+            idempotency_key="new-key-write", fencing_attestation=new_proof,
+        )
+        with sqlite3.connect(self.database) as connection:
+            connection.execute(
+                "UPDATE trusted_fencing_keys SET status='REVOKED' WHERE issuer_id=? AND key_id=?",
+                (ISSUER_ID, OLD_KEY_ID),
+            )
+        revoked_key = "cnc/ch17/backup-reference-001/revoked-key.bin"
+        revoked_proof = _proof(
+            tenant_id="tenant-a", key=revoked_key, scope=SCOPE, token=7,
+            idempotency_key="revoked-key-write", operation="object:put_if_absent",
+            key_id=OLD_KEY_ID, secret=OLD_ATTESTATION_SECRET,
+        )
+        with self.assertRaises(BackupStorageError):
+            self.provider._raw_fenced_methods["put"](
+                revoked_key, b"revoked", fencing_scope=SCOPE, fencing_token=7,
+                idempotency_key="revoked-key-write", fencing_attestation=revoked_proof,
+            )
 
     def test_wrong_bearer_secret_is_rejected_before_provider_use(self):
         with self.assertRaises(SQLiteProviderAuthorizationError):
@@ -187,9 +390,7 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
 
     def test_fencing_high_water_persists_across_provider_instance_recreation(self):
         self.fenced_put("cnc/ch17/backup-reference-001/persist.bin", b"durable", 101, "persist-101")
-        reopened = SQLiteFencedObjectStorageProvider(
-            self.database, principal_id="writer-a", principal_secret=SECRET_A
-        )
+        reopened = _new_provider(self.database)
         self.assertEqual(reopened.fencing_high_water(SCOPE), 101)
         with self.assertRaises(StaleFencingTokenError):
             reopened.put_if_absent_fenced(
@@ -228,9 +429,7 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
             if phase == "after_object_mutation_before_fence_commit" and not state["failed"]:
                 state["failed"] = True
                 raise RuntimeError("synthetic crash before fencing metadata commit")
-        provider = SQLiteFencedObjectStorageProvider(
-            self.database, principal_id="writer-a", principal_secret=SECRET_A, fault_hook=fault
-        )
+        provider = _new_provider(self.database)
         key = "cnc/ch17/backup-reference-001/rollback.bin"
         with self.assertRaisesRegex(RuntimeError, "synthetic crash"):
             provider.put_if_absent_fenced(
@@ -394,10 +593,11 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         provider_db = self.base / "adapter-provider.sqlite"
         coordinator_db = self.base / "admission.sqlite"
         _provision(provider_db)
-        provider = SQLiteFencedObjectStorageProvider(
-            provider_db, principal_id="writer-a", principal_secret=SECRET_A
+        provider = _new_provider(provider_db)
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            coordinator_db, attestation_issuer_id=ISSUER_ID,
+            attestation_key_id=KEY_ID, attestation_secret=ATTESTATION_SECRET,
         )
-        coordinator = SQLiteProviderAdmissionCoordinator(coordinator_db)
         adapter = BackupStorageAdapter(
             provider,
             multipart_threshold_bytes=1,
@@ -408,7 +608,8 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
             retry_base_delay_seconds=0,
             sleep_fn=lambda _: None,
         )
-        result = adapter.publish_backup(backup, prefix="cnc/ch17")
+        with adapter.task_context(task_id="sqlite-fenced-integration", tenant_id="tenant-a"):
+            result = adapter.publish_backup(backup, prefix="cnc/ch17")
         verified = adapter.verify_stored_backup(
             prefix="cnc/ch17", backup_id="adapter-sqlite-fenced-001"
         )
