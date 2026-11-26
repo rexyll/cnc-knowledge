@@ -507,8 +507,9 @@ class SQLiteProviderAdmissionCoordinator:
                 and float(row["expires_at"]) > now and self._as_lease(row) == lease
             )
 
-    def is_attestation_active(self, claims: dict[str, Any]) -> bool:
-        """Online status check used by a Provider to reject released/expired leases."""
+    def _attestation_active_on_connection(
+        self, c: sqlite3.Connection, claims: dict[str, Any]
+    ) -> bool:
         if not isinstance(claims, dict):
             return False
         if self._consume_failure("attestation_status"):
@@ -519,23 +520,58 @@ class SQLiteProviderAdmissionCoordinator:
         if self.attestation_issuer_id is not None and claims.get("iss") != self.attestation_issuer_id:
             return False
         now = self.clock_fn()
-        with self._transaction("attestation_status") as c:
-            self._expire_locked(c, now)
-            row = c.execute(
-                "SELECT * FROM admission_requests WHERE lease_id=?",
-                (claims.get("lease_id"),),
-            ).fetchone()
-            return bool(
-                row is not None
-                and row["state"] == "ACTIVE"
-                and float(row["expires_at"]) > now
-                and row["owner_id"] == claims.get("owner_id")
-                and row["tenant_id"] == claims.get("tenant_id")
-                and row["domain"] == claims.get("domain")
-                and int(row["fencing_token"]) == claims.get("fencing_token")
-                and float(claims.get("issued_at", float("inf"))) <= now + 5.0
-                and float(claims.get("expires_at", 0)) <= float(row["expires_at"])
+        self._expire_locked(c, now)
+        row = c.execute(
+            "SELECT * FROM admission_requests WHERE lease_id=?",
+            (claims.get("lease_id"),),
+        ).fetchone()
+        return bool(
+            row is not None
+            and row["state"] == "ACTIVE"
+            and float(row["expires_at"]) > now
+            and row["owner_id"] == claims.get("owner_id")
+            and row["tenant_id"] == claims.get("tenant_id")
+            and row["domain"] == claims.get("domain")
+            and int(row["fencing_token"]) == claims.get("fencing_token")
+            and float(claims.get("issued_at", float("inf"))) <= now + 5.0
+            and float(claims.get("expires_at", 0)) <= float(row["expires_at"])
+        )
+
+    def is_attestation_active_in_transaction(
+        self, connection: sqlite3.Connection, claims: dict[str, Any]
+    ) -> bool:
+        """Check lease state on the Provider's already-open write transaction.
+
+        The connection must target this exact SQLite database and already hold a
+        write transaction (normally BEGIN IMMEDIATE). This lets lease release
+        and Provider mutation serialize on one database writer lock.
+        """
+        if not isinstance(connection, sqlite3.Connection) or not connection.in_transaction:
+            raise ProviderCoordinatorUnavailableError(
+                "atomic online status check requires an active SQLite transaction",
+                phase="attestation_status",
             )
+        try:
+            databases = connection.execute("PRAGMA database_list").fetchall()
+            main_database = next((row[2] for row in databases if row[1] == "main"), "")
+            if not main_database or Path(main_database).expanduser().resolve() != self.database_path:
+                raise ProviderCoordinatorUnavailableError(
+                    "atomic online status connection targets a different SQLite database",
+                    phase="attestation_status",
+                )
+        except sqlite3.Error as exc:
+            raise ProviderCoordinatorUnavailableError(
+                "cannot verify SQLite database identity for atomic lease status check",
+                phase="attestation_status",
+            ) from exc
+        return self._attestation_active_on_connection(connection, claims)
+
+    def is_attestation_active(self, claims: dict[str, Any]) -> bool:
+        """Online status check using a separate Coordinator transaction."""
+        if not isinstance(claims, dict):
+            return False
+        with self._transaction("attestation_status") as c:
+            return self._attestation_active_on_connection(c, claims)
 
     def issue_fencing_attestation(
         self, lease: ProviderAdmissionLease, *, fencing_scope: str,
