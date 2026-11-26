@@ -860,3 +860,11 @@
 - 默认 CI：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个 Job completed/success；全库 505 项 unittest，497 通过、8 项 opt-in live 测试按设计 skip；CH12 143 项数值资源测试通过；strict knowledge lint 0 errors；结构/数据校验 0 errors，5 项既有审批/DRAFT warning。
 - Watch 能力边界：直接消费 HTTP server-streaming Watch 响应，完整保留 header revision、watch_id、created/canceled、compact_revision、cancel_reason、fragment、events 和 KV/prev_kv；跨 chunk JSON 拼接及默认 PUT 枚举省略均有测试。WatchCreate 支持 progress_notify，但不提供双向 WatchProgress/WatchCancel 消息；主动取消仅关闭 HTTP 响应，不伪造服务端 cancel 确认。流建立后断线不自动重放，须由上层 linearizable Range + R+1 恢复。
 - 状态边界：Watch 仅用于通知，不作为 Coordinator 授权判据；mTLS 握手、RBAC、双向 Watch 控制、长期背压/压力测试仍待验证。ASSET-000092 的 30 项正式场景继续 PROPOSED_NOT_APPROVED / NOT_RUN；SQLite Coordinator 未迁移，schema-v2 仍是唯一生产权威；CH17-T004 保持 IN_PROGRESS。
+
+## CH17-T004 第二十八轮：etcd v3 Gateway mTLS 双向证书与信任链验证（全局第五十一轮，2026-11-26）
+
+- **目标：** 对当前etcd3gw 2.7.0 Gateway adapter中CA验证和客户端证书/私钥映射进行真实HTTPS/mTLS握手验证，确认服务端强制客户端证书且不信任未知CA时失败关闭。
+- **环境：** 在单独一次性etcd v3.7.0三成员TLS Compose拓扑上运行；由CI临时生成测试CA、服务端证书及客户端证书/私钥，证书和私钥仅放在runner临时目录，不提交仓库。
+- **场景：** 合法CA+合法客户端证书完成成员发现、linearizable Range和Txn写入读回；缺失客户端证书连接被服务端拒绝；错误CA无法验证服务端证书；证书校验不通过时不关闭TLS验证、不回退HTTP明文。
+- **边界：** 自签名临时证书仅验证TLS配置链路，不是企业PKI/证书轮换/吊销/生产密钥管理验收；不得把测试证书用于生产。既有mTLS构造参数须保持兼容。
+- **状态：** ASSET-000092正式矩阵仍由企业审批控制；测试只补充工程证据，不自动批准矩阵、不启用生产Coordinator；schema-v2仍为唯一生产权威。

@@ -878,3 +878,10 @@
 - 真实服务端测试：[Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310)在三成员 etcd v3.7.0 临时集群执行 8/8 live 测试全通过；诊断 Artifact 15128407498，SHA-256 `9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9`。
 - 完整回归：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个 Job 成功；全库 505 项（497 passed、8 live opt-in skipped）；CH12 143 项通过；strict knowledge lint 0 errors；fixture validator 0 errors、5 项既有治理 warning。
 - 限制：这证明指定版本/临时 Compose 环境的 server-streaming 字段解析和简单 PUT/DELETE 事件链路，不证明双向 WatchProgress/Cancel、生产断线压测、TLS/mTLS、RBAC 或多主机 Coordinator；30 项正式 ASSET-000092 场景仍未批准/未执行。CH17-T004 继续 IN_PROGRESS。
+
+## 6.23 CH17-T004 etcd v3 Gateway mTLS 双向证书与信任链验证（第五十一轮，2026-11-26）
+
+- **目标：** 在可丢弃三成员etcd v3.7.0 TLS集群中真实验证HTTPS服务端证书校验、强制客户端证书认证及失败关闭。
+- **交付：** 临时CA/服务器证书/客户端证书生成脚本或runner；独立TLS Compose拓扑；opt-in live tests覆盖有效mTLS Range/Txn、缺失client certificate、错误CA；所有敏感材料仅存runner临时目录。
+- **验证边界：** 不提交私钥/证书，不使用真实企业PKI，不把禁用verify或回退HTTP作为测试成功条件；明确区分证书链验证、客户端认证和etcd RBAC授权。
+- **状态：** CH17-T004保持IN_PROGRESS；ASSET-000092的30项正式场景仍须企业批准；schema-v2仍是唯一生产权威。
