@@ -1,0 +1,128 @@
+services:
+  etcd1:
+    image: quay.io/coreos/etcd:v3.7.0
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd1
+      - --data-dir=/etcd-data
+      - --listen-client-urls=https://0.0.0.0:2379
+      - --advertise-client-urls=https://etcd1:2379
+      - --listen-peer-urls=https://0.0.0.0:2380
+      - --initial-advertise-peer-urls=https://etcd1:2380
+      - --initial-cluster=etcd1=https://etcd1:2380,etcd2=https://etcd2:2380,etcd3=https://etcd3:2380
+      - --initial-cluster-state=new
+      - --initial-cluster-token=cnc-knowledge-etcd-mtls-itest
+      - --cert-file=/etc/etcd/pki/server.crt
+      - --key-file=/etc/etcd/pki/server.key
+      - --trusted-ca-file=/etc/etcd/pki/ca.crt
+      - --client-cert-auth=true
+      - --peer-cert-file=/etc/etcd/pki/server.crt
+      - --peer-key-file=/etc/etcd/pki/server.key
+      - --peer-trusted-ca-file=/etc/etcd/pki/ca.crt
+      - --peer-client-cert-auth=true
+    ports:
+      - "23891:2379"
+    volumes:
+      - etcd1-mtls-data:/etcd-data
+      - /tmp/cnc-etcd-mtls-certs:/etc/etcd/pki:ro
+    healthcheck:
+      test:
+        - CMD
+        - /usr/local/bin/etcdctl
+        - --endpoints=https://127.0.0.1:2379
+        - --cacert=/etc/etcd/pki/ca.crt
+        - --cert=/etc/etcd/pki/client.crt
+        - --key=/etc/etcd/pki/client.key
+        - endpoint
+        - health
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  etcd2:
+    image: quay.io/coreos/etcd:v3.7.0
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd2
+      - --data-dir=/etcd-data
+      - --listen-client-urls=https://0.0.0.0:2379
+      - --advertise-client-urls=https://etcd2:2379
+      - --listen-peer-urls=https://0.0.0.0:2380
+      - --initial-advertise-peer-urls=https://etcd2:2380
+      - --initial-cluster=etcd1=https://etcd1:2380,etcd2=https://etcd2:2380,etcd3=https://etcd3:2380
+      - --initial-cluster-state=new
+      - --initial-cluster-token=cnc-knowledge-etcd-mtls-itest
+      - --cert-file=/etc/etcd/pki/server.crt
+      - --key-file=/etc/etcd/pki/server.key
+      - --trusted-ca-file=/etc/etcd/pki/ca.crt
+      - --client-cert-auth=true
+      - --peer-cert-file=/etc/etcd/pki/server.crt
+      - --peer-key-file=/etc/etcd/pki/server.key
+      - --peer-trusted-ca-file=/etc/etcd/pki/ca.crt
+      - --peer-client-cert-auth=true
+    ports:
+      - "23892:2379"
+    volumes:
+      - etcd2-mtls-data:/etcd-data
+      - /tmp/cnc-etcd-mtls-certs:/etc/etcd/pki:ro
+    healthcheck:
+      test:
+        - CMD
+        - /usr/local/bin/etcdctl
+        - --endpoints=https://127.0.0.1:2379
+        - --cacert=/etc/etcd/pki/ca.crt
+        - --cert=/etc/etcd/pki/client.crt
+        - --key=/etc/etcd/pki/client.key
+        - endpoint
+        - health
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  etcd3:
+    image: quay.io/coreos/etcd:v3.7.0
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd3
+      - --data-dir=/etcd-data
+      - --listen-client-urls=https://0.0.0.0:2379
+      - --advertise-client-urls=https://etcd3:2379
+      - --listen-peer-urls=https://0.0.0.0:2380
+      - --initial-advertise-peer-urls=https://etcd3:2380
+      - --initial-cluster=etcd1=https://etcd1:2380,etcd2=https://etcd2:2380,etcd3=https://etcd3:2380
+      - --initial-cluster-state=new
+      - --initial-cluster-token=cnc-knowledge-etcd-mtls-itest
+      - --cert-file=/etc/etcd/pki/server.crt
+      - --key-file=/etc/etcd/pki/server.key
+      - --trusted-ca-file=/etc/etcd/pki/ca.crt
+      - --client-cert-auth=true
+      - --peer-cert-file=/etc/etcd/pki/server.crt
+      - --peer-key-file=/etc/etcd/pki/server.key
+      - --peer-trusted-ca-file=/etc/etcd/pki/ca.crt
+      - --peer-client-cert-auth=true
+    ports:
+      - "23893:2379"
+    volumes:
+      - etcd3-mtls-data:/etcd-data
+      - /tmp/cnc-etcd-mtls-certs:/etc/etcd/pki:ro
+    healthcheck:
+      test:
+        - CMD
+        - /usr/local/bin/etcdctl
+        - --endpoints=https://127.0.0.1:2379
+        - --cacert=/etc/etcd/pki/ca.crt
+        - --cert=/etc/etcd/pki/client.crt
+        - --key=/etc/etcd/pki/client.key
+        - endpoint
+        - health
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  etcd1-mtls-data:
+  etcd2-mtls-data:
+  etcd3-mtls-data:
