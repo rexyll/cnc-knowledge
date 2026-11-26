@@ -500,3 +500,14 @@
 - **测试：** 适配器新增4项unittest，覆盖strict mode门禁、payload/multipart/receipt token传递、同scope跨key旧token拒绝、complete响应丢失重放。默认兼容模式保持非fenced，不能宣称安全模式已启用。
 - **验收：** Run 45753519142两个必需Job均success；全库221项unittest、CH12 143项资源测试通过；strict lint 0 errors（5 warnings），Provider self-check token propagation PASS。
 - **边界：** FencedMock仅单进程内存模拟，真实云Provider/本地生产Provider仍未接入。真实实现需认证/授权绑定、持久scope高水位和对象/分块/完成/回执原子提交。ASSET-000075全部12条场景PROPOSED_NOT_APPROVED / NOT_RUN；生产备份继续关闭，CH17-T004仍IN_PROGRESS。
+
+
+## CH17-T004 第三十一轮：SQLite fenced Provider 服务端原子参考实现
+
+- **目标：** 把严格 fencing 从内存Mock提升为同主机可持久化的Provider端事务参考实现；实现主体认证/tenant-action-prefix授权、备份包scope高水位、对象/multipart/幂等和审计原子提交。
+- **实现：** 新增 scripts/spare_parts_provider_sqlite_fenced.py。Provider以SQLite WAL、synchronous=FULL、BEGIN IMMEDIATE写事务，把权限校验、旧token比较、对象/分块写入、fence high-water和幂等回执放在同一事务。
+- **主体模型：** provisioning时存PBKDF2-HMAC-SHA256 verifier，不存明文secret；每次操作复查主体启用状态和tenant/action/prefix ACL。此为本机可信服务进程凭据，不是TLS/IAM网络认证。
+- **恢复：** 支持SQLite online backup、integrity_check/foreign_key_check和新库恢复准备。必须提供独立external_fencing_floor与reconciliation reference；恢复清理未完成multipart会话、提升全部已知scope和全局floor，只准备新库、不cutover。
+- **测试：** 新增20项Provider专项unittest，覆盖错误凭据、ACL、租户隔离、scope路径、陈旧token、幂等/冲突、事务rollback、响应丢失、multipart、多进程竞争、备份恢复及严格适配器端到端发布。ASSET-000076定义22条形式化参考验收场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **验收：** [Run 45755448153](https://github.com/rexyll/cnc-knowledge/actions/runs/45755448153)两个必需Job均success；全库241项unittest、CH12 143项通过；strict lint 0 errors（5 warnings）；SQLite fenced Provider self-check PASS（Artifact 15087184041）。
+- **剩余安全门禁：** Provider目前不验证token由可信Coordinator签发，持有效本地主体凭据的调用者仍能构造异常大token；生产化前必须增加tenant+scope+token+lease绑定的HMAC/签名attestation。SQLite仅同主机本地文件，不支持NFS/SMB/多主机；真实云/生产Provider未集成；生产备份继续关闭，CH17-T004仍IN_PROGRESS。

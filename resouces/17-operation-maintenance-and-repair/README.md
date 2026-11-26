@@ -377,3 +377,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - spare-parts-inventory-backup-provider-adapter-fencing-test-matrix-v1.csv（ASSET-000075）：12条严格fencing合成场景，覆盖启动门禁、payload写入、multipart begin/part/complete、receipt-last、同备份包跨key scope和响应丢失幂等重放。
 - 场景全部为PROPOSED_NOT_APPROVED / NOT_RUN。代码单元测试证明本地FencedMock集成，不构成真实Provider/供应商/生产验收。
 - 严格模式启用参数为 BackupStorageAdapter(require_provider_fencing=True)；默认兼容模式不启用下游fencing。配套正文及知识条目：docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-adapter-fencing-integration.md（KNOW-000044）。
+
+
+## CH17-T004 SQLite fenced Provider 服务端参考实现第三十一轮（2026-11-26）
+
+- 参考实现：scripts/spare_parts_provider_sqlite_fenced.py，配套 KNOW-000045。
+- ASSET-000076：22条主体凭据、租户/前缀授权、原子fencing、multipart、恢复等参考验收场景，均PROPOSED_NOT_APPROVED / NOT_RUN。
+- 数据库使用SQLite WAL/BEGIN IMMEDIATE，仅支持同主机本地文件和多进程共享；不支持NFS/SMB/多主机，也不是云Provider。
+- 当前不验证Coordinator token来源签名；持有效Provider主体凭据的应用仍能构造高token。生产化前需scope-bound HMAC/signature attestation。恢复需要外部可信fencing floor，只准备新库，不自动切换。

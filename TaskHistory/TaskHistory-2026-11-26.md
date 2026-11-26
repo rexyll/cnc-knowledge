@@ -301,3 +301,14 @@
 - **Artifacts：** Provider adapter Artifact ID 15086194048；SQLite coordinator Artifact ID 15086049689；backup governance readiness Artifact ID 15086089278。
 - **覆盖登记：** CH17当前24篇KNOW、74个登记实体、68项资源；ASSET-000075的12项场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **限制：** strict fencing目前只通过FencedMock单进程内存夹具验证；真实Provider认证/授权绑定、持久scope高水位和跨进程远端原子提交尚未实现/验证。默认兼容模式不启用fencing；生产备份保持关闭。
+
+
+## CH17-T004 SQLite fenced Provider 服务端原子参考实现第三十一轮
+
+- **实现：** 新增 scripts/spare_parts_provider_sqlite_fenced.py。Provider独立SQLite库使用WAL、synchronous=FULL和BEGIN IMMEDIATE；主体凭据PBKDF2-HMAC-SHA256 verifier，tenant/action/prefix ACL每次事务复查；scope high-water、fenced_operations幂等回执、对象或multipart变更和成功审计同事务提交；拒绝操作尝试独立DENY审计。
+- **恢复能力：** 新增online backup、integrity_check/foreign_key_check、SHA-256快照校验和restore_to_new_database。恢复必须提供独立external_fencing_floor与reconciliation reference；会清理未完成multipart、提升已知scope和全局minimum token floor，只创建新DB，不覆盖源库、不自动cutover。
+- **测试：** tests/test_spare_parts_provider_sqlite_fenced.py新增20项专项测试，覆盖credential、ACL、tenant isolation、scope containment、cross-key stale write、idempotency、rollback、lost response replay、multipart、multiprocessing race、online backup/restore和strict adapter完整发布。
+- **首次测试CI问题及修复：** Run 45754970839 的240项测试中，新增测试遗漏FencingNotSupportedError导入且tenant isolation fixture将object key放在scope之外；修复提交7c3d4305。Run 45755055185在单元测试通过后暴露CLI直接运行时scripts模块导入路径错误；修复提交7ee9166a添加仓库根目录sys.path。最终增加diagnostics ACL探测修复和恢复清理active multipart测试后，以提交59b9945a重新完整验收。
+- **最终代码CI：** [Run 45755448153](https://github.com/rexyll/cnc-knowledge/actions/runs/45755448153)两个必需Job completed/success；全库241项unittest、CH12 143项通过；strict knowledge lint PASS（0 errors，5 warnings）；Provider CLI self-check PASS。Artifacts：Provider fenced 15087184041；SQLite coordinator 15087452634；Provider adapter 15087507413。
+- **资源：** 新增KNOW-000045和ASSET-000076（22条场景），均为PROPOSED_NOT_APPROVED / NOT_RUN。CH17覆盖更新为25篇KNOW、75个登记实体、69项资源。
+- **边界：** 当前为同主机本地SQLite参考Provider，不是云/网络或多主机服务；没有数据静态加密和凭据生命周期管理。Provider尚未验证token来自trusted coordinator的scope-bound签名，授权主体可构造高token导致拒绝服务；正式生产前必须补HMAC/签名attestation。生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

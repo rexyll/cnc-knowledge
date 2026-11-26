@@ -104,3 +104,6 @@
 
 
 - [备份 Provider 适配器 fencing token 贯穿与备份包范围原子提交](spare-parts-inventory-backup-provider-adapter-fencing-integration.md)（KNOW-000044）；显式严格模式下覆盖payload、multipart与receipt-last写入，ASSET-000075定义12条合成场景，均未批准/未执行。
+
+
+- [备件库存备份 SQLite fenced Provider 参考实现、主体授权与恢复门禁](spare-parts-inventory-backup-provider-sqlite-fenced-reference.md)（KNOW-000045）；同主机SQLite事务内原子提交scope高水位、对象/multipart及幂等回执，ASSET-000076定义22条形式化参考场景，均未批准/未执行。
