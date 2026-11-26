@@ -7,7 +7,7 @@
     "备份Provider重试故障矩阵",
     "Provider retry and consistency test matrix"
   ],
-  "description": "12条Mock合成场景，覆盖限流退避、写成功响应丢失、延迟可见、重试耗尽、版本切换/缺失、分块响应丢失及永久错误不重试。",
+  "description": "13条Mock合成场景，覆盖限流退避、Retry-After上限、写成功响应丢失、延迟可见、重试耗尽、版本切换/缺失、分块响应丢失及永久错误不重试。",
   "primary_chapter": "CH17",
   "related_chapters": [
     "CH17",
@@ -32,7 +32,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T12:00:00+08:00",
-  "updated_at": "2026-11-26T12:00:00+08:00",
+  "updated_at": "2026-11-26T12:30:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -51,5 +51,5 @@
     "sha256": null,
     "file_size": null
   },
-  "notes": "12条场景均为纯合成定义，状态PROPOSED_NOT_APPROVED / NOT_RUN。CI Mock通过不代表真实云端限流、读一致性或版本服务验收。"
+  "notes": "13条场景均为纯合成定义，状态PROPOSED_NOT_APPROVED / NOT_RUN。CI Mock通过不代表真实云端限流、Retry-After、读一致性或版本服务验收。"
 }

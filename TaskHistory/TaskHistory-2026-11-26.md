@@ -97,3 +97,10 @@
 - **自检Artifact：** 自检增加commit timeout、read-after-write延迟、瞬态读取及历史版本切换的组合路径；Artifact及最终Run待CI结束后记录。
 - **资源：** 新增KNOW-000036与ASSET-000067（12条重试/一致性故障场景）；全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **边界：** 没有真实云端限流、Retry-After、读一致性、版本生命周期、HTTP/SDK超时验证；无网络/凭据/KMS/HSM/加密/对象锁/生产备份。
+
+
+### 第二十二轮重试与一致性测试扩展补记
+
+- 新增Retry-After处理测试：Provider提示10秒时，以配置的2秒最大延迟封顶；Provider专项unittest由31增至32，全库由159增至160。
+- ASSET-000067由12条扩展为13条场景，新增PRC-013（Retry-After提示与本地延迟上限）。所有场景仍为PROPOSED_NOT_APPROVED / NOT_RUN。
+- 第二十一轮和第二十二轮三个Provider测试矩阵已修复状态列顺序：synthetic_only=TRUE、approval_status=PROPOSED_NOT_APPROVED、execution_status=NOT_RUN、notes最后列。
