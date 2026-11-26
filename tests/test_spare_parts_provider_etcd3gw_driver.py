@@ -244,7 +244,6 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
                     "watch_id": "9",
                     "fragment": True,
                     "events": [{
-                        "type": "PUT",
                         "kv": {
                             "key": b64(key), "value": b64(value),
                             "create_revision": "4", "mod_revision": "11",

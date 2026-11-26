@@ -165,12 +165,20 @@ def _normalize_watch_response(envelope: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(raw_event, Mapping):
             raise Etcd3gwProtocolError("etcd Watch event is malformed")
         event_type = raw_event.get("type")
-        if isinstance(event_type, int) and not isinstance(event_type, bool):
-            event_type = {0: "PUT", 1: "DELETE"}.get(event_type)
-        if isinstance(event_type, str):
+        # In proto3 JSON, the zero-valued enum (PUT) may be omitted.
+        # DELETE is non-zero and remains explicitly represented.
+        if event_type is None or event_type == 0 or event_type == "0":
+            event_type = "PUT"
+        elif isinstance(event_type, bool):
+            raise Etcd3gwProtocolError("etcd Watch event type is invalid")
+        elif isinstance(event_type, int):
+            event_type = {1: "DELETE"}.get(event_type)
+        elif isinstance(event_type, str):
             event_type = event_type.upper()
             if event_type.startswith("EVENT_TYPE_"):
                 event_type = event_type.removeprefix("EVENT_TYPE_")
+            if event_type == "1":
+                event_type = "DELETE"
         if event_type not in {"PUT", "DELETE"}:
             raise Etcd3gwProtocolError("etcd Watch event type is invalid")
 
