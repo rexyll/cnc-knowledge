@@ -71,5 +71,5 @@
     "doc_sync_ci_run": 45778328441,
     "doc_sync_ci_status": "completed/success"
   },
-  "notes": "24条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI执行6个合约测试方法，每个分别在SQLite与单进程InMemoryEtcdV3Client运行，共12次适配器测试；不等同于矩阵执行或企业验收。单aggregate scheduler存在写入热点；旧SQLite scheduler与Coordinator领域服务尚未迁移。 文档同步提交 87d749147d2c32da547ce23ed56db69725271a00 的CI Run 45778328441两个必需Job均completed/success；ASSET-000085的24条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。"
+  "notes": "24条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI执行6个合约测试方法，每个分别在SQLite与单进程InMemoryEtcdV3Client运行，共12次适配器测试；不等同于矩阵执行或企业验收。单aggregate scheduler存在写入热点；旧SQLite scheduler与Coordinator领域服务尚未迁移。 文档同步提交 87d749147d2c32da547ce23ed56db69725271a00 的CI Run 45778328441两个必需Job均completed/success；ASSET-000085的24条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。 文档同步提交 87d749147d2c32da547ce23ed56db69725271a00 的CI Run 45778328441两个必需Job均completed/success；ASSET-000085的24条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。"
 }

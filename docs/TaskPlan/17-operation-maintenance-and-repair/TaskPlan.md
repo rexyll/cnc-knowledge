@@ -685,3 +685,10 @@
 - **文档提交：** `87d749147d2c32da547ce23ed56db69725271a00`；[Run 45778328441](https://github.com/rexyll/cnc-knowledge/actions/runs/45778328441)两个必需Job均completed/success。
 - **质量结果：** 全库328项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（报告5条非阻断warning）。
 - **状态：** ASSET-000085的24条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；旧SQLite Admission及Coordinator领域服务未迁移；生产备份关闭，治理门禁不变。
+
+
+### 第四十轮文档同步CI验收补记
+
+- **文档提交：** `87d749147d2c32da547ce23ed56db69725271a00`；[Run 45778328441](https://github.com/rexyll/cnc-knowledge/actions/runs/45778328441)两个必需Job均completed/success。
+- **质量结果：** 全库328项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（报告5条非阻断warning）。
+- **状态：** ASSET-000085的24条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；旧SQLite Admission与Coordinator领域服务尚未迁移；生产备份关闭，治理门禁不变。
