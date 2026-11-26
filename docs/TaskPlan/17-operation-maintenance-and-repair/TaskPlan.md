@@ -727,3 +727,14 @@
 - **文档提交：** `706cfcf36204c1bfe996501e65031a21e8536783`；[Run 45811108498](https://github.com/rexyll/cnc-knowledge/actions/runs/45811108498)两个必需Job均completed/success。
 - **质量结果：** 全库344项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5条非阻断warning）。
 - **状态：** ASSET-000086的35条场景仍PROPOSED_NOT_APPROVED / NOT_RUN；旧SQLite Coordinator及Admission服务尚未迁移；生产备份保持关闭。
+
+
+## 6.14 CH17-T004 Unified Coordinator Aggregate容量画像（第四十二轮，2026-11-26）
+
+- **目标：** 在不改变schema-v2状态机、不接入真实存储的前提下，量化单aggregate内scope、operation ledger、活动Admission lease和waiter的合成数据增长。
+- **代码：** 新增 scripts/spare_parts_coordinator_capacity_probe.py；使用现有Admission/Coordinator记录构造器与canonical JSON编码，支持14条CSV profile执行和JSON stdout报告。
+- **测试：** 新增 tests/test_spare_parts_coordinator_capacity_probe.py，共12个测试方法，覆盖canonical字节对齐、scope/operation增长、活动lease比较项模型、只读性、阈值参数、异常输入和矩阵唯一性。
+- **资料：** 新增 KNOW-000056、ASSET-000087、SRC-000402；正文为 docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-capacity-model.md，场景矩阵归档于 resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-capacity-profile-v1.csv。
+- **测量边界：** JSON aggregate value字节数为精确值；完整etcd请求大小只得到下界，协议封装和传输请求未测。比较项数为基于当前实现的结构模型，不是RPC延迟/吞吐测量。
+- **安全边界：** 50%仅为画像展示预算，不设生产硬限制、不修改运行写入行为。所有数据均为合成数据；未连接真实etcd、SQLite生产库或对象存储Provider。
+- **状态：** 该切片交付后，CH17-T004仍保持 IN_PROGRESS；真实etcd容量与性能、operation ledger归档/分片、迁移与cutover仍未完成。

@@ -563,3 +563,13 @@
 - 文档提交 `706cfcf36204c1bfe996501e65031a21e8536783`，CI Run 45811108498两个必需Job均completed/success。
 - 全库344项unittest、CH12 143项数值资源测试通过；strict lint 0 errors；结构质量0 errors，5条非阻断warning。
 - ASSET-000086的35条场景保持PROPOSED_NOT_APPROVED / NOT_RUN；旧SQLite Coordinator尚未替换，v1→v2生产cutover未执行。
+
+
+## CH17-T004 Unified Coordinator Aggregate容量画像（第四十二轮）
+
+- **实际完成日期：** 2026-11-26（Asia/Shanghai）。
+- **分支：** main（未创建新分支）。
+- **新增实现：** scripts/spare_parts_coordinator_capacity_probe.py；tests/test_spare_parts_coordinator_capacity_probe.py。
+- **新增知识/资源：** KNOW-000056、ASSET-000087、SRC-000402；新增容量模型正文及14条合成profile CSV；同步CH17正文导航、任务计划与资源索引。
+- **实现边界：** 只读取内存中生成的合成schema-v2状态，不连接SQLite/etcd/Provider；canonical JSON value字节数精确，完整gRPC/protobuf请求大小及实际延迟/吞吐不测量。50%预算是内部画像假设，不是生产硬阈值。
+- **验收状态：** 仓库CI待本轮实现提交触发后确认；ASSET-000087正式场景仍PROPOSED_NOT_APPROVED，未开展真实etcd或企业容量验收。

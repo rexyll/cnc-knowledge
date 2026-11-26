@@ -1,0 +1,63 @@
+{
+  "entity_id": "KNOW-000056",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存备份 Unified Coordinator Aggregate 容量模型与观测边界",
+  "english_name": "CNC spare-parts backup unified Coordinator aggregate capacity model and observability boundary",
+  "aliases": [
+    "Unified Coordinator aggregate capacity probe",
+    "Coordinator schema-v2 capacity model",
+    "KNOW-000056"
+  ],
+  "description": "对统一Admission/Coordinator schema-v2 aggregate进行离线合成容量画像，精确统计canonical JSON value字节数并估算Coordinator事务比较项数量；明确真实请求大小及性能验证边界。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Coordinator容量与可观测性"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Capacity",
+    "Aggregate",
+    "etcd v3",
+    "Synthetic Testing"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T20:15:00+08:00",
+  "updated_at": "2026-11-26T20:15:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000402",
+    "SRC-000397",
+    "SRC-000398"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-capacity-model.md",
+    "implementation_path": "scripts/spare_parts_coordinator_capacity_probe.py",
+    "test_file": "tests/test_spare_parts_coordinator_capacity_probe.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-capacity-profile-v1.csv",
+    "matrix_scenario_count": 14,
+    "synthetic_only": true,
+    "real_store_accessed": false,
+    "real_etcd_accessed": false,
+    "schema_version": 2,
+    "reference_etcd_max_request_bytes": 1572864,
+    "analytical_target_utilization": 0.5,
+    "hard_capacity_limit_enforced": false,
+    "production_performance_tested": false,
+    "repository_test_methods_added": 12,
+    "source_record": "docs/data/sources/SRC-000402.json"
+  },
+  "notes": "本工具只统计当前schema-v2结构对应的canonical JSON状态value字节数，并估算当前代码路径中Coordinator事务比较项；不计算protobuf/gRPC完整请求、Txn服务端延迟或实际吞吐量。不连接真实etcd或企业系统。1.5 MiB为官方文档默认请求上限且可配置；50%为项目画像展示预算，不是服务器硬限制或上线门禁。"
+}

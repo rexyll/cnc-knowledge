@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000402",
+  "source_type": "other",
+  "title": "System limits — etcd v3.7",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/dev-guide/limit/",
+  "version": "etcd v3.7 official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Request size limit section: default maximum client request size is 1.5 MiB and is configurable with --max-request-bytes; larger requests may increase latency.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official project documentation. The default request limit is a reference only; actual server configuration must be verified for each deployment.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

@@ -1,0 +1,64 @@
+{
+  "entity_id": "ASSET-000087",
+  "entity_type": "asset_file",
+  "canonical_name": "备件库存备份 Unified Coordinator Aggregate 容量画像场景矩阵v1",
+  "english_name": "CNC spare-parts backup unified Coordinator aggregate capacity profile scenario matrix v1",
+  "aliases": [
+    "Unified Coordinator capacity profile",
+    "Coordinator schema-v2 synthetic load matrix",
+    "ASSET-000087"
+  ],
+  "description": "14个纯合成容量画像输入场景，覆盖scope、operation、active lease、waiter和混合负载；作为离线探针的固定场景定义，不包含真实性能结果。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Capacity",
+    "Synthetic Profile",
+    "ASSET-000087"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T20:15:00+08:00",
+  "updated_at": "2026-11-26T20:15:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000402",
+    "SRC-000397",
+    "SRC-000398"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-capacity-profile-v1.csv",
+    "file_name": "spare-parts-coordinator-capacity-profile-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000056",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic aggregate capacity profile scenarios",
+    "scenario_count": 14,
+    "approval_status": "PROPOSED_NOT_APPROVED",
+    "execution_status": "NOT_RUN",
+    "synthetic_only": true,
+    "real_etcd_connected": false,
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "CSV只定义14个合成场景参数，不包含实测结果。探针运行与测试不会连接真实存储；profile PASS不等同于etcd容量或生产性能验收。"
+}

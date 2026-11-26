@@ -1,0 +1,15 @@
+scenario_id,purpose,scope_count,operations_per_scope,active_lease_count,waiter_count,expected_check
+CAP-001,empty schema-v2 aggregate baseline,0,0,0,0,baseline footprint
+CAP-002,single scope fixed metadata,1,0,0,0,scope bytes increase
+CAP-003,ten scopes fixed metadata,10,0,0,0,scope bytes increase
+CAP-004,one hundred scopes fixed metadata,100,0,0,0,scope bytes increase
+CAP-005,two hundred fifty scopes fixed metadata,250,0,0,0,scope bytes increase
+CAP-006,one scope and one hundred completed operations,1,100,0,0,operation index growth
+CAP-007,one scope and five hundred completed operations,1,500,0,0,operation index growth
+CAP-008,ten scopes and five hundred completed operations,10,50,0,0,operation index growth
+CAP-009,ten scopes and one thousand completed operations,10,100,0,0,operation index growth
+CAP-010,ten active Admission leases,1,0,10,0,active lease compare estimate
+CAP-011,fifty active Admission leases,1,0,50,0,active lease compare estimate
+CAP-012,one hundred Admission waiters,1,0,0,100,waiter index growth
+CAP-013,mixed moderate scope operation and lease load,25,20,25,50,mixed footprint
+CAP-014,mixed extended operation and active lease load,10,100,50,100,mixed footprint

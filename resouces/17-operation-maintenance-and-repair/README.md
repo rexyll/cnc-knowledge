@@ -512,3 +512,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 - 第四十一轮文档同步CI Run 45811108498两个必需Job均completed/success：344项全库unittest、CH12 143项数值资源测试通过，strict lint与结构质量均0 errors（5条非阻断warning）。ASSET-000086的35项场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 Unified Coordinator Aggregate容量画像（第四十二轮）
+
+- 新增 spare-parts-coordinator-capacity-profile-v1.csv（ASSET-000087），包含14条合成负载定义，覆盖scope、operation、active lease、waiter和混合负载。
+- 离线探针位于 scripts/spare_parts_coordinator_capacity_probe.py；运行后只向stdout输出JSON，不修改仓库文件，不连接任何store或etcd集群。
+- CSV是合成输入矩阵，不是实测报告；ASSET-000087保持PROPOSED_NOT_APPROVED，自动化测试也不替代企业批准或真实etcd容量验收。

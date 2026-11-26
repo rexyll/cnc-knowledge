@@ -155,3 +155,8 @@ Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope
 第四十一轮文档同步CI Run 45811108498（提交 706cfcf36204c1bfe996501e65031a21e8536783）两个必需Job均completed/success：344项全库unittest、CH12 143项测试、strict lint 0 errors、知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000086场景仍待批准/未执行。
 
 第四十一轮文档同步CI Run 45811108498两个必需Job均completed/success：344项全库unittest、CH12 143项测试通过，strict lint与结构质量均0 errors（5条非阻断warning）。ASSET-000086的35条场景尚未批准或执行。
+
+
+## CH17-T004 Unified Coordinator Aggregate容量画像（第四十二轮）
+
+容量模型见 [备件库存备份 Unified Coordinator Aggregate 容量模型与观测边界](spare-parts-inventory-backup-provider-coordinator-capacity-model.md)（KNOW-000056）：新增离线合成容量探针，复用schema-v2真实记录构造和canonical JSON编码，统计aggregate、scope、operation索引字节数，并给出活动Admission lease对应的Coordinator比较项模型。ASSET-000087定义14个合成场景。该轮不设置写入硬阈值，不连接真实etcd或生产Provider，不代表生产容量/性能验收。
