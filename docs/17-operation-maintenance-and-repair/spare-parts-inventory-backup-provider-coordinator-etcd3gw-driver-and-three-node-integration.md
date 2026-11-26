@@ -4,7 +4,7 @@
 **章节：** CH17 操作、维护与维修  
 **关联知识：** KNOW-000051、KNOW-000059、KNOW-000060  
 **正式场景矩阵：** ASSET-000092  
-**实现状态：** etcd3gw Range/Txn/Lease 网络驱动已提交；真实三成员CI集成6/6通过（含单成员停机/恢复）；Watch仍未实现  
+**实现状态：** etcd3gw Range/Txn/Lease 网络驱动已提交；真实三成员CI集成7/7通过（含单/双成员故障及恢复）；Watch仍未实现  
 **生产状态：** 未启用，schema-v2仍是唯一生产权威
 
 ## 1. 本轮目标与边界
@@ -128,7 +128,7 @@ ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。�
 | Watch/WatchProgress | 当前驱动不支持 | 实现保留完整WatchResponse envelope的gRPC/stream驱动 |
 | TLS/mTLS | 构造参数已映射，未真实握手测试 | CA链、双向证书、过期/轮换及失败注入 |
 | RBAC/认证 | 未实现账户/角色集成 | 明确最小权限和认证材料注入方案 |
-| Raft/quorum | 已在一次性3成员集群中验证1节点停机后剩余2/3多数派读写及节点恢复；未测2节点同时故障/失去多数派和网络分区 | 补充2成员停止时的写失败/恢复行为、网络分区与选举/恢复时延测量 |
+| Raft/quorum | 已在一次性3成员集群验证1节点停机后2/3多数派读写，以及2节点停机时失去quorum、读写失败关闭和恢复；未测网络分区与磁盘故障 | 补充非对称网络分区、长时间失联、磁盘/快照恢复与选举/恢复时延测量 |
 | Coordinator迁移 | 业务服务仍使用既有SQLite实现 | 独立迁移设计、双读比对、灰度、回滚与批准 |
 | 生产权威 | 未启用 | 所有协议、故障、安全和业务迁移验收通过前保持关闭 |
 
@@ -154,3 +154,16 @@ etcd集群的三节点成员数量不自动代表业务高可用已验收；读�
 **真实CI结果：** [Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952)在三成员集群上执行6项测试全部通过（6/6，0 failures，0 skips）；诊断Artifact [15127610627](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952/artifacts/15127610627)，SHA-256 `74b04904535cce72b7a08fdf6265020bcb9086b43003106ab4eb4271847869f2`。同一代码head的默认回归[Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)两个必需Job均成功：全库500项unittest（494通过、6项opt-in live集成测试按默认策略skip），CH12 143项数值资源测试通过，strict knowledge lint 0 errors，CH17合成夹具validator 0 errors/5项既有warning。
 
 **不可扩大的结论：** 本次验证是单次、临时、明文HTTP的集成冒烟测试。它证明限定场景下单节点停止期间2/3节点仍能完成该次linearizable Range/Txn读写，且节点重启后成员列表恢复；不证明2节点同时故障、长时间网络分区、磁盘故障、生产RPO/RTO、性能/吞吐、TLS/mTLS、RBAC、Watch或真实多主机Coordinator。ASSET-000092的30项正式企业场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；SQLite业务服务未迁移，schema-v2仍是唯一生产权威。
+
+## 9. 第四十九轮失去多数派与恢复补充（2026-11-26）
+
+新增真实集成测试`tests/test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py`，在三成员etcd v3.7.0临时集群中依次停止etcd1与etcd2，使etcd3成为唯一存活节点：
+
+1. 线性一致读取在无quorum状态下必须失败关闭；
+2. 对唯一存活节点发送一次Txn，若请求超时则保持OUTCOME_UNKNOWN，若服务端拒绝则转为Unavailable；不得将失败/未知写入宣称成功，也不自动重试；
+3. 恢复etcd1、etcd2并等待三成员和Leader恢复；
+4. 对目标key执行线性一致读回，确认无quorum期间未提交该值；随后对同一key发起VERSION=0 CAS写入并读回成功。
+
+**真实CI结果：** [Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997)在一次性三成员etcd v3.7.0集群上运行7项live集成测试，7/7 PASS、0 failures、0 skips；集群资源清理成功。诊断Artifact [15128755397](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997/artifacts/15128755397)，SHA-256 `d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8`。同一代码head默认回归[Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)：全库501项unittest（494通过、7项opt-in live测试按默认策略skip），CH12 143项数值测试通过，strict knowledge lint 0 errors，合成fixture validator 0 errors/5项既有warning。
+
+**验收边界：** 这只验证受控的两成员停止/恢复流程，不涵盖非对称网络分区、长时间网络分割、磁盘/文件系统故障、性能指标、mTLS/RBAC、Watch或多主机Coordinator。ASSET-000092的30项正式场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威。

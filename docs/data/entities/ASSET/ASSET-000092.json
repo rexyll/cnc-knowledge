@@ -61,14 +61,14 @@
     "synthetic_only": true,
     "real_etcd_connected": true,
     "three_node_cluster_started": true,
-    "live_integration_test_methods": 6,
-    "live_integration_status": "PASS_6_OF_6_DISPOSABLE_CI_SMOKE",
-    "code_commit": "85348dbf6594564db8eb92ad77eb7f4ac9f1c1cd",
-    "ci_run": 45839557095,
+    "live_integration_test_methods": 7,
+    "live_integration_status": "PASS_7_OF_7_DISPOSABLE_CI_SMOKE",
+    "code_commit": "2ed3927e63ca28a643055835568f7d7a83543323",
+    "ci_run": 45840904137,
     "ci_status": "completed/success",
-    "repository_unit_test_count": 500,
+    "repository_unit_test_count": 501,
     "repository_unit_test_passed": 494,
-    "repository_unit_test_skipped": 6,
+    "repository_unit_test_skipped": 7,
     "ch12_numerical_test_count": 143,
     "strict_knowledge_lint": "PASS_0_ERRORS",
     "knowledge_structure_quality": "PASS_0_ERRORS",
@@ -80,11 +80,12 @@
       "30 source test cases remain NOT_RUN",
       "manifest content checksum is pending"
     ],
-    "live_integration_code_commit": "85348dbf6594564db8eb92ad77eb7f4ac9f1c1cd",
-    "live_integration_run": 45839556952,
-    "live_integration_run_url": "https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952",
-    "live_integration_artifact_id": 15127610627,
-    "live_integration_artifact_sha256": "74b04904535cce72b7a08fdf6265020bcb9086b43003106ab4eb4271847869f2"
+    "live_integration_code_commit": "2ed3927e63ca28a643055835568f7d7a83543323",
+    "live_integration_run": 45840903997,
+    "live_integration_run_url": "https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997",
+    "live_integration_artifact_id": 15128755397,
+    "live_integration_artifact_sha256": "d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8",
+    "latest_live_integration_test_file": "tests/test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py"
   },
-  "notes": "全部30项正式场景目前PROPOSED_NOT_APPROVED / NOT_RUN。驱动映射单测使用fake gateway transport，不等于实时网络集成；5项集成测试需显式启动etcd v3.7.0三节点环境。不得将普通CI中的skip记为PASS。 Default CI Run 45832644686 passed with 499 tests completed (494 passed, 5 live-etcd integration tests skipped), CH12 143 tests and strict knowledge lint and entity checks; separate fixture validator 0 errors/5 existing draft-and-approval warnings; this does not execute any of the 30 formal scenarios or start the cluster. Supporting live smoke evidence was added without changing formal matrix governance: Run 45839556952 used a disposable three-member etcd v3.7.0 cluster and passed 6/6 live tests, including single-member outage, 2/3 quorum linearizable read/write and member restoration. Artifact 15127610627. Formal ASSET-000092 scenario_count=30 remains PROPOSED_NOT_APPROVED / NOT_RUN; smoke tests are not approval or formal scenario execution. Default CI Run 45839557095: 500 tests (494 passed, 6 live tests skipped by default), CH12 143 pass, strict lint 0 errors."
+  "notes": "全部30项正式场景目前PROPOSED_NOT_APPROVED / NOT_RUN。驱动映射单测使用fake gateway transport，不等于实时网络集成；5项集成测试需显式启动etcd v3.7.0三节点环境。不得将普通CI中的skip记为PASS。 Default CI Run 45832644686 passed with 499 tests completed (494 passed, 5 live-etcd integration tests skipped), CH12 143 tests and strict knowledge lint and entity checks; separate fixture validator 0 errors/5 existing draft-and-approval warnings; this does not execute any of the 30 formal scenarios or start the cluster. Supporting live smoke evidence was added without changing formal matrix governance: Run 45839556952 used a disposable three-member etcd v3.7.0 cluster and passed 6/6 live tests, including single-member outage, 2/3 quorum linearizable read/write and member restoration. Artifact 15127610627. Formal ASSET-000092 scenario_count=30 remains PROPOSED_NOT_APPROVED / NOT_RUN; smoke tests are not approval or formal scenario execution. Default CI Run 45839557095: 500 tests (494 passed, 6 live tests skipped by default), CH12 143 pass, strict lint 0 errors. Supporting live integration smoke evidence (not formal matrix execution): Run 45840903997 used a disposable three-member etcd v3.7.0 cluster and passed 7/7 tests, including one-member outage, two-member loss of quorum, fail-closed I/O, quorum restoration and fresh CAS write/readback. Artifact 15128755397. Formal ASSET-000092 scenario_count=30 remains PROPOSED_NOT_APPROVED / NOT_RUN. Default CI Run 45840904137: 501 tests (494 passed, 7 opt-in live tests skipped), CH12 143 pass, strict lint 0 errors."
 }
