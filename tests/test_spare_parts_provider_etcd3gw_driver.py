@@ -149,20 +149,29 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
         self.assertEqual(raw["header"]["revision"], 12)
 
     def test_lease_grant_keepalive_and_revoke_map_gateway_shapes(self):
-        client = self.by_port[23791]
-        client.responses["lease/grant"] = {"ID": "7001", "TTL": "30"}
-        client.responses["lease/keepalive"] = {"result": {"ID": "7001", "TTL": "29"}}
-        client.responses["kv/lease/revoke"] = {}
+        for client in self.by_port.values():
+            client.responses["lease/grant"] = {"ID": "7001", "TTL": "30"}
+            client.responses["lease/keepalive"] = {"result": {"ID": "7001", "TTL": "29"}}
+            client.responses["kv/lease/revoke"] = {}
         store = EtcdV3CoordinatorAuthorityStore(self.driver)
         lease = store.lease_grant(30)
         self.assertEqual((lease.lease_id, lease.ttl_seconds), (7001, 30))
         refreshed = store.lease_keepalive(7001)
         self.assertEqual((refreshed.lease_id, refreshed.ttl_seconds), (7001, 29))
         store.lease_revoke(7001)
-        self.assertEqual(len(client.calls), 3)
-        self.assertTrue(client.calls[0][0].endswith("/v3/lease/grant"))
-        self.assertTrue(client.calls[1][0].endswith("/v3/lease/keepalive"))
-        self.assertTrue(client.calls[2][0].endswith("/v3/kv/lease/revoke"))
+        calls = {
+            port: [url for url, _ in client.calls]
+            for port, client in self.by_port.items()
+        }
+        self.assertEqual(sum(len(urls) for urls in calls.values()), 3)
+        self.assertEqual(
+            [url.rsplit("/v3/", 1)[-1] for url in calls[23791]],
+            ["lease/grant", "kv/lease/revoke"],
+        )
+        self.assertEqual(
+            [url.rsplit("/v3/", 1)[-1] for url in calls[23792]],
+            ["lease/keepalive"],
+        )
 
     def test_read_only_range_fails_over_but_never_weakens_consistency(self):
         first = self.by_port[23791]
