@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000401",
+  "source_type": "other",
+  "title": "etcd failure modes",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.6/op-guide/failures/",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Leader failure and majority failure sections: election delay, in-flight/uncertain uncommitted requests, and quorum loss.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to specify fail-closed behavior under leader transition and loss of majority. No fault injection against a real etcd cluster was performed.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

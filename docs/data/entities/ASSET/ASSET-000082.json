@@ -1,0 +1,69 @@
+{
+  "entity_id": "ASSET-000082",
+  "entity_type": "asset_file",
+  "canonical_name": "备件库存备份 Coordinator 后端一致性契约测试矩阵v1",
+  "english_name": "CNC spare-parts backup Coordinator backend consistency contract test matrix v1",
+  "aliases": [
+    "CoordinatorAuthorityStore conformance matrix",
+    "etcd v3 transaction and lease scenarios",
+    "ASSET-000082"
+  ],
+  "description": "20条合成参考场景，覆盖存储端口、线性一致读、Compare/Txn原子性、多键revision、Lease、LeaderKey fencing、quorum loss、Watch语义、OUTCOME_UNKNOWN、RBAC及Provider CAS；全部未批准/未执行。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "etcd v3",
+    "Linearizability",
+    "Txn",
+    "Lease",
+    "Fencing",
+    "ASSET-000082"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T16:00:00+08:00",
+  "updated_at": "2026-11-26T16:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000397",
+    "SRC-000398",
+    "SRC-000399",
+    "SRC-000400",
+    "SRC-000401"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-backend-conformance-matrix-v1.csv",
+    "file_name": "spare-parts-inventory-backup-provider-coordinator-backend-conformance-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000051",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic backend conformance requirements and distributed failure scenarios",
+    "scenario_count": 20,
+    "approval_status": "PROPOSED_NOT_APPROVED",
+    "execution_status": "NOT_RUN",
+    "synthetic_only": true,
+    "real_etcd_connected": false,
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "20条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI只运行SQLite本地参考适配器和单进程InMemoryEtcdV3Client合成测试；没有真实etcd集群、Raft quorum、多主机、mTLS/RBAC或云Provider证据。"
+}

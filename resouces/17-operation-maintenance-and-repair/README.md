@@ -447,3 +447,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 - 第三十六轮代码/文档同步CI Run 45769331991 / 45769584662均通过；全库283项unittest、CH12 143项数值资源测试通过，strict lint 0 errors/5 warnings，结构质量0 errors。ASSET-000081场景仍全部未批准/未执行；CI自检不等于多主机、云Provider或企业灾备验收。
+
+
+## CH17-T004 Coordinator 后端契约与 etcd v3 适配第三十七轮（2026-11-26）
+
+- `spare-parts-inventory-backup-provider-coordinator-backend-conformance-matrix-v1.csv`（ASSET-000082）：20条合成参考场景，覆盖linearizable Range、Txn Compare/Then/Else、Lease、LeaderKey revision fencing、quorum loss、Watch、OUTCOME_UNKNOWN和Provider CAS；全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- 代码：`scripts/spare_parts_provider_authority_store.py`；测试：`tests/test_spare_parts_provider_authority_store.py`。EtcdV3Client仅为注入式客户端协议，InMemoryEtcdV3Client是单进程测试替身；未连接etcd server。
+- 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-backend-contract-and-etcd-v3.md`；实体KNOW-000051、ASSET-000082；来源SRC-000397～SRC-000401。

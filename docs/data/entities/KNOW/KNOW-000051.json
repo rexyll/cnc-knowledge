@@ -1,0 +1,77 @@
+{
+  "entity_id": "KNOW-000051",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存备份 Coordinator 权威存储后端契约与 etcd v3 适配设计",
+  "english_name": "CNC spare-parts backup Coordinator authority store contract and etcd v3 adapter design",
+  "aliases": [
+    "CoordinatorAuthorityStore",
+    "etcd v3 transactional backend",
+    "linearizable CAS and Leader lease store",
+    "distributed Coordinator backend contract"
+  ],
+  "description": "定义Coordinator应用服务端口与原子存储端口，提供线性一致读、条件Txn、多键原子写和Lease生命周期契约；新增SQLite本地参考适配器与注入式etcd v3 API适配器，明确真实多主机集群尚未接入。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Coordinator权威存储后端与分布式一致性"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "etcd v3",
+    "Linearizability",
+    "Compare-and-Swap",
+    "Transaction",
+    "Lease",
+    "Leader Election",
+    "Quorum",
+    "Fencing"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T16:00:00+08:00",
+  "updated_at": "2026-11-26T16:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000397",
+    "SRC-000398",
+    "SRC-000399",
+    "SRC-000400",
+    "SRC-000401"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-backend-contract-and-etcd-v3.md",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-backend-conformance-matrix-v1.csv",
+    "backend_contract_module": "scripts/spare_parts_provider_authority_store.py",
+    "backend_contract_test": "tests/test_spare_parts_provider_authority_store.py",
+    "application_service_port": "DurableCoordinatorAuthorityBackend",
+    "transactional_store_port": "CoordinatorAuthorityStore",
+    "sqlite_adapter": "SQLiteCoordinatorAuthorityStore",
+    "etcd_adapter": "EtcdV3CoordinatorAuthorityStore",
+    "etcd_driver_port": "EtcdV3Client",
+    "etcd_driver_injected": true,
+    "real_etcd_server_connected": false,
+    "linearizable_reads_required": true,
+    "etcd_serializable_read_for_authority": false,
+    "atomic_compare_then_else_txn": true,
+    "multi_key_transaction": true,
+    "leader_lease_alone_sufficient_for_external_fencing": false,
+    "watch_used_as_authority": false,
+    "sqlite_multi_host_supported": false,
+    "mtls_rbac_integrated": false,
+    "provider_cloud_integrated": false,
+    "distributed_failure_tests_executed": false,
+    "unit_test_file_methods_added": 16
+  },
+  "notes": "第三十七轮建立Coordinator服务端口和底层原子KV/Txn/Lease存储端口，新增SQLite参考适配器及基于EtcdV3Client注入契约的etcd v3适配器。Etcd adapter没有创建真实网络连接；InMemoryEtcdV3Client为单进程API测试替身，不构成Raft/quorum/多主机证据。当前SQLiteDurableCoordinatorAuthority已满足应用服务Protocol，但其业务状态仍直接使用SQLite SQL；领域逻辑尚未重构为通过CoordinatorAuthorityStore执行。真实etcd gRPC/JSON Gateway client、mTLS/RBAC、网络分区和云Provider未集成。ASSET-000082的20条场景均PROPOSED_NOT_APPROVED/NOT_RUN。"
+}

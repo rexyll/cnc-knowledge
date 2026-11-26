@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000397",
+  "source_type": "other",
+  "title": "etcd API guarantees",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.6/learning/api_guarantees/",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "API guarantees sections: atomicity, linearizability, Watch limitations, operation completion and unknown outcomes.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to specify strong reads, watch-not-authority behavior and ambiguous responses after network interruption. Does not certify a customer deployment.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

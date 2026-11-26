@@ -119,3 +119,6 @@
 
 
 - 第三十六轮新增 [Coordinator 持久权威、Leader 切换与故障恢复](spare-parts-inventory-backup-provider-coordinator-durable-authority-and-recovery.md)（KNOW-000050）。代码Run 45769331991、文档同步Run 45769584662均通过；全库283项测试和CH12 143项测试通过。ASSET-000081的16条场景仍未批准/未执行；当前实现仅为同机SQLite WAL参考，不是多主机协调服务。
+
+
+- [Coordinator 权威存储后端契约与 etcd v3 适配设计](spare-parts-inventory-backup-provider-coordinator-backend-contract-and-etcd-v3.md)（KNOW-000051）；定义线性一致Get、CAS多键Txn和Lease端口，提供SQLite参考适配器与注入式etcd v3接口；ASSET-000082包含20条待批准/未执行场景。没有真实etcd多主机集群接入。

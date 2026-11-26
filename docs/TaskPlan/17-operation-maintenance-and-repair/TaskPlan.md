@@ -603,3 +603,16 @@
 - **验证：** 两次最终CI均全库283项unittest、CH12 143项数值资源测试通过；strict knowledge lint PASS（0 errors，5 warnings）；知识结构与数据质量PASS（0 errors）。
 - **资源/覆盖：** 新增KNOW-000050、ASSET-000081（16条参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）；CH17更新为30篇KNOW、83个登记实体、74项资源、15条去重来源。
 - **边界：** 代码只支持同一主机本地SQLite WAL；无多主机分布式共识、远程Coordinator、KMS/HSM、真实云Provider/IAM Gateway或企业灾备验收。生产备份仍关闭，CH17-T004为IN_PROGRESS。
+
+
+## CH17-T004 第三十七轮：Coordinator 后端契约与 etcd v3 一致性适配设计
+
+- **目标：** 在第三十六轮持久Coordinator领域状态机基础上，将应用服务端口与低层原子KV/Txn/Lease端口分离，为多主机强一致后端预留可验证契约。
+- **应用端口：** 新增 `DurableCoordinatorAuthorityBackend` Protocol，描述Leader、activation/revoke、sequence、publish确认、proof签发门禁及恢复接口；现有`SQLiteDurableCoordinatorAuthority`通过结构化Protocol测试。
+- **存储端口：** 新增 `CoordinatorAuthorityStore` Protocol，要求线性一致Get、Compare/Success/Failure原子Txn、多key同一修订写入，以及Lease Grant/KeepAlive/Revoke。
+- **适配器：** 新增`SQLiteCoordinatorAuthorityStore`本地WAL参考适配器；新增`EtcdV3CoordinatorAuthorityStore`，将线性一致Range(serializable=false)、KV Txn Compare与Lease API映射到注入式`EtcdV3Client` driver；新增`InMemoryEtcdV3Client`仅用于单进程合成测试。
+- **关键安全要求：** 每次关键Txn对LeaderKey revision/epoch、scope mod_revision和幂等记录做条件比较；Lease/Lock本身不保证旧进程停止，也不保护外部Provider；Watch只用于通知，权威判断重新线性一致读取；Txn响应丢失必须OUTCOME_UNKNOWN并按原幂等键读回。
+- **测试：** 新增底层跨适配器一致性测试，覆盖KV线性一致读、事务CAS、多key revision、失败分支、并发单赢家、Lease过期/撤销、旧Leader revision compare和Txn响应丢失。
+- **外部依据：** 新增SRC-000397～SRC-000401（etcd官方API guarantees、KV Txn/Lease、Election LeaderKey、Lease/Lock边界、failure modes）。
+- **知识与资源：** KNOW-000051；ASSET-000082（20条多主机/etcd要求场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。
+- **集成边界：** EtcdV3Client是注入式API driver接口，不是已安装/连接的gRPC或JSON Gateway客户端。SQLite领域状态机仍直接使用SQL，尚未重构为通过低层store port执行；etcd层也未做真实服务集成。无mTLS/RBAC、真实quorum/网络分区/多主机及Provider故障演练。

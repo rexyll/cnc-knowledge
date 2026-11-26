@@ -430,3 +430,14 @@
 - **Artifacts：** SQLite admission Coordinator self-check 15093960081；Provider fenced self-check 15093038669；BackupStorageAdapter self-check 15093925222；治理readiness 15093158182；CH12数值资源与SCURVE-01等模拟结果以Run 45769584662 artifacts为准。上述Provider产物并不是新Coordinator authority的云服务或多主机验收证据。
 - **登记：** 新增KNOW-000050、ASSET-000081；矩阵16条均PROPOSED_NOT_APPROVED / NOT_RUN。CH17统计为30篇KNOW、83个登记实体、74项资源、15条去重来源。
 - **限制：** 同机SQLite WAL参考；没有多主机共识服务、远程API、真实KMS/HSM、云对象存储/IAM或企业灾备。生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+
+## CH17-T004 Coordinator后端契约与etcd v3适配设计第三十七轮（2026-11-26）
+
+- **后端抽象：** 新增`DurableCoordinatorAuthorityBackend`应用服务端口与`CoordinatorAuthorityStore`原子KV/Txn/Lease存储端口。前者覆盖Leader、activation/revoke、sequence、publish、proof授权与恢复；后者定义linearizable_get、条件Txn成功/失败分支和Lease grant/keepalive/revoke。
+- **参考适配器：** 新增`scripts/spare_parts_provider_authority_store.py`，包括`SQLiteCoordinatorAuthorityStore`本地WAL适配器、`EtcdV3CoordinatorAuthorityStore`和注入式`EtcdV3Client`协议，以及仅用于单进程测试的`InMemoryEtcdV3Client`。
+- **一致性约束：** etcd权威Range调用serializable=false；token、sequence和Leader ownership通过同一Txn Compare/Success/Failure原子更新；每次敏感写必须比较LeaderKey revision/epoch；lease alone不充分，外部Provider仍需scope token/CAS；Watch不能作为授权读取；Txn超时按OUTCOME_UNKNOWN处理。
+- **新增测试：** 新增跨适配器存储契约测试，覆盖线性一致读参数、条件CAS、事务单revision、多键、失败分支、lease附着与过期/撤销、旧Leader revision隔离、提交响应丢失和服务端口结构符合性。
+- **外部资料：** SRC-000397 API guarantees；SRC-000398 KV Txn/Lease；SRC-000399 Leader election/LeaderKey；SRC-000400 lease/lock不充分性与revision fencing；SRC-000401 quorum/leader failure语义。
+- **新增知识：** KNOW-000051；ASSET-000082定义20条分布式一致性场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **限制：** 实际etcd集群、gRPC/JSON Gateway驱动、mTLS/RBAC、quorum/网络分区/多主机和Provider端到端未接入。SQLite领域服务目前仍SQL专用，仅结构化满足应用服务Protocol；低层etcd适配器尚未成为该业务状态机的正式运行后端。

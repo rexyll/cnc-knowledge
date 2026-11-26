@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000400",
+  "source_type": "other",
+  "title": "etcd versus other key-value stores — Lease and Lock usage notes",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/learning/why/",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Notes on usage of lock and lease: TTL alone does not guarantee mutual exclusion; use revision/lease checks in Txn and fencing for external resources.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to prevent treating a distributed lease/lock as sufficient protection for arbitrary object storage writes.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

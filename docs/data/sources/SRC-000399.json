@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000399",
+  "source_type": "other",
+  "title": "etcd API reference: concurrency and elections",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/dev-guide/api_concurrency_reference_v3/",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Election Campaign, LeaderKey fields (key, creation revision, lease), Proclaim, Observe and Resign.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to define Leader ownership checks against LeaderKey revision and lease. Election response is not treated as permanent ownership.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

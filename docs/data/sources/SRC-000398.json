@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000398",
+  "source_type": "other",
+  "title": "etcd v3 API — KV Transactions and Leases",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/learning/api/",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "KV Transaction Compare/Success/Failure semantics; one revision per atomic transaction; Lease Grant, KeepAlive and Revoke API.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to map backend CAS/multi-key transaction and lease lifecycle to etcd v3 primitives. No real server is connected in this repository.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
