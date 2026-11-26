@@ -971,7 +971,8 @@ class FencingAwareObjectStorageProvider(Protocol):
     supports_fencing: bool
 
     def put_if_absent_fenced(
-        self, key: str, data: bytes, *, fencing_token: int, idempotency_key: str
+        self, key: str, data: bytes, *, fencing_scope: str,
+        fencing_scope: str, fencing_token: int, idempotency_key: str
     ) -> StoredObject: ...
 
 
@@ -979,12 +980,14 @@ class FencingAwareMultipartObjectStorageProvider(Protocol):
     """Every multipart mutation must atomically compare the same resource fence."""
 
     def begin_multipart_upload_fenced(
-        self, key: str, upload_id: str, *, fencing_token: int, idempotency_key: str
+        self, key: str, upload_id: str, *, fencing_scope: str,
+        fencing_token: int, idempotency_key: str
     ) -> None: ...
 
     def put_multipart_part_fenced(
         self, key: str, upload_id: str, part_number: int, data: bytes,
-        expected_sha256: str, *, fencing_token: int, idempotency_key: str
+        expected_sha256: str, *, fencing_scope: str,
+        fencing_token: int, idempotency_key: str
     ) -> MultipartPart: ...
 
     def complete_multipart_upload_fenced(
@@ -1416,7 +1419,11 @@ class MockObjectStorageProvider:
 
 
 class FencedMockObjectStorageProvider(MockObjectStorageProvider):
-    """Synthetic atomic-fencing Provider fixture for adapter integration tests only."""
+    """Synthetic atomic-fencing Provider fixture for adapter integration tests only.
+
+    The fencing scope is the logical backup-package prefix. Payload objects,
+    multipart staging/commit and the final receipt share one monotonic high-water.
+    """
 
     supports_fencing = True
 
@@ -1435,48 +1442,53 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
             raise BackupStorageError("fenced operation requires an idempotency key")
 
     def _fencing_prepare(
-        self, key: str, *, fencing_token: int, idempotency_key: str, operation_sha256: str
+        self, fencing_scope: str, *, fencing_token: int,
+        idempotency_key: str, operation_sha256: str
     ) -> tuple[bool, Any]:
         self._validate_fenced_arguments(fencing_token, idempotency_key)
-        normalized = _safe_key(key)
-        high_water = self._fencing_high_water.get(normalized, 0)
+        scope = _safe_key(fencing_scope)
+        high_water = self._fencing_high_water.get(scope, 0)
         if fencing_token < high_water:
             raise StaleFencingTokenError(
-                f"stale fencing token {fencing_token}; resource high-water is {high_water}"
+                f"stale fencing token {fencing_token}; scope high-water is {high_water}"
             )
-        prior = self._fencing_operations.get((normalized, idempotency_key))
+        prior = self._fencing_operations.get((scope, idempotency_key))
         if prior is not None and prior[0] != operation_sha256:
             raise FencingTokenConflictError("fenced idempotency key was reused with different content")
         if fencing_token == high_water and prior is None:
             raise FencingTokenConflictError(
-                "fencing token was reused for a different resource operation"
+                "fencing token was reused for a different operation in this scope"
             )
         return prior is not None, None if prior is None else prior[1]
 
     def _fencing_commit(
-        self, key: str, *, fencing_token: int, idempotency_key: str,
-        operation_sha256: str, operation: str, result: Any, replayed: bool
+        self, fencing_scope: str, target_key: str, *, fencing_token: int,
+        idempotency_key: str, operation_sha256: str, operation: str,
+        result: Any, replayed: bool
     ) -> Any:
-        normalized = _safe_key(key)
-        self._fencing_high_water[normalized] = max(
-            fencing_token, self._fencing_high_water.get(normalized, 0)
+        scope = _safe_key(fencing_scope)
+        normalized_target = _safe_key(target_key)
+        self._fencing_high_water[scope] = max(
+            fencing_token, self._fencing_high_water.get(scope, 0)
         )
         self._fencing_operations.setdefault(
-            (normalized, idempotency_key), (operation_sha256, result)
+            (scope, idempotency_key), (operation_sha256, result)
         )
         self.fencing_write_log.append({
-            "operation": operation, "resource_key": normalized,
-            "fencing_token": fencing_token, "idempotency_key": idempotency_key,
+            "operation": operation, "resource_key": normalized_target,
+            "fencing_scope": scope, "fencing_token": fencing_token,
+            "idempotency_key": idempotency_key,
             "operation_sha256": operation_sha256, "replayed": replayed,
         })
         return result
 
-    def fencing_high_water(self, resource_key: str) -> int:
+    def fencing_high_water(self, fencing_scope: str) -> int:
         with self._fencing_lock:
-            return self._fencing_high_water.get(_safe_key(resource_key), 0)
+            return self._fencing_high_water.get(_safe_key(fencing_scope), 0)
 
     def put_if_absent_fenced(
-        self, key: str, data: bytes, *, fencing_token: int, idempotency_key: str
+        self, key: str, data: bytes, *, fencing_scope: str,
+        fencing_token: int, idempotency_key: str
     ) -> StoredObject:
         normalized = self._authorize("object:write", key)
         self._maybe_transient("put")
@@ -1485,7 +1497,7 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
         operation_sha = _sha(data)
         with self._fencing_lock:
             replayed, prior_result = self._fencing_prepare(
-                normalized, fencing_token=fencing_token,
+                fencing_scope, fencing_token=fencing_token,
                 idempotency_key=idempotency_key, operation_sha256=operation_sha,
             )
             if replayed:
@@ -1498,9 +1510,7 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
                     raise BackupStorageConflict("immutable object key already contains different bytes")
                 if existing is None:
                     self._successful_puts += 1
-                    version = (
-                        f"mock-v{self._successful_puts:08d}" if self.object_versioning else None
-                    )
+                    version = f"mock-v{self._successful_puts:08d}" if self.object_versioning else None
                     result = _record(normalized, data, version)
                     self._objects[normalized] = result
                     if version is not None:
@@ -1508,9 +1518,9 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
                 else:
                     result = existing
             self._fencing_commit(
-                normalized, fencing_token=fencing_token, idempotency_key=idempotency_key,
-                operation_sha256=operation_sha, operation="put_if_absent_fenced",
-                result=result, replayed=replayed,
+                fencing_scope, normalized, fencing_token=fencing_token,
+                idempotency_key=idempotency_key, operation_sha256=operation_sha,
+                operation="put_if_absent_fenced", result=result, replayed=replayed,
             )
             if (not replayed and self.timeout_after_put_number is not None
                     and self._successful_puts == self.timeout_after_put_number
@@ -1522,15 +1532,16 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
             return result
 
     def begin_multipart_upload_fenced(
-        self, key: str, upload_id: str, *, fencing_token: int, idempotency_key: str
+        self, key: str, upload_id: str, *, fencing_scope: str,
+        fencing_token: int, idempotency_key: str
     ) -> None:
         normalized = self._authorize("multipart:write", key)
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", upload_id or ""):
             raise BackupStorageError("multipart upload ID is invalid")
         operation_sha = _sha(_json_bytes({"upload_id": upload_id}))
         with self._fencing_lock:
-            replayed, prior_result = self._fencing_prepare(
-                normalized, fencing_token=fencing_token,
+            replayed, _ = self._fencing_prepare(
+                fencing_scope, fencing_token=fencing_token,
                 idempotency_key=idempotency_key, operation_sha256=operation_sha,
             )
             if not replayed:
@@ -1538,15 +1549,16 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
                     raise BackupStorageConflict("cannot open a multipart session for a completed object")
                 self._multipart.setdefault((normalized, upload_id), {})
             self._fencing_commit(
-                normalized, fencing_token=fencing_token, idempotency_key=idempotency_key,
-                operation_sha256=operation_sha, operation="begin_multipart_upload_fenced",
-                result=None, replayed=replayed,
+                fencing_scope, normalized, fencing_token=fencing_token,
+                idempotency_key=idempotency_key, operation_sha256=operation_sha,
+                operation="begin_multipart_upload_fenced", result=None, replayed=replayed,
             )
             return None
 
     def put_multipart_part_fenced(
         self, key: str, upload_id: str, part_number: int, data: bytes,
-        expected_sha256: str, *, fencing_token: int, idempotency_key: str
+        expected_sha256: str, *, fencing_scope: str,
+        fencing_token: int, idempotency_key: str
     ) -> MultipartPart:
         normalized = self._authorize("multipart:write", key)
         self._maybe_transient("put_part")
@@ -1563,7 +1575,7 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
         }))
         with self._fencing_lock:
             replayed, prior_result = self._fencing_prepare(
-                normalized, fencing_token=fencing_token,
+                fencing_scope, fencing_token=fencing_token,
                 idempotency_key=idempotency_key, operation_sha256=operation_sha,
             )
             session_key = (normalized, upload_id)
@@ -1583,9 +1595,9 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
                     self._successful_parts += 1
                 result = MultipartPart(part_number, digest, len(data))
             self._fencing_commit(
-                normalized, fencing_token=fencing_token, idempotency_key=idempotency_key,
-                operation_sha256=operation_sha, operation="put_multipart_part_fenced",
-                result=result, replayed=replayed,
+                fencing_scope, normalized, fencing_token=fencing_token,
+                idempotency_key=idempotency_key, operation_sha256=operation_sha,
+                operation="put_multipart_part_fenced", result=result, replayed=replayed,
             )
             if (not replayed and self.timeout_after_part_number is not None
                     and self._successful_parts == self.timeout_after_part_number
@@ -1600,7 +1612,7 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
     def complete_multipart_upload_fenced(
         self, key: str, upload_id: str, *, expected_part_count: int,
         expected_size_bytes: int, expected_sha256: str,
-        fencing_token: int, idempotency_key: str
+        fencing_scope: str, fencing_token: int, idempotency_key: str
     ) -> StoredObject:
         normalized = self._authorize("multipart:write", key)
         self._maybe_transient("complete")
@@ -1610,7 +1622,7 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
         }))
         with self._fencing_lock:
             replayed, prior_result = self._fencing_prepare(
-                normalized, fencing_token=fencing_token,
+                fencing_scope, fencing_token=fencing_token,
                 idempotency_key=idempotency_key, operation_sha256=operation_sha,
             )
             if replayed:
@@ -1630,9 +1642,7 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
                     raise BackupStorageConflict("completed object key contains different bytes")
                 if existing is None:
                     self._successful_puts += 1
-                    version = (
-                        f"mock-v{self._successful_puts:08d}" if self.object_versioning else None
-                    )
+                    version = f"mock-v{self._successful_puts:08d}" if self.object_versioning else None
                     result = _record(normalized, data, version)
                     self._objects[normalized] = result
                     if version is not None:
@@ -1641,9 +1651,9 @@ class FencedMockObjectStorageProvider(MockObjectStorageProvider):
                     result = existing
                 del self._multipart[session_key]
             self._fencing_commit(
-                normalized, fencing_token=fencing_token, idempotency_key=idempotency_key,
-                operation_sha256=operation_sha, operation="complete_multipart_upload_fenced",
-                result=result, replayed=replayed,
+                fencing_scope, normalized, fencing_token=fencing_token,
+                idempotency_key=idempotency_key, operation_sha256=operation_sha,
+                operation="complete_multipart_upload_fenced", result=result, replayed=replayed,
             )
             if not replayed and self.timeout_after_complete_commit and not self._timeout_after_complete_emitted:
                 self._timeout_after_complete_emitted = True
@@ -2057,7 +2067,8 @@ class BackupStorageAdapter:
         return "ch17-fence-" + _sha(_json_bytes(payload))
 
     def _fenced_put(
-        self, *, operation: str, key: str, data: bytes, provider_operation: str
+        self, *, operation: str, key: str, data: bytes, provider_operation: str,
+        fencing_scope: str,
     ) -> StoredObject:
         idempotency_key = self._fencing_idempotency_key(
             operation, key, content_sha256=_sha(data)
@@ -2066,12 +2077,14 @@ class BackupStorageAdapter:
             provider_operation,
             lambda: self.provider.put_if_absent(key, data),
             fenced_callback=lambda lease: self.provider.put_if_absent_fenced(
-                key, data, fencing_token=lease.fencing_token,
-                idempotency_key=idempotency_key,
+                key, data, fencing_scope=fencing_scope,
+                fencing_token=lease.fencing_token, idempotency_key=idempotency_key,
             ),
         )
 
-    def _upload_payload(self, key: str, data: bytes) -> StoredObject:
+    def _upload_payload(
+        self, key: str, data: bytes, *, fencing_scope: str | None = None
+    ) -> StoredObject:
         capabilities = self.provider.capabilities
         multipart_methods = (
             "begin_multipart_upload", "put_multipart_part", "list_multipart_parts",
@@ -2082,6 +2095,7 @@ class BackupStorageAdapter:
                 return self._fenced_put(
                     operation="put_payload", key=key, data=data,
                     provider_operation="put_if_absent",
+                    fencing_scope=fencing_scope or key,
                 )
             return self._provider_call(
                 "put_if_absent", lambda: self.provider.put_if_absent(key, data)
@@ -2098,8 +2112,8 @@ class BackupStorageAdapter:
             lambda: self.provider.begin_multipart_upload(key, upload_id),
             fenced_callback=(
                 (lambda lease: self.provider.begin_multipart_upload_fenced(
-                    key, upload_id, fencing_token=lease.fencing_token,
-                    idempotency_key=begin_idempotency_key,
+                    key, upload_id, fencing_scope=fencing_scope or key,
+                    fencing_token=lease.fencing_token, idempotency_key=begin_idempotency_key,
                 )) if self.require_provider_fencing else None
             ),
         )
@@ -2134,8 +2148,8 @@ class BackupStorageAdapter:
                 fenced_callback=(
                     (lambda lease: self.provider.put_multipart_part_fenced(
                         key, upload_id, number, part, digest,
-                        fencing_token=lease.fencing_token,
-                        idempotency_key=part_idempotency_key,
+                        fencing_scope=fencing_scope or key,
+                        fencing_token=lease.fencing_token, idempotency_key=part_idempotency_key,
                     )) if self.require_provider_fencing else None
                 ),
             )
@@ -2155,8 +2169,8 @@ class BackupStorageAdapter:
                 (lambda lease: self.provider.complete_multipart_upload_fenced(
                     key, upload_id, expected_part_count=len(parts),
                     expected_size_bytes=len(data), expected_sha256=complete_digest,
-                    fencing_token=lease.fencing_token,
-                    idempotency_key=complete_idempotency_key,
+                    fencing_scope=fencing_scope or key,
+                    fencing_token=lease.fencing_token, idempotency_key=complete_idempotency_key,
                 )) if self.require_provider_fencing else None
             ),
         )
@@ -2285,7 +2299,9 @@ class BackupStorageAdapter:
             payload_rows = []
             for name in PAYLOAD_FILES:
                 data = payload_data[name]
-                record = self._upload_payload(payload_keys[name], data)
+                record = self._upload_payload(
+                    payload_keys[name], data, fencing_scope=object_prefix
+                )
                 payload_rows.append({
                     "file_name": name,
                     "object_key": payload_keys[name],
@@ -2307,7 +2323,7 @@ class BackupStorageAdapter:
             if self.require_provider_fencing:
                 receipt_record = self._fenced_put(
                     operation="put_receipt", key=receipt_key, data=receipt_data,
-                    provider_operation="put_receipt",
+                    provider_operation="put_receipt", fencing_scope=object_prefix,
                 )
             else:
                 receipt_record = self._provider_call(

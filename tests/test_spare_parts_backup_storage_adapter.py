@@ -1558,47 +1558,59 @@ class BackupStorageAdapterTests(unittest.TestCase):
                 and entry["resource_key"].endswith(RECEIPT_NAME)
             ]
             self.assertEqual(len(receipt_entries), 1)
+            scopes = {entry["fencing_scope"] for entry in provider.fencing_write_log}
+            self.assertEqual(scopes, {"cnc/ch17/backup-adapter-test-001"})
             self.assertTrue(
-                all(provider.fencing_high_water(entry["resource_key"]) >= entry["fencing_token"]
+                all(provider.fencing_high_water(entry["fencing_scope"]) >= entry["fencing_token"]
                     for entry in provider.fencing_write_log)
             )
 
     def test_provider_fencing_rejects_stale_multipart_part_and_receipt_writer(self):
         provider = FencedMockObjectStorageProvider()
+        scope = "cnc/ch17/backup-package-001"
         provider.begin_multipart_upload_fenced(
-            "cnc/ch17/multipart.bin", "fenced-session",
+            "cnc/ch17/multipart.bin", "fenced-session", fencing_scope=scope,
             fencing_token=10, idempotency_key="begin-10",
         )
         first = b"current-part"
         provider.put_multipart_part_fenced(
             "cnc/ch17/multipart.bin", "fenced-session", 1, first,
-            hashlib.sha256(first).hexdigest(),
+            hashlib.sha256(first).hexdigest(), fencing_scope=scope,
             fencing_token=11, idempotency_key="part-11",
         )
         with self.assertRaises(StaleFencingTokenError):
             provider.put_multipart_part_fenced(
                 "cnc/ch17/multipart.bin", "fenced-session", 1, b"stale-part",
-                __import__("hashlib").sha256(b"stale-part").hexdigest(),
+                hashlib.sha256(b"stale-part").hexdigest(), fencing_scope=scope,
                 fencing_token=9, idempotency_key="stale-part-9",
             )
         completed_bytes = first
         provider.complete_multipart_upload_fenced(
             "cnc/ch17/multipart.bin", "fenced-session", expected_part_count=1,
             expected_size_bytes=len(completed_bytes),
-            expected_sha256=__import__("hashlib").sha256(completed_bytes).hexdigest(),
-            fencing_token=12, idempotency_key="complete-12",
+            expected_sha256=hashlib.sha256(completed_bytes).hexdigest(),
+            fencing_scope=scope, fencing_token=12, idempotency_key="complete-12",
         )
         self.assertEqual(provider.get_object("cnc/ch17/multipart.bin").data, first)
         provider.put_if_absent_fenced(
-            "cnc/ch17/receipt.json", b"new-receipt",
+            "cnc/ch17/receipt.json", b"new-receipt", fencing_scope=scope,
             fencing_token=20, idempotency_key="receipt-20",
         )
         with self.assertRaises(StaleFencingTokenError):
             provider.put_if_absent_fenced(
-                "cnc/ch17/receipt.json", b"old-receipt",
+                "cnc/ch17/receipt.json", b"old-receipt", fencing_scope=scope,
                 fencing_token=19, idempotency_key="receipt-19",
             )
         self.assertEqual(provider.get_object("cnc/ch17/receipt.json").data, b"new-receipt")
+        self.assertEqual(provider.fencing_high_water(scope), 20)
+        # A stale writer must also be denied on a different object key in the same package.
+        with self.assertRaises(StaleFencingTokenError):
+            provider.put_if_absent_fenced(
+                "cnc/ch17/late-object.json", b"late-payload", fencing_scope=scope,
+                fencing_token=18, idempotency_key="late-writer-18",
+            )
+        with self.assertRaises(BackupStorageError):
+            provider.get_object("cnc/ch17/late-object.json")
 
     def test_fenced_multipart_completion_response_loss_replays_with_new_lease_token(self):
         with tempfile.TemporaryDirectory() as tmp:
