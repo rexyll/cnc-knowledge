@@ -781,3 +781,12 @@
 
 - 第二十轮CI：最终实现提交 2b95bca7741efa359bd287ffec16dc9c98f131c7对应Run 45732798249，Knowledge structure and data quality与CH12 numerical resource tests两个Job均success；全库140个unittest通过，Mock Provider self-check与strict knowledge lint均PASS。Artifact ch17-backup-storage-adapter-45732798249（ID 15076314703）。
 - 第二十轮新增13项专项unittest，资源矩阵为12个场景定义；新增KNOW-000034、ASSET-000062/063，CH17统计更新为14篇KNOW、59个实体、56项资源。
+
+
+## CH17-T004 第二十一轮：备份Provider安全与分块可靠性（2026-11-26）
+
+- Provider能力新增身份认证/授权模型、租户隔离、审计边界、multipart和前缀范围只读盘点声明。Mock仅模拟主体/动作/前缀ACL及元数据审计，不使用真实凭据。
+- 新增multipart会话与分块摘要、序号校验、同分块幂等/冲突、确定性upload ID和故障后续传；abort只清理未完成分块会话，不删除完成对象。
+- 新增指定前缀对象元数据盘点和multipart会话盘点，识别未提交对象、已验证包、结构异常包和未完成上传。回收候选为PROPOSED_NOT_APPROVED，禁止自动执行，仍无对象delete接口。
+- 新增KNOW-000035、ASSET-000064～000066。最终代码CI Run 45737732766两个Job成功，全库150个unittest通过，Mock适配器Artifact 15079009952。
+- 无真实云网络/IAM/凭据/KMS/HSM/加密/对象锁/已完成对象删除；不声称现场/企业验收。

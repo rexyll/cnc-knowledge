@@ -339,3 +339,15 @@
 
 - **CI验收：** 最终代码提交 2b95bca7741efa359bd287ffec16dc9c98f131c7 对应Run 45732798249，两个Job均completed/success；全库140个unittest通过。Provider self-check与strict knowledge lint均PASS（0 errors）；Artifact `ch17-backup-storage-adapter-45732798249`，ID 15076314703。
 - **CI修复记录：** 初始Run 45732501248发现对象版本读取/测试篡改样本问题；Run 45732585785修正后140个单测通过，但CI直接执行脚本发现repo import path问题；提交2b95bca7741efa359bd287ffec16dc9c98f131c7补齐ROOT/sys.path后最终CI通过。
+
+
+## 6.28 CH17-T004 备份Provider身份权限、分块续传与孤儿对象治理第二十一轮（2026-11-26）
+
+- **状态：** IN_PROGRESS；仅本地/Mock验证，未接真实对象存储。
+- **知识条目：** KNOW-000035《库存账本备份 Provider 身份权限、分块续传与孤儿回收治理》。
+- **实现扩展：** ProviderCapabilities新增身份认证、授权模型、租户隔离、审计记录、multipart和prefix-scoped inventory能力声明。Mock Provider加入principal/action/prefix ACL、tenant隔离声明和元数据审计轨迹。
+- **分块传输：** 新增MultipartObjectStorageProvider，支持确定性会话ID、分块SHA-256、分块序号验证、同块幂等/冲突、缺块拒绝、汇总长度与摘要校验、断点续传。abort仅作用于未完成上传会话，不删除最终对象。
+- **孤儿盘点：** 新增ScopedInventoryProvider，只在指定前缀返回对象元数据/未完成分块会话。区分未提交对象、已验证包、缺失/异常已发布包和未完成分块会话。回收状态仅PROPOSED_NOT_APPROVED，不提供完成对象delete API或自动回收。
+- **测试：** 新增10个unittest方法；覆盖权限拒绝、审计元数据、租户隔离、multipart续传、分块完整性、abort边界、孤儿分类和prefix权限。
+- **资源：** 新增ASSET-000064～000066，分别为身份权限评估、孤儿回收审批、14条Provider可靠性合成测试矩阵。
+- **生产门禁：** 真实身份系统、MFA/工作负载身份、凭据托管、云审计、服务端版本/一致性、分块限制、保留/法律保全与清理审批均未验证；不执行实际回收。

@@ -79,3 +79,5 @@
 库存备份治理与灾备就绪规范见 [备件库存账本备份治理、RPO/RTO与恢复验收](spare-parts-inventory-backup-governance.md)（KNOW-000033）；包含保留/删除、RPO/RTO、安全密钥、异地存储和10项恢复演练验收条件，企业政策数值均留空待批准。
 
 - [库存账本备份存储适配器契约与Mock验证](spare-parts-inventory-backup-storage-adapter.md)（KNOW-000034）
+
+- [库存账本备份 Provider 身份权限、分块续传与孤儿回收治理](spare-parts-inventory-backup-provider-security-and-resilience.md)（KNOW-000035）

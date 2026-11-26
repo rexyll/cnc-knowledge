@@ -77,3 +77,7 @@
 
 | spare-parts-inventory-backup-storage-provider-capability-matrix-template.csv | CSV能力评估模板 / ASSET-000062 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-storage-adapter.md / KNOW-000034 | 供应商中立的对象存储能力评估空白表；条件创建、版本控制、对象锁、加密、TLS、读后写一致性、区域、SLA和证据均待实测/批准。 |
 | spare-parts-inventory-backup-storage-adapter-test-cases-v1.csv | CSV测试矩阵 / ASSET-000063 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-storage-adapter.md / KNOW-000034 | 12个纯合成场景覆盖Provider条件创建、回执最后提交、失败续传、内容篡改、版本固定、路径安全和隔离恢复；不代表真实云Provider验收。 |
+
+| spare-parts-inventory-backup-provider-identity-access-review-template.csv | CSV空白模板 / ASSET-000064 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-security-and-resilience.md / KNOW-000035 | Provider主体身份、动作与前缀授权、租户隔离、凭据托管、审计和审批评估模板；无默认权限方案。 |
+| spare-parts-inventory-backup-orphan-inventory-reclamation-review-template.csv | CSV空白模板 / ASSET-000065 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-security-and-resilience.md / KNOW-000035 | 未提交对象/分块会话只读盘点和回收审批记录模板；不执行删除，不预设保留期。 |
+| spare-parts-inventory-backup-provider-resilience-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000066 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-security-and-resilience.md / KNOW-000035 | 14项Mock合成测试场景，覆盖最小权限、租户隔离、分块续传、故障恢复和孤儿对象审查；不代表真实云验收。 |

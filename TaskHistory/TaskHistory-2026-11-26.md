@@ -64,3 +64,14 @@
 - **适配器Artifact：** `ch17-backup-storage-adapter-45732798249`，Artifact ID 15076314703。报告显示Mock对象上传、回执发布、完整性验证与隔离恢复PASS；无外部连接、凭据/密钥、网络和删除操作。
 - **CI修复过程：** Run 45732501248发现两项对象版本读取错误和一项无效篡改测试；Run 45732585785修复后140个单测通过，但脚本直接运行时repo import path仍缺失；最终提交2b95bca7741efa359bd287ffec16dc9c98f131c7补齐路径初始化，Run 45732798249全部成功。
 - **统计与边界：** CH17当前14篇KNOW、59个实体、56项资源。13个新增unittest与12条资源场景定义分别统计。无真实云Provider/网络/凭据/KMS/HSM/加密/对象锁/异地复制；CH17-T004保持IN_PROGRESS、business_rule_assertions=NOT_EVALUATED、production_backup_enabled=false。
+
+
+## CH17-T004 备份Provider安全与分块可靠性第二十一轮（2026-11-26）
+
+- **分支：** main；未创建新分支。
+- **代码：** Provider能力声明扩展身份认证、授权模型、租户隔离、审计、multipart和前缀范围盘点。Mock Provider实现principal/action/prefix授权检查、租户命名空间隔离模拟和不含负载的元数据审计。
+- **分块协议：** 新增MultipartObjectStorageProvider，确定性upload ID、分块SHA-256、分块序号/总长度/总摘要校验、重复分块幂等、内容冲突拒绝、断点续传；abort仅清理尚未完成分块会话。
+- **孤儿盘点：** 新增ScopedInventoryProvider前缀范围对象元数据与multipart session盘点，区分UNCOMMITTED_ORPHAN_CANDIDATE、PUBLISHED_VERIFIED、PUBLISHED_PACKAGE_INCOMPLETE_OR_UNEXPECTED_OBJECTS、PUBLISHED_INVALID和未完成分块会话。回收建议只读、PROPOSED_NOT_APPROVED且不可执行；无已完成对象delete API。
+- **测试：** 新增10个unittest方法；全库150个unittest通过。最终CI Run 45737732766两个Job success；strict knowledge lint 0 errors；Provider Artifact `ch17-backup-storage-adapter-45737732766`（ID 15079009952）。
+- **资源：** KNOW-000035、ASSET-000064～000066。身份/权限和孤儿回收模板为空白；14项可靠性测试矩阵全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **未完成：** 未接真实IAM/云账号/凭据/网络；未实现真实加密、KMS/HSM、对象锁、云端审计或已完成对象删除；未批准保留期/回收策略，生产备份保持关闭。

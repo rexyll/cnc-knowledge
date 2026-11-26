@@ -1,0 +1,81 @@
+{
+  "entity_id": "KNOW-000035",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份 Provider 身份权限、分块续传与孤儿回收治理",
+  "english_name": "CNC spare-parts inventory backup provider identity, resumable multipart transfer and orphan governance",
+  "aliases": [
+    "备份Provider安全与权限治理",
+    "备份分块断点续传",
+    "备份孤儿对象只读盘点与回收审批"
+  ],
+  "description": "定义备份Provider主体身份、最小权限、租户隔离和审计边界；实现Mock分块上传续传、分块完整性、前缀范围只读盘点及不可执行的孤儿回收审批候选。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "合成测试夹具"
+  ],
+  "tags": [
+    "CH17",
+    "备份安全",
+    "Provider ACL",
+    "Multipart",
+    "断点续传",
+    "孤儿对象治理",
+    "Mock验证"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T10:30:00+08:00",
+  "updated_at": "2026-11-26T10:30:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-security-and-resilience.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-26",
+    "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "protocols": [
+      "ObjectStorageProvider",
+      "MultipartObjectStorageProvider",
+      "ScopedInventoryProvider"
+    ],
+    "new_capabilities": [
+      "identity_authentication",
+      "authorization_model",
+      "tenant_isolation",
+      "audit_logging",
+      "multipart_upload",
+      "scoped_inventory"
+    ],
+    "authorization_simulation": "MOCK_PRINCIPAL_ACTION_PREFIX_ALLOWLIST",
+    "tenant_isolation_claim": "MOCK_NAMESPACE_ISOLATION_ONLY",
+    "audit_payload_excluded": true,
+    "multipart_resume_supported_in_mock": true,
+    "multipart_part_sha256": true,
+    "session_scoped_abort_only": true,
+    "completed_object_delete_api": false,
+    "inventory_returns_metadata_only": true,
+    "orphan_reclamation_automatic": false,
+    "orphan_approval_status": "PROPOSED_NOT_APPROVED",
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-identity-access-review-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-orphan-inventory-reclamation-review-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-resilience-test-matrix-v1.csv"
+    ],
+    "test_status": "SYNTHETIC_MOCK_ONLY",
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED"
+  },
+  "notes": "身份/动作/前缀授权、租户隔离和审计只在Mock命名空间中模拟；本地Provider仍依赖主机权限。分块续传仅验证合成字节；孤儿盘点仅返回元数据，回收为未批准建议，不存在已完成对象delete API或自动回收。真实IAM/MFA/云审计/版本一致性、保留政策和企业批准均未完成。"
+}

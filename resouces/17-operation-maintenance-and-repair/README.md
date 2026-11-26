@@ -245,3 +245,20 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - Mock只模拟行为和能力声明，不访问网络/云服务，不使用凭据/密钥，不实现真实加密、对象锁或异地耐久存储。
 
 - 专项测试数量：13个unittest方法；ASSET-000063矩阵定义12个测试场景。最终Run 45732798249两个Job成功，全库140个unittest通过，Mock适配器self-check PASS。
+
+
+## CH17-T004 Provider安全与分块可靠性第二十一轮（2026-11-26）
+
+- 新增 `scripts/spare_parts_backup_storage_adapter.py` Provider能力：身份认证/授权模型、租户隔离、审计边界、分块上传和前缀范围只读盘点声明。
+- Mock Provider加入principal/action/prefix ACL模拟与仅记录元数据的审计轨迹；不使用真实IAM/凭据。
+- 增加确定性multipart upload ID、分块SHA-256、序号连续性、同块幂等、冲突拒绝、断点续传和仅清理未完成分块会话的abort边界。
+- 增加prefix-scoped inventory，返回元数据而非对象正文；分类未提交对象、已验证备份、缺失/异常对象和未完成分块会话。回收候选始终PROPOSED_NOT_APPROVED且不可执行；无已完成对象delete API。
+- 新增KNOW-000035及3份资源（ASSET-000064～000066）；全库150个unittest通过，最终CI Run 45737732766两个Job success，适配器Artifact ID 15079009952。
+
+
+## CH17-T004 Provider安全与分块可靠性第二十一轮（2026-11-26）
+
+- 新增 `spare-parts-inventory-backup-provider-identity-access-review-template.csv`（ASSET-000064）：身份、权限、租户、凭据托管与审计审批空白模板。
+- 新增 `spare-parts-inventory-backup-orphan-inventory-reclamation-review-template.csv`（ASSET-000065）：对象/分块只读盘点及受控回收审批记录。
+- 新增 `spare-parts-inventory-backup-provider-resilience-test-matrix-v1.csv`（ASSET-000066）：14条合成测试场景定义，状态PROPOSED_NOT_APPROVED / NOT_RUN。
+- 新增KNOW-000035；新增Provider ACL、Multipart、prefix inventory能力；不实现真实IAM/云凭据、已完成对象删除或自动回收。
