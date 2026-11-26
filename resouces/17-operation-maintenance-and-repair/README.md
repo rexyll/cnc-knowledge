@@ -370,3 +370,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - spare-parts-inventory-backup-provider-sqlite-backup-restore-test-matrix-v1.csv（ASSET-000074）：8条本地SQLite备份/恢复合成场景，覆盖在线一致性快照、损坏拒绝、旧租约失效、等待者清理、外部高水位门禁与禁止覆盖。
 - 两个矩阵的状态均为PROPOSED_NOT_APPROVED / NOT_RUN。内存Sink并非真实Provider；SQLite restore只准备新库，不覆盖原库、不执行切换；生产备份继续关闭。
 - 配套正文：docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-fencing-and-sqlite-recovery.md（KNOW-000043）。
+
+
+## CH17-T004 Provider 适配器 fencing token 贯穿第三十轮（2026-11-26）
+
+- spare-parts-inventory-backup-provider-adapter-fencing-test-matrix-v1.csv（ASSET-000075）：12条严格fencing合成场景，覆盖启动门禁、payload写入、multipart begin/part/complete、receipt-last、同备份包跨key scope和响应丢失幂等重放。
+- 场景全部为PROPOSED_NOT_APPROVED / NOT_RUN。代码单元测试证明本地FencedMock集成，不构成真实Provider/供应商/生产验收。
+- 严格模式启用参数为 BackupStorageAdapter(require_provider_fencing=True)；默认兼容模式不启用下游fencing。配套正文及知识条目：docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-adapter-fencing-integration.md（KNOW-000044）。
