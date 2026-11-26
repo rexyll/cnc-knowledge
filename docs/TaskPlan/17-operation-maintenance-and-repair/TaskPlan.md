@@ -322,3 +322,7 @@
 - **自动校验：** scripts/spare_parts_backup_governance_validator.py 检查五个CSV的schema/行宽/唯一ID、审批状态和APPROVED记录的证据/数值字段；所有恢复演练场景初始PROPOSED_NOT_APPROVED、NOT_RUN。
 - **生产启用门禁：** 企业BIA、保留/法律保全、RPO/RTO、安全评审、供应商/异地副本验证、隔离恢复与业务对账签核全部齐全前，production_backup_enabled=false、governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL。
 - **严格边界：** 未选择供应商/区域、未设默认保留期限或RPO/RTO、未实现KMS/HSM/加密适配器/远端复制；不连接企业系统或生产账户、不保存密钥、不实施真实删除/备份；所有恢复演练矩阵项保持NOT_RUN。
+
+- **最终实现/矩阵修正CI验收：** 提交 9e8e3e0b19d7052b2899515575747f1c0b100834 对应Run 45732010499，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库127个unittest方法通过。新增校验器检查5个CSV schema、10条DRB用例状态和验收定义字段，报告0 errors；strict knowledge lint 0 errors。
+- **治理报告Artifact：** ch17-backup-governance-readiness-45732010499，Artifact ID 15076713318；报告模板文件5个、策略记录0条、批准策略0条、恢复演练10条；governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，production_backup_enabled=false，enterprise_backup_test_status=NOT_RUN。
+- **实施与文档CI：** 实现/初版模板提交 095deffdbf173c70f973d15844033b7a0deeaa7b 对应Run 45731635763两个Job均success；文档/实体同步提交 32fa8aa889350398539945620df7ad418e9e46a5 对应Run 45731937638两个Job均success。
