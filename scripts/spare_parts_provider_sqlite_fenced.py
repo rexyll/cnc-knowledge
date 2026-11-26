@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sqlite3
+import sys
 import tempfile
 import time
 import uuid
@@ -20,6 +21,10 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import quote
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageConflict,
@@ -936,7 +941,7 @@ class SQLiteFencedObjectStorageProvider:
         ) as (c, tenant_id):
             rows = c.execute(
                 """SELECT object_key,upload_id,state,fencing_scope,created_at,updated_at
-                   FROM multipart_sessions WHERE tenant_id=?
+                   FROM multipart_sessions WHERE tenant_id=? AND state='ACTIVE'
                    AND (object_key=? OR object_key LIKE ? ESCAPE '\\')
                    ORDER BY object_key,upload_id""",
                 (tenant_id, normalized, self._like_prefix(normalized)),
@@ -1010,6 +1015,7 @@ class SQLiteFencedObjectStorageProvider:
             source.close()
             source = None
             report = self.validate_backup(staging)
+            os.chmod(staging, 0o600)
             with staging.open("rb") as stream:
                 os.fsync(stream.fileno())
             os.link(staging, destination)
@@ -1160,6 +1166,7 @@ class SQLiteFencedObjectStorageProvider:
             source.close()
             source = None
             validation = self.validate_backup(staging)
+            os.chmod(staging, 0o600)
             with staging.open("rb") as stream:
                 os.fsync(stream.fileno())
             os.link(staging, destination)
