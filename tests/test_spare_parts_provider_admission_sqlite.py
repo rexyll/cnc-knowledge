@@ -125,6 +125,42 @@ class SQLiteProviderAdmissionCoordinatorTests(unittest.TestCase):
             )
         self.assertTrue(coordinator.release(lease))
 
+    def test_online_attestation_status_tracks_active_and_released_lease(self):
+        signer_secret = "online-status-coordinator-signing-secret-32-bytes"
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            self.database_path, **self.policy,
+            attestation_issuer_id="online-status-coordinator",
+            attestation_key_id="online-status-key",
+            attestation_secret=signer_secret,
+        )
+        lease = coordinator.acquire(
+            task=ProviderTaskContext("online-status-task", "tenant-A"),
+            domain="write", owner_id="online-status-owner",
+            lease_ttl_seconds=30, timeout_seconds=0,
+            check_task=lambda _: None, request_id="online-status-1",
+        )
+        claims = {
+            "iss": "online-status-coordinator", "lease_id": lease.lease_id,
+            "owner_id": lease.owner_id, "tenant_id": lease.tenant_id,
+            "domain": lease.domain, "fencing_token": lease.fencing_token,
+            "issued_at": time.time(), "expires_at": lease.expires_at,
+        }
+        self.assertTrue(coordinator.is_attestation_active(claims))
+        self.assertTrue(coordinator.release(lease))
+        self.assertFalse(coordinator.is_attestation_active(claims))
+
+    def test_online_attestation_status_failure_is_explicit(self):
+        signer_secret = "online-status-coordinator-signing-secret-32-bytes"
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            self.database_path, **self.policy,
+            attestation_issuer_id="online-status-coordinator",
+            attestation_key_id="online-status-key",
+            attestation_secret=signer_secret,
+        )
+        coordinator.inject_failure("attestation_status")
+        with self.assertRaises(ProviderCoordinatorUnavailableError):
+            coordinator.is_attestation_active({"lease_id": "synthetic-missing"})
+
     def test_request_idempotency_conflict_and_finalized_key_rejection(self):
         lease = self.acquire()
         self.assertEqual(self.acquire(), lease)

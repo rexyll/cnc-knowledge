@@ -20,9 +20,15 @@ from scripts.spare_parts_backup_storage_adapter import (
     _synthetic_ledger,
 )
 from scripts.spare_parts_inventory_ledger_persistence import create_backup, publish_generation
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from scripts.spare_parts_provider_admission_sqlite import SQLiteProviderAdmissionCoordinator
-from scripts.spare_parts_fencing_attestation import create_fencing_attestation
+from scripts.spare_parts_fencing_attestation import (
+    CallbackEd25519Signer, Ed25519PrivateKeySigner,
+    create_fencing_attestation, verify_fencing_attestation_signature,
+)
 from scripts.spare_parts_provider_sqlite_fenced import (
+    FencingAttestationRejectedError,
+    FencingAttestationStatusUnavailableError,
     SQLiteFencedObjectStorageProvider,
     SQLiteProviderAuthorizationError,
     SQLiteProviderObjectNotFoundError,
@@ -37,6 +43,10 @@ KEY_ID = "ci-key-v2"
 OLD_KEY_ID = "ci-key-v1-retiring"
 ATTESTATION_SECRET = "synthetic-hmac-attestation-secret-32-bytes-minimum"
 OLD_ATTESTATION_SECRET = "synthetic-old-hmac-secret-32-bytes-minimum-value"
+ED_KEY_ID = "ci-ed25519-v1"
+ED_PRIVATE = Ed25519PrivateKey.from_private_bytes(hashlib.sha256(b"CH17 synthetic Ed25519 signer seed").digest())
+ED_SIGNER = Ed25519PrivateKeySigner(key_id=ED_KEY_ID, private_key=ED_PRIVATE)
+ED_PUBLIC = ED_SIGNER.public_key_raw()
 
 
 def _proof(
@@ -124,20 +134,30 @@ def _wrap_test_attestations(provider):
 
 def _new_provider(
     database: Path, *, principal_id: str = "writer-a", secret: str = SECRET_A,
-    fault_hook=None,
+    fault_hook=None, trusted_ed25519_public_keys=None,
+    attestation_status_checker=None, require_online_attestation_status=False,
+    trusted_hmac_keys=None,
 ):
     provider = SQLiteFencedObjectStorageProvider(
         database, principal_id=principal_id, principal_secret=secret,
-        trusted_attestation_keys={
-            KEY_ID: ATTESTATION_SECRET,
-            OLD_KEY_ID: OLD_ATTESTATION_SECRET,
-        },
+        trusted_attestation_keys=(
+            trusted_hmac_keys if trusted_hmac_keys is not None else {
+                KEY_ID: ATTESTATION_SECRET,
+                OLD_KEY_ID: OLD_ATTESTATION_SECRET,
+            }
+        ),
+        trusted_ed25519_public_keys=trusted_ed25519_public_keys,
+        attestation_status_checker=attestation_status_checker,
+        require_online_attestation_status=require_online_attestation_status,
         fault_hook=fault_hook,
     )
     return _wrap_test_attestations(provider)
 
 
-def _provision(path: Path, *, two_tenants: bool = False) -> None:
+def _provision(
+    path: Path, *, two_tenants: bool = False, include_hmac: bool = True,
+    include_ed25519: bool = False,
+) -> None:
     principals = [{
         "principal_id": "writer-a",
         "tenant_id": "tenant-a",
@@ -151,12 +171,21 @@ def _provision(path: Path, *, two_tenants: bool = False) -> None:
             "principal_secret": SECRET_B,
             "allowed_prefixes": ["cnc/ch17"],
         })
+    ed_registry = []
+    if include_ed25519:
+        ed_registry.append({
+            "issuer_id": ISSUER_ID, "key_id": ED_KEY_ID,
+            "algorithm": "ED25519", "status": "ACTIVE",
+            "public_key_sha256": hashlib.sha256(ED_PUBLIC).hexdigest(),
+        })
     SQLiteFencedObjectStorageProvider.provision_database(
         path,
         principals=principals,
-        trusted_attestation_keys=[
-            {"issuer_id": ISSUER_ID, "key_id": KEY_ID, "algorithm": "HMAC-SHA256", "status": "ACTIVE"},
-        ],
+        trusted_attestation_keys=(
+            [{"issuer_id": ISSUER_ID, "key_id": KEY_ID, "algorithm": "HMAC-SHA256", "status": "ACTIVE"}]
+            if include_hmac else []
+        ),
+        trusted_ed25519_keys=ed_registry,
     )
 
 
@@ -600,10 +629,13 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         provider_db = self.base / "adapter-provider.sqlite"
         coordinator_db = self.base / "admission.sqlite"
         _provision(provider_db)
-        provider = _new_provider(provider_db)
         coordinator = SQLiteProviderAdmissionCoordinator(
             coordinator_db, attestation_issuer_id=ISSUER_ID,
             attestation_key_id=KEY_ID, attestation_secret=ATTESTATION_SECRET,
+        )
+        provider = _new_provider(
+            provider_db, attestation_status_checker=coordinator,
+            require_online_attestation_status=True,
         )
         adapter = BackupStorageAdapter(
             provider,
@@ -627,6 +659,110 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         object_rows = provider.list_objects(package_scope)
         self.assertGreaterEqual(len(object_rows), 5)
         self.assertTrue(any(item.key.endswith("BACKUP-RECEIPT.json") for item in object_rows))
+
+    def test_ed25519_coordinator_signer_and_public_key_only_provider(self):
+        database = self.base / "ed25519-provider.sqlite"
+        _provision(database, include_hmac=False, include_ed25519=True)
+        provider = _new_provider(
+            database, trusted_hmac_keys={},
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            self.base / "ed25519-admission.sqlite",
+            attestation_issuer_id=ISSUER_ID,
+            attestation_signer=CallbackEd25519Signer(
+                key_id=ED_KEY_ID, signing_callback=ED_PRIVATE.sign,
+            ),
+        )
+        task = __import__(
+            "scripts.spare_parts_backup_storage_adapter", fromlist=["ProviderTaskContext"]
+        ).ProviderTaskContext("ed25519-task", "tenant-a")
+        lease = coordinator.acquire(
+            task=task, domain="write", owner_id="ed25519-owner",
+            lease_ttl_seconds=30, timeout_seconds=0,
+            check_task=lambda _: None, request_id="ed25519-request",
+        )
+        key = "cnc/ch17/backup-reference-001/ed25519.bin"
+        proof = coordinator.issue_fencing_attestation(
+            lease, fencing_scope=SCOPE, resource_key=key,
+            operation="object:put_if_absent", idempotency_key="ed25519-put",
+        )
+        claims, key_id = verify_fencing_attestation_signature(
+            proof, trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC}
+        )
+        self.assertEqual(key_id, ED_KEY_ID)
+        self.assertEqual(claims["v"], 2)
+        self.assertEqual(claims["alg"], "ED25519")
+        self.assertEqual(claims["lease_id"], lease.lease_id)
+        stored = provider.put_if_absent_fenced(
+            key, b"asymmetric proof", fencing_scope=SCOPE,
+            fencing_token=lease.fencing_token, idempotency_key="ed25519-put",
+            fencing_attestation=proof,
+        )
+        self.assertEqual(stored.data, b"asymmetric proof")
+        self.assertEqual(provider._trusted_attestation_keys, {})
+        with sqlite3.connect(database) as connection:
+            fingerprint = connection.execute(
+                "SELECT public_key_sha256 FROM trusted_ed25519_keys WHERE key_id=?",
+                (ED_KEY_ID,),
+            ).fetchone()[0]
+        self.assertEqual(fingerprint, hashlib.sha256(ED_PUBLIC).hexdigest())
+        self.assertNotIn(ED_PRIVATE.private_bytes_raw(), database.read_bytes())
+
+    def test_online_status_check_rejects_released_lease_and_fails_closed_on_outage(self):
+        database = self.base / "online-provider.sqlite"
+        _provision(database)
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            self.base / "online-admission.sqlite",
+            attestation_issuer_id=ISSUER_ID,
+            attestation_key_id=KEY_ID, attestation_secret=ATTESTATION_SECRET,
+        )
+        provider = _new_provider(
+            database, attestation_status_checker=coordinator,
+            require_online_attestation_status=True,
+        )
+        task = __import__(
+            "scripts.spare_parts_backup_storage_adapter", fromlist=["ProviderTaskContext"]
+        ).ProviderTaskContext("online-check-task", "tenant-a")
+        lease = coordinator.acquire(
+            task=task, domain="write", owner_id="online-check-owner",
+            lease_ttl_seconds=30, timeout_seconds=0,
+            check_task=lambda _: None, request_id="online-check-released",
+        )
+        released_key = "cnc/ch17/backup-reference-001/released.bin"
+        released_proof = coordinator.issue_fencing_attestation(
+            lease, fencing_scope=SCOPE, resource_key=released_key,
+            operation="object:put_if_absent", idempotency_key="released-proof",
+        )
+        self.assertTrue(coordinator.release(lease))
+        with self.assertRaises(FencingAttestationRejectedError):
+            provider.put_if_absent_fenced(
+                released_key, b"released", fencing_scope=SCOPE,
+                fencing_token=lease.fencing_token, idempotency_key="released-proof",
+                fencing_attestation=released_proof,
+            )
+        with self.assertRaises(SQLiteProviderObjectNotFoundError):
+            provider.get_object(released_key)
+
+        active = coordinator.acquire(
+            task=task, domain="write", owner_id="online-check-owner",
+            lease_ttl_seconds=30, timeout_seconds=0,
+            check_task=lambda _: None, request_id="online-check-outage",
+        )
+        outage_key = "cnc/ch17/backup-reference-001/outage.bin"
+        outage_proof = coordinator.issue_fencing_attestation(
+            active, fencing_scope=SCOPE, resource_key=outage_key,
+            operation="object:put_if_absent", idempotency_key="outage-proof",
+        )
+        coordinator.inject_failure("attestation_status")
+        with self.assertRaises(FencingAttestationStatusUnavailableError):
+            provider.put_if_absent_fenced(
+                outage_key, b"outage", fencing_scope=SCOPE,
+                fencing_token=active.fencing_token, idempotency_key="outage-proof",
+                fencing_attestation=outage_proof,
+            )
+        with self.assertRaises(SQLiteProviderObjectNotFoundError):
+            provider.get_object(outage_key)
 
     def test_provider_refuses_legacy_unfenced_write_methods(self):
         with self.assertRaises(FencingNotSupportedError):
