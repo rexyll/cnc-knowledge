@@ -1,0 +1,71 @@
+{
+  "entity_id": "ASSET-000092",
+  "entity_type": "asset_file",
+  "canonical_name": "Coordinator etcd3gw 驱动与三节点集成正式验证矩阵v1",
+  "english_name": "Coordinator etcd3gw driver and three-node etcd integration formal validation matrix v1",
+  "aliases": [
+    "etcd driver integration matrix",
+    "three-node etcd validation",
+    "ASSET-000092"
+  ],
+  "description": "30条待批准和执行的驱动/集成场景，覆盖Endpoint配置、Base64、线性一致Range、Txn compare及未知结果、Lease生命周期、三成员cluster与Watch能力门禁。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "etcd v3",
+    "etcd3gw",
+    "Range",
+    "Txn",
+    "Lease",
+    "Integration",
+    "ASSET-000092"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T22:40:00+08:00",
+  "updated_at": "2026-11-26T22:40:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000408",
+    "SRC-000409"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-etcd-driver-integration-matrix-v1.csv",
+    "file_name": "spare-parts-coordinator-etcd-driver-integration-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000061",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored etcd3gw adapter and three-node integration scenarios",
+    "scenario_count": 30,
+    "approval_status": "PROPOSED_NOT_APPROVED",
+    "execution_status": "NOT_RUN",
+    "synthetic_only": true,
+    "real_etcd_connected": false,
+    "three_node_cluster_started": false,
+    "live_integration_test_methods": 5,
+    "live_integration_status": "NOT_RUN",
+    "code_commit": null,
+    "ci_run": null,
+    "ci_status": "PENDING"
+  },
+  "notes": "全部30项正式场景目前PROPOSED_NOT_APPROVED / NOT_RUN。驱动映射单测使用fake gateway transport，不等于实时网络集成；5项集成测试需显式启动etcd v3.7.0三节点环境。不得将普通CI中的skip记为PASS。"
+}

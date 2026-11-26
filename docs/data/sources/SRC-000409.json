@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000409",
+  "source_type": "other",
+  "title": "Run etcd clusters inside containers — etcd v3.7",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/op-guide/container/",
+  "version": "etcd v3.7.0 official container guide; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Static bootstrap instructions for running an etcd cluster in containers, including a three-node cluster with initial-cluster peer URLs, member names, data directories and cluster token.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to define a disposable local three-member Docker Compose topology. Container configuration is not a production deployment profile; this project has not yet executed the cluster.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

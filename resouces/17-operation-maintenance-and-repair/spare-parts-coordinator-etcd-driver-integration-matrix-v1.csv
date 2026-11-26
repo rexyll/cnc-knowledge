@@ -1,0 +1,30 @@
+scenario_id,category,purpose,precondition,action,expected_result,approval_status,execution_status
+ADAPTER-001,endpoint,valid endpoint parsing,one or more http(s) URLs,construct driver,each endpoint maps to host port protocol and /v3/ API path,PROPOSED_NOT_APPROVED,NOT_RUN
+ADAPTER-002,endpoint,reject URL credentials,endpoint embeds username or password,construct driver,configuration is rejected before network access,PROPOSED_NOT_APPROVED,NOT_RUN
+ADAPTER-003,endpoint,reject unsupported URL components,path query fragment or unsupported scheme supplied,construct driver,configuration is rejected,PROPOSED_NOT_APPROVED,NOT_RUN
+ADAPTER-004,endpoint,multiple endpoint construction,three distinct client URLs supplied,construct driver,one isolated etcd3gw client is created per endpoint,PROPOSED_NOT_APPROVED,NOT_RUN
+RANGE-001,range,binary key encoding,key contains null and non-UTF8 bytes,issue linearizable Range,key is base64 encoded without text transcoding,PROPOSED_NOT_APPROVED,NOT_RUN
+RANGE-002,range,binary value decoding,server returns a non-UTF8 value,decode Range response,value is restored byte-for-byte,PROPOSED_NOT_APPROVED,NOT_RUN
+RANGE-003,range,strong read flag,authority state is read,issue Range,serializable is false,PROPOSED_NOT_APPROVED,NOT_RUN
+RANGE-004,range,prefix range end,prefix and exclusive end are supplied,issue Range with range_end,range_end is base64 encoded and preserved,PROPOSED_NOT_APPROVED,NOT_RUN
+RANGE-005,range,header revision normalization,server returns revision as decimal string,decode response,header revision is normalized to integer,PROPOSED_NOT_APPROVED,NOT_RUN
+RANGE-006,range,entry metadata normalization,KV metadata uses decimal strings,decode response,create_revision mod_revision version and lease are integers,PROPOSED_NOT_APPROVED,NOT_RUN
+RANGE-007,range,single endpoint unavailable,first endpoint times out and second is healthy,issue Range,driver retries read on next endpoint without weakening consistency,PROPOSED_NOT_APPROVED,NOT_RUN
+RANGE-008,range,all endpoints unavailable,all configured endpoints fail transport,issue Range,store returns UNAVAILABLE and never uses cache fallback,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-001,txn,VERSION compare mapping,key VERSION expected 0,issue Compare/Txn Put,gateway receives compare target VERSION and integer expected value,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-002,txn,VALUE compare mapping,key contains binary value,issue Compare,gateway receives base64 VALUE compare operand,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-003,txn,Put mapping with Lease,valid Lease ID supplied,issue transaction Put,key value and Lease ID are mapped to request_put,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-004,txn,DeleteRange mapping,exact key delete is requested,issue transaction DeleteRange,gateway receives request_delete_range,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-005,txn,nested Range response decoding,Txn branch includes response Range,decode transaction response,nested KV bytes and revisions are normalized,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-006,txn,no automatic retry on timeout,gateway receives request but response is lost,force Txn timeout,driver submits only once and store reports OUTCOME_UNKNOWN,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-007,txn,read-back after unknown outcome,Txn outcome is unknown,read using original identity and idempotency key,caller reconciles exact business state before deciding next action,PROPOSED_NOT_APPROVED,NOT_RUN
+LEASE-001,lease,LeaseGrant mapping,positive TTL supplied,grant Lease,Lease ID and TTL are normalized,PROPOSED_NOT_APPROVED,NOT_RUN
+LEASE-002,lease,Lease attachment,active Lease ID supplied,put key with Lease,key metadata reports the attached Lease,PROPOSED_NOT_APPROVED,NOT_RUN
+LEASE-003,lease,LeaseKeepAlive mapping,Lease remains active,send synchronous KeepAlive,same Lease ID receives positive TTL,PROPOSED_NOT_APPROVED,NOT_RUN
+LEASE-004,lease,LeaseRevoke mapping,Lease has attached key,revoke Lease,attached key is deleted by etcd semantics,PROPOSED_NOT_APPROVED,NOT_RUN
+LEASE-005,lease,Lease response loss,Grant or Revoke reply is lost,simulate transport interruption,outcome is not guessed and write is not blindly retried,PROPOSED_NOT_APPROVED,NOT_RUN
+CLUSTER-001,cluster,three-member static bootstrap,three isolated member services and volumes,start Compose cluster,member list contains exactly three members,PROPOSED_NOT_APPROVED,NOT_RUN
+CLUSTER-002,cluster,one member outage,one of three members is stopped,use remaining two members,majority remains available and test traffic avoids stopped endpoint,PROPOSED_NOT_APPROVED,NOT_RUN
+CLUSTER-003,cluster,no majority boundary,two of three members are stopped,attempt linearizable operation,no successful linearizable result is asserted without quorum,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-001,watch,Watch capability boundary,etcd3gw high-level event iterator is selected,inspect driver surface,normalized watch and watch_progress remain unavailable,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-002,watch,full response envelope gate,created canceled compaction fragment and header metadata required,review Watch adapter evidence,do not enable cursor/recovery until complete envelope is preserved and live-tested,PROPOSED_NOT_APPROVED,NOT_RUN

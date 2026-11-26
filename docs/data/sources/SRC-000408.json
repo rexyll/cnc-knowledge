@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000408",
+  "source_type": "other",
+  "title": "etcd3gw Python Client — v3 gRPC-gateway API and release 2.7.0",
+  "publisher": "OpenStack Project / Python Package Index",
+  "author": null,
+  "url": "https://pypi.org/project/etcd3gw/",
+  "version": "etcd3gw 2.7.0; PyPI release 2026-06-09; source mirror https://github.com/openstack/etcd3gw and canonical source https://opendev.org/openstack/etcd3gw/; accessed 2026-11-26.",
+  "published_on": "2026-06-09",
+  "accessed_on": "2026-11-26",
+  "locator": "Python HTTP client for etcd v3 gRPC-gateway. API exposes Range, Txn, Lease Grant/KeepAlive/Revoke and Watch event iteration. Current watch stream parser suppresses created responses and dispatches events rather than returning the complete WatchResponse envelope required for compact-revision, cancel and fragment cursor handling.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used as a third-party OpenStack-maintained Python client, pinned to 2.7.0 for the optional integration extra. This project maps Range/Txn/Lease only and intentionally does not advertise normalized Watch. No claims of etcd-io official Python SDK status.",
+  "authority_tier": "B",
+  "evidence_kind": "official_documentation"
+}
