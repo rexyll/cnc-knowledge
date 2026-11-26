@@ -323,3 +323,15 @@
 - **Artifacts：** SQLite fenced Provider Artifact ID 15087855945；SQLite admission coordinator Artifact ID 15087626678；Provider adapter Artifact ID 15087721263；backup governance readiness Artifact ID 15087875780。
 - **覆盖登记：** CH17当前25篇KNOW、75个登记实体、69项资源；ASSET-000076的22条正式参考场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **限制：** SQLite fenced Provider仅同主机本地文件/多进程参考实现；没有真实云/多主机Provider。Provider尚未验证Coordinator token来源的scope-bound HMAC/signature attestation，持有效本地主体凭据的调用方仍可构造高token；生产化前必须补该证明。生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## CH17-T004 Coordinator scope-bound fencing attestation与Provider key rotation第三十二轮
+
+- **代码：** 新增scripts/spare_parts_fencing_attestation.py；SQLite Coordinator支持配置issuer/key ID/HMAC-SHA256 secret，默认15秒proof TTL（最大60秒）。签发前在BEGIN IMMEDIATE事务内复查lease ACTIVE、owner/tenant/domain/token/lease id和未过期；claims固定15项并绑定scope/resource/operation/idempotency。
+- **Adapter：** require_provider_fencing路径为payload PUT、multipart begin/part/complete和receipt-last分别签发proof，并将proof与token一起传入Provider。每个新mutation获取独立lease proof，重试保持逻辑幂等键。
+- **Provider：** SQLiteFencedObjectStorageProvider.requires_fencing_attestation=True，拒绝无proof调用；验证HMAC签名、版本/kid、tenant/scope/resource/token/domain/operation/idempotency/lease identity及过期时间；事务内重新查trusted_fencing_keys。增加本地admin_register_trusted_attestation_key和admin_set_trusted_attestation_key_status，状态ACTIVE/RETIRING/REVOKED，REVOKED终态，secret只作运行时注入。
+- **测试：** Coordinator新增活动/释放lease签发和scope越界测试；Provider新增proof缺失/篡改/租户scope资源幂等绑定/过期proof/密钥轮换测试；Strict Adapter端到端用例验证payload/multipart/receipt proof贯穿。新增KNOW-000046和ASSET-000077（20条场景，均PROPOSED_NOT_APPROVED / NOT_RUN）。
+- **中间失败与修复：** Run 45757441125/45757533020/45757637752/45757786191在逐步接入时暴露fixture缺少key ring、coordinator attestations_issued metadata未初始化、fault_hook漏传及self-check重新打开Provider时漏传key ring等问题，已在后续提交修复；最终代码提交f4c26e61由Run 45758028329完整验收。
+- **最终代码CI：** [Run 45758028329](https://github.com/rexyll/cnc-knowledge/actions/runs/45758028329)，两个必需Job均success；全库248项unittest、CH12 143项通过；strict lint PASS（0 errors，5 warnings）；Provider self-check PASS。Artifacts：Provider fenced 15087973420；Coordinator 15087604559；Adapter 15087868629。
+- **资源：** 新增KNOW-000046、ASSET-000077（20条proof/rotation形式化参考场景），更新KNOW-000045，CH17统计更新为26篇KNOW、76个登记实体、70项资源。
+- **剩余限制：** HMAC密钥同时注入Coordinator及本地Provider进程；不能把Python Provider暴露给不可信租户/插件。proof签发后lease release不会即时撤销，默认proof最多仍可活15秒。admin key registry API依赖本地DB文件owner权限。生产远端Provider需非对称签名（Coordinator/KMS私钥、Provider公钥）、在线撤销、时钟同步和真实网络测试；SQLite仍仅同主机本地文件。生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL。

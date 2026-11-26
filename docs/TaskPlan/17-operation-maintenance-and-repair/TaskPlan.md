@@ -511,3 +511,15 @@
 - **测试：** 新增20项Provider专项unittest，覆盖错误凭据、ACL、租户隔离、scope路径、陈旧token、幂等/冲突、事务rollback、响应丢失、multipart、多进程竞争、备份恢复及严格适配器端到端发布。ASSET-000076定义22条形式化参考验收场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **验收：** [Run 45755448153](https://github.com/rexyll/cnc-knowledge/actions/runs/45755448153)两个必需Job均success；全库241项unittest、CH12 143项通过；strict lint 0 errors（5 warnings）；SQLite fenced Provider self-check PASS（Artifact 15087184041）。
 - **剩余安全门禁：** Provider目前不验证token由可信Coordinator签发，持有效本地主体凭据的调用者仍能构造异常大token；生产化前必须增加tenant+scope+token+lease绑定的HMAC/签名attestation。SQLite仅同主机本地文件，不支持NFS/SMB/多主机；真实云/生产Provider未集成；生产备份继续关闭，CH17-T004仍IN_PROGRESS。
+
+
+## CH17-T004 第三十二轮：Coordinator签名证明、Provider强制验签与密钥轮换
+
+- **目标：** 让Provider验证fencing token确实由可信Coordinator在活动lease下签发，并绑定租户、scope、resource、operation和幂等请求。
+- **签发：** 新增scripts/spare_parts_fencing_attestation.py。SQLite Coordinator签发前在BEGIN IMMEDIATE事务中复查lease ACTIVE、过期时间和owner/tenant/domain/token/lease ID；默认证明TTL 15秒，Coordinator配置上限60秒。
+- **Claims：** 固定15项claims：v、iss、kid、lease_id、owner_id、tenant_id、domain、fencing_token、issued_at、expires_at、lease_expires_at、fencing_scope、resource_key、operation、idempotency_key；使用规范化JSON和HMAC-SHA256。
+- **适配器：** BackupStorageAdapter对每次payload、multipart begin/part/complete和receipt-last写入获取当前lease proof并传入Provider；每次重试获取新lease/proof，保持逻辑idempotency key不变。
+- **Provider：** SQLite Provider强制fencing_attestation，校验签名和全部claims，并在写事务内复查trusted_fencing_keys。新增本地admin key registry API，支持ACTIVE/RETIRING/REVOKED，REVOKED不可逆；secret只在运行时注入，不写入SQLite。
+- **测试/资产：** Coordinator及Provider增加签名、lease释放、scope、tenant、resource、operation、idempotency、过期proof、key rotation覆盖。新增KNOW-000046和ASSET-000077，20条正式参考验收场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **验收：** [CI Run 45758028329](https://github.com/rexyll/cnc-knowledge/actions/runs/45758028329)两个必需Job completed/success；全库248项unittest、CH12 143项通过；strict lint 0 errors（5 warnings）；Provider fenced self-check PASS（Artifact 15087973420），Admission Artifact 15087604559，Adapter Artifact 15087868629。
+- **限制：** 当前是本机HMAC共享secret参考方案，Provider进程持有verify secret，不是公钥验签；已签proof在lease release后仍可生存至expires_at，默认最大15秒。admin key API依赖本地数据库文件owner权限。生产远端Provider应改为Coordinator/KMS私钥、Provider公钥的非对称签名，并实现在线撤销、时钟同步、TLS/KMS/HSM；真实网络/多主机Provider未接入。生产备份继续关闭，CH17-T004仍IN_PROGRESS。
