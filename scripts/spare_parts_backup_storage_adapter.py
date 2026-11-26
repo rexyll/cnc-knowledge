@@ -77,6 +77,20 @@ class ProviderTaskDeadlineExceededError(BackupStorageError):
     """A backup task deadline elapsed before another provider step."""
 
 
+class ProviderRateLimitExceededError(BackupStorageError):
+    """A shared coordinator token bucket has no request token available."""
+
+    def __init__(self, message: str, *, retry_after_seconds: float):
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
+
+
+class ProviderAdmissionLeaseLostError(BackupStorageError):
+    """A provider operation returned after its shared admission lease expired."""
+
+    outcome_unknown = True
+
+
 class RetryBudget:
     """Thread-safe retry allowance scoped to one top-level backup operation."""
 
@@ -243,6 +257,331 @@ class ProviderFairBulkhead:
                 "waiting_by_tenant": {
                     tenant: sum(1 for item in self._waiters if item.task.tenant_id == tenant)
                     for tenant in tenants
+                },
+            }
+
+
+
+@dataclass(frozen=True)
+class ProviderAdmissionLease:
+    """Fenced, expiring admission reservation issued by a shared coordinator."""
+
+    lease_id: str
+    owner_id: str
+    tenant_id: str
+    domain: str
+    fencing_token: int
+    expires_at: float
+
+
+@dataclass(frozen=True)
+class _CoordinatorWaiter:
+    sequence: int
+    task: ProviderTaskContext
+    domain: str
+    queued_at: float
+
+
+class ProviderAdmissionCoordinator(Protocol):
+    """Atomic shared admission contract; implementations own cross-instance state."""
+
+    def acquire(
+        self,
+        *,
+        task: ProviderTaskContext,
+        domain: str,
+        owner_id: str,
+        lease_ttl_seconds: float,
+        timeout_seconds: float,
+        check_task: Callable[[ProviderTaskContext], None],
+    ) -> ProviderAdmissionLease: ...
+
+    def renew(self, lease: ProviderAdmissionLease, *, lease_ttl_seconds: float) -> ProviderAdmissionLease | None: ...
+
+    def release(self, lease: ProviderAdmissionLease) -> bool: ...
+
+    def validate(self, lease: ProviderAdmissionLease) -> bool: ...
+
+    def snapshot(self) -> dict[str, Any]: ...
+
+
+class InMemoryProviderAdmissionCoordinator:
+    """Thread-safe shared coordinator for deterministic same-process tests only.
+
+    Share one instance between BackupStorageAdapter instances to simulate a
+    common provider-account admission service. This class is not process-shared,
+    durable, networked, or suitable as a production distributed coordinator.
+    """
+
+    DOMAINS = ("read", "write", "multipart", "inventory")
+
+    def __init__(
+        self,
+        *,
+        global_limits: dict[str, int] | None = None,
+        tenant_limits: dict[str, dict[str, int]] | None = None,
+        rate_limits_per_second: dict[str, float] | None = None,
+        rate_bursts: dict[str, int] | None = None,
+        aging_interval_seconds: float = 1.0,
+        clock_fn: Callable[[], float] = time.monotonic,
+    ):
+        limits = {"read": 4, "write": 2, "multipart": 2, "inventory": 1}
+        if global_limits is not None:
+            unknown = set(global_limits) - set(limits)
+            if unknown or any(
+                not isinstance(v, int) or isinstance(v, bool) or v < 1
+                for v in global_limits.values()
+            ):
+                raise BackupStorageError("shared global limits must be positive integers for known domains")
+            limits.update(global_limits)
+        if not math.isfinite(aging_interval_seconds) or aging_interval_seconds <= 0:
+            raise BackupStorageError("shared coordinator aging interval must be finite and positive")
+        tenants = {tenant: dict(domain_limits) for tenant, domain_limits in (tenant_limits or {}).items()}
+        for tenant, domain_limits in tenants.items():
+            if not isinstance(tenant, str) or not tenant.strip():
+                raise BackupStorageError("shared tenant limit requires a nonblank tenant ID")
+            if set(domain_limits) - set(limits) or any(
+                not isinstance(v, int) or isinstance(v, bool) or v < 1
+                for v in domain_limits.values()
+            ):
+                raise BackupStorageError("shared tenant limits must be positive integers for known domains")
+        rates = dict(rate_limits_per_second or {})
+        bursts = dict(rate_bursts or {})
+        if set(rates) - set(limits) or set(bursts) - set(limits):
+            raise BackupStorageError("shared rate limits reference an unknown provider domain")
+        if any(
+            not isinstance(rate, (int, float)) or isinstance(rate, bool)
+            or not math.isfinite(rate) or rate <= 0
+            for rate in rates.values()
+        ):
+            raise BackupStorageError("shared request rates must be finite and positive")
+        if any(
+            not isinstance(burst, int) or isinstance(burst, bool) or burst < 1
+            for burst in bursts.values()
+        ):
+            raise BackupStorageError("shared rate bursts must be positive integers")
+        if set(bursts) - set(rates):
+            raise BackupStorageError("a rate burst cannot be configured without a rate")
+        self.global_limits = limits
+        self.tenant_limits = tenants
+        self.rate_limits_per_second = rates
+        self.rate_bursts = {
+            domain: bursts.get(domain, 1) for domain in rates
+        }
+        self.aging_interval_seconds = float(aging_interval_seconds)
+        self.clock_fn = clock_fn
+        self._condition = threading.Condition()
+        self._leases: dict[str, ProviderAdmissionLease] = {}
+        self._waiters: list[_CoordinatorWaiter] = []
+        self._next_sequence = 0
+        self._next_lease = 0
+        self._next_fencing_token = 0
+        self._rate_buckets = {
+            domain: {"tokens": float(self.rate_bursts[domain]), "updated_at": self.clock_fn()}
+            for domain in self.rate_limits_per_second
+        }
+        self._expired_lease_count = 0
+        self._issued_lease_count = 0
+        self._rejected_capacity_count = 0
+        self._rate_limited_count = 0
+
+    def _expire_locked(self, now: float) -> None:
+        expired = [
+            lease_id for lease_id, lease in self._leases.items()
+            if lease.expires_at <= now
+        ]
+        for lease_id in expired:
+            del self._leases[lease_id]
+        self._expired_lease_count += len(expired)
+        if expired:
+            self._condition.notify_all()
+
+    def _active_count_locked(self, domain: str) -> int:
+        return sum(lease.domain == domain for lease in self._leases.values())
+
+    def _tenant_active_locked(self, tenant_id: str, domain: str) -> int:
+        return sum(
+            lease.tenant_id == tenant_id and lease.domain == domain
+            for lease in self._leases.values()
+        )
+
+    def _tenant_limit(self, tenant_id: str, domain: str) -> int:
+        return self.tenant_limits.get(tenant_id, {}).get(domain, self.global_limits[domain])
+
+    def _eligible_waiters_locked(self, domain: str) -> list[_CoordinatorWaiter]:
+        return [
+            waiter for waiter in self._waiters
+            if waiter.domain == domain
+            and self._tenant_active_locked(waiter.task.tenant_id, domain)
+                < self._tenant_limit(waiter.task.tenant_id, domain)
+        ]
+
+    def _select_waiter_locked(self, domain: str, now: float) -> _CoordinatorWaiter | None:
+        eligible = self._eligible_waiters_locked(domain)
+        if not eligible:
+            return None
+        return max(
+            eligible,
+            key=lambda waiter: (
+                waiter.task.priority + (now - waiter.queued_at) / self.aging_interval_seconds,
+                -waiter.sequence,
+            ),
+        )
+
+    def _rate_delay_locked(self, domain: str, now: float, *, consume: bool) -> float:
+        if domain not in self.rate_limits_per_second:
+            return 0.0
+        bucket = self._rate_buckets[domain]
+        rate = self.rate_limits_per_second[domain]
+        burst = self.rate_bursts[domain]
+        elapsed = max(0.0, now - bucket["updated_at"])
+        bucket["tokens"] = min(float(burst), bucket["tokens"] + elapsed * rate)
+        bucket["updated_at"] = now
+        if bucket["tokens"] >= 1.0:
+            if consume:
+                bucket["tokens"] -= 1.0
+            return 0.0
+        return (1.0 - bucket["tokens"]) / rate
+
+    def acquire(
+        self,
+        *,
+        task: ProviderTaskContext,
+        domain: str,
+        owner_id: str,
+        lease_ttl_seconds: float,
+        timeout_seconds: float,
+        check_task: Callable[[ProviderTaskContext], None],
+    ) -> ProviderAdmissionLease:
+        if domain not in self.global_limits:
+            raise BackupStorageError("unknown shared coordinator domain")
+        if not isinstance(owner_id, str) or not owner_id.strip():
+            raise BackupStorageError("shared coordinator owner ID is required")
+        if not math.isfinite(lease_ttl_seconds) or lease_ttl_seconds <= 0:
+            raise BackupStorageError("shared coordinator lease TTL must be finite and positive")
+        started = time.monotonic()
+        with self._condition:
+            self._next_sequence += 1
+            waiter = _CoordinatorWaiter(self._next_sequence, task, domain, self.clock_fn())
+            self._waiters.append(waiter)
+            try:
+                while True:
+                    check_task(task)
+                    now = self.clock_fn()
+                    self._expire_locked(now)
+                    active = self._active_count_locked(domain)
+                    tenant_active = self._tenant_active_locked(task.tenant_id, domain)
+                    selected = self._select_waiter_locked(domain, now)
+                    rate_delay = self._rate_delay_locked(domain, now, consume=False)
+                    if (
+                        active < self.global_limits[domain]
+                        and tenant_active < self._tenant_limit(task.tenant_id, domain)
+                        and selected is waiter
+                        and rate_delay <= 0
+                    ):
+                        self._rate_delay_locked(domain, now, consume=True)
+                        self._waiters.remove(waiter)
+                        self._next_lease += 1
+                        self._next_fencing_token += 1
+                        lease = ProviderAdmissionLease(
+                            lease_id=f"shared-lease-{self._next_lease}",
+                            owner_id=owner_id,
+                            tenant_id=task.tenant_id,
+                            domain=domain,
+                            fencing_token=self._next_fencing_token,
+                            expires_at=now + lease_ttl_seconds,
+                        )
+                        self._leases[lease.lease_id] = lease
+                        self._issued_lease_count += 1
+                        self._condition.notify_all()
+                        return lease
+                    remaining = timeout_seconds - (time.monotonic() - started)
+                    if remaining <= 0:
+                        if rate_delay > 0:
+                            self._rate_limited_count += 1
+                            raise ProviderRateLimitExceededError(
+                                f"shared {domain} request rate limit is exhausted",
+                                retry_after_seconds=rate_delay,
+                            )
+                        self._rejected_capacity_count += 1
+                        raise ProviderBulkheadFullError(
+                            f"shared {domain} concurrency or tenant quota is full"
+                        )
+                    wait_for = min(remaining, 0.05)
+                    if rate_delay > 0:
+                        wait_for = min(wait_for, rate_delay)
+                    self._condition.wait(timeout=max(0.001, wait_for))
+            except Exception:
+                if waiter in self._waiters:
+                    self._waiters.remove(waiter)
+                    self._condition.notify_all()
+                raise
+
+    def renew(
+        self,
+        lease: ProviderAdmissionLease,
+        *,
+        lease_ttl_seconds: float,
+    ) -> ProviderAdmissionLease | None:
+        if not math.isfinite(lease_ttl_seconds) or lease_ttl_seconds <= 0:
+            raise BackupStorageError("shared coordinator lease TTL must be finite and positive")
+        with self._condition:
+            now = self.clock_fn()
+            self._expire_locked(now)
+            current = self._leases.get(lease.lease_id)
+            if current != lease:
+                return None
+            renewed = ProviderAdmissionLease(
+                lease_id=lease.lease_id,
+                owner_id=lease.owner_id,
+                tenant_id=lease.tenant_id,
+                domain=lease.domain,
+                fencing_token=lease.fencing_token,
+                expires_at=now + lease_ttl_seconds,
+            )
+            self._leases[lease.lease_id] = renewed
+            return renewed
+
+    def release(self, lease: ProviderAdmissionLease) -> bool:
+        with self._condition:
+            self._expire_locked(self.clock_fn())
+            current = self._leases.get(lease.lease_id)
+            if current != lease:
+                return False
+            del self._leases[lease.lease_id]
+            self._condition.notify_all()
+            return True
+
+    def validate(self, lease: ProviderAdmissionLease) -> bool:
+        with self._condition:
+            self._expire_locked(self.clock_fn())
+            return self._leases.get(lease.lease_id) == lease
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._condition:
+            self._expire_locked(self.clock_fn())
+            return {
+                "global_limits": dict(self.global_limits),
+                "active_by_domain": {
+                    domain: self._active_count_locked(domain) for domain in self.global_limits
+                },
+                "active_by_tenant_domain": {
+                    f"{tenant}|{domain}": self._tenant_active_locked(tenant, domain)
+                    for tenant in sorted({lease.tenant_id for lease in self._leases.values()})
+                    for domain in self.global_limits
+                    if self._tenant_active_locked(tenant, domain)
+                },
+                "waiting_by_domain": {
+                    domain: sum(1 for waiter in self._waiters if waiter.domain == domain)
+                    for domain in self.global_limits
+                },
+                "expired_leases": self._expired_lease_count,
+                "issued_leases": self._issued_lease_count,
+                "rejected_capacity": self._rejected_capacity_count,
+                "rate_limited": self._rate_limited_count,
+                "rate_tokens": {
+                    domain: self._rate_delay_locked(domain, self.clock_fn(), consume=False) == 0
+                    for domain in self.rate_limits_per_second
                 },
             }
 
@@ -853,6 +1192,9 @@ class BackupStorageAdapter:
         tenant_bulkhead_limits: dict[str, int] | None = None,
         tenant_bulkhead_default_limit: int | None = None,
         priority_aging_interval_seconds: float = 1.0,
+        admission_coordinator: ProviderAdmissionCoordinator | None = None,
+        coordinator_owner_id: str | None = None,
+        coordinator_lease_ttl_seconds: float = 60.0,
         sleep_fn: Callable[[float], None] = time.sleep,
         clock_fn: Callable[[], float] = time.monotonic,
     ):
@@ -866,6 +1208,12 @@ class BackupStorageAdapter:
             raise BackupStorageError("bulkhead wait timeout must be finite")
         if not math.isfinite(priority_aging_interval_seconds) or priority_aging_interval_seconds <= 0:
             raise BackupStorageError("priority aging interval must be finite and positive")
+        if not math.isfinite(coordinator_lease_ttl_seconds) or coordinator_lease_ttl_seconds <= 0:
+            raise BackupStorageError("coordinator lease TTL must be finite and positive")
+        if coordinator_owner_id is not None and (
+            not isinstance(coordinator_owner_id, str) or not coordinator_owner_id.strip()
+        ):
+            raise BackupStorageError("coordinator owner ID must be nonblank")
         tenant_limits = dict(tenant_bulkhead_limits or {})
         if any(
             not isinstance(tenant, str) or not tenant.strip()
@@ -924,6 +1272,17 @@ class BackupStorageAdapter:
         self._tenant_bulkhead_limits = tenant_limits
         self._tenant_bulkhead_default_limit = tenant_bulkhead_default_limit
         self.priority_aging_interval_seconds = priority_aging_interval_seconds
+        self.admission_coordinator = admission_coordinator
+        self.coordinator_owner_id = (
+            coordinator_owner_id.strip() if coordinator_owner_id is not None else f"adapter-{id(self)}"
+        )
+        self.coordinator_lease_ttl_seconds = coordinator_lease_ttl_seconds
+
+    def coordinator_snapshot(self) -> dict[str, Any] | None:
+        """Return shared admission diagnostics when a coordinator is configured."""
+        if self.admission_coordinator is None:
+            return None
+        return self.admission_coordinator.snapshot()
 
     @contextmanager
     def task_context(
@@ -1017,15 +1376,34 @@ class BackupStorageAdapter:
     def _bulkhead_slot(self, domain: str):
         task = self._current_task_context()
         bulkhead = self._bulkheads[domain]
-        bulkhead.acquire(
-            task,
-            timeout_seconds=self.bulkhead_acquire_timeout_seconds,
-            check_task=self._check_task_context,
-        )
+        local_acquired = False
+        lease = None
         try:
+            bulkhead.acquire(
+                task,
+                timeout_seconds=self.bulkhead_acquire_timeout_seconds,
+                check_task=self._check_task_context,
+            )
+            local_acquired = True
+            if self.admission_coordinator is not None:
+                lease = self.admission_coordinator.acquire(
+                    task=task,
+                    domain=domain,
+                    owner_id=self.coordinator_owner_id,
+                    lease_ttl_seconds=self.coordinator_lease_ttl_seconds,
+                    timeout_seconds=self.bulkhead_acquire_timeout_seconds,
+                    check_task=self._check_task_context,
+                )
             yield
+            if lease is not None and not self.admission_coordinator.validate(lease):
+                raise ProviderAdmissionLeaseLostError(
+                    f"shared {domain} admission lease expired during provider operation; outcome may be unknown"
+                )
         finally:
-            bulkhead.release(task.tenant_id)
+            if lease is not None:
+                self.admission_coordinator.release(lease)
+            if local_acquired:
+                bulkhead.release(task.tenant_id)
 
     def circuit_snapshot(self, domain: str) -> dict[str, Any]:
         if domain not in self._circuit_breakers:

@@ -307,3 +307,8 @@ python scripts/spare_parts_fixture_validator.py --root . \
 ## 第二十四轮新增资源
 
 - `spare-parts-inventory-backup-provider-fair-scheduling-test-matrix-v1.csv`（ASSET-000069）：15项公平调度、租户并发配额、任务取消和deadline合成场景；全部PROPOSED_NOT_APPROVED / NOT_RUN，不构成生产调度验收。
+
+
+## 第二十五轮新增资源
+
+- `spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv`（ASSET-000070）：16项同进程多Adapter共享配额、令牌桶和租约恢复场景；全部PROPOSED_NOT_APPROVED / NOT_RUN，不构成跨进程或生产分布式协调验收。

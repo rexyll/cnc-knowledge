@@ -87,3 +87,5 @@
 | spare-parts-inventory-backup-provider-circuit-breaker-bulkhead-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000068 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-circuit-breaker-bulkhead-and-budget.md / KNOW-000037 | 14条合成场景，覆盖熔断打开/半开/恢复、探测配额、读写域隔离、舱壁容量/释放、任务级总重试预算与并发任务隔离；不代表分布式/生产Provider验收。 |
 
 | spare-parts-inventory-backup-provider-fair-scheduling-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000069 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-fair-scheduling-and-tenant-isolation.md / KNOW-000038 | 15项纯合成场景覆盖优先级、aging防饥饿、租户配额、排队取消、任务deadline和公平舱壁观测；不代表分布式/生产Provider验收。 |
+
+| spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000070 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-shared-coordination-and-lease-recovery.md / KNOW-000039 | 16项同进程多Adapter共享并发、租户配额、令牌桶、租约过期/续期/fencing和outcome_unknown模拟场景；不代表跨进程/生产协调验收。 |

@@ -1,0 +1,75 @@
+{
+  "entity_id": "KNOW-000039",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份 Provider 多实例共享协调、租户配额与租约恢复",
+  "english_name": "CNC spare-parts inventory backup provider shared multi-instance admission, tenant quotas and lease recovery",
+  "aliases": [
+    "备份Provider共享并发配额",
+    "多Adapter租户限流协调",
+    "Provider准入租约与fencing token"
+  ],
+  "description": "定义可替换的Provider共享准入协调器及同进程合成实现，验证多Adapter共享并发/租户配额、令牌桶限流、租约续期/过期回收、fencing和租约丢失时的模糊结果处理。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "备份Provider多实例资源协调"
+  ],
+  "tags": [
+    "CH17",
+    "Provider Coordination",
+    "Shared Admission",
+    "Tenant Quota",
+    "Token Bucket",
+    "Lease",
+    "Fencing Token"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T10:45:00+08:00",
+  "updated_at": "2026-11-26T10:45:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-shared-coordination-and-lease-recovery.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-26",
+    "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "test_file": "tests/test_spare_parts_backup_storage_adapter.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv",
+    "scenario_definition_count": 16,
+    "added_provider_unittest_methods": 7,
+    "coordinator_contract": "ProviderAdmissionCoordinator",
+    "coordinator_implementation": "InMemoryProviderAdmissionCoordinator",
+    "coordinator_scope": "SHARED_OBJECT_BETWEEN_ADAPTERS_IN_ONE_PYTHON_PROCESS",
+    "global_concurrency_scope": "PER_COORDINATOR_AND_PROVIDER_OPERATION_DOMAIN",
+    "tenant_quota_scope": "PER_TENANT_PER_DOMAIN_PER_COORDINATOR",
+    "rate_limit": "SHARED_TOKEN_BUCKET_PER_OPERATION_DOMAIN",
+    "lease_fields": [
+      "lease_id",
+      "owner_id",
+      "tenant_id",
+      "domain",
+      "fencing_token",
+      "expires_at"
+    ],
+    "lease_expiry_recovery": "EXPLICIT_CLOCK_BASED_RECLAMATION",
+    "automatic_lease_heartbeat": false,
+    "downstream_fencing_enforced": false,
+    "lease_lost_outcome": "UNKNOWN_FAIL_CLOSED",
+    "test_status": "SYNTHETIC_IN_PROCESS_ONLY",
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED"
+  },
+  "notes": "同一InMemoryProviderAdmissionCoordinator对象可被多个Adapter共享，但不跨进程/主机、不持久化。租约过期不终止远端同步请求；没有自动心跳或下游fencing enforcement，必须将lease TTL设为大于Provider硬超时并对未知结果按原对象键恢复。16项资源场景全部NOT_RUN。"
+}

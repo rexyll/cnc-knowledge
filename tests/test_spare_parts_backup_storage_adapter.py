@@ -17,6 +17,9 @@ from scripts.spare_parts_backup_storage_adapter import (
     ProviderCircuitBreaker,
     ProviderCircuitOpenError,
     ProviderBulkheadFullError,
+    ProviderAdmissionLeaseLostError,
+    InMemoryProviderAdmissionCoordinator,
+    ProviderRateLimitExceededError,
     ProviderTaskCancelledError,
     ProviderTaskDeadlineExceededError,
     RetryBudgetExceededError,
@@ -982,6 +985,208 @@ class BackupStorageAdapterTests(unittest.TestCase):
             with self.assertRaises(ProviderTaskDeadlineExceededError):
                 adapter._provider_call("get_payload", transient)
         self.assertEqual(calls, ["attempt"])
+
+
+
+    def test_shared_coordinator_enforces_global_capacity_across_adapters(self):
+        coordinator = InMemoryProviderAdmissionCoordinator(
+            global_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1}
+        )
+        provider_a, provider_b = MockObjectStorageProvider(), MockObjectStorageProvider()
+        adapter_a = BackupStorageAdapter(provider_a, admission_coordinator=coordinator)
+        adapter_b = BackupStorageAdapter(provider_b, admission_coordinator=coordinator)
+        entered, release = threading.Event(), threading.Event()
+        errors = []
+
+        def blocking():
+            entered.set()
+            if not release.wait(timeout=2):
+                raise AssertionError("shared admission holder was not released")
+            return "held"
+
+        def holder():
+            try:
+                with adapter_a.task_context(task_id="shared-a", tenant_id="tenant-A"):
+                    adapter_a._provider_call("get_payload", blocking)
+            except Exception as exc:
+                errors.append(exc)
+
+        thread = threading.Thread(target=holder)
+        thread.start()
+        self.assertTrue(entered.wait(timeout=2))
+        try:
+            with adapter_b.task_context(task_id="shared-b", tenant_id="tenant-B"):
+                with self.assertRaises(ProviderBulkheadFullError):
+                    adapter_b._provider_call("get_payload", lambda: "must-not-run")
+            self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 1)
+        finally:
+            release.set()
+            thread.join(timeout=2)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(errors, [])
+        with adapter_b.task_context(task_id="shared-b-after", tenant_id="tenant-B"):
+            self.assertEqual(adapter_b._provider_call("get_payload", lambda: "admitted"), "admitted")
+        self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 0)
+
+    def test_shared_tenant_quota_applies_across_adapters_but_other_tenant_can_use_capacity(self):
+        coordinator = InMemoryProviderAdmissionCoordinator(
+            global_limits={"read": 2, "write": 1, "multipart": 1, "inventory": 1},
+            tenant_limits={"tenant-A": {"read": 1}},
+        )
+        adapter_a = BackupStorageAdapter(MockObjectStorageProvider(), admission_coordinator=coordinator)
+        adapter_b = BackupStorageAdapter(MockObjectStorageProvider(), admission_coordinator=coordinator)
+        entered, release = threading.Event(), threading.Event()
+        errors = []
+
+        def blocking():
+            entered.set()
+            if not release.wait(timeout=2):
+                raise AssertionError("tenant quota holder was not released")
+            return "held"
+
+        def holder():
+            try:
+                with adapter_a.task_context(task_id="A-1", tenant_id="tenant-A"):
+                    adapter_a._provider_call("get_payload", blocking)
+            except Exception as exc:
+                errors.append(exc)
+
+        thread = threading.Thread(target=holder)
+        thread.start()
+        self.assertTrue(entered.wait(timeout=2))
+        try:
+            with adapter_b.task_context(task_id="A-2", tenant_id="tenant-A"):
+                with self.assertRaises(ProviderBulkheadFullError):
+                    adapter_b._provider_call("get_payload", lambda: "same-tenant-blocked")
+            with adapter_b.task_context(task_id="B-1", tenant_id="tenant-B"):
+                self.assertEqual(adapter_b._provider_call("get_payload", lambda: "other-tenant-admitted"), "other-tenant-admitted")
+        finally:
+            release.set()
+            thread.join(timeout=2)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(errors, [])
+
+    def test_expired_shared_lease_is_reclaimed_and_stale_release_is_fenced(self):
+        class FakeClock:
+            now = 10.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        coordinator = InMemoryProviderAdmissionCoordinator(
+            global_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            clock_fn=clock,
+        )
+        check = lambda _: None
+        task = ProviderTaskContext(task_id="lease-a", tenant_id="tenant-A")
+        old = coordinator.acquire(
+            task=task, domain="read", owner_id="adapter-a",
+            lease_ttl_seconds=5, timeout_seconds=0, check_task=check,
+        )
+        clock.advance(5.1)
+        new = coordinator.acquire(
+            task=ProviderTaskContext(task_id="lease-b", tenant_id="tenant-B"),
+            domain="read", owner_id="adapter-b", lease_ttl_seconds=5,
+            timeout_seconds=0, check_task=check,
+        )
+        self.assertGreater(new.fencing_token, old.fencing_token)
+        self.assertFalse(coordinator.validate(old))
+        self.assertFalse(coordinator.release(old))
+        self.assertTrue(coordinator.validate(new))
+        self.assertEqual(coordinator.snapshot()["expired_leases"], 1)
+        self.assertTrue(coordinator.release(new))
+
+    def test_shared_lease_renewal_extends_expiry_and_requires_current_fence(self):
+        class FakeClock:
+            now = 0.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        coordinator = InMemoryProviderAdmissionCoordinator(clock_fn=clock)
+        lease = coordinator.acquire(
+            task=ProviderTaskContext(task_id="renew", tenant_id="tenant-A"),
+            domain="read", owner_id="adapter-a", lease_ttl_seconds=2,
+            timeout_seconds=0, check_task=lambda _: None,
+        )
+        clock.advance(1.5)
+        renewed = coordinator.renew(lease, lease_ttl_seconds=4)
+        self.assertIsNotNone(renewed)
+        clock.advance(3)
+        self.assertTrue(coordinator.validate(renewed))
+        self.assertTrue(coordinator.release(renewed))
+        self.assertFalse(coordinator.release(lease))
+
+    def test_shared_rate_limit_is_atomic_across_adapters_and_refills(self):
+        class FakeClock:
+            now = 0.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        coordinator = InMemoryProviderAdmissionCoordinator(
+            global_limits={"read": 2, "write": 1, "multipart": 1, "inventory": 1},
+            rate_limits_per_second={"read": 1.0},
+            rate_bursts={"read": 1},
+            clock_fn=clock,
+        )
+        adapter_a = BackupStorageAdapter(MockObjectStorageProvider(), admission_coordinator=coordinator, clock_fn=clock)
+        adapter_b = BackupStorageAdapter(MockObjectStorageProvider(), admission_coordinator=coordinator, clock_fn=clock)
+        with adapter_a.task_context(task_id="rate-a", tenant_id="tenant-A"):
+            self.assertEqual(adapter_a._provider_call("get_payload", lambda: "first"), "first")
+        with adapter_b.task_context(task_id="rate-b", tenant_id="tenant-B"):
+            with self.assertRaises(ProviderRateLimitExceededError) as caught:
+                adapter_b._provider_call("get_payload", lambda: "must-wait")
+        self.assertAlmostEqual(caught.exception.retry_after_seconds, 1.0)
+        clock.advance(1.0)
+        with adapter_b.task_context(task_id="rate-b2", tenant_id="tenant-B"):
+            self.assertEqual(adapter_b._provider_call("get_payload", lambda: "after-refill"), "after-refill")
+
+    def test_adapter_fails_closed_if_shared_lease_expires_inside_provider_call(self):
+        class FakeClock:
+            now = 0.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        coordinator = InMemoryProviderAdmissionCoordinator(
+            global_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            clock_fn=clock,
+        )
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(), admission_coordinator=coordinator,
+            coordinator_lease_ttl_seconds=2, clock_fn=clock,
+        )
+
+        def expires_while_running():
+            clock.advance(2.1)
+            return "provider-may-have-completed"
+
+        with adapter.task_context(task_id="lease-loss", tenant_id="tenant-A"):
+            with self.assertRaises(ProviderAdmissionLeaseLostError) as caught:
+                adapter._provider_call("get_payload", expires_while_running)
+        self.assertTrue(caught.exception.outcome_unknown)
+        self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 0)
+
+    def test_shared_coordinator_rejects_invalid_policy_configuration(self):
+        with self.assertRaises(BackupStorageError):
+            InMemoryProviderAdmissionCoordinator(global_limits={"read": 0})
+        with self.assertRaises(BackupStorageError):
+            InMemoryProviderAdmissionCoordinator(tenant_limits={"tenant-A": {"unknown": 1}})
+        with self.assertRaises(BackupStorageError):
+            InMemoryProviderAdmissionCoordinator(rate_limits_per_second={"read": 0})
+        with self.assertRaises(BackupStorageError):
+            InMemoryProviderAdmissionCoordinator(rate_bursts={"read": 2})
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), coordinator_lease_ttl_seconds=0)
 
 
 if __name__ == "__main__":

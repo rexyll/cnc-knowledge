@@ -403,3 +403,13 @@
 - 修复后Run 45742134721：Knowledge structure and data quality、CH12 numerical resource tests两个Job均completed/success；全库174个unittest通过，strict knowledge lint 0 errors。
 - Provider Mock自检PASS，Artifact ID 15081747151；Provider专项目标46个测试。CH17当前18篇KNOW、68个登记实体、62项资源、9条去重来源。
 - 该验收仅覆盖CI与合成/Mock测试，不代表真实Provider、跨进程/跨容器配额、企业业务测试或生产灾备验收。
+
+
+## CH17-T004 第二十五轮：备份Provider共享协调器、多实例配额和租约恢复
+
+- 新增 `ProviderAdmissionCoordinator` 契约和 `InMemoryProviderAdmissionCoordinator` 合成实现；多个Adapter共享同一对象时，跨实例应用操作域全局并发限额与每租户并发限额。
+- 增加共享优先级aging队列、按域令牌桶速率/burst、租约续期/释放/校验、到期回收和单调fencing token；Adapter启用共享协调器后，先拿本地公平舱壁槽位，再获取共享租约。
+- 若Provider调用返回时共享租约已过期，返回 `ProviderAdmissionLeaseLostError` 且标明 `outcome_unknown=True`，不报告成功、不自动重试。调用方必须保留原对象键/backup ID进行盘点或幂等验证。
+- 新增7项专项unittest，新增ASSET-000070：16个合成跨实例配额、限流、租约、fencing与故障场景。
+- **限制：** 当前协调器只共享于同一进程内的多个Adapter对象；无跨进程/主机共享、持久化、自动心跳、quorum、时钟漂移治理或下游fencing验证。lease TTL必须大于Provider硬超时，但当前同步Provider接口不强制实施此超时。
+- **状态：** CH17-T004继续IN_PROGRESS；无真实Provider/集群负载测试，生产备份仍关闭，企业治理审批门禁仍阻断。

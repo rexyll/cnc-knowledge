@@ -150,3 +150,13 @@
 - **静态质量与Mock自检：** `knowledge_lint.py --strict` 为PASS（0 errors）；`spare_parts_backup_storage_adapter.py --self-check`为PASS。Provider Artifact [ch17-backup-storage-adapter-45742134721](https://github.com/rexyll/cnc-knowledge/actions/runs/45742134721/artifacts/15081747151)，ID 15081747151。
 - **交付：** KNOW-000038、ASSET-000069；15条公平调度/租户配额/任务取消/deadline场景规格全部保持TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；main提交包含功能实现 `177033b417884f5ddea4812879cb30536e068b8a`、测试import修复 `dc2deced6db5138a6880f71df190dd9a6549d45b`。
 - **当前限制：** 本地单Adapter/进程隔离；同步Provider在途请求无法强制取消；无跨进程/跨容器/真实Provider/生产负载证据。生产备份仍关闭、治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL、业务断言NOT_EVALUATED。
+
+
+## CH17-T004 Provider多Adapter共享协调与租约恢复第二十五轮（2026-11-26）
+
+- 新增 `ProviderAdmissionCoordinator` 抽象与同进程 `InMemoryProviderAdmissionCoordinator`；多个Adapter可共享一份并发配额、租户配额、等待队列与令牌桶状态。
+- 新增共享read/write/multipart/inventory并发上限和每租户域内配额；跨实例公平排队使用priority aging/FIFO。共享令牌桶按域速率/burst控制Provider尝试，限流抛出 `ProviderRateLimitExceededError`，不被误归类为Provider瞬态故障。
+- 新增带owner/tenant/domain/expiry/fencing token的租约；支持续租、匹配释放、有效性检查、到期回收和旧租约fencing。调用结束时若租约已失效，`ProviderAdmissionLeaseLostError.outcome_unknown=True`，不返回成功。
+- 新增7项专项unittest；ASSET-000070定义16个合成多实例/租户/限流/租约场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **限制：** 该Mock仅同一Python进程共享，不是跨进程/跨机器协调服务；无持久化、自动心跳、网络分区/主备/quorum/下游fencing。远端请求可能在本地租约过期后仍生效，必须以Provider硬超时、幂等对象键和提交状态盘点处理。
+- 所有工作仅改动main；不连接真实云、身份系统或企业存储。生产备份维持关闭，治理门禁仍BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。
