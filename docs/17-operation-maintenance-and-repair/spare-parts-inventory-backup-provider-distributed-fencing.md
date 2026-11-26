@@ -148,3 +148,11 @@ token 区分租约代际；operation_sequence 区分同一 lease 内的多个提
 本轮没有实现 AWS / Azure / Google Cloud SDK、远程 HTTP/gRPC Coordinator、真实 KMS/HSM、生产 IAM policy 或云对象存储测试。合成 CAS 测试只验证状态机与竞态模型，不代表厂商验收或生产线性一致性证明。
 
 **生产备份继续关闭：** governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，production_backup_enabled=false，business_rule_assertions=NOT_EVALUATED。
+
+## 10. 本轮 CI 验证记录
+
+- 代码与测试CI：[Run 45767324560](https://github.com/rexyll/cnc-knowledge/actions/runs/45767324560)，两个必需Job success；全库268项unittest、CH12数值资源143项通过；strict lint 0 errors / 5 warnings；知识结构和数据质量0 errors。
+- 最终文档同步CI：[Run 45767658789](https://github.com/rexyll/cnc-knowledge/actions/runs/45767658789)，两个必需Job success；全库268项、CH12 143项通过；strict lint 0 errors / 5 warnings；知识结构与数据质量0 errors。
+- CH12 S-curve artifact：15091879973。现有BackupStorageAdapter、Admission和SQLite Provider自检仍成功，但这些报告不是本轮分布式CAS模型的云服务验收证据。
+
+本轮14项分布式CAS单元测试是本地合成状态机测试。ASSET-000080的20条参考场景全部PROPOSED_NOT_APPROVED / NOT_RUN；真实S3/GCS/Azure SDK、远程Coordinator、KMS/HSM、IAM和多主机测试均未完成。

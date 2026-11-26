@@ -573,3 +573,11 @@
 - **新增知识和资源：** KNOW-000049；ASSET-000080（20条参考场景，均PROPOSED_NOT_APPROVED / NOT_RUN）；新增分布式fencing技术正文和资源索引。
 - **代码验收：** Commit 430816f0b466a6040cd0a48e4bf1730c7f4afb4c；[Run 45767324560](https://github.com/rexyll/cnc-knowledge/actions/runs/45767324560)两个必需Job均completed/success；全库268项unittest、CH12数值资源143项通过；strict lint 0 errors / 5 warnings；知识结构与数据质量0 errors。
 - **生产边界：** InMemoryConditionalObjectControlStore只模拟单进程CAS，不是多主机服务。现有Coordinator尚未实现fencing:activate/revoke/publish操作proof远程端点，也尚未分配持久operation_sequence；无真实KMS/HSM、IAM/RBAC策略、远程HTTP/gRPC、S3/GCS/Azure SDK和对象存储集成。生产备份继续关闭，治理门禁 BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+### 第三十五轮最终文档同步验收补记
+
+- **最终文档提交：** 52bab72e401c39254b5c9aff2339e51ca5d36560。
+- **最终文档同步CI：** [Run 45767658789](https://github.com/rexyll/cnc-knowledge/actions/runs/45767658789)两个必需Job均completed/success；全库268项unittest、CH12数值资源143项均通过；strict knowledge lint PASS（0 errors，5 warnings）；知识结构与数据质量PASS（0 errors）。
+- **Artifact：** CH12 S-curve synthetic 15091879973；BackupStorageAdapter self-check 15093210029；Provider admission 15092029877；SQLite fenced Provider 15092204228；Backup governance readiness 15092980848。
+- **登记：** CH17更新为29篇KNOW、81个登记实体、73项资源、15条去重来源。ASSET-000080的20条分布式fencing场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **边界：** 本轮验证只覆盖单进程内存CAS参考模型；无远程Coordinator、云对象存储SDK、真实KMS/HSM、IAM/RBAC配置或多主机故障演练。生产备份继续关闭，CH17-T004仍IN_PROGRESS。

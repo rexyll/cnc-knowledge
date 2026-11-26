@@ -431,3 +431,9 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 新增ASSET-000080：20条形式化参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - SRC-000393～SRC-000396分别登记S3 Conditional Writes、GCS Request Preconditions、Azure Blob ETag concurrency及跨Blob事务边界官方资料。
 - 本轮仅有单进程InMemoryConditionalObjectControlStore参考模型；无真实AWS/GCS/Azure SDK、远程Coordinator、KMS/HSM或多主机验证。
+
+### 第三十五轮最终文档CI验收
+
+- [Run 45767658789](https://github.com/rexyll/cnc-knowledge/actions/runs/45767658789)两个必需Job success；全库268项unittest、CH12 143项测试通过；strict lint 0 errors/5 warnings；知识结构与数据质量0 errors。
+- Artifacts：CH12 S-curve 15091879973；Adapter 15093210029；Admission 15092029877；SQLite Provider 15092204228；治理readiness 15092980848。
+- ASSET-000080 20条场景仍PROPOSED_NOT_APPROVED / NOT_RUN；无真实云SDK/远程Coordinator/多主机验收，生产备份继续关闭。
