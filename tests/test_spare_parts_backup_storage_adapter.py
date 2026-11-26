@@ -11,6 +11,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageError,
     FileSystemStorageProvider,
     MockObjectStorageProvider,
+    ProviderTransientError,
     RECEIPT_NAME,
     PAYLOAD_FILES,
     _synthetic_ledger,
@@ -467,6 +468,39 @@ class BackupStorageAdapterTests(unittest.TestCase):
                 adapter.publish_backup(backup, prefix="cnc/ch17")
             self.assertEqual(delays, [])
             self.assertEqual(provider._objects, {})
+
+
+    def test_retry_after_hint_is_respected_but_capped(self):
+        class RetryAfterProvider(MockObjectStorageProvider):
+            def __init__(self):
+                super().__init__()
+                self.raise_retry_after = True
+
+            def get_object(self, key, *, version_id=None):
+                if self.raise_retry_after:
+                    self.raise_retry_after = False
+                    raise ProviderTransientError(
+                        "mock throttling with Retry-After",
+                        retry_after_seconds=10.0,
+                    )
+                return super().get_object(key, version_id=version_id)
+
+        provider = RetryAfterProvider()
+        provider.put_if_absent("cnc/ch17/retry-after-object", b"payload")
+        delays = []
+        adapter = BackupStorageAdapter(
+            provider,
+            retry_max_attempts=3,
+            retry_base_delay_seconds=0.5,
+            retry_max_delay_seconds=2.0,
+            sleep_fn=delays.append,
+        )
+        result = adapter._provider_call(
+            "get_object",
+            lambda: provider.get_object("cnc/ch17/retry-after-object"),
+        )
+        self.assertEqual(result.data, b"payload")
+        self.assertEqual(delays, [2.0])
 
 if __name__ == "__main__":
     unittest.main()
