@@ -1,0 +1,1285 @@
+#!/usr/bin/env python3
+"""Same-host SQLite reference Provider with durable package-scoped fencing.
+
+This is a local-file reference implementation. It is not a network service,
+multi-host object store, cloud-provider integration, or production approval.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import hmac
+import json
+import os
+import re
+import sqlite3
+import tempfile
+import time
+import uuid
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Callable
+from urllib.parse import quote
+
+from scripts.spare_parts_backup_storage_adapter import (
+    BackupStorageConflict,
+    BackupStorageError,
+    FencingNotSupportedError,
+    FencingTokenConflictError,
+    MultipartPart,
+    ObjectMetadata,
+    ProviderCapabilities,
+    ProviderTransientError,
+    StaleFencingTokenError,
+    StoredObject,
+    _json_bytes,
+    _safe_key,
+    _sha,
+)
+
+SCHEMA_VERSION = 1
+PBKDF2_ITERATIONS = 210_000
+MAX_FENCING_TOKEN = (1 << 63) - 1
+DEFAULT_ACTIONS = (
+    "object:read",
+    "object:write_fenced",
+    "object:list_prefix",
+    "multipart:read",
+    "multipart:write_fenced",
+    "multipart:list",
+)
+
+
+class SQLiteProviderAuthorizationError(BackupStorageError):
+    """The configured local Provider principal is not allowed to perform an action."""
+
+
+class SQLiteProviderObjectNotFoundError(BackupStorageError):
+    """The requested tenant-scoped object does not exist."""
+
+
+class SQLiteFencedObjectStorageProvider:
+    """Durable same-host Provider fixture with transactional downstream fencing.
+
+    A configured bearer secret selects a persisted principal. Prefix/action ACLs,
+    tenant identity, package-scope high-water, idempotency receipt and object
+    mutation are checked in SQLite. This proves a local reference contract only:
+    OS account isolation and SQLite file permissions remain part of the trust
+    boundary; the class does not provide network/TLS or remote IAM.
+    """
+
+    supports_fencing = True
+
+    def __init__(
+        self,
+        database_path: str | os.PathLike[str],
+        *,
+        principal_id: str,
+        principal_secret: str,
+        busy_timeout_seconds: float = 5.0,
+        fault_hook: Callable[[str], None] | None = None,
+    ):
+        if not isinstance(database_path, (str, os.PathLike)) or not str(database_path).strip():
+            raise BackupStorageError("SQLite fenced Provider database path is required")
+        raw_path = Path(database_path).expanduser()
+        if raw_path.is_symlink():
+            raise BackupStorageError("SQLite fenced Provider database cannot be a symlink")
+        self.database_path = raw_path.resolve()
+        if not self.database_path.is_file():
+            raise BackupStorageError("SQLite fenced Provider database has not been provisioned")
+        if not isinstance(principal_id, str) or not principal_id.strip():
+            raise BackupStorageError("Provider principal ID is required")
+        if not isinstance(principal_secret, str) or len(principal_secret) < 16:
+            raise BackupStorageError("Provider principal secret must contain at least 16 characters")
+        if not isinstance(busy_timeout_seconds, (int, float)) or isinstance(busy_timeout_seconds, bool):
+            raise BackupStorageError("SQLite busy timeout must be numeric")
+        if not 0 < busy_timeout_seconds <= 120:
+            raise BackupStorageError("SQLite busy timeout must be in (0, 120] seconds")
+        self.principal_id = principal_id.strip()
+        self._principal_secret = principal_secret.encode("utf-8")
+        self.busy_timeout_seconds = float(busy_timeout_seconds)
+        self.fault_hook = fault_hook
+        self._capabilities = ProviderCapabilities(
+            provider_kind="SQLITE_LOCAL_FENCED_REFERENCE",
+            conditional_create=True,
+            object_versioning=False,
+            object_lock=False,
+            server_side_encryption=None,
+            transport_encryption=None,
+            consistency_model="SQLITE_WAL_BEGIN_IMMEDIATE_SINGLE_HOST_TRANSACTION",
+            identity_authentication="CONFIGURED_BEARER_SECRET_PBKDF2_SESSION_CONTEXT",
+            authorization_model="PERSISTED_PRINCIPAL_TENANT_ACTION_AND_PREFIX_ALLOWLIST",
+            tenant_isolation=True,
+            audit_logging="PERSISTENT_SQLITE_ALLOW_AND_DENY_METADATA",
+            multipart_upload=True,
+            scoped_inventory=True,
+            evidence_scope="SAME_HOST_LOCAL_SQLITE_REFERENCE_NOT_CLOUD_OR_MULTI_HOST",
+        )
+        self._authenticate_initial_session()
+
+    @classmethod
+    def provision_database(
+        cls,
+        database_path: str | os.PathLike[str],
+        *,
+        principals: list[dict[str, Any]],
+        minimum_fencing_token: int = 0,
+    ) -> dict[str, Any]:
+        """Create a new DB and principal verifier records; never overwrites a DB."""
+        path = Path(database_path).expanduser()
+        if path.is_symlink():
+            raise BackupStorageError("Provider database path cannot be a symlink")
+        path = path.resolve()
+        if path.exists():
+            raise BackupStorageError("Provider database already exists; in-place provisioning is prohibited")
+        if not isinstance(minimum_fencing_token, int) or isinstance(minimum_fencing_token, bool):
+            raise BackupStorageError("minimum fencing token must be an integer")
+        if not 0 <= minimum_fencing_token <= MAX_FENCING_TOKEN:
+            raise BackupStorageError("minimum fencing token is out of range")
+        if not isinstance(principals, list) or not principals:
+            raise BackupStorageError("at least one Provider principal is required")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.close(fd)
+        connection: sqlite3.Connection | None = None
+        try:
+            connection = sqlite3.connect(str(path), isolation_level=None)
+            connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("PRAGMA synchronous=FULL")
+            connection.execute("PRAGMA foreign_keys=ON")
+            connection.executescript(
+                """
+                CREATE TABLE provider_meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+                CREATE TABLE provider_principals (
+                    principal_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    secret_salt BLOB NOT NULL,
+                    secret_hash BLOB NOT NULL,
+                    allowed_prefixes_json TEXT NOT NULL,
+                    allowed_actions_json TEXT NOT NULL,
+                    enabled INTEGER NOT NULL CHECK(enabled IN (0,1)),
+                    created_at REAL NOT NULL
+                );
+                CREATE TABLE fencing_scopes (
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    high_water INTEGER NOT NULL CHECK(high_water >= 0),
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(tenant_id, fencing_scope)
+                );
+                CREATE TABLE fenced_operations (
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    idempotency_key TEXT NOT NULL,
+                    operation TEXT NOT NULL,
+                    operation_sha256 TEXT NOT NULL,
+                    result_json TEXT NOT NULL,
+                    fencing_token INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY(tenant_id, fencing_scope, idempotency_key)
+                );
+                CREATE TABLE provider_objects (
+                    tenant_id TEXT NOT NULL,
+                    object_key TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    data BLOB NOT NULL,
+                    content_sha256 TEXT NOT NULL,
+                    size_bytes INTEGER NOT NULL,
+                    version_id TEXT,
+                    fencing_token INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY(tenant_id, object_key)
+                );
+                CREATE TABLE multipart_sessions (
+                    tenant_id TEXT NOT NULL,
+                    object_key TEXT NOT NULL,
+                    upload_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('ACTIVE','COMPLETED')),
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(tenant_id, object_key, upload_id)
+                );
+                CREATE TABLE multipart_parts (
+                    tenant_id TEXT NOT NULL,
+                    object_key TEXT NOT NULL,
+                    upload_id TEXT NOT NULL,
+                    part_number INTEGER NOT NULL CHECK(part_number > 0),
+                    data BLOB NOT NULL,
+                    content_sha256 TEXT NOT NULL,
+                    size_bytes INTEGER NOT NULL,
+                    fencing_token INTEGER NOT NULL,
+                    PRIMARY KEY(tenant_id, object_key, upload_id, part_number),
+                    FOREIGN KEY(tenant_id, object_key, upload_id)
+                      REFERENCES multipart_sessions(tenant_id, object_key, upload_id)
+                );
+                CREATE TABLE provider_audit (
+                    audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    principal_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    object_key TEXT NOT NULL,
+                    fencing_scope TEXT,
+                    fencing_token INTEGER,
+                    idempotency_key TEXT,
+                    outcome TEXT NOT NULL,
+                    created_at REAL NOT NULL
+                );
+                CREATE INDEX idx_provider_objects_prefix
+                    ON provider_objects(tenant_id, object_key);
+                CREATE INDEX idx_multipart_sessions_prefix
+                    ON multipart_sessions(tenant_id, object_key, state);
+                """
+            )
+            now = time.time()
+            connection.execute(
+                "INSERT INTO provider_meta(key,value) VALUES('schema_version',?)",
+                (str(SCHEMA_VERSION),),
+            )
+            connection.execute(
+                "INSERT INTO provider_meta(key,value) VALUES('minimum_fencing_token',?)",
+                (str(minimum_fencing_token),),
+            )
+            connection.execute(
+                "INSERT INTO provider_meta(key,value) VALUES('provisioned_at',?)",
+                (str(now),),
+            )
+            seen: set[str] = set()
+            for principal in principals:
+                if not isinstance(principal, dict):
+                    raise BackupStorageError("principal records must be objects")
+                principal_id = principal.get("principal_id")
+                tenant_id = principal.get("tenant_id")
+                secret = principal.get("principal_secret")
+                prefixes = principal.get("allowed_prefixes")
+                actions = principal.get("allowed_actions", DEFAULT_ACTIONS)
+                if not isinstance(principal_id, str) or not principal_id.strip():
+                    raise BackupStorageError("principal ID must be nonblank")
+                if principal_id in seen:
+                    raise BackupStorageError("duplicate Provider principal ID")
+                seen.add(principal_id)
+                if not isinstance(tenant_id, str) or not tenant_id.strip():
+                    raise BackupStorageError("principal tenant ID must be nonblank")
+                if not isinstance(secret, str) or len(secret) < 16:
+                    raise BackupStorageError("principal secret must contain at least 16 characters")
+                if not isinstance(prefixes, (list, tuple)) or not prefixes:
+                    raise BackupStorageError("principal requires at least one allowed prefix")
+                normalized_prefixes = sorted({_safe_key(str(item).rstrip("/")) for item in prefixes})
+                if not isinstance(actions, (list, tuple)) or not actions:
+                    raise BackupStorageError("principal requires at least one allowed action")
+                normalized_actions = sorted(set(actions))
+                if any(not isinstance(a, str) or a not in DEFAULT_ACTIONS for a in normalized_actions):
+                    raise BackupStorageError("principal includes an unsupported Provider action")
+                salt = os.urandom(16)
+                digest = hashlib.pbkdf2_hmac(
+                    "sha256", secret.encode("utf-8"), salt, PBKDF2_ITERATIONS
+                )
+                connection.execute(
+                    """INSERT INTO provider_principals(
+                        principal_id,tenant_id,secret_salt,secret_hash,
+                        allowed_prefixes_json,allowed_actions_json,enabled,created_at
+                    ) VALUES(?,?,?,?,?,?,1,?)""",
+                    (
+                        principal_id.strip(), tenant_id.strip(), salt, digest,
+                        json.dumps(normalized_prefixes, separators=(",", ":")),
+                        json.dumps(normalized_actions, separators=(",", ":")), now,
+                    ),
+                )
+            connection.commit()
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            connection.close()
+            connection = None
+            os.chmod(path, 0o600)
+            return {
+                "result": "PROVISIONED",
+                "principal_count": len(seen),
+                "schema_version": SCHEMA_VERSION,
+                "minimum_fencing_token": minimum_fencing_token,
+                "database_sha256": cls._sha256_file(path),
+                "file_mode": oct(path.stat().st_mode & 0o777),
+                "plaintext_secrets_stored": False,
+            }
+        except Exception:
+            if connection is not None:
+                connection.close()
+            for suffix in ("", "-wal", "-shm"):
+                try:
+                    Path(str(path) + suffix).unlink()
+                except FileNotFoundError:
+                    pass
+            raise
+
+    @property
+    def capabilities(self) -> ProviderCapabilities:
+        return self._capabilities
+
+    def _connect(self) -> sqlite3.Connection:
+        c = sqlite3.connect(
+            str(self.database_path),
+            timeout=self.busy_timeout_seconds,
+            isolation_level=None,
+        )
+        c.row_factory = sqlite3.Row
+        c.execute(f"PRAGMA busy_timeout={int(self.busy_timeout_seconds * 1000)}")
+        c.execute("PRAGMA foreign_keys=ON")
+        c.execute("PRAGMA synchronous=FULL")
+        return c
+
+    @contextmanager
+    def _transaction(self):
+        c = self._connect()
+        try:
+            c.execute("BEGIN IMMEDIATE")
+            yield c
+            c.commit()
+        except sqlite3.Error as exc:
+            try:
+                c.rollback()
+            except sqlite3.Error:
+                pass
+            raise ProviderTransientError(
+                "SQLite fenced Provider transaction failed",
+                outcome_unknown=True,
+            ) from exc
+        except Exception:
+            try:
+                c.rollback()
+            except sqlite3.Error:
+                pass
+            raise
+        finally:
+            c.close()
+
+    @contextmanager
+    def _authorized_transaction(
+        self, *, action: str, object_key: str, fencing_scope: str | None = None
+    ):
+        try:
+            with self._transaction() as c:
+                principal = c.execute(
+                    "SELECT * FROM provider_principals WHERE principal_id=?",
+                    (self.principal_id,),
+                ).fetchone()
+                if principal is None or not principal["enabled"]:
+                    raise SQLiteProviderAuthorizationError("Provider principal is disabled or unknown")
+                prefixes = json.loads(principal["allowed_prefixes_json"])
+                actions = json.loads(principal["allowed_actions_json"])
+                if action not in actions or not self._within_prefixes(object_key, prefixes):
+                    raise SQLiteProviderAuthorizationError("Provider action or object prefix is not authorized")
+                if fencing_scope is not None:
+                    if not self._scope_contains_key(fencing_scope, object_key):
+                        raise SQLiteProviderAuthorizationError(
+                            "Provider object key is outside the supplied fencing scope"
+                        )
+                    if not self._within_prefixes(fencing_scope, prefixes):
+                        raise SQLiteProviderAuthorizationError(
+                            "Provider fencing scope is outside the principal's allowed prefixes"
+                        )
+                yield c, principal["tenant_id"]
+        except SQLiteProviderAuthorizationError:
+            self._record_denial(action, object_key, fencing_scope)
+            raise
+
+    @staticmethod
+    def _within_prefixes(value: str, prefixes: list[str]) -> bool:
+        return any(value == prefix or value.startswith(prefix + "/") for prefix in prefixes)
+
+    @staticmethod
+    def _scope_contains_key(scope: str, object_key: str) -> bool:
+        return object_key.startswith(scope + "/")
+
+    def _authenticate_initial_session(self) -> None:
+        try:
+            with self._transaction() as c:
+                row = c.execute(
+                    "SELECT tenant_id,secret_salt,secret_hash,enabled "
+                    "FROM provider_principals WHERE principal_id=?",
+                    (self.principal_id,),
+                ).fetchone()
+                if row is None or not row["enabled"]:
+                    raise SQLiteProviderAuthorizationError("Provider principal is disabled or unknown")
+                supplied = hashlib.pbkdf2_hmac(
+                    "sha256", self._principal_secret, row["secret_salt"], PBKDF2_ITERATIONS
+                )
+                if not hmac.compare_digest(supplied, row["secret_hash"]):
+                    raise SQLiteProviderAuthorizationError("Provider principal secret is invalid")
+                self.tenant_id = row["tenant_id"]
+        except SQLiteProviderAuthorizationError:
+            raise
+        except sqlite3.Error as exc:
+            raise BackupStorageError("cannot authenticate against SQLite Provider database") from exc
+
+    def _record_denial(self, action: str, object_key: str, fencing_scope: str | None) -> None:
+        try:
+            with self._transaction() as c:
+                principal = c.execute(
+                    "SELECT tenant_id FROM provider_principals WHERE principal_id=?",
+                    (self.principal_id,),
+                ).fetchone()
+                tenant_id = principal["tenant_id"] if principal else "UNKNOWN"
+                c.execute(
+                    """INSERT INTO provider_audit(
+                        principal_id,tenant_id,action,object_key,fencing_scope,
+                        fencing_token,idempotency_key,outcome,created_at
+                    ) VALUES(?,?,?,?,NULL,NULL,'','DENY',?)""",
+                    (self.principal_id, tenant_id, action, object_key, fencing_scope, time.time()),
+                )
+        except sqlite3.Error:
+            # Denial remains fail-closed even if audit persistence is unavailable.
+            pass
+
+    def _record_allow(
+        self, c: sqlite3.Connection, *, tenant_id: str, action: str,
+        object_key: str, fencing_scope: str | None = None,
+        fencing_token: int | None = None, idempotency_key: str | None = None,
+        outcome: str = "ALLOW",
+    ) -> None:
+        c.execute(
+            """INSERT INTO provider_audit(
+                principal_id,tenant_id,action,object_key,fencing_scope,
+                fencing_token,idempotency_key,outcome,created_at
+            ) VALUES(?,?,?,?,?,?,?,?,?)""",
+            (
+                self.principal_id, tenant_id, action, object_key, fencing_scope,
+                fencing_token, idempotency_key, outcome, time.time(),
+            ),
+        )
+
+    def _inject(self, phase: str) -> None:
+        if self.fault_hook is not None:
+            self.fault_hook(phase)
+
+    @staticmethod
+    def _validate_fenced_arguments(
+        fencing_token: int, idempotency_key: str
+    ) -> None:
+        if (
+            not isinstance(fencing_token, int) or isinstance(fencing_token, bool)
+            or not 1 <= fencing_token <= MAX_FENCING_TOKEN
+        ):
+            raise BackupStorageError("fencing token must be a positive SQLite-safe integer")
+        if (
+            not isinstance(idempotency_key, str) or not idempotency_key.strip()
+            or len(idempotency_key) > 256
+        ):
+            raise BackupStorageError("fenced operation idempotency key must contain 1..256 characters")
+
+    def _prepare_fenced_operation(
+        self, c: sqlite3.Connection, *, tenant_id: str, fencing_scope: str,
+        fencing_token: int, idempotency_key: str, operation: str,
+        operation_sha256: str,
+    ) -> dict[str, Any] | None:
+        meta = c.execute(
+            "SELECT value FROM provider_meta WHERE key='minimum_fencing_token'"
+        ).fetchone()
+        floor = int(meta["value"]) if meta else 0
+        row = c.execute(
+            "SELECT high_water FROM fencing_scopes WHERE tenant_id=? AND fencing_scope=?",
+            (tenant_id, fencing_scope),
+        ).fetchone()
+        high_water = max(floor, int(row["high_water"]) if row else 0)
+        if fencing_token < high_water:
+            raise StaleFencingTokenError(
+                f"stale fencing token {fencing_token}; package scope high-water is {high_water}"
+            )
+        prior = c.execute(
+            """SELECT operation,operation_sha256,result_json
+               FROM fenced_operations
+               WHERE tenant_id=? AND fencing_scope=? AND idempotency_key=?""",
+            (tenant_id, fencing_scope, idempotency_key),
+        ).fetchone()
+        if prior is not None:
+            if prior["operation"] != operation or prior["operation_sha256"] != operation_sha256:
+                raise FencingTokenConflictError(
+                    "fenced idempotency key was reused for a different operation or content"
+                )
+            c.execute(
+                """INSERT INTO fencing_scopes(tenant_id,fencing_scope,high_water,updated_at)
+                   VALUES(?,?,?,?) ON CONFLICT(tenant_id,fencing_scope)
+                   DO UPDATE SET high_water=MAX(high_water,excluded.high_water),
+                                 updated_at=excluded.updated_at""",
+                (tenant_id, fencing_scope, fencing_token, time.time()),
+            )
+            return json.loads(prior["result_json"])
+        if fencing_token == high_water:
+            raise FencingTokenConflictError(
+                "current fencing token was reused for a different idempotent operation"
+            )
+        return None
+
+    def _commit_fenced_operation(
+        self, c: sqlite3.Connection, *, tenant_id: str, object_key: str,
+        fencing_scope: str, fencing_token: int, idempotency_key: str,
+        operation: str, operation_sha256: str, result: dict[str, Any] | None,
+    ) -> None:
+        now = time.time()
+        c.execute(
+            """INSERT INTO fencing_scopes(tenant_id,fencing_scope,high_water,updated_at)
+               VALUES(?,?,?,?) ON CONFLICT(tenant_id,fencing_scope)
+               DO UPDATE SET high_water=MAX(high_water,excluded.high_water),
+                             updated_at=excluded.updated_at""",
+            (tenant_id, fencing_scope, fencing_token, now),
+        )
+        c.execute(
+            """INSERT INTO fenced_operations(
+                tenant_id,fencing_scope,idempotency_key,operation,
+                operation_sha256,result_json,fencing_token,created_at
+            ) VALUES(?,?,?,?,?,?,?,?)""",
+            (
+                tenant_id, fencing_scope, idempotency_key, operation,
+                operation_sha256, json.dumps(result, sort_keys=True, separators=(",", ":")),
+                fencing_token, now,
+            ),
+        )
+        self._record_allow(
+            c, tenant_id=tenant_id, action=operation, object_key=object_key,
+            fencing_scope=fencing_scope, fencing_token=fencing_token,
+            idempotency_key=idempotency_key,
+        )
+        # Test-only crash point: the object mutation, fence and receipt still share
+        # one transaction; raising here must roll all of them back.
+        self._inject("before_commit")
+
+    @staticmethod
+    def _operation_hash(operation: str, identity: dict[str, Any]) -> str:
+        value = {"operation": operation, **identity}
+        return _sha(_json_bytes(value))
+
+    def _get_object_row(
+        self, c: sqlite3.Connection, tenant_id: str, object_key: str
+    ) -> sqlite3.Row | None:
+        return c.execute(
+            "SELECT * FROM provider_objects WHERE tenant_id=? AND object_key=?",
+            (tenant_id, object_key),
+        ).fetchone()
+
+    @staticmethod
+    def _stored_object(row: sqlite3.Row) -> StoredObject:
+        return StoredObject(
+            key=row["object_key"], data=bytes(row["data"]),
+            content_sha256=row["content_sha256"], size_bytes=int(row["size_bytes"]),
+            version_id=row["version_id"],
+        )
+
+    def _after_commit(self) -> None:
+        # A raised timeout here models a committed operation with a lost response.
+        self._inject("after_commit_before_response")
+
+    def put_if_absent_fenced(
+        self, key: str, data: bytes, *, fencing_scope: str,
+        fencing_token: int, idempotency_key: str,
+    ) -> StoredObject:
+        normalized_key = _safe_key(key)
+        normalized_scope = _safe_key(fencing_scope)
+        self._validate_fenced_arguments(fencing_token, idempotency_key)
+        if not isinstance(data, bytes):
+            raise BackupStorageError("Provider object payload must be bytes")
+        digest = _sha(data)
+        operation = "object:write_fenced"
+        operation_hash = self._operation_hash(
+            operation, {"key": normalized_key, "scope": normalized_scope,
+                       "sha256": digest, "size_bytes": len(data)}
+        )
+        with self._authorized_transaction(
+            action=operation, object_key=normalized_key, fencing_scope=normalized_scope
+        ) as (c, tenant_id):
+            prior = self._prepare_fenced_operation(
+                c, tenant_id=tenant_id, fencing_scope=normalized_scope,
+                fencing_token=fencing_token, idempotency_key=idempotency_key,
+                operation=operation, operation_sha256=operation_hash,
+            )
+            row = self._get_object_row(c, tenant_id, normalized_key)
+            if prior is None:
+                if row is not None:
+                    if (
+                        row["data"] != data
+                        or row["fencing_scope"] != normalized_scope
+                    ):
+                        raise BackupStorageConflict(
+                            "immutable object key already contains different bytes or scope"
+                        )
+                else:
+                    c.execute(
+                        """INSERT INTO provider_objects(
+                            tenant_id,object_key,fencing_scope,data,content_sha256,
+                            size_bytes,version_id,fencing_token,created_at
+                        ) VALUES(?,?,?,?,?,?,NULL,?,?)""",
+                        (
+                            tenant_id, normalized_key, normalized_scope, data,
+                            digest, len(data), fencing_token, time.time(),
+                        ),
+                    )
+                self._inject("after_object_mutation_before_fence_commit")
+                self._commit_fenced_operation(
+                    c, tenant_id=tenant_id, object_key=normalized_key,
+                    fencing_scope=normalized_scope, fencing_token=fencing_token,
+                    idempotency_key=idempotency_key, operation=operation,
+                    operation_sha256=operation_hash,
+                    result={"object_key": normalized_key, "sha256": digest, "size_bytes": len(data)},
+                )
+            else:
+                self._record_allow(
+                    c, tenant_id=tenant_id, action=operation, object_key=normalized_key,
+                    fencing_scope=normalized_scope, fencing_token=fencing_token,
+                    idempotency_key=idempotency_key, outcome="REPLAY",
+                )
+            row = self._get_object_row(c, tenant_id, normalized_key)
+            if row is None:
+                raise BackupStorageError("fenced object operation committed without an object row")
+            result = self._stored_object(row)
+        self._after_commit()
+        return result
+
+    def begin_multipart_upload_fenced(
+        self, key: str, upload_id: str, *, fencing_scope: str,
+        fencing_token: int, idempotency_key: str,
+    ) -> None:
+        normalized_key, scope = _safe_key(key), _safe_key(fencing_scope)
+        self._validate_fenced_arguments(fencing_token, idempotency_key)
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", upload_id or ""):
+            raise BackupStorageError("multipart upload ID is invalid")
+        action = "multipart:write_fenced"
+        operation_hash = self._operation_hash(
+            "multipart_begin", {"key": normalized_key, "scope": scope, "upload_id": upload_id}
+        )
+        with self._authorized_transaction(
+            action=action, object_key=normalized_key, fencing_scope=scope
+        ) as (c, tenant_id):
+            prior = self._prepare_fenced_operation(
+                c, tenant_id=tenant_id, fencing_scope=scope,
+                fencing_token=fencing_token, idempotency_key=idempotency_key,
+                operation="multipart_begin", operation_sha256=operation_hash,
+            )
+            if prior is None:
+                if self._get_object_row(c, tenant_id, normalized_key) is not None:
+                    raise BackupStorageConflict("cannot open a multipart session for a completed object")
+                existing = c.execute(
+                    """SELECT fencing_scope,state FROM multipart_sessions
+                       WHERE tenant_id=? AND object_key=? AND upload_id=?""",
+                    (tenant_id, normalized_key, upload_id),
+                ).fetchone()
+                if existing is not None and (
+                    existing["fencing_scope"] != scope or existing["state"] != "ACTIVE"
+                ):
+                    raise BackupStorageConflict("multipart session ID conflicts with stored session state")
+                c.execute(
+                    """INSERT OR IGNORE INTO multipart_sessions(
+                        tenant_id,object_key,upload_id,fencing_scope,state,created_at,updated_at
+                    ) VALUES(?,?,?,?,'ACTIVE',?,?)""",
+                    (tenant_id, normalized_key, upload_id, scope, time.time(), time.time()),
+                )
+                self._commit_fenced_operation(
+                    c, tenant_id=tenant_id, object_key=normalized_key,
+                    fencing_scope=scope, fencing_token=fencing_token,
+                    idempotency_key=idempotency_key, operation="multipart_begin",
+                    operation_sha256=operation_hash, result={"upload_id": upload_id},
+                )
+            else:
+                self._record_allow(
+                    c, tenant_id=tenant_id, action=action, object_key=normalized_key,
+                    fencing_scope=scope, fencing_token=fencing_token,
+                    idempotency_key=idempotency_key, outcome="REPLAY",
+                )
+        self._after_commit()
+
+    def put_multipart_part_fenced(
+        self, key: str, upload_id: str, part_number: int, data: bytes,
+        expected_sha256: str, *, fencing_scope: str,
+        fencing_token: int, idempotency_key: str,
+    ) -> MultipartPart:
+        normalized_key, scope = _safe_key(key), _safe_key(fencing_scope)
+        self._validate_fenced_arguments(fencing_token, idempotency_key)
+        if not isinstance(part_number, int) or isinstance(part_number, bool) or part_number < 1:
+            raise BackupStorageError("multipart part number must be a positive integer")
+        if not isinstance(data, bytes) or _sha(data) != expected_sha256:
+            raise BackupStorageError("multipart part data or checksum is invalid")
+        action = "multipart:write_fenced"
+        digest = _sha(data)
+        operation_hash = self._operation_hash(
+            "multipart_part", {
+                "key": normalized_key, "scope": scope, "upload_id": upload_id,
+                "part_number": part_number, "sha256": digest, "size_bytes": len(data),
+            }
+        )
+        with self._authorized_transaction(
+            action=action, object_key=normalized_key, fencing_scope=scope
+        ) as (c, tenant_id):
+            prior = self._prepare_fenced_operation(
+                c, tenant_id=tenant_id, fencing_scope=scope,
+                fencing_token=fencing_token, idempotency_key=idempotency_key,
+                operation="multipart_part", operation_sha256=operation_hash,
+            )
+            session = c.execute(
+                """SELECT fencing_scope,state FROM multipart_sessions
+                   WHERE tenant_id=? AND object_key=? AND upload_id=?""",
+                (tenant_id, normalized_key, upload_id),
+            ).fetchone()
+            if session is None or session["fencing_scope"] != scope or session["state"] != "ACTIVE":
+                raise BackupStorageError("multipart session is missing, outside scope, or not active")
+            if prior is None:
+                existing = c.execute(
+                    """SELECT data,content_sha256,size_bytes FROM multipart_parts
+                       WHERE tenant_id=? AND object_key=? AND upload_id=? AND part_number=?""",
+                    (tenant_id, normalized_key, upload_id, part_number),
+                ).fetchone()
+                if existing is not None and (
+                    existing["data"] != data or existing["content_sha256"] != digest
+                ):
+                    raise BackupStorageConflict("multipart part number already contains different bytes")
+                c.execute(
+                    """INSERT OR IGNORE INTO multipart_parts(
+                        tenant_id,object_key,upload_id,part_number,data,
+                        content_sha256,size_bytes,fencing_token
+                    ) VALUES(?,?,?,?,?,?,?,?)""",
+                    (tenant_id, normalized_key, upload_id, part_number, data, digest, len(data), fencing_token),
+                )
+                c.execute(
+                    """UPDATE multipart_sessions SET updated_at=?
+                       WHERE tenant_id=? AND object_key=? AND upload_id=?""",
+                    (time.time(), tenant_id, normalized_key, upload_id),
+                )
+                self._commit_fenced_operation(
+                    c, tenant_id=tenant_id, object_key=normalized_key,
+                    fencing_scope=scope, fencing_token=fencing_token,
+                    idempotency_key=idempotency_key, operation="multipart_part",
+                    operation_sha256=operation_hash,
+                    result={"part_number": part_number, "sha256": digest, "size_bytes": len(data)},
+                )
+            else:
+                self._record_allow(
+                    c, tenant_id=tenant_id, action=action, object_key=normalized_key,
+                    fencing_scope=scope, fencing_token=fencing_token,
+                    idempotency_key=idempotency_key, outcome="REPLAY",
+                )
+            part = c.execute(
+                """SELECT content_sha256,size_bytes FROM multipart_parts
+                   WHERE tenant_id=? AND object_key=? AND upload_id=? AND part_number=?""",
+                (tenant_id, normalized_key, upload_id, part_number),
+            ).fetchone()
+            if part is None:
+                raise BackupStorageError("multipart idempotent receipt has no corresponding part")
+            result = MultipartPart(part_number, part["content_sha256"], int(part["size_bytes"]))
+        self._after_commit()
+        return result
+
+    def complete_multipart_upload_fenced(
+        self, key: str, upload_id: str, *, expected_part_count: int,
+        expected_size_bytes: int, expected_sha256: str,
+        fencing_scope: str, fencing_token: int, idempotency_key: str,
+    ) -> StoredObject:
+        normalized_key, scope = _safe_key(key), _safe_key(fencing_scope)
+        self._validate_fenced_arguments(fencing_token, idempotency_key)
+        if (
+            not isinstance(expected_part_count, int) or isinstance(expected_part_count, bool)
+            or expected_part_count < 1
+            or not isinstance(expected_size_bytes, int) or isinstance(expected_size_bytes, bool)
+            or expected_size_bytes < 0
+            or not isinstance(expected_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256)
+        ):
+            raise BackupStorageError("multipart completion metadata is invalid")
+        action = "multipart:write_fenced"
+        operation_hash = self._operation_hash(
+            "multipart_complete", {
+                "key": normalized_key, "scope": scope, "upload_id": upload_id,
+                "part_count": expected_part_count, "size_bytes": expected_size_bytes,
+                "sha256": expected_sha256,
+            }
+        )
+        with self._authorized_transaction(
+            action=action, object_key=normalized_key, fencing_scope=scope
+        ) as (c, tenant_id):
+            prior = self._prepare_fenced_operation(
+                c, tenant_id=tenant_id, fencing_scope=scope,
+                fencing_token=fencing_token, idempotency_key=idempotency_key,
+                operation="multipart_complete", operation_sha256=operation_hash,
+            )
+            if prior is None:
+                session = c.execute(
+                    """SELECT state,fencing_scope FROM multipart_sessions
+                       WHERE tenant_id=? AND object_key=? AND upload_id=?""",
+                    (tenant_id, normalized_key, upload_id),
+                ).fetchone()
+                if session is None or session["state"] != "ACTIVE" or session["fencing_scope"] != scope:
+                    raise BackupStorageError("multipart session is missing, outside scope, or not active")
+                parts = c.execute(
+                    """SELECT part_number,data FROM multipart_parts
+                       WHERE tenant_id=? AND object_key=? AND upload_id=?
+                       ORDER BY part_number""",
+                    (tenant_id, normalized_key, upload_id),
+                ).fetchall()
+                if [int(row["part_number"]) for row in parts] != list(range(1, expected_part_count + 1)):
+                    raise BackupStorageError("multipart part set is incomplete or unexpected")
+                data = b"".join(bytes(row["data"]) for row in parts)
+                if len(data) != expected_size_bytes or _sha(data) != expected_sha256:
+                    raise BackupStorageError("multipart completion size or digest mismatch")
+                existing = self._get_object_row(c, tenant_id, normalized_key)
+                if existing is not None and (
+                    existing["data"] != data or existing["fencing_scope"] != scope
+                ):
+                    raise BackupStorageConflict("completed object key already contains different data or scope")
+                if existing is None:
+                    c.execute(
+                        """INSERT INTO provider_objects(
+                            tenant_id,object_key,fencing_scope,data,content_sha256,
+                            size_bytes,version_id,fencing_token,created_at
+                        ) VALUES(?,?,?,?,?,?,NULL,?,?)""",
+                        (tenant_id, normalized_key, scope, data, expected_sha256,
+                         expected_size_bytes, fencing_token, time.time()),
+                    )
+                c.execute(
+                    """UPDATE multipart_sessions SET state='COMPLETED',updated_at=?
+                       WHERE tenant_id=? AND object_key=? AND upload_id=?""",
+                    (time.time(), tenant_id, normalized_key, upload_id),
+                )
+                self._inject("after_object_mutation_before_fence_commit")
+                self._commit_fenced_operation(
+                    c, tenant_id=tenant_id, object_key=normalized_key,
+                    fencing_scope=scope, fencing_token=fencing_token,
+                    idempotency_key=idempotency_key, operation="multipart_complete",
+                    operation_sha256=operation_hash,
+                    result={"object_key": normalized_key, "sha256": expected_sha256,
+                            "size_bytes": expected_size_bytes},
+                )
+            else:
+                self._record_allow(
+                    c, tenant_id=tenant_id, action=action, object_key=normalized_key,
+                    fencing_scope=scope, fencing_token=fencing_token,
+                    idempotency_key=idempotency_key, outcome="REPLAY",
+                )
+            row = self._get_object_row(c, tenant_id, normalized_key)
+            if row is None:
+                raise BackupStorageError("multipart completion receipt has no committed object")
+            result = self._stored_object(row)
+        self._after_commit()
+        return result
+
+    def put_if_absent(self, key: str, data: bytes) -> StoredObject:
+        raise FencingNotSupportedError("SQLite fenced Provider refuses non-fenced object writes")
+
+    def begin_multipart_upload(self, key: str, upload_id: str) -> None:
+        raise FencingNotSupportedError("SQLite fenced Provider requires fenced multipart begin")
+
+    def put_multipart_part(
+        self, key: str, upload_id: str, part_number: int, data: bytes, expected_sha256: str
+    ) -> MultipartPart:
+        raise FencingNotSupportedError("SQLite fenced Provider requires fenced multipart part writes")
+
+    def complete_multipart_upload(
+        self, key: str, upload_id: str, *, expected_part_count: int,
+        expected_size_bytes: int, expected_sha256: str
+    ) -> StoredObject:
+        raise FencingNotSupportedError("SQLite fenced Provider requires fenced multipart completion")
+
+    def abort_multipart_upload(self, key: str, upload_id: str) -> None:
+        raise FencingNotSupportedError("unfenced multipart abort is disabled")
+
+    def get_object(self, key: str, *, version_id: str | None = None) -> StoredObject:
+        normalized = _safe_key(key)
+        if version_id is not None:
+            raise BackupStorageError("SQLite fenced Provider does not support object version IDs")
+        with self._authorized_transaction(action="object:read", object_key=normalized) as (c, tenant_id):
+            row = self._get_object_row(c, tenant_id, normalized)
+            if row is None:
+                raise SQLiteProviderObjectNotFoundError("object does not exist in this tenant namespace")
+            result = self._stored_object(row)
+            self._record_allow(c, tenant_id=tenant_id, action="object:read", object_key=normalized)
+        return result
+
+    def list_multipart_parts(self, key: str, upload_id: str) -> list[MultipartPart]:
+        normalized = _safe_key(key)
+        with self._authorized_transaction(
+            action="multipart:read", object_key=normalized
+        ) as (c, tenant_id):
+            rows = c.execute(
+                """SELECT part_number,content_sha256,size_bytes FROM multipart_parts
+                   WHERE tenant_id=? AND object_key=? AND upload_id=? ORDER BY part_number""",
+                (tenant_id, normalized, upload_id),
+            ).fetchall()
+            result = [
+                MultipartPart(int(r["part_number"]), r["content_sha256"], int(r["size_bytes"]))
+                for r in rows
+            ]
+            self._record_allow(c, tenant_id=tenant_id, action="multipart:read", object_key=normalized)
+        return result
+
+    def list_objects(self, prefix: str) -> list[ObjectMetadata]:
+        normalized = _safe_key(prefix.rstrip("/"))
+        with self._authorized_transaction(
+            action="object:list_prefix", object_key=normalized
+        ) as (c, tenant_id):
+            rows = c.execute(
+                """SELECT object_key,content_sha256,size_bytes,version_id
+                   FROM provider_objects WHERE tenant_id=?
+                   AND (object_key=? OR object_key LIKE ? ESCAPE '\\')
+                   ORDER BY object_key""",
+                (tenant_id, normalized, self._like_prefix(normalized)),
+            ).fetchall()
+            result = [
+                ObjectMetadata(r["object_key"], r["content_sha256"], int(r["size_bytes"]), r["version_id"])
+                for r in rows
+            ]
+            self._record_allow(c, tenant_id=tenant_id, action="object:list_prefix", object_key=normalized)
+        return result
+
+    @staticmethod
+    def _like_prefix(prefix: str) -> str:
+        escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        return escaped + "/%"
+
+    def list_multipart_uploads(self, prefix: str) -> list[dict[str, Any]]:
+        normalized = _safe_key(prefix.rstrip("/"))
+        with self._authorized_transaction(
+            action="multipart:list", object_key=normalized
+        ) as (c, tenant_id):
+            rows = c.execute(
+                """SELECT object_key,upload_id,state,fencing_scope,created_at,updated_at
+                   FROM multipart_sessions WHERE tenant_id=?
+                   AND (object_key=? OR object_key LIKE ? ESCAPE '\\')
+                   ORDER BY object_key,upload_id""",
+                (tenant_id, normalized, self._like_prefix(normalized)),
+            ).fetchall()
+            result = [dict(row) for row in rows]
+            self._record_allow(c, tenant_id=tenant_id, action="multipart:list", object_key=normalized)
+        return result
+
+    def fencing_high_water(self, fencing_scope: str) -> int:
+        scope = _safe_key(fencing_scope)
+        with self._authorized_transaction(
+            action="object:list_prefix", object_key=scope
+        ) as (c, tenant_id):
+            row = c.execute(
+                "SELECT high_water FROM fencing_scopes WHERE tenant_id=? AND fencing_scope=?",
+                (tenant_id, scope),
+            ).fetchone()
+            meta = c.execute(
+                "SELECT value FROM provider_meta WHERE key='minimum_fencing_token'"
+            ).fetchone()
+            return max(int(row["high_water"]) if row else 0, int(meta["value"]) if meta else 0)
+
+    def diagnostics(self) -> dict[str, Any]:
+        with self._authorized_transaction(
+            action="object:list_prefix", object_key="__diagnostics__"
+        ) as (c, tenant_id):
+            scopes = c.execute(
+                "SELECT COUNT(*) AS n FROM fencing_scopes WHERE tenant_id=?", (tenant_id,)
+            ).fetchone()["n"]
+            objects = c.execute(
+                "SELECT COUNT(*) AS n FROM provider_objects WHERE tenant_id=?", (tenant_id,)
+            ).fetchone()["n"]
+            sessions = c.execute(
+                "SELECT COUNT(*) AS n FROM multipart_sessions WHERE tenant_id=?", (tenant_id,)
+            ).fetchone()["n"]
+            meta = c.execute(
+                "SELECT value FROM provider_meta WHERE key='minimum_fencing_token'"
+            ).fetchone()
+            # Diagnostics is intentionally limited to local implementation metrics.
+            return {
+                "backend": "SQLITE_LOCAL_FENCED_REFERENCE",
+                "journal_mode": "WAL",
+                "synchronous": "FULL",
+                "multi_process_same_host": True,
+                "multi_host_supported": False,
+                "principal_id": self.principal_id,
+                "tenant_id": tenant_id,
+                "fencing_scope_count": int(scopes),
+                "object_count": int(objects),
+                "multipart_session_count": int(sessions),
+                "minimum_fencing_token": int(meta["value"]) if meta else 0,
+                "supports_fencing": True,
+            }
+
+    def backup_to(self, destination_path: str | os.PathLike[str]) -> dict[str, Any]:
+        """Create a consistent online snapshot at a new immutable path."""
+        destination = Path(destination_path).expanduser().resolve()
+        if destination == self.database_path or destination.exists():
+            raise BackupStorageError("Provider backup destination must be a new file")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        staging = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.staging")
+        source = target = None
+        try:
+            source = sqlite3.connect(str(self.database_path), timeout=self.busy_timeout_seconds)
+            source.execute(f"PRAGMA busy_timeout={int(self.busy_timeout_seconds * 1000)}")
+            target = sqlite3.connect(str(staging), timeout=self.busy_timeout_seconds)
+            source.backup(target, pages=256, sleep=0.05)
+            target.commit()
+            target.close()
+            target = None
+            source.close()
+            source = None
+            report = self.validate_backup(staging)
+            with staging.open("rb") as stream:
+                os.fsync(stream.fileno())
+            os.link(staging, destination)
+            staging.unlink()
+            os.chmod(destination, 0o600)
+            dir_fd = os.open(destination.parent, os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+            return {**report, "path": str(destination)}
+        except BackupStorageError:
+            raise
+        except (sqlite3.Error, OSError) as exc:
+            raise BackupStorageError("SQLite fenced Provider online backup failed") from exc
+        finally:
+            if target is not None:
+                target.close()
+            if source is not None:
+                source.close()
+            try:
+                staging.unlink()
+            except FileNotFoundError:
+                pass
+
+    @classmethod
+    def validate_backup(cls, backup_path: str | os.PathLike[str]) -> dict[str, Any]:
+        backup = Path(backup_path).expanduser().resolve()
+        if not backup.is_file() or backup.is_symlink():
+            raise BackupStorageError("Provider backup file is missing or unsafe")
+        connection = None
+        try:
+            uri = "file:" + quote(str(backup), safe="/") + "?mode=ro"
+            connection = sqlite3.connect(uri, uri=True)
+            connection.row_factory = sqlite3.Row
+            integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
+            if integrity != "ok":
+                raise BackupStorageError("Provider backup SQLite integrity check failed")
+            fk = connection.execute("PRAGMA foreign_key_check").fetchall()
+            if fk:
+                raise BackupStorageError("Provider backup has foreign-key violations")
+            meta = dict(connection.execute("SELECT key,value FROM provider_meta").fetchall())
+            if meta.get("schema_version") != str(SCHEMA_VERSION):
+                raise BackupStorageError("Provider backup schema version is unsupported")
+            required = {
+                "provider_principals", "fencing_scopes", "fenced_operations",
+                "provider_objects", "multipart_sessions", "multipart_parts", "provider_audit",
+            }
+            tables = {
+                row["name"] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            if not required.issubset(tables):
+                raise BackupStorageError("Provider backup is missing required tables")
+            report = {
+                "result": "VALID",
+                "schema_version": SCHEMA_VERSION,
+                "minimum_fencing_token": int(meta.get("minimum_fencing_token", "0")),
+                "principal_count": int(connection.execute("SELECT COUNT(*) FROM provider_principals").fetchone()[0]),
+                "fencing_scope_count": int(connection.execute("SELECT COUNT(*) FROM fencing_scopes").fetchone()[0]),
+                "object_count": int(connection.execute("SELECT COUNT(*) FROM provider_objects").fetchone()[0]),
+                "audit_record_count": int(connection.execute("SELECT COUNT(*) FROM provider_audit").fetchone()[0]),
+                "integrity_check": integrity,
+                "foreign_key_check": "PASS",
+                "sha256": cls._sha256_file(backup),
+            }
+            return report
+        except sqlite3.Error as exc:
+            raise BackupStorageError("Provider backup cannot be validated") from exc
+        finally:
+            if connection is not None:
+                connection.close()
+
+    def restore_to_new_database(
+        self,
+        backup_path: str | os.PathLike[str],
+        destination_path: str | os.PathLike[str],
+        *,
+        external_fencing_floor: int,
+        fencing_reconciliation_ref: str,
+    ) -> dict[str, Any]:
+        """Prepare a new DB only; requires independent fencing floor reconciliation."""
+        backup = Path(backup_path).expanduser().resolve()
+        destination = Path(destination_path).expanduser().resolve()
+        if not isinstance(external_fencing_floor, int) or isinstance(external_fencing_floor, bool):
+            raise BackupStorageError("external fencing floor must be an integer")
+        if not 0 <= external_fencing_floor <= MAX_FENCING_TOKEN:
+            raise BackupStorageError("external fencing floor is out of range")
+        if (
+            not isinstance(fencing_reconciliation_ref, str)
+            or not fencing_reconciliation_ref.strip()
+            or len(fencing_reconciliation_ref.strip()) > 512
+        ):
+            raise BackupStorageError("restore requires an independent fencing reconciliation reference")
+        if backup in {destination, self.database_path} or destination == self.database_path:
+            raise BackupStorageError("restore must target a new Provider DB path")
+        if destination.exists():
+            raise BackupStorageError("restore destination exists; in-place overwrite is prohibited")
+        report = self.validate_backup(backup)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        staging = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.restore")
+        source = target = None
+        invalidated_sessions = 0
+        try:
+            source = sqlite3.connect(
+                "file:" + quote(str(backup), safe="/") + "?mode=ro",
+                uri=True, timeout=self.busy_timeout_seconds,
+            )
+            target = sqlite3.connect(str(staging), timeout=self.busy_timeout_seconds, isolation_level=None)
+            source.backup(target, pages=256, sleep=0.05)
+            target.execute("PRAGMA foreign_keys=ON")
+            target.execute("PRAGMA journal_mode=WAL")
+            target.execute("PRAGMA synchronous=FULL")
+            target.execute("BEGIN IMMEDIATE")
+            rows = target.execute("SELECT COUNT(*) FROM multipart_sessions WHERE state='ACTIVE'").fetchone()[0]
+            invalidated_sessions = int(rows)
+            target.execute(
+                """DELETE FROM multipart_parts WHERE EXISTS(
+                    SELECT 1 FROM multipart_sessions s
+                    WHERE s.tenant_id=multipart_parts.tenant_id
+                      AND s.object_key=multipart_parts.object_key
+                      AND s.upload_id=multipart_parts.upload_id
+                      AND s.state='ACTIVE'
+                )"""
+            )
+            target.execute("DELETE FROM multipart_sessions WHERE state='ACTIVE'")
+            target.execute(
+                """UPDATE fencing_scopes SET high_water=MAX(high_water,?),updated_at=?""",
+                (external_fencing_floor, time.time()),
+            )
+            current_floor = int(target.execute(
+                "SELECT value FROM provider_meta WHERE key='minimum_fencing_token'"
+            ).fetchone()[0])
+            seeded_floor = max(current_floor, external_fencing_floor, report["minimum_fencing_token"])
+            target.execute(
+                "UPDATE provider_meta SET value=? WHERE key='minimum_fencing_token'",
+                (str(seeded_floor),),
+            )
+            target.execute(
+                "INSERT OR REPLACE INTO provider_meta(key,value) VALUES('restore_reconciliation_ref',?)",
+                (fencing_reconciliation_ref.strip(),),
+            )
+            target.commit()
+            target.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            target.close()
+            target = None
+            source.close()
+            source = None
+            validation = self.validate_backup(staging)
+            with staging.open("rb") as stream:
+                os.fsync(stream.fileno())
+            os.link(staging, destination)
+            staging.unlink()
+            os.chmod(destination, 0o600)
+            dir_fd = os.open(destination.parent, os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+            return {
+                "result": "PREPARED_NEW_DATABASE_NOT_CUTOVER",
+                "destination": str(destination),
+                "external_fencing_floor": external_fencing_floor,
+                "seeded_minimum_fencing_token": seeded_floor,
+                "invalidated_active_multipart_sessions": invalidated_sessions,
+                "reconciliation_ref": fencing_reconciliation_ref.strip(),
+                "validation": validation,
+                "cutover_performed": False,
+                "source_database_modified": False,
+            }
+        except BackupStorageError:
+            raise
+        except (sqlite3.Error, OSError) as exc:
+            raise BackupStorageError("SQLite fenced Provider restore preparation failed") from exc
+        finally:
+            if target is not None:
+                target.close()
+            if source is not None:
+                source.close()
+            try:
+                staging.unlink()
+            except FileNotFoundError:
+                pass
+
+    @staticmethod
+    def _sha256_file(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    @staticmethod
+    def self_check() -> dict[str, Any]:
+        with tempfile.TemporaryDirectory(prefix="ch17-sqlite-fenced-provider-") as tmp:
+            root = Path(tmp)
+            database = root / "provider.sqlite"
+            secret = "synthetic-ci-secret-do-not-reuse"
+            provision = SQLiteFencedObjectStorageProvider.provision_database(
+                database,
+                principals=[{
+                    "principal_id": "ci-writer",
+                    "tenant_id": "synthetic-tenant",
+                    "principal_secret": secret,
+                    "allowed_prefixes": ["cnc/ch17"],
+                }],
+            )
+            provider = SQLiteFencedObjectStorageProvider(
+                database, principal_id="ci-writer", principal_secret=secret
+            )
+            provider.put_if_absent_fenced(
+                "cnc/ch17/backup-selfcheck/payload.bin", b"synthetic",
+                fencing_scope="cnc/ch17/backup-selfcheck",
+                fencing_token=1, idempotency_key="ci-put-1",
+            )
+            rejected = False
+            try:
+                provider.put_if_absent_fenced(
+                    "cnc/ch17/backup-selfcheck/late.bin", b"late",
+                    fencing_scope="cnc/ch17/backup-selfcheck",
+                    fencing_token=1, idempotency_key="ci-stale-1",
+                )
+            except (StaleFencingTokenError, FencingTokenConflictError):
+                rejected = True
+            if not rejected:
+                raise AssertionError("stale/same token writer was not rejected")
+            persisted = SQLiteFencedObjectStorageProvider(
+                database, principal_id="ci-writer", principal_secret=secret
+            )
+            if persisted.fencing_high_water("cnc/ch17/backup-selfcheck") != 1:
+                raise AssertionError("fencing high-water did not persist across provider instances")
+            return {
+                "result": "PASS",
+                "provider_kind": "SQLITE_LOCAL_FENCED_REFERENCE",
+                "provisioning": "PASS",
+                "credential_verifier": "PBKDF2_SHA256_NO_PLAINTEXT_SECRET",
+                "tenant_prefix_action_authorization": "PASS",
+                "package_scope_high_water_persisted": "PASS",
+                "stale_same_package_writer_rejected": "PASS",
+                "sqlite_atomic_write_fence_receipt_transaction": "PASS",
+                "file_mode": provision["file_mode"],
+                "network_access": False,
+                "multi_host_supported": False,
+                "cloud_provider_integration": False,
+                "production_approval": "NOT_APPROVED",
+            }
+
+    @classmethod
+    def main(cls) -> int:
+        parser = argparse.ArgumentParser(
+            description="Run the synthetic local SQLite fenced Provider reference self-check."
+        )
+        parser.add_argument("--self-check", action="store_true")
+        parser.add_argument("--report-json", type=Path)
+        args = parser.parse_args()
+        if not args.self_check:
+            parser.error("--self-check is required; ad hoc Provider CRUD is deliberately unavailable")
+        report = cls.self_check()
+        rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+        if args.report_json:
+            args.report_json.parent.mkdir(parents=True, exist_ok=True)
+            args.report_json.write_text(rendered, encoding="utf-8")
+        print(rendered, end="")
+        return 0 if report["result"] == "PASS" else 1
+
+
+def main() -> int:
+    return SQLiteFencedObjectStorageProvider.main()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
