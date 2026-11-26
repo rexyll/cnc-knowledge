@@ -239,7 +239,9 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
             scope=SCOPE, token=1, idempotency_key="tampered-write",
             operation="object:put_if_absent",
         )
-        tampered = proof[:-1] + ("A" if proof[-1] != "A" else "B")
+        signed_prefix, signature = proof.rsplit(".", 1)
+        tampered_signature = ("A" if signature[0] != "A" else "B") + signature[1:]
+        tampered = signed_prefix + "." + tampered_signature
         with self.assertRaises(BackupStorageError):
             self.provider._raw_fenced_methods["put"](
                 "cnc/ch17/backup-reference-001/tampered.bin", b"tampered",
