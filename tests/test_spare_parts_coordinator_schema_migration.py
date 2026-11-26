@@ -390,6 +390,8 @@ class CoordinatorSchemaMigrationTests(unittest.TestCase):
 
     def test_reverse_migration_rejects_v2_size_overflow(self):
         self.prepare_cutover()
+        self.model.resume_v3_writes()
+        self.model.freeze_v3_for_reverse_migration()
         with self.assertRaises(CoordinatorSchemaMigrationPolicyError):
             self.model.reverse_migrate_to_v2(
                 copy.deepcopy(self.source),

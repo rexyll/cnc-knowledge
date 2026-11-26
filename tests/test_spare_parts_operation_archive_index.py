@@ -68,8 +68,11 @@ class ExactShardedArchiveIndexTests(unittest.TestCase):
             max_batch_bytes=1_000_000,
         )
 
-    def _lookup(self, pointer, idempotency_key):
-        authoritative_count = self.archive.snapshot(SCOPE_A)["archived_operation_count"]
+    def _lookup(self, pointer, idempotency_key, expected_count=None):
+        authoritative_count = (
+            self.archive.snapshot(SCOPE_A)["archived_operation_count"]
+            if expected_count is None else expected_count
+        )
         return self.index.lookup(
             pointer,
             idempotency_key=idempotency_key,
@@ -158,10 +161,10 @@ class ExactShardedArchiveIndexTests(unittest.TestCase):
             batch_sha256=second_batch["manifest_sha256"],
         )
         self.assertIsNone(
-            self._lookup(first_pointer, "second")
+            self._lookup(first_pointer, "second", expected_count=1)
         )
         self.assertIsNotNone(
-            self._lookup(second_pointer, "second")
+            self._lookup(second_pointer, "second", expected_count=2)
         )
 
     def test_wrong_previous_archive_head_is_rejected(self):
