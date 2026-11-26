@@ -362,3 +362,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 最终Run [45749107843](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843)两个Job均completed/success；全库203项unittest、CH12资源143项通过，strict lint 0 errors。
 - SQLite self-check Artifact ID 15083979275；Provider Mock self-check Artifact ID 15084203674。
 - ASSET-000072现11条场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 Provider fencing 与 SQLite 备份恢复第二十九轮（2026-11-26）
+
+- spare-parts-inventory-backup-provider-fencing-contract-test-matrix-v1.csv（ASSET-000073）：8条下游fencing合成场景，验证陈旧token拒绝、同token幂等/冲突和Provider能力缺失时fail-closed。
+- spare-parts-inventory-backup-provider-sqlite-backup-restore-test-matrix-v1.csv（ASSET-000074）：8条本地SQLite备份/恢复合成场景，覆盖在线一致性快照、损坏拒绝、旧租约失效、等待者清理、外部高水位门禁与禁止覆盖。
+- 两个矩阵的状态均为PROPOSED_NOT_APPROVED / NOT_RUN。内存Sink并非真实Provider；SQLite restore只准备新库，不覆盖原库、不执行切换；生产备份继续关闭。
+- 配套正文：docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-fencing-and-sqlite-recovery.md（KNOW-000043）。

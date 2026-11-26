@@ -92,3 +92,14 @@ SQLite后端把租约到期时间保存为Unix wall-clock秒数，使进程重�
 - **最终CI：** [Run 45749107843](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843)，两个必需Job均completed/success；全库203项unittest、CH12资源143项通过，knowledge_lint.py --strict为PASS（0 errors）。
 - SQLite自检Artifact [15083979275](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843/artifacts/15083979275)；Provider Mock self-check Artifact ID 15084203674。
 - 当前SQLite协调器专项unittest 12项；ASSET-000072共11条场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## 第二十九轮补充：在线备份与外部 fencing 高水位恢复
+
+- 新增 backup_to()：调用 SQLite Backup API 创建在线一致性快照，目标必须是新路径且不能覆盖现有文件；备份通过只读 integrity_check / foreign_key_check、schema / policy hash / 计数器校验，并输出 SHA-256。
+- 新增 validate_backup()：检查 fencing 计数器不低于所有已签发记录的最大 token；报告活动租约、等待请求和备份摘要。
+- 新增 restore_to_new_database()：恢复到独立新库，强制要求来自数据库之外的 external_fencing_floor 和 fencing_reconciliation_ref；恢复会使旧ACTIVE租约失效并清空等待者，将下一token推进到外部高水位及备份序列的最大值；不覆盖原库、不执行客户端切换。
+- 新增6项SQLite测试：在线备份/活动租约快照、损坏备份拒绝、计数器倒退拒绝、恢复租约和等待者清理、外部高水位/策略门禁及禁止覆盖路径。SQLite协调器专项测试现18项。
+- 该恢复API仅准备新库；服务切换、旧实例隔离、下游高水位全量盘点、恢复后业务一致性核对仍由受控运维流程负责。缺少可信外部高水位或下游不具备原子fencing时，不得恢复写入。
+- **代码CI：** [Run 45751336613](https://github.com/rexyll/cnc-knowledge/actions/runs/45751336613) 两个必需Job均completed/success；全库217项unittest通过、CH12资源143项通过，strict lint 0 errors（5 warnings）。SQLite CLI自检PASS，Artifact [15084844535](https://github.com/rexyll/cnc-knowledge/actions/runs/45751336613/artifacts/15084844535)。
+- 未覆盖：WAL/SHM磁盘故障、加密/签名、访问控制、异地介质、真实灾备演练、多主机协调和生产切换。

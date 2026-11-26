@@ -480,3 +480,13 @@
 - 最终Run 45749107843两个Job均completed/success，全库203项unittest通过，CH12资源143项通过，strict lint 0 errors。
 - 队列满诊断回归通过：活动租约保持、没有残留等待者、rejected_queue增加1。SQLite self-check Artifact ID 15083979275。
 - ASSET-000072扩展至11条合成场景；全部仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 第二十九轮：Provider fencing 契约与 SQLite 安全恢复
+
+- **目标：** 明确存储端陈旧写入隔离必须由下游原子校验 fencing token，补齐SQLite协调器在线快照和安全恢复准备。
+- **交付：** scripts/spare_parts_provider_fencing_contract.py、tests/test_spare_parts_provider_fencing_contract.py、SQLite协调器新增在线备份/验证/新库恢复API及6项专项测试；KNOW-000043；ASSET-000073/000074。
+- **验收边界：** 合成存储端只证明合同测试，不代表真实Provider支持；当前BackupStorageAdapter尚未把lease token传递给远端PUT/multipart/receipt。SQLite恢复必须给出独立可信的下游fencing高水位和证据引用，只准备新库，不覆盖原库、不自动cutover。
+- **代码验收：** Run 45751336613两个必需Job均success；全库217项unittest、CH12 143项资源测试通过，strict lint 0 errors（5 warnings）。
+- **状态：** CH17-T004继续IN_PROGRESS；生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务规则断言NOT_EVALUATED；ASSET-000073/074共16条情景全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **后续：** 完成真实Provider能力合同审查、资源级高水位完整性证明和企业受控恢复演练后，才能评估是否集成真实fencing。不得以Mock测试替代供应商或生产验收。

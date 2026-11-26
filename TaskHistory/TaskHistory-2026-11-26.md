@@ -253,3 +253,17 @@
 - **SQLite自检：** Artifact [ch17-provider-admission-sqlite-45749107843](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843/artifacts/15083979275)，ID 15083979275；Provider Mock adapter self-check Artifact ID 15084203674。
 - **资源：** ASSET-000072扩展为11条场景，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；SQLite协调器专项unittest共12项。
 - **限制：** SQLite仅支持同主机受支持本地文件系统上的多进程共享；未验证多主机/NFS/SMB/HA、真实存储端fencing、数据库灾备/静态加密、生产QPS或真实Provider。生产备份关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。
+
+
+## CH17-T004 Provider fencing 契约与 SQLite 安全恢复第二十九轮
+
+- **代码CI完成时间：** 2026-11-26T11:49:23+08:00（由GitHub Actions记录转换为Asia/Shanghai）。
+- **分支：** main（未创建其他分支）。
+- **代码提交：** 1307ef462b920d9bf745ffb5ff5606e859f3a669。
+- **新增代码：** scripts/spare_parts_provider_fencing_contract.py；更新 scripts/spare_parts_provider_admission_sqlite.py。
+- **新增测试：** tests/test_spare_parts_provider_fencing_contract.py（8项）；SQLite专项测试新增6项、总计18项。
+- **实现内容：** 下游Provider fencing-aware契约，按资源高水位拒绝陈旧token，同token只允许相同幂等键/内容摘要的重放；能力缺失fail-closed。SQLite支持Backup API在线一致性快照、只读完整性/策略/计数器检查，以及要求独立外部fencing高水位和证据引用的“恢复到新库”操作；恢复使旧活动租约失效并清空等待者，不覆盖原库、不自动切换。
+- **资源与知识：** 新增KNOW-000043；新增ASSET-000073/000074两份场景矩阵，共16条情景，全部PROPOSED_NOT_APPROVED / NOT_RUN，归档在 resouces/17-operation-maintenance-and-repair/。
+- **代码CI：** [Run 45751336613](https://github.com/rexyll/cnc-knowledge/actions/runs/45751336613)，两个必需Job均completed/success；全库217项unittest、CH12资源143项通过，strict lint PASS（0 errors，5 warnings）；SQLite协调器自检PASS，Artifact ID 15084844535。
+- **严格边界：** 合成内存Sink不是真实对象存储；BackupStorageAdapter目前没有把lease token贯穿到远端写操作，真实Provider fencing仍未实现或验证。外部高水位必须来自独立、完整且可信的下游状态证据；无法核实时恢复写入必须保持BLOCKED。SQLite快照不等于经过企业批准的灾备系统。
+- **状态：** CH17-T004继续IN_PROGRESS；生产备份关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

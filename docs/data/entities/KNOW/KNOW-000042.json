@@ -34,7 +34,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T11:45:00+08:00",
-  "updated_at": "2026-11-26T03:25:00Z",
+  "updated_at": "2026-11-26T04:05:00Z",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -46,7 +46,7 @@
     "test_file": "tests/test_spare_parts_provider_admission_sqlite.py",
     "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-sqlite-coordinator-test-matrix-v1.csv",
     "scenario_definition_count": 11,
-    "added_unittest_methods": 12,
+    "added_unittest_methods": 18,
     "backend": "SQLITE_WAL_SYNCHRONOUS_FULL",
     "transaction_isolation": "BEGIN_IMMEDIATE",
     "coordination_scope": "MULTI_PROCESS_SAME_HOST_LOCAL_FILESYSTEM",
@@ -60,21 +60,25 @@
     "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
     "production_backup_enabled": false,
     "business_rule_assertions": "NOT_EVALUATED",
-    "latest_code_commit": "3867b6c2ad3a3ab8832cf518b1c3b27db056bd6f",
-    "latest_code_ci_run": 45749107843,
+    "latest_code_commit": "1307ef462b920d9bf745ffb5ff5606e859f3a669",
+    "latest_code_ci_run": 45751336613,
     "latest_code_ci_status": "completed/success",
-    "full_unittest_count": 203,
+    "full_unittest_count": 217,
     "strict_knowledge_lint": "PASS_0_ERRORS",
-    "sqlite_coordinator_unittest_count": 12,
-    "latest_verified_commit": "b4dcebb5249546954090a50a1c7dff809796345c",
-    "latest_verified_ci_run": 45749107843,
-    "latest_sqlite_self_check_artifact_id": 15083979275,
+    "sqlite_coordinator_unittest_count": 18,
+    "latest_verified_commit": "1307ef462b920d9bf745ffb5ff5606e859f3a669",
+    "latest_verified_ci_run": 45751336613,
+    "latest_sqlite_self_check_artifact_id": 15084844535,
     "latest_adapter_report_artifact_id": 15084203674,
     "sqlite_self_check": "PASS",
     "ci_jobs": {
       "Knowledge structure and data quality": "completed/success",
       "CH12 numerical resource tests": "completed/success"
-    }
+    },
+    "online_backup_validation_supported": true,
+    "restore_to_new_database_supported": true,
+    "restore_requires_external_fencing_floor": true,
+    "restore_invalidates_active_leases": true
   },
-  "notes": "SQLite协调器只适用于同一主机、受支持本地文件系统上的多进程共享；不支持多主机/NFS/SMB/HA。墙钟跳变、数据库文件权限/加密/备份/损坏恢复、tombstone保留策略、自动心跳、QPS token bucket及下游fencing仍未解决。两个子进程竞争同一SQLite文件的测试只代表CI本机合成证据；ASSET-000072场景尚未批准/执行。 文档同步Run 45748616308的202项unittest通过，但SQLite脚本直接执行时因未将仓库根目录加入sys.path而失败；修复提交8d2a36b6240f20b1968a7e2ef148dcc02e745f88后，最终Run 45748707053两Job均completed/success，202项unittest、CH12资源143项通过，strict lint 0 errors；SQLite自检PASS（Artifact 15084821221），Provider Mock self-check PASS（Artifact 15084277008）。 附加修复：队列满时拒绝计数原在被回滚的准入事务中更新，已调整为独立事务持久计数；新增1项回归测试，ASSET-000072扩展至11条。下一次CI待验证。 最终补充：队列满诊断计数独立事务修复，新增回归测试后最终CI Run 45749107843两个Job均completed/success；全库203项、SQLite协调器专项12项、CH12资源143项通过；strict lint 0 errors；SQLite self-check PASS（Artifact 15083979275），Provider Mock self-check PASS（Artifact 15084203674）。ASSET-000072现11条场景，均PROPOSED_NOT_APPROVED/NOT_RUN。"
+  "notes": "SQLite协调器只适用于同一主机、受支持本地文件系统上的多进程共享；不支持多主机/NFS/SMB/HA。墙钟跳变、数据库文件权限/加密/备份/损坏恢复、tombstone保留策略、自动心跳、QPS token bucket及下游fencing仍未解决。两个子进程竞争同一SQLite文件的测试只代表CI本机合成证据；ASSET-000072场景尚未批准/执行。 文档同步Run 45748616308的202项unittest通过，但SQLite脚本直接执行时因未将仓库根目录加入sys.path而失败；修复提交8d2a36b6240f20b1968a7e2ef148dcc02e745f88后，最终Run 45748707053两Job均completed/success，202项unittest、CH12资源143项通过，strict lint 0 errors；SQLite自检PASS（Artifact 15084821221），Provider Mock self-check PASS（Artifact 15084277008）。 附加修复：队列满时拒绝计数原在被回滚的准入事务中更新，已调整为独立事务持久计数；新增1项回归测试，ASSET-000072扩展至11条。下一次CI待验证。 最终补充：队列满诊断计数独立事务修复，新增回归测试后最终CI Run 45749107843两个Job均completed/success；全库203项、SQLite协调器专项12项、CH12资源143项通过；strict lint 0 errors；SQLite self-check PASS（Artifact 15083979275），Provider Mock self-check PASS（Artifact 15084203674）。ASSET-000072现11条场景，均PROPOSED_NOT_APPROVED/NOT_RUN。 第29轮新增SQLite在线备份、只读完整性校验与强制外部fencing高水位的新库恢复准备；恢复会使旧活动租约失效并清除等待者，不覆盖现有数据库且不自动切换。代码/测试提交1307ef462b920d9bf745ffb5ff5606e859f3a669对应Run 45751336613两个Job success，全库217项测试通过，CH12 143项，strict lint 0 errors（5 warnings）；SQLite自检PASS（Artifact 15084844535）。"
 }

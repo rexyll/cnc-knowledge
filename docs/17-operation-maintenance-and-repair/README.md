@@ -98,3 +98,6 @@
 
 
 - [备份 Provider 持久化准入协调器与幂等租约](spare-parts-inventory-backup-provider-sqlite-persistent-admission-coordinator.md)（KNOW-000042）；使用SQLite WAL/BEGIN IMMEDIATE验证同主机多进程原子准入、租约恢复、request_id幂等和持久fencing序列；新增10条合成验收场景（ASSET-000072）。
+
+
+- [备份 Provider fencing 契约与 SQLite 安全恢复](spare-parts-inventory-backup-provider-fencing-and-sqlite-recovery.md)（KNOW-000043）；定义下游原子陈旧写入防护与本地SQLite在线备份/新库恢复门禁，配套16条合成场景（ASSET-000073/000074），均未批准/未执行。
