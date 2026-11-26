@@ -783,3 +783,15 @@
 - **质量结果：** 全库426项unittest通过（本轮新增21项索引测试+25项迁移测试，共46项）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。另有5项既有合成fixture的非阻断warning。
 - **修正记录：** 首轮CI发现两个测试夹具前置条件不正确：历史指针测试使用了当前archived count，reverse-migration size测试未进入V3冻结反向迁移状态。最终修正提交为 `2b66224909d2bcd9b326c1cffcf220bef5d14b7f`，Run 45819520749通过。
 - **状态：** KNOW-000058 / ASSET-000089已同步；47项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。参考模型没有连接真实etcd/对象存储，没有执行生产Schema v3迁移或回滚；CH17-T004继续IN_PROGRESS。
+
+
+## 6.17 CH17-T004 Coordinator Schema v3分片准入与分布式事务预算（第四十五轮，2026-11-26）
+
+- **目标：** 在不替换schema-v2生产权威的情况下，建立Tenant分区Admission模型，避免全局aggregate revision与活动Lease逐项Compare造成的跨Tenant写冲突。
+- **双槽容量：** 新增 scripts/spare_parts_provider_admission_partition_model.py。每次Admission必须在同一Txn原子占用一个global/domain permit slot和一个tenant/domain permit slot；活动lease record与两个slot附着同一native TTL Lease，request idempotency tombstone保持持久。槽池长度直接约束global与tenant最大并发，不通过每次Acquire更新单一全局计数器。
+- **队列与公平：** waiter按tenant hash路由；跨Tenant采用round-robin，Tenant内部使用priority+aging及local FIFO。该策略与V2全局priority+aging排序不完全等价，列为显式业务策略变更，未经批准不切换。dispatch使用有界batch及queue-head/dispatcher epoch保护。
+- **Fencing：** 每个partition单Leader；Leader在token block耗尽时从全局high-water预留非重叠区间。Leader故障时丢弃未使用尾部区间，新Leader以更高epoch和外部floor预留新range；允许token空洞，不允许复用。不同partition token数值不代表跨partition时间顺序。
+- **事务预算：** 新增EtcdTransactionBudget，估算Compare + max(success, failure)和canonical JSON模型字节；默认分析目标70%仅是本项目安全余量，不是服务端限制。16分区/4grant dispatch模型计58操作，64分区/4grant模型计106，超出70%参考预算。
+- **测试/资源：** 新增36项纯内存参考模型测试，KNOW-000059、ASSET-000090和54项正式验收场景矩阵；新增SRC-000406记录etcd v3.7 Lease TTL key删除语义。
+- **边界：** 没有连接真实etcd、没有真实多主机Dispatcher/Leader测试、没有实测protobuf/gRPC请求字节或p95/p99；slot与queue模型不代表生产适配器。逻辑partition仍位于同一etcd集群，Raft提交路径并未被拆分。
+- **状态：** schema-v2仍是唯一生产权威；V3分片准入和V2→V3切换均未启用；公平策略变化待业务批准；CH17-T004继续IN_PROGRESS。

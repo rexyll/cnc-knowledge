@@ -1,0 +1,68 @@
+{
+  "entity_id": "ASSET-000090",
+  "entity_type": "asset_file",
+  "canonical_name": "Coordinator Schema v3分片准入与etcd事务预算正式验证矩阵v1",
+  "english_name": "Coordinator schema-v3 sharded admission and etcd transaction budget formal validation matrix v1",
+  "aliases": [
+    "Sharded admission conformance matrix",
+    "Dual permit slot quota matrix",
+    "ASSET-000090"
+  ],
+  "description": "54条待企业批准/执行的分片准入与分布式事务场景，覆盖global/tenant双槽、Lease TTL、Tenant队列、公平调度、分区fencing token range、Txn operation/byte budget及partition migration。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Schema v3",
+    "Admission",
+    "Partitioning",
+    "Quota",
+    "Fencing",
+    "ASSET-000090"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T20:38:00+08:00",
+  "updated_at": "2026-11-26T20:38:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000403",
+    "SRC-000405",
+    "SRC-000406"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-v3-sharded-admission-transaction-matrix-v1.csv",
+    "file_name": "spare-parts-coordinator-v3-sharded-admission-transaction-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000059",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored sharded admission and transaction budget conformance scenarios",
+    "scenario_count": 54,
+    "approval_status": "PROPOSED_NOT_APPROVED",
+    "execution_status": "NOT_RUN",
+    "synthetic_only": true,
+    "real_etcd_connected": false,
+    "real_multi_host_dispatcher_tested": false,
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "该矩阵是待批准的正式验收场景，不包含运行结果。36项纯内存模型单测不等于生产etcd、多主机、公平性或迁移验收。"
+}

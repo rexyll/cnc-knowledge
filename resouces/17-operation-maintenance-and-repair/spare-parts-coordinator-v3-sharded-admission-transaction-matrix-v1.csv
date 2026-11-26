@@ -1,0 +1,55 @@
+scenario_id,category,purpose,precondition,action,expected_result,approval_status,execution_status
+ADM-001,partition-routing,stable tenant hash routing,same tenant and partition-map generation,calculate partition ID,same tenant maps to same partition,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-002,partition-routing,invalid partition count,partition count is zero,build model,reject invalid partition map,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-003,global-quota,global slots cap active admission,domain has N global slots,submit N+1 tenants,never exceed N active grants,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-004,tenant-quota,tenant slots cap active admission,tenant has M quota slots,submit M+1 requests for tenant,never exceed M active grants,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-005,dual-slot,global and tenant slot atomicity,both pools have capacity,commit one admission,both slots and lease record exist or none do,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-006,dual-slot,global slot race,two requests choose same absent global slot,commit concurrent acquisitions,one compare wins and loser reselects,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-007,dual-slot,tenant slot race,two requests choose same absent tenant slot,commit concurrent acquisitions,one compare wins and loser reselects,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-008,dual-slot,global pool exhausted,all global slots occupied,dispatch waiter,leave waiter queued and do not issue lease,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-009,dual-slot,tenant pool exhausted,tenant slots occupied but global slots free,dispatch same tenant waiter,leave tenant waiter queued without oversell,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-010,slot-selection,hashed slot probe,multiple free slots exist,use request hash as probe start,avoid always probing slot zero first,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-011,domain-isolation,independent domain pools,read and write quotas configured,dispatch both domains,domain permits do not share slot namespace,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-012,lease-expiry,shared native Lease TTL,global and tenant slots attach same native Lease,expire or revoke Lease,both slots and active lease key are deleted,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-013,lease-expiry,persistent request tombstone,active admission Lease expires,read request idempotency record,mark EXPIRED without issuing a new lease,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-014,lease-expiry,missing one slot but other remains,slot index diverged,run reconciliation,fail closed and repair under exact CAS,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-015,lease-release,atomic release,active lease and both slot keys exist,release lease,delete both slots and persist RELEASED tombstone in one Txn,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-016,lease-renew,renew to new native Lease,old Lease and slots match exact values,renew admission,replace all active keys atomically then revoke old Lease,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-017,idempotency,active request replay,request ID maps to active lease,replay same identity,return exact original lease without allocating slots,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-018,idempotency,identity conflict,request ID already bound to other tenant or owner,replay request ID,return conflict and no new slot,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-019,idempotency,terminal request ID,request ID is RELEASED or EXPIRED,replay request ID,reject reuse and require new logical request ID,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-020,queue-routing,tenant queue partitioning,tenant queue assigned by stable hash,enqueue waiter,write only tenant queue and partition head,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-021,fairness,round-robin across tenants,two or more tenants have waiters,dispatch a sequence,tenants receive turn-taking grants,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-022,fairness,priority within tenant,single tenant has several waiters,dispatch next waiter,priority plus aging then local FIFO chooses waiter,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-023,fairness,aging promotion,older lower-priority waiter waits long enough,dispatch after aging interval,older waiter can outrank a newer higher-priority waiter,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-024,fairness,no queue bypass,older waiter exists for another tenant,submit immediate request,new request does not bypass dispatcher order,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-025,fairness,semantic change approval,V2 global priority-aging behavior exists,propose V3 tenant round-robin,require business owner approval before policy cutover,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-026,queue-lifecycle,cancel waiter,request is WAITING,cancel request,remove queue item and retain CANCELLED tombstone,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-027,queue-lifecycle,waiter timeout,request deadline elapsed,expire waiter,remove from queue and retain EXPIRED tombstone,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-028,dispatch-batch,bounded grants,dispatcher receives batch ceiling,dispatch batch,never exceed max_grants parameter,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-029,dispatcher-conflict,stale queue head revision,head changes after candidate read,commit dispatch CAS,abort and recompute candidate selection,PROPOSED_NOT_APPROVED,NOT_RUN
+ADM-030,dispatcher-conflict,domain arbiter epoch change,another dispatcher advances cursor,commit old batch,reject stale dispatcher transaction,PROPOSED_NOT_APPROVED,NOT_RUN
+FENCE-001,token-range,block reservation,partition leader needs token block,compare global allocator and reserve interval,allocated ranges never overlap,PROPOSED_NOT_APPROVED,NOT_RUN
+FENCE-002,token-range,monotonic within partition,one partition leader active,issue many tokens,tokens strictly increase within partition,PROPOSED_NOT_APPROVED,NOT_RUN
+FENCE-003,token-range,unique across partitions,two partitions reserve ranges,issue tokens from both partitions,no duplicate token values,PROPOSED_NOT_APPROVED,NOT_RUN
+FENCE-004,token-range,range exhaustion,partition block consumed,reserve next block,next range starts above global reserved high-water,PROPOSED_NOT_APPROVED,NOT_RUN
+FENCE-005,token-range,unused block after crash,leader crashes with unused range,elect new leader,discard gap and never reuse unused token numbers,PROPOSED_NOT_APPROVED,NOT_RUN
+FENCE-006,token-range,leader epoch takeover,old leader TTL expired,new owner claims partition,epoch increments and old owner cannot issue tokens,PROPOSED_NOT_APPROVED,NOT_RUN
+FENCE-007,token-range,external floor protection,external Provider floor is above allocator,claim leader and reserve,first new token is above external floor,PROPOSED_NOT_APPROVED,NOT_RUN
+FENCE-008,token-range,partition remap fencing,tenant moves to new partition,freeze and remap,external floor reconciled before new partition writes,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-001,budget,admission grant fast path,5 compares and 4 puts,estimate request,conservative operation budget is 9,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-002,budget,coordinator scope commit,7 compares and 2 puts,estimate request,conservative operation budget is 9,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-003,budget,batch 16 heads 4 grants,partition heads and bounded grants,estimate request,fits 70 percent analysis budget,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-004,budget,batch 64 heads 4 grants,large partition fan-in,estimate request,exceeds 70 percent analysis budget and is rejected,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-005,budget,operation count overflow,Txn shape exceeds configured budget,build transaction,reject or reduce batch before sending,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-006,budget,request bytes overflow,serialized model payload exceeds target,build transaction,reject or reduce batch before sending,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-007,budget,target server config,etcd defaults may be overridden,read actual cluster config,use actual server settings not documentation defaults,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-008,budget,wire size validation,protobuf/gRPC encoding may differ,compare local estimate to captured wire bytes,calibrate estimator against target adapter,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-009,atomicity,unique keys in one transaction,dispatch batch updates queue summaries,construct Then operations,merge writes so the same key is modified once,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-010,atomicity,cross logical partition but same etcd cluster,operation touches two logical partitions,one bounded Txn,atomicity only if one target etcd cluster accepts request,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-011,atomicity,multi-system workflow,outcome spans object storage and etcd,run operation,use saga/idempotent phases and recovery not fake distributed transaction,PROPOSED_NOT_APPROVED,NOT_RUN
+TXN-012,atomicity,stale Admission lease during Coordinator commit,Admission lease expires before scope update,commit scope operation,exact lease and both slot compares fail,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-001,partition-migration,tenant partition move,stable scope has active work,change partition map,freeze and drain or migrate under explicit generation barrier,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-002,partition-migration,old generation client write,tenant map generation advanced,old client writes,reject stale generation writes,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-003,partition-migration,partial migration failure,tenant state copied incompletely,cutover attempt,keep old partition authoritative until full validation,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-004,partition-migration,rollback after target writes,tenant remap accepts new mutation,rollback map,rehydrate/forward-repair without stale source pointer rollback,PROPOSED_NOT_APPROVED,NOT_RUN

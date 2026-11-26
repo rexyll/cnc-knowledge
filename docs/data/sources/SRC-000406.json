@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000406",
+  "source_type": "other",
+  "title": "etcd API — Lease semantics (v3.7)",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/learning/api/",
+  "version": "etcd v3.7 official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Lease API: a key may be attached to one lease; when a lease expires or is revoked, all attached keys are deleted. Lease TTL and keep-alive are server-managed.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports the proposed shared-TTL lifetime of global permit slot, tenant permit slot and Admission lease record. Production expiration/reconciliation behavior has not been tested against a live etcd cluster.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

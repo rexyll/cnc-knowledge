@@ -1,0 +1,63 @@
+{
+  "entity_id": "KNOW-000059",
+  "entity_type": "knowledge_article",
+  "canonical_name": "备件库存备份 Coordinator Schema v3：分片准入、配额槽位与 etcd 分布式事务预算",
+  "english_name": "CNC spare-parts backup Coordinator schema-v3 sharded admission, quota slots and etcd transaction budgets",
+  "aliases": [
+    "Coordinator schema v3 sharded admission",
+    "dual permit slot quota model",
+    "transaction budget model",
+    "KNOW-000059"
+  ],
+  "description": "为Coordinator schema-v3设计固定global/tenant permit slots、Tenant队列分片、跨Tenant轮转调度、分区Leader与非重叠fencing token区间，并建立etcd Txn操作数/请求字节的保守预算参考模型。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Coordinator分布式准入与事务分片"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Schema v3",
+    "Admission",
+    "Quota",
+    "Partitioning",
+    "Fencing",
+    "etcd Txn"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T20:38:00+08:00",
+  "updated_at": "2026-11-26T20:38:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000403",
+    "SRC-000405",
+    "SRC-000406"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-v3-sharded-admission-and-transaction-budget.md",
+    "implementation": "scripts/spare_parts_provider_admission_partition_model.py",
+    "test_file": "tests/test_spare_parts_provider_admission_partition_model.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-v3-sharded-admission-transaction-matrix-v1.csv",
+    "formal_scenario_count": 54,
+    "reference_model_only": true,
+    "production_schema_v3_enabled": false,
+    "real_etcd_connected": false,
+    "real_multi_host_dispatcher_tested": false,
+    "production_quota_slots_enabled": false,
+    "formal_scenarios_approval": "PROPOSED_NOT_APPROVED",
+    "formal_scenarios_execution": "NOT_RUN"
+  },
+  "notes": "36项纯内存模型测试覆盖双槽容量、请求幂等、轮转公平、Lease生命周期、分区Leader/token区间和Txn预算；正式场景矩阵54项全部PROPOSED_NOT_APPROVED / NOT_RUN。V3公平语义与V2跨所有waiter的全局priority-aging不完全等价，必须业务批准；没有真实etcd集群或生产切换。"
+}

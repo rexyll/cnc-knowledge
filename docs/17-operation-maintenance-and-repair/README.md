@@ -179,3 +179,6 @@ Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope
 
 
 第四十四轮最终代码/测试head：`2b66224909d2bcd9b326c1cffcf220bef5d14b7f`；[CI Run 45819520749](https://github.com/rexyll/cnc-knowledge/actions/runs/45819520749)两个必需Job均completed/success。全库426项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项既有非阻断warning）。新增精确索引/Schema v3迁移模型46项单测通过；ASSET-000089的47项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN，未连接真实etcd/对象存储，未执行生产迁移。
+
+
+Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinator Schema v3：分片准入、配额槽位与 etcd 分布式事务预算](spare-parts-inventory-backup-provider-coordinator-v3-sharded-admission-and-transaction-budget.md)（KNOW-000059）。提出global/tenant双slot原子占位、Tenant队列分片、跨Tenant轮转、分区fencing token区间和Txn预算模型；配套54条场景矩阵ASSET-000090。模型仅为内存参考，V2公平调度语义差异须企业批准，真实etcd/生产切换未完成。

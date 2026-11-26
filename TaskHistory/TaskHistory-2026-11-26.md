@@ -622,3 +622,17 @@
 - **结果：** 全库426项unittest通过，其中本轮Archive Index 21项、Schema v3 Migration 25项，共46项；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有DRAFT合成夹具及企业批准/执行门禁。
 - **CI修正：** Run 45819355334发现两个测试夹具问题：历史pointer读取使用当前archive count；reverse-migration容量测试未进入V3冻结迁移状态。最终测试夹具在提交 `2b66224909d2bcd9b326c1cffcf220bef5d14b7f` 修正，Run 45819520749完整通过。
 - **范围限制：** 纯内存参考模型，不接入StoreBackedCoordinatorAuthority生产schema-v2，不连接真实etcd、SQLite生产库或云对象存储；47条ASSET-000089正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。未执行Schema v3迁移、cutover、回滚或历史数据删除；CH17-T004继续IN_PROGRESS。
+
+
+## CH17-T004 Coordinator Schema v3分片准入与etcd分布式事务预算（第四十五轮）
+
+- **日期/分支：** 2026-11-26（Asia/Shanghai），main；未创建分支。
+- **当前基线：** main head启动本轮为 e101c31a680d3a33f23c57a614ce045d9f7d30a7；前一轮Archive Index与Schema v3迁移模型代码CI和最终文档CI均通过。
+- **新增参考实现：** scripts/spare_parts_provider_admission_partition_model.py。实现global/tenant双permit slots、tenant-local queue、round-robin dispatch、tenant内priority/aging、Lease续租/释放/过期、partition Leader及非重叠fencing token ranges、Txn操作数/字节预算估算。
+- **新增测试：** tests/test_spare_parts_provider_admission_partition_model.py，36项纯内存参考模型测试。覆盖global/tenant quota不超卖、并发dispatch、幂等、terminal tombstone、TTL、RR公平、priority aging、分区Leader故障切换、Token区间不重叠以及预算拒绝。
+- **新增知识/资源：** KNOW-000059、ASSET-000090；新增54条正式场景矩阵，全部PROPOSED_NOT_APPROVED / NOT_RUN；新增SRC-000406（etcd v3.7 Lease语义），复用SRC-000403/405配置与Txn官方来源。
+- **关键设计：** Acquire原子占用global slot + tenant slot，两个slot和活动lease record附着同一个native Lease，request tombstone持久化；配额上限由固定槽池数量确保，不在每次Acquire写单一global counter。Partition token range按块预留，Leader failover后丢弃未用区间，允许gaps但永不复用。
+- **公平语义边界：** 模型为跨Tenant round-robin、Tenant内priority+aging；与V2跨所有waiter的严格全局priority/age排序不等价。作为V3业务策略变更，须经企业批准。
+- **Txn预算：** 保守操作数=Compare + max(success,failure)；canonical JSON长度仅是模型值，不是protobuf/gRPC wire bytes。70%为分析余量，不是服务端限制。16分区4grant模型58操作；64分区4grant模型106操作，超出当前参考预算。
+- **生产边界：** 不接入真实etcd、不执行schema迁移或生产切换；逻辑partition仍在同一etcd Raft集群，未证明吞吐线性扩展。真实quorum、多主机Dispatcher、Lease timing、partition remap和实际请求字节仍需后续验证。
+- **状态：** CH17-T004继续IN_PROGRESS；schema-v2仍是唯一生产权威，V3分片准入未启用。
