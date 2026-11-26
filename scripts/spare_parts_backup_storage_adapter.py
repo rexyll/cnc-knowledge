@@ -14,9 +14,14 @@ import os
 import re
 import tempfile
 import time
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Protocol
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts.spare_parts_inventory_ledger_persistence import (
     PersistenceError,
