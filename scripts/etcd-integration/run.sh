@@ -56,7 +56,10 @@ else:
     raise SystemExit(f"etcd cluster did not become ready within 120s: {last_error}")
 PY
 
-ETCD_INTEGRATION=1 python3 -m unittest discover \
-  -s tests \
-  -p 'test_*etcd_integration.py' \
-  -v
+for test_file in \
+  test_spare_parts_provider_authority_store_etcd_integration.py \
+  test_spare_parts_provider_authority_store_member_outage_etcd_integration.py \
+  test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py
+do
+  ETCD_INTEGRATION=1 python3 -m unittest discover -s tests -p "$test_file" -v
+done
