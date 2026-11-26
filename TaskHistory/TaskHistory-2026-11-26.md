@@ -312,3 +312,14 @@
 - **最终代码CI：** [Run 45755448153](https://github.com/rexyll/cnc-knowledge/actions/runs/45755448153)两个必需Job completed/success；全库241项unittest、CH12 143项通过；strict knowledge lint PASS（0 errors，5 warnings）；Provider CLI self-check PASS。Artifacts：Provider fenced 15087184041；SQLite coordinator 15087452634；Provider adapter 15087507413。
 - **资源：** 新增KNOW-000045和ASSET-000076（22条场景），均为PROPOSED_NOT_APPROVED / NOT_RUN。CH17覆盖更新为25篇KNOW、75个登记实体、69项资源。
 - **边界：** 当前为同主机本地SQLite参考Provider，不是云/网络或多主机服务；没有数据静态加密和凭据生命周期管理。Provider尚未验证token来自trusted coordinator的scope-bound签名，授权主体可构造高token导致拒绝服务；正式生产前必须补HMAC/签名attestation。生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+
+### 第三十一轮文档同步最终验收
+
+- **完成时间：** 2026-11-26T12:33:20.000+08:00（GitHub Actions Run 完成时间转换为 Asia/Shanghai）。
+- **最终 main 提交：** b3dad1a80217cf9c848777114bbd4c6f95e2f066。
+- **文档同步 CI：** [Run 45755807755](https://github.com/rexyll/cnc-knowledge/actions/runs/45755807755)，Knowledge structure and data quality 与 CH12 numerical resource tests 两个必需 Job 均 completed/success。
+- **测试结果：** 全库241项unittest通过；CH12数值资源143项通过；knowledge_lint.py --strict为PASS（0 errors，5 warnings）；Provider adapter、SQLite admission coordinator、SQLite fenced Provider三个自检均PASS。
+- **Artifacts：** SQLite fenced Provider Artifact ID 15087855945；SQLite admission coordinator Artifact ID 15087626678；Provider adapter Artifact ID 15087721263；backup governance readiness Artifact ID 15087875780。
+- **覆盖登记：** CH17当前25篇KNOW、75个登记实体、69项资源；ASSET-000076的22条正式参考场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **限制：** SQLite fenced Provider仅同主机本地文件/多进程参考实现；没有真实云/多主机Provider。Provider尚未验证Coordinator token来源的scope-bound HMAC/signature attestation，持有效本地主体凭据的调用方仍可构造高token；生产化前必须补该证明。生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
