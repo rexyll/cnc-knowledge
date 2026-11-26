@@ -1,0 +1,99 @@
+{
+  "entity_id": "KNOW-000046",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存备份 Coordinator 签名证明、scope绑定与Provider密钥轮换",
+  "english_name": "CNC spare-parts backup Coordinator-signed fencing attestation, scope binding and Provider key rotation",
+  "aliases": [
+    "Coordinator HMAC fencing attestation",
+    "scope-bound token proof",
+    "Provider trusted key registry",
+    "fencing key rotation"
+  ],
+  "description": "Coordinator对活动准入lease签发短期HMAC-SHA256证明，绑定tenant/scope/resource/token/lease/operation/idempotency；Provider事务内验签和检查密钥状态，并提供ACTIVE/RETIRING/REVOKED本地密钥轮换接口。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Provider签名证明与密钥轮换"
+  ],
+  "tags": [
+    "CH17",
+    "Fencing Attestation",
+    "HMAC-SHA256",
+    "Coordinator",
+    "Provider",
+    "Key Rotation",
+    "Lease"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T12:53:00+08:00",
+  "updated_at": "2026-11-26T04:53:54Z",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-fencing-attestation-and-key-rotation.md",
+    "attestation_module": "scripts/spare_parts_fencing_attestation.py",
+    "coordinator_implementation": "scripts/spare_parts_provider_admission_sqlite.py",
+    "adapter_implementation": "scripts/spare_parts_backup_storage_adapter.py",
+    "provider_implementation": "scripts/spare_parts_provider_sqlite_fenced.py",
+    "test_files": [
+      "tests/test_spare_parts_provider_admission_sqlite.py",
+      "tests/test_spare_parts_provider_sqlite_fenced.py"
+    ],
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-fencing-attestation-rotation-test-matrix-v1.csv",
+    "signature_algorithm": "HMAC-SHA256",
+    "signing_key_storage": "RUNTIME_SECRET_INJECTION_NOT_IN_SQLITE",
+    "default_attestation_ttl_seconds": 15,
+    "max_attestation_ttl_seconds": 60,
+    "claims": [
+      "v",
+      "iss",
+      "kid",
+      "lease_id",
+      "owner_id",
+      "tenant_id",
+      "domain",
+      "fencing_token",
+      "issued_at",
+      "expires_at",
+      "lease_expires_at",
+      "fencing_scope",
+      "resource_key",
+      "operation",
+      "idempotency_key"
+    ],
+    "provider_enforces_signature": true,
+    "claim_resource_scope_binding": true,
+    "claim_operation_and_idempotency_binding": true,
+    "trusted_key_statuses": [
+      "ACTIVE",
+      "RETIRING",
+      "REVOKED"
+    ],
+    "key_revocation_db_checked_each_mutation": true,
+    "proof_survives_lease_release_until_expiry": true,
+    "default_max_revocation_delay_seconds": 15,
+    "production_asymmetric_signing_required": true,
+    "production_online_revocation_required": true,
+    "hmac_secret_present_in_provider_process": true,
+    "repository_unit_test_count": 248,
+    "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
+    "latest_verified_code_commit": "f4c26e61f0136b2d487ec009ae9f8259af090314",
+    "latest_verified_ci_run": 45758028329,
+    "latest_verified_ci_status": "completed/success",
+    "provider_self_check_artifact_id": 15087973420,
+    "admission_artifact_id": 15087604559,
+    "adapter_artifact_id": 15087868629
+  },
+  "notes": "当前是同主机、本地参考实现。Coordinator在确认lease ACTIVE后签发默认15秒TTL HMAC-SHA256证明，绑定tenant、scope、resource key、token、lease identity、domain、operation及idempotency key。Provider每次mutation在SQLite事务内检查签名claims及trusted_fencing_keys状态。支持新key登记、旧key RETIRING设置not_after、REVOKED即时拒绝；密钥secret不入库但需同时注入Coordinator和Provider进程。Proof签发后lease release不会立即撤销，最长存活至expires_at（默认不超过15秒）。生产远端Provider应采用Coordinator/KMS私钥与Provider公钥的非对称验签，并实现在线撤销、时钟同步、KMS/HSM和TLS。ASSET-000077共20条formal scenarios均PROPOSED_NOT_APPROVED/NOT_RUN。CI Run 45758028329全库248 tests、CH12 143 tests、strict lint 0 errors/5 warnings、Provider self-check PASS。"
+}

@@ -35,7 +35,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T12:29:00+08:00",
-  "updated_at": "2026-11-26T04:29:20Z",
+  "updated_at": "2026-11-26T04:53:54Z",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -69,16 +69,39 @@
     "business_rule_assertions": "NOT_EVALUATED",
     "repository_unit_test_count": 241,
     "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
-    "latest_verified_code_commit": "59b9945a6df16cf2c6851f53b7ea40b20c7f2632",
-    "latest_verified_ci_run": 45755448153,
+    "latest_verified_code_commit": "f4c26e61f0136b2d487ec009ae9f8259af090314",
+    "latest_verified_ci_run": 45758028329,
     "latest_verified_ci_status": "completed/success",
-    "provider_self_check_artifact_id": 15087184041,
+    "provider_self_check_artifact_id": 15087973420,
     "sqlite_admission_artifact_id": 15087452634,
     "provider_adapter_artifact_id": 15087507413,
     "ci_jobs": {
       "Knowledge structure and data quality": "completed/success",
       "CH12 numerical resource tests": "completed/success"
-    }
+    },
+    "coordinator_fencing_attestation_added": true,
+    "attestation_module": "scripts/spare_parts_fencing_attestation.py",
+    "coordinator_signing_method": "HMAC_SHA256_SCOPE_BOUND",
+    "attestation_default_ttl_seconds": 15,
+    "attestation_max_configured_ttl_seconds": 60,
+    "attestation_claim_count": 15,
+    "provider_requires_attestation": true,
+    "trusted_key_registry": true,
+    "key_rotation_admin_api": [
+      "admin_register_trusted_attestation_key",
+      "admin_set_trusted_attestation_key_status"
+    ],
+    "key_rotation_statuses": [
+      "ACTIVE",
+      "RETIRING",
+      "REVOKED"
+    ],
+    "attestation_lease_release_revocation_delay_seconds_max": 15,
+    "asymmetric_signing_production_required": true,
+    "online_revocation_production_required": true,
+    "full_unittest_count": 248,
+    "admission_artifact_id": 15087604559,
+    "adapter_artifact_id": 15087868629
   },
-  "notes": "这是同主机SQLite本地参考Provider，不是网络服务、云Provider或多主机存储。对象、分块、scope high-water和幂等回执在一个SQLite事务中提交；credentials为PBKDF2 verifier，不保存明文；主体ACL按tenant/action/prefix隔离。当前Provider未验证token是否由trusted coordinator签发，持有效本地Provider凭据的应用可提交任意高token，必须在生产化前补充scope-bound HMAC/signature attestation。restore仅准备新库，需独立可信external fencing floor和证据引用，不cutover。ASSET-000076共22条formal scenarios均PROPOSED_NOT_APPROVED/NOT_RUN。CI Run 45755448153全库241 tests、CH12 143 tests、strict lint 0 errors/5 warnings、Provider self-check PASS。"
+  "notes": "这是同主机SQLite本地参考Provider，不是网络服务、云Provider或多主机存储。对象、分块、scope high-water和幂等回执在一个SQLite事务中提交；credentials为PBKDF2 verifier，不保存明文；主体ACL按tenant/action/prefix隔离。当前Provider未验证token是否由trusted coordinator签发，持有效本地Provider凭据的应用可提交任意高token，必须在生产化前补充scope-bound HMAC/signature attestation。restore仅准备新库，需独立可信external fencing floor和证据引用，不cutover。ASSET-000076共22条formal scenarios均PROPOSED_NOT_APPROVED/NOT_RUN。CI Run 45755448153全库241 tests、CH12 143 tests、strict lint 0 errors/5 warnings、Provider self-check PASS。 第三十二轮新增Coordinator签发HMAC-SHA256 scope-bound attestation和Provider强制验签；proof绑定lease/owner/tenant/domain/token/scope/resource/operation/idempotency，默认TTL 15秒；Provider使用trusted_fencing_keys registry并支持ACTIVE/RETIRING/REVOKED和本地admin轮换接口。限制：对称HMAC密钥注入Coordinator及Provider本地进程，已签proof在lease release后仍可活到expires_at（默认最多15秒）；生产远端Provider应改非对称KMS签名并增加在线撤销。CI Run 45758028329全库248项、CH12 143项通过，strict lint 0 errors/5 warnings，Provider self-check PASS。"
 }

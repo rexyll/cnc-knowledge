@@ -88,3 +88,14 @@ restore_to_new_database 要求 operator 提供独立取得的 external_fencing_f
 新增20项专项 unittest 覆盖主体凭据、ACL、租户隔离、跨 key stale token、幂等/冲突、事务回滚、响应丢失重放、multipart、多进程竞争、online backup/restore、external fencing floor 和 strict adapter 端到端发布。ASSET-000076定义22条正式参考验收场景，均为 PROPOSED_NOT_APPROVED / NOT_RUN。CI 合成测试不等于供应商、现场或企业验收。
 
 **尚未完成：** scope-bound coordinator token attestation；主体 secret 生命周期管理；加密静态数据；跨主机/网络服务；多主机事务；幂等记录保留/压缩；真实云/本地生产 Provider 验收；生产恢复切换演练。生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+
+## 8. 第三十二轮 Coordinator scope-bound attestation 补充
+
+Provider 已从“只校验 token 整数”升级为要求 fencing_attestation。Coordinator 仅对数据库中 ACTIVE 且字段完全匹配的 lease 签发15秒默认TTL HMAC-SHA256证明；证明绑定issuer/key ID、lease/owner、tenant、domain、token、scope、resource key、operation和idempotency key。Adapter每次mutation（payload、multipart begin/part/complete、receipt-last）按当前lease获取新证明。
+
+Provider在SQLite事务内重查trusted_fencing_keys，支持ACTIVE/RETIRING/REVOKED状态。新增本地admin注册、退役和撤销接口；密钥本身不入库。新增KNOW-000046和ASSET-000077，定义20条attestation/rotation场景。见 [Coordinator attestation与key rotation](spare-parts-inventory-backup-provider-fencing-attestation-and-key-rotation.md)。
+
+**验收：** CI Run 45758028329两个必需Job均success；全库248项unittest、CH12 143项测试通过；strict lint 0 errors/5 warnings；Provider CLI self-check PASS（Artifact 15087973420）。
+
+**保留限制：** HMAC秘密同时注入Coordinator及Provider本地进程，不是公钥验签；已签proof在lease release后仍可使用到expires_at，默认最多15秒。生产远端Provider应采用Coordinator/KMS私钥+Provider公钥的非对称签名，并实现在线撤销、时钟同步及KMS/HSM；本地SQLite仍不支持多主机。生产备份关闭。
