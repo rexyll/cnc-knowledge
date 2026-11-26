@@ -41,6 +41,12 @@ jobs:
           ETCD_KEEP_CLUSTER: "1"
         run: bash scripts/etcd-integration/run.sh
 
+      - name: Run mutual TLS etcd integration tests
+        id: mtls_integration
+        env:
+          ETCD_KEEP_CLUSTER: "0"
+        run: bash scripts/etcd-integration/run-mtls.sh
+
       - name: Capture etcd diagnostics
         if: always()
         run: |
