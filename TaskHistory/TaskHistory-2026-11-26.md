@@ -706,3 +706,13 @@
 - **默认回归：** [Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)两个必需Job均completed/success；全库500项unittest、494项通过/6项opt-in live测试按默认策略skip；CH12 143项数值测试通过；strict knowledge lint 0 errors；CH17 fixture validator 0 errors/5项既有审批/DRAFT warning。
 - **结论：** 在限定的etcd v3.7.0三成员临时集群中，单成员停机期间剩余2/3多数派支持本轮验证的线性一致读写，节点重启后恢复三成员。测试不测量选举时间/性能，不覆盖2成员同时故障、失去quorum、长时间分区、TLS/mTLS、RBAC或多主机。
 - **资产/门禁：** 更新KNOW-000061与ASSET-000092的Supporting Live CI信息；ASSET-000092的30项正式场景继续PROPOSED_NOT_APPROVED / NOT_RUN；production_backup_enabled=false，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED；schema-v2仍为唯一生产权威。
+
+## CH17-T004 etcd 双成员故障、失去多数派与恢复验证（第四十九轮，全局第四十九轮，2026-11-26）
+
+- **实际完成时间：** 2026-11-26T22:39:00+08:00（Asia/Shanghai）。
+- **分支/提交：** main；新增测试提交 `2ed3927e63ca28a643055835568f7d7a83543323`；未创建新分支。
+- **新增测试：** `tests/test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py`，测试停止两个成员、丧失多数派、重新恢复quorum后读写恢复。
+- **执行结果：** 在一次性etcd v3.7.0三成员集群停止etcd1和etcd2；唯一存活的etcd3上线但没有多数派；线性一致读取失败关闭；Txn未报告成功（明确Unavailable或OutcomeUnknown）；随后重启etcd1/etcd2，等待Leader与3成员恢复；线性一致读回确认失去quorum期间的目标数据不存在；最终VERSION=0 CAS写入和读回成功。
+- **真实集成CI：** [Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997) completed/success；7项live测试全部PASS（7/7，0 failures，0 skips），清理容器、数据卷和network成功。Artifact ID 15128755397，SHA-256 `d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8`。
+- **默认回归：** [Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)两个Job均completed/success；全库501项unittest，494通过/7项live测试按默认策略skip；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；fixture validator 0 errors/5项既有warning。
+- **结论边界：** 本次验证覆盖一次性etcd v3.7.0集群中的2/3节点同时停机，不代表任意网络分区/存储故障行为或生产HA保证；未测试性能、TLS/mTLS、RBAC或多主机Coordinator。ASSET-000092的30项正式场景继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威。

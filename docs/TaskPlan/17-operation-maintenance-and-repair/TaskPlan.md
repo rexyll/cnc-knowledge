@@ -850,3 +850,12 @@
 - **最终实测：** [Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952)真实etcd v3.7.0三成员一次性集群，6/6 PASS、0失败、0跳过；清理成功。诊断Artifact 15127610627，SHA-256 `74b04904535cce72b7a08fdf6265020bcb9086b43003106ab4eb4271847869f2`。
 - **默认CI回归：** [Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)两个Job成功；全库500项unittest（494通过，6项opt-in live测试按设计skip），CH12 143项数值测试通过；strict lint 0 errors；fixture validator 0 errors/5项既有DRAFT与审批warning。
 - **边界：** 这是一组Disposable CI smoke/integration test，不等于企业正式验收；ASSET-000092的30条正式场景全部继续PROPOSED_NOT_APPROVED / NOT_RUN。没有测试2成员失去quorum、网络分区、数据损坏、性能、mTLS/RBAC或真实多主机Coordinator；SQLite业务状态机没有迁移，schema-v2仍是生产唯一权威。CH17-T004保持IN_PROGRESS。
+
+## 6.21 CH17-T004 etcd 双成员故障、失去多数派与恢复验证（第四十九轮，2026-11-26）
+
+- **新增文件：** `tests/test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py`，新增第7项opt-in live integration test。
+- **测试步骤：** 在初始3成员集群停止etcd1、etcd2；通过etcd3验证linearizable_get失败关闭；再对etcd3发送一次Txn，接受明确不可用或OUTCOME_UNKNOWN，但不允许返回成功；重新启动两个成员、等待quorum leader恢复；确认原key不存在，再对同一key执行VERSION=0 CAS写入和线性一致读回。
+- **关键语义：** 没有多数派时不允许把单节点可达视为线性一致读写可用；写操作不自动重试；未知结果需在quorum恢复后进行线性一致读回确认。
+- **真实集成结果：** [Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997)在一次性etcd v3.7.0三成员集群7/7 PASS，0失败、0跳过；节点清理成功；Artifact 15128755397，SHA-256 `d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8`。
+- **默认CI：** [Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)全库501项unittest（494通过、7项live测试按默认策略skip）、CH12 143项测试通过、strict lint 0 errors、fixture validator 0 errors/5项既有warning；两个Job全部成功。
+- **限制：** 这是单次、受控、可丢弃环境验证，不是网络分区、磁盘损坏、性能、mTLS/RBAC或企业生产验收。ASSET-000092的30项正式场景均保持PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威；CH17-T004继续IN_PROGRESS。
