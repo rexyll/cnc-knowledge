@@ -42,4 +42,11 @@
 
 ## 6. 验收记录
 
-代码与测试提交后，以GitHub Actions实际结果为准。若首轮CI失败，必须记录失败原因与修复提交；只有两个必需Job均 `completed/success`，且全库测试与strict knowledge lint通过，才能记录CI通过。合成矩阵保持未批准/未执行状态，不能因CI通过自动转为验收完成。
+代码/测试提交 `a691f7eaedafdf96892c9613f3ae304e85f7047c`，分支为 `main`，未创建新分支。
+
+- **最终CI：** [Run 45746342659](https://github.com/rexyll/cnc-knowledge/actions/runs/45746342659)；`Knowledge structure and data quality` 与 `CH12 numerical resource tests` 两个Job均 `completed/success`。
+- **测试：** 全库 `unittest` 191项通过；CH12数控资源测试143项通过。Provider适配器测试文件包含64个 `test_` 方法定义（本轮新增3项），并随全库测试集执行。
+- **静态校验：** `knowledge_lint.py --strict` 返回 `RESULT: PASS (0 errors)`。
+- **Provider自检：** `spare_parts_backup_storage_adapter.py --self-check` 返回PASS；Artifact [ch17-backup-storage-adapter-45746342659](https://github.com/rexyll/cnc-knowledge/actions/runs/45746342659/artifacts/15083925258)，ID 15083925258。新队列回归由全库unittest覆盖，不应将该Artifact解读为单独的队列故障报告。
+- **资源：** ASSET-000071的7条合成场景仍为 `TRUE / PROPOSED_NOT_APPROVED / NOT_RUN`；CI通过不改变审批或执行状态。
+- **边界：** 仅同进程Mock与合成测试；无真实Provider、跨进程/主机共享、真实网络分区、生产容量或恢复风暴验证。生产备份关闭，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，`business_rule_assertions=NOT_EVALUATED`。

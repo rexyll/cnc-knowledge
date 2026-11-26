@@ -201,7 +201,12 @@
 - **实现：** ProviderFairBulkhead与InMemoryProviderAdmissionCoordinator新增max_waiters；Adapter提供bulkhead_max_waiters参数。默认256仅为实现基线，0允许立即准入但不接受排队。
 - **失败关闭：** 队列满抛ProviderAdmissionQueueFullError（区分local_bulkhead/shared_coordinator），不移除已有等待者；共享协调器在等待循环内重新检查可用性，排队过程中失效时返回acquire阶段CoordinatorUnavailable并清理等待者。
 - **恢复：** 旧等待请求不会自动重放；恢复后需以原业务任务身份重新检查与提交。令牌桶burst可限制单次突发，但未实现jitter、预热、动态扩容或持久队列。
-- **测试：** 新增3项Provider专项unittest：本地队列超额拒绝、共享队列超额拒绝、排队中协调器故障清理与恢复；并补充负数/布尔队列配置校验。预期全库191项、Provider专项63项，等待CI验证。
+- **测试：** 新增3项Provider专项unittest：本地队列超额拒绝、共享队列超额拒绝、排队中协调器故障清理与恢复；并补充负数/布尔队列配置校验。全库191项通过；Provider适配器测试文件共64个测试方法定义（按文件中 `test_` 方法统计），完整测试集由CI执行。
 - **资源：** 新增KNOW-000041与ASSET-000071，7项场景全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
 - **限制：** 所有新增队列与故障测试为同进程合成测试；没有真实协调服务、跨进程/主机、网络分区、恢复风暴、生产容量或Provider验证。生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
-- **代码/测试及CI：** 待提交与Actions验收后补记实际SHA、Run、Job、测试和strict lint结果。
+- **最终提交：** 功能/测试提交 `a691f7eaedafdf96892c9613f3ae304e85f7047c`，分支 `main`；未创建新分支。
+- **CI验收时间：** 2026-11-26 11:03（Asia/Shanghai）。[Run 45746342659](https://github.com/rexyll/cnc-knowledge/actions/runs/45746342659) 两个必需Job `Knowledge structure and data quality`、`CH12 numerical resource tests` 均 `completed/success`；全库 `unittest` 191项通过，CH12数控资源测试143项通过。
+- **知识质量：** `knowledge_lint.py --strict` 为 `RESULT: PASS (0 errors)`。
+- **Provider Mock自检：** `spare_parts_backup_storage_adapter.py --self-check` 返回 `PASS`；Artifact [ch17-backup-storage-adapter-45746342659](https://github.com/rexyll/cnc-knowledge/actions/runs/45746342659/artifacts/15083925258)，ID 15083925258。该自检报告不单独覆盖新增队列回归；本轮新增3项队列/故障测试由全库191项unittest执行。
+- **资源状态：** KNOW-000041、ASSET-000071；7项矩阵场景仍为 `TRUE / PROPOSED_NOT_APPROVED / NOT_RUN`。Provider适配器测试文件包含64个测试方法定义；这不是单独的64项测试子任务运行报告。
+- **限制：** 仍是同进程Mock/合成测试；没有跨进程/主机真实协调服务、真实网络分区、真实Provider、生产容量/恢复风暴或现场灾备验证。未实现随机jitter、恢复预热/速率斜坡、持久队列、自动心跳与下游fencing。生产备份关闭，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，`business_rule_assertions=NOT_EVALUATED`。

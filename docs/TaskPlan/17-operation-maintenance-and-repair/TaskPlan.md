@@ -442,5 +442,5 @@
 - **失败语义：** 队列满抛ProviderAdmissionQueueFullError，并区分local_bulkhead/shared_coordinator；不驱逐既有等待者。协调器在每次等待循环醒来后重新检查可用性，排队期间故障则清理等待者并fail-closed。
 - **恢复语义：** 旧等待任务不会自动重放；协调器恢复后需按原任务身份重新查询/提交。令牌桶burst可作为限速边界，但未实现随机jitter、恢复预热/速率斜坡或持久队列。
 - **交付：** 新增KNOW-000041和ASSET-000071（7条合成场景）；新增3项Provider专项unittest，并补充配置边界检查。
-- **验收目标：** 全库191个unittest、Provider专项63项；实际结果以CI为准。strict lint需为PASS（0 errors）。
+- **最终验收：** CI Run 45746342659两个必需Job均completed/success；全库191个unittest通过，CH12数控资源测试143项通过；`knowledge_lint.py --strict` 为PASS（0 errors）。Provider适配器测试文件共有64个测试方法定义（含本轮新增3项）。Provider Mock self-check PASS，Artifact ID 15083925258。
 - **限制：** 仍仅同进程Mock；无跨进程/主机协调、真实网络故障、生产容量和恢复风暴证据。生产备份保持关闭，CH17-T004继续IN_PROGRESS。
