@@ -111,7 +111,7 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
 
         publish = self.authority.allocate_operation_sequence(
             self.leader, lease, scope=self.SCOPE, idempotency_key="publish-1",
-            manifest_key=f"{self.SCOPE}/staging/token-1/manifest.json",
+            manifest_key=f"{self.SCOPE}/staging/{activation.fencing_token}/manifest.json",
             manifest_sha256="a" * 64,
         )
         self.assertEqual(publish.operation_sequence, 1)
