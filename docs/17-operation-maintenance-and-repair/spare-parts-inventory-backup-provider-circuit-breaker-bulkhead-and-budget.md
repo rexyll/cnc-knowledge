@@ -104,3 +104,11 @@ Adapter为每个操作域配置独立的有界信号量，Provider调用只在�
 CI代码/测试Run \`45740068529\` 两个Job均completed/success，169个unittest通过；扩展self-check Run \`45740213445\` 应在最终验收记录中确认两个Job和Artifact。自检增加熔断打开/快速拒绝/半开探测恢复与零总预算失败关闭。所有结果均来自本地/Mock。
 
 **严格状态：** 无真实云Provider、真实IAM或网络；未验证跨进程/跨容器/集群级舱壁与熔断；没有真实供应商限流、RTO、生产并发容量和任务优先级测试。生产备份仍关闭，\`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL\`，业务断言仍 \`NOT_EVALUATED\`。
+
+
+### 最终CI验收记录
+
+- 代码及9个新增专项测试：Run `45740068529`，两个Job均completed/success，全库169个unittest通过。
+- 熔断/半开/预算增强自检：Run `45740213445`，两个Job均completed/success；self-check `circuit_breaker_open_half_open_probe_and_recovery=PASS`、`aggregate_retry_budget_exhaustion=PASS`；Artifact ID `15081155445`。
+- 文档、资源与覆盖率最终同步：Run `45740530720`，两个Job均completed/success；全库169个unittest通过、strict knowledge lint 0 errors；Provider Artifact ID `15080399203`。
+- 最终状态：KNOW-000037、ASSET-000068已登记；CH17统计17篇KNOW、67个实体、61项资源。熔断/舱壁/总预算仅单Adapter/进程与任务上下文范围，生产备份仍关闭。

@@ -383,3 +383,5 @@
 - **测试：** 新增9项专项unittest；代码测试CI Run 45740068529两个Job均success，全库169个unittest通过。自检扩展Run 45740213445待最终确认。
 - **资源：** 新增KNOW-000037、ASSET-000068；14条故障/并发场景，均PROPOSED_NOT_APPROVED / NOT_RUN。
 - **限制：** 状态和舱壁仅单Adapter实例/进程内，不支持分布式协调；默认值不是生产推荐；没有真实云网络、跨进程/跨容器/集群容量与RTO验收。
+
+- **最终CI验收：** 代码与新增测试Run 45740068529两个Job均completed/success，全库169个unittest通过；增强自检Run 45740213445两个Job均success，熔断OPEN/快速拒绝/HALF_OPEN恢复与零预算失败关闭均PASS，Artifact `ch17-backup-storage-adapter-45740213445`（ID 15081155445）；文档/资源/历史最终同步Run 45740530720两个Job均success，Knowledge lint 0 errors，全库169个unittest通过，Artifact `ch17-backup-storage-adapter-45740530720`（ID 15080399203）。

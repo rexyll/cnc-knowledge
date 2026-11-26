@@ -122,3 +122,13 @@
 - **测试：** 新增9个专项unittest；全库169个unittest通过，Run 45740068529两个Job均success。自检扩展Run 45740213445待最终确认。
 - **资源：** 新增KNOW-000037、ASSET-000068；14条熔断/舱壁/预算场景定义，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
 - **边界：** 控制仅限单Adapter实例/进程，不构成分布式熔断、全局QPS或集群公平性控制；所有默认参数均待生产测量和审批。
+
+
+## 第二十三轮最终CI验收补记（2026-11-26）
+
+- **实现/测试提交：** Provider CircuitBreaker、Bulkhead、RetryBudget代码提交 `507ac0f39d97700b9019f1533e46f8091c4db5ba`；新增9项专项unittest提交 `2d0ac86484e3a1829eb97d26ee24dc0030bf04f3`。
+- **代码/测试CI：** [Run 45740068529](https://github.com/rexyll/cnc-knowledge/actions/runs/45740068529)，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库169个unittest通过。
+- **增强Mock自检：** [Run 45740213445](https://github.com/rexyll/cnc-knowledge/actions/runs/45740213445)，两个Job均completed/success；熔断OPEN/快速拒绝/HALF_OPEN恢复、零总预算失败关闭和既有备份上传/验证/隔离恢复均PASS；Artifact `ch17-backup-storage-adapter-45740213445`，ID 15081155445。
+- **知识/资源最终同步：** [Run 45740530720](https://github.com/rexyll/cnc-knowledge/actions/runs/45740530720)，两个Job均completed/success；全库169个unittest通过，strict knowledge lint 0 errors；Provider Artifact `ch17-backup-storage-adapter-45740530720`，ID 15080399203。
+- **资源：** KNOW-000037、ASSET-000068；14条熔断/舱壁/预算测试场景均TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
+- **最终仓库：** main；17篇KNOW、67个登记实体、61项资源。无真实云账号/网络/凭据/密钥；控制器不跨Adapter实例/进程分布式共享；生产备份关闭。

@@ -34,7 +34,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T12:00:00+08:00",
-  "updated_at": "2026-11-26T13:30:00+08:00",
+  "updated_at": "2026-11-26T14:00:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -70,7 +70,7 @@
     "resource_scenario_definition_count": 13,
     "retry_after_hint_tested": true,
     "retry_after_max_delay_tested_seconds": 2,
-    "latest_verified_ci_run": 45740068529,
+    "latest_verified_ci_run": 45740530720,
     "latest_adapter_report_artifact_id": null
   },
   "notes": "指数退避默认值是实现参数而非生产参数建议；当前Mock确定性退避不含随机抖动。真实Provider需基于供应商状态码、Retry-After、幂等语义、重试deadline及版本/读一致性文档另行验证。无真实云网络/凭据/密钥/加密/对象锁或生产备份。"
