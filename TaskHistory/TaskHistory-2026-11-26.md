@@ -335,3 +335,14 @@
 - **最终代码CI：** [Run 45758028329](https://github.com/rexyll/cnc-knowledge/actions/runs/45758028329)，两个必需Job均success；全库248项unittest、CH12 143项通过；strict lint PASS（0 errors，5 warnings）；Provider self-check PASS。Artifacts：Provider fenced 15087973420；Coordinator 15087604559；Adapter 15087868629。
 - **资源：** 新增KNOW-000046、ASSET-000077（20条proof/rotation形式化参考场景），更新KNOW-000045，CH17统计更新为26篇KNOW、76个登记实体、70项资源。
 - **剩余限制：** HMAC密钥同时注入Coordinator及本地Provider进程；不能把Python Provider暴露给不可信租户/插件。proof签发后lease release不会即时撤销，默认proof最多仍可活15秒。admin key registry API依赖本地DB文件owner权限。生产远端Provider需非对称签名（Coordinator/KMS私钥、Provider公钥）、在线撤销、时钟同步和真实网络测试；SQLite仍仅同主机本地文件。生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+### 第三十二轮签名证明与密钥轮换最终代码验收
+
+- **最终代码提交：** c3763105bdcfe5028311096a6ad83a58f45c2a8e。
+- **最终 CI：** [Run 45758771772](https://github.com/rexyll/cnc-knowledge/actions/runs/45758771772)，两个必需Job均completed/success；全库248项unittest通过，CH12数值资源143项通过，strict lint PASS（0 errors，5 warnings）。
+- **测试缺陷修复记录：** 文档首轮CI Run 45758511537的单元测试唯一失败来自tampered signature测试只替换Base64URL签名最后一个字符；该字符有未使用的填充位，某些替换会解码为相同签名字节。修复提交c3763105改为修改签名编码首字符的有效数据位，再次验证验签拒绝路径。修复后Run 45758771772全部248项测试通过。
+- **自检：** Provider fenced CLI self-check PASS；scope stale writer拒绝与SQLite对象/fence/receipt原子事务检查PASS。
+- **Artifacts：** Provider fenced 15089140399；SQLite admission coordinator 15089115409；Provider adapter 15089015697。
+- **知识资源：** KNOW-000046、ASSET-000077（20条formal scenarios，PROPOSED_NOT_APPROVED / NOT_RUN）已写入；CH17统计26篇KNOW、76个登记实体、70项资源。
+- **安全限制：** 当前HMAC signer secret需在本机Coordinator与Provider进程分别注入；Provider进程持有对称verify secret；lease释放后已签proof仍可用到expires_at，默认最多15秒。生产远端Provider应使用Coordinator/KMS私钥、Provider公钥的非对称验签，增加在线撤销、同步时钟、TLS/KMS/HSM及真实多主机网络测试。生产备份仍关闭。
