@@ -52,6 +52,12 @@ class ProviderCapabilities:
     server_side_encryption: bool | None
     transport_encryption: bool | None
     consistency_model: str
+    identity_authentication: str
+    authorization_model: str
+    tenant_isolation: bool | None
+    audit_logging: str
+    multipart_upload: bool | None
+    scoped_inventory: bool | None
     evidence_scope: str
 
     def to_dict(self) -> dict[str, Any]:
@@ -65,6 +71,48 @@ class StoredObject:
     content_sha256: str
     size_bytes: int
     version_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ObjectMetadata:
+    key: str
+    content_sha256: str
+    size_bytes: int
+    version_id: str | None = None
+
+
+@dataclass(frozen=True)
+class MultipartPart:
+    part_number: int
+    content_sha256: str
+    size_bytes: int
+
+
+class MultipartObjectStorageProvider(Protocol):
+    """Optional resumable multipart contract; list/abort are session-scoped only."""
+
+    def begin_multipart_upload(self, key: str, upload_id: str) -> None: ...
+
+    def put_multipart_part(
+        self, key: str, upload_id: str, part_number: int, data: bytes, expected_sha256: str
+    ) -> MultipartPart: ...
+
+    def list_multipart_parts(self, key: str, upload_id: str) -> list[MultipartPart]: ...
+
+    def complete_multipart_upload(
+        self, key: str, upload_id: str, *, expected_part_count: int,
+        expected_size_bytes: int, expected_sha256: str
+    ) -> StoredObject: ...
+
+    def abort_multipart_upload(self, key: str, upload_id: str) -> None: ...
+
+
+class ScopedInventoryProvider(Protocol):
+    """Read-only, prefix-scoped object and incomplete-upload inventory."""
+
+    def list_objects(self, prefix: str) -> list[ObjectMetadata]: ...
+
+    def list_multipart_uploads(self, prefix: str) -> list[dict[str, Any]]: ...
 
 
 class ObjectStorageProvider(Protocol):
@@ -128,6 +176,12 @@ class FileSystemStorageProvider:
             server_side_encryption=None,
             transport_encryption=None,
             consistency_model="LOCAL_FILESYSTEM_ATOMIC_HARDLINK_CREATE; FSYNC_DEPENDENT",
+            identity_authentication="LOCAL_PROCESS_IDENTITY_ONLY",
+            authorization_model="HOST_FILESYSTEM_PERMISSIONS",
+            tenant_isolation=None,
+            audit_logging="HOST_OS_AUDIT_NOT_CONFIGURED",
+            multipart_upload=False,
+            scoped_inventory=True,
             evidence_scope="LOCAL_TEMPORARY_FILESYSTEM_TEST_ONLY",
         )
 
@@ -201,9 +255,26 @@ class FileSystemStorageProvider:
         data = target.read_bytes()
         return _record(_safe_key(key), data)
 
+    def list_objects(self, prefix: str) -> list[ObjectMetadata]:
+        normalized = _safe_prefix(prefix) + "/"
+        results = []
+        for item in self.root.rglob("*"):
+            if item.is_symlink() or not item.is_file():
+                continue
+            key = item.relative_to(self.root).as_posix()
+            if not key.startswith(normalized):
+                continue
+            data = item.read_bytes()
+            results.append(ObjectMetadata(key, _sha(data), len(data), None))
+        return sorted(results, key=lambda item: item.key)
+
+    def list_multipart_uploads(self, prefix: str) -> list[dict[str, Any]]:
+        _safe_prefix(prefix)
+        return []
+
 
 class MockObjectStorageProvider:
-    """In-memory object store simulator. It never contacts a remote service."""
+    """In-memory object store with synthetic ACL, multipart and fault injection."""
 
     def __init__(
         self,
@@ -213,14 +284,33 @@ class MockObjectStorageProvider:
         server_side_encryption: bool = False,
         transport_encryption: bool = False,
         fail_after_puts: int | None = None,
+        fail_after_parts: int | None = None,
+        principal_id: str = "mock-backup-writer",
+        tenant_id: str = "synthetic-tenant",
+        allowed_prefixes: tuple[str, ...] = ("cnc/", "ch17/"),
+        allowed_actions: tuple[str, ...] = (
+            "object:write", "object:read", "object:list_prefix", "multipart:write"
+        ),
     ):
         self._objects: dict[str, StoredObject] = {}
+        self._multipart: dict[tuple[str, str], dict[int, bytes]] = {}
         self.object_versioning = object_versioning
         self.object_lock = object_lock
         self.server_side_encryption = server_side_encryption
         self.transport_encryption = transport_encryption
         self.fail_after_puts = fail_after_puts
+        self.fail_after_parts = fail_after_parts
         self._successful_puts = 0
+        self._successful_parts = 0
+        self.principal_id = principal_id
+        self.tenant_id = tenant_id
+        self.allowed_prefixes = tuple(allowed_prefixes)
+        self.allowed_actions = frozenset(allowed_actions)
+        self.audit_log: list[dict[str, str]] = []
+        if not self.principal_id or not self.tenant_id:
+            raise BackupStorageError("mock principal and tenant identifiers are required")
+        if not self.allowed_prefixes:
+            raise BackupStorageError("mock provider requires at least one allowed prefix")
         self._capabilities = ProviderCapabilities(
             provider_kind="MOCK_OBJECT_STORAGE",
             conditional_create=True,
@@ -229,6 +319,12 @@ class MockObjectStorageProvider:
             server_side_encryption=server_side_encryption,
             transport_encryption=transport_encryption,
             consistency_model="IN_MEMORY_STRONG_READ_AFTER_WRITE_SIMULATION",
+            identity_authentication="MOCK_PRINCIPAL_ONLY_NO_CREDENTIALS",
+            authorization_model="PRINCIPAL_ACTION_AND_PREFIX_ALLOWLIST_SIMULATION",
+            tenant_isolation=True,
+            audit_logging="IN_MEMORY_METADATA_ONLY_AUDIT_TRACE",
+            multipart_upload=True,
+            scoped_inventory=True,
             evidence_scope="MOCK_DECLARATION_ONLY_NOT_PROVIDER_EVIDENCE",
         )
 
@@ -236,8 +332,23 @@ class MockObjectStorageProvider:
     def capabilities(self) -> ProviderCapabilities:
         return self._capabilities
 
-    def put_if_absent(self, key: str, data: bytes) -> StoredObject:
+    def _authorize(self, action: str, key: str) -> str:
         normalized = _safe_key(key)
+        allowed_prefix = any(normalized.startswith(prefix) for prefix in self.allowed_prefixes)
+        allowed = action in self.allowed_actions and allowed_prefix
+        self.audit_log.append({
+            "principal_id": self.principal_id,
+            "tenant_id": self.tenant_id,
+            "action": action,
+            "object_key": normalized,
+            "outcome": "ALLOW" if allowed else "DENY",
+        })
+        if not allowed:
+            raise BackupStorageError("mock provider authorization denied")
+        return normalized
+
+    def put_if_absent(self, key: str, data: bytes) -> StoredObject:
+        normalized = self._authorize("object:write", key)
         if not isinstance(data, bytes):
             raise BackupStorageError("object payload must be bytes")
         if self.fail_after_puts is not None and self._successful_puts >= self.fail_after_puts:
@@ -254,7 +365,7 @@ class MockObjectStorageProvider:
         return result
 
     def get_object(self, key: str, *, version_id: str | None = None) -> StoredObject:
-        normalized = _safe_key(key)
+        normalized = self._authorize("object:read", key)
         try:
             result = self._objects[normalized]
         except KeyError as exc:
@@ -263,12 +374,227 @@ class MockObjectStorageProvider:
             raise BackupStorageError("requested object version does not match the stored version")
         return result
 
+    def begin_multipart_upload(self, key: str, upload_id: str) -> None:
+        normalized = self._authorize("multipart:write", key)
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", upload_id or ""):
+            raise BackupStorageError("multipart upload ID is invalid")
+        if normalized in self._objects:
+            raise BackupStorageConflict("cannot open a multipart session for a completed object")
+        session = self._multipart.setdefault((normalized, upload_id), {})
+        if not isinstance(session, dict):
+            raise BackupStorageError("multipart session metadata is corrupt")
+
+    def put_multipart_part(
+        self, key: str, upload_id: str, part_number: int, data: bytes, expected_sha256: str
+    ) -> MultipartPart:
+        normalized = self._authorize("multipart:write", key)
+        session_key = (normalized, upload_id)
+        if session_key not in self._multipart:
+            raise BackupStorageError("multipart upload session does not exist")
+        if not isinstance(part_number, int) or part_number < 1:
+            raise BackupStorageError("multipart part number must be a positive integer")
+        if not isinstance(data, bytes):
+            raise BackupStorageError("multipart payload must be bytes")
+        digest = _sha(data)
+        if digest != expected_sha256:
+            raise BackupStorageError("multipart part checksum mismatch")
+        existing = self._multipart[session_key].get(part_number)
+        if existing is not None:
+            if existing != data:
+                raise BackupStorageConflict("multipart part number already contains different bytes")
+            return MultipartPart(part_number, digest, len(data))
+        if self.fail_after_parts is not None and self._successful_parts >= self.fail_after_parts:
+            raise BackupStorageError("injected mock multipart interruption")
+        self._multipart[session_key][part_number] = data
+        self._successful_parts += 1
+        return MultipartPart(part_number, digest, len(data))
+
+    def list_multipart_parts(self, key: str, upload_id: str) -> list[MultipartPart]:
+        normalized = self._authorize("multipart:write", key)
+        session_key = (normalized, upload_id)
+        if session_key not in self._multipart:
+            raise BackupStorageError("multipart upload session does not exist")
+        return [
+            MultipartPart(number, _sha(data), len(data))
+            for number, data in sorted(self._multipart[session_key].items())
+        ]
+
+    def complete_multipart_upload(
+        self, key: str, upload_id: str, *, expected_part_count: int,
+        expected_size_bytes: int, expected_sha256: str
+    ) -> StoredObject:
+        normalized = self._authorize("multipart:write", key)
+        session_key = (normalized, upload_id)
+        try:
+            parts = self._multipart[session_key]
+        except KeyError as exc:
+            raise BackupStorageError("multipart upload session does not exist") from exc
+        if set(parts) != set(range(1, expected_part_count + 1)):
+            raise BackupStorageError("multipart upload part sequence is incomplete or out of order")
+        assembled = b"".join(parts[index] for index in range(1, expected_part_count + 1))
+        if len(assembled) != expected_size_bytes or _sha(assembled) != expected_sha256:
+            raise BackupStorageError("assembled multipart object size or digest mismatch")
+        result = self.put_if_absent(normalized, assembled)
+        del self._multipart[session_key]
+        return result
+
+    def abort_multipart_upload(self, key: str, upload_id: str) -> None:
+        normalized = self._authorize("multipart:write", key)
+        # This only discards uncommitted multipart staging; it cannot delete objects.
+        self._multipart.pop((normalized, upload_id), None)
+
+    def list_objects(self, prefix: str) -> list[ObjectMetadata]:
+        normalized_prefix = _safe_prefix(prefix) + "/"
+        # Prefix-list permission applies to the requested namespace, not the bucket root.
+        self._authorize("object:list_prefix", normalized_prefix + "_inventory_probe")
+        return [
+            ObjectMetadata(key, value.content_sha256, value.size_bytes, value.version_id)
+            for key, value in sorted(self._objects.items())
+            if key.startswith(normalized_prefix)
+        ]
+
+    def list_multipart_uploads(self, prefix: str) -> list[dict[str, Any]]:
+        normalized_prefix = _safe_prefix(prefix) + "/"
+        self._authorize("object:list_prefix", normalized_prefix + "_inventory_probe")
+        return [
+            {"object_key": key, "upload_id": upload_id, "part_count": len(parts)}
+            for (key, upload_id), parts in sorted(self._multipart.items())
+            if key.startswith(normalized_prefix)
+        ]
+
 
 class BackupStorageAdapter:
     """Publishes verified backup packages and restores only after verification."""
 
-    def __init__(self, provider: ObjectStorageProvider):
+    def __init__(
+        self,
+        provider: ObjectStorageProvider,
+        *,
+        multipart_threshold_bytes: int = 1024 * 1024,
+        multipart_part_size_bytes: int = 256 * 1024,
+    ):
+        if multipart_threshold_bytes < 1 or multipart_part_size_bytes < 1:
+            raise BackupStorageError("multipart thresholds and part sizes must be positive")
         self.provider = provider
+        self.multipart_threshold_bytes = multipart_threshold_bytes
+        self.multipart_part_size_bytes = multipart_part_size_bytes
+
+    def _upload_payload(self, key: str, data: bytes) -> StoredObject:
+        capabilities = self.provider.capabilities
+        multipart_methods = (
+            "begin_multipart_upload", "put_multipart_part", "list_multipart_parts",
+            "complete_multipart_upload", "abort_multipart_upload",
+        )
+        if len(data) < self.multipart_threshold_bytes:
+            return self.provider.put_if_absent(key, data)
+        if capabilities.multipart_upload is not True:
+            return self.provider.put_if_absent(key, data)
+        if any(not callable(getattr(self.provider, name, None)) for name in multipart_methods):
+            raise BackupStorageError("provider declares multipart support but omits required multipart methods")
+
+        upload_id = "mp-" + _sha((key + ":" + _sha(data)).encode("utf-8"))[:28]
+        self.provider.begin_multipart_upload(key, upload_id)
+        part_size = self.multipart_part_size_bytes
+        parts = [
+            data[offset:offset + part_size]
+            for offset in range(0, len(data), part_size)
+        ]
+        existing = {
+            item.part_number: item
+            for item in self.provider.list_multipart_parts(key, upload_id)
+        }
+        if set(existing) - set(range(1, len(parts) + 1)):
+            raise BackupStorageConflict("multipart session contains unexpected part numbers")
+        for number, part in enumerate(parts, start=1):
+            digest = _sha(part)
+            prior = existing.get(number)
+            if prior is not None:
+                if prior.content_sha256 != digest or prior.size_bytes != len(part):
+                    raise BackupStorageConflict("resumed multipart part differs from source content")
+                continue
+            self.provider.put_multipart_part(key, upload_id, number, part, digest)
+        result = self.provider.complete_multipart_upload(
+            key,
+            upload_id,
+            expected_part_count=len(parts),
+            expected_size_bytes=len(data),
+            expected_sha256=_sha(data),
+        )
+        if result.content_sha256 != _sha(data) or result.size_bytes != len(data):
+            raise BackupStorageError("completed multipart object metadata mismatch")
+        return result
+
+    def inventory_backup_objects(self, *, prefix: str) -> dict[str, Any]:
+        list_objects = getattr(self.provider, "list_objects", None)
+        list_uploads = getattr(self.provider, "list_multipart_uploads", None)
+        if not callable(list_objects) or not callable(list_uploads):
+            raise BackupStorageError("provider does not support prefix-scoped read-only inventory")
+        normalized = _safe_prefix(prefix)
+        objects = list_objects(normalized)
+        grouped: dict[str, list[ObjectMetadata]] = {}
+        unclassified: list[str] = []
+        marker = normalized + "/backup-"
+        for item in objects:
+            if not item.key.startswith(marker):
+                unclassified.append(item.key)
+                continue
+            remainder = item.key[len(marker):]
+            if "/" not in remainder:
+                unclassified.append(item.key)
+                continue
+            backup_id, _ = remainder.split("/", 1)
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", backup_id):
+                unclassified.append(item.key)
+                continue
+            grouped.setdefault(backup_id, []).append(item)
+
+        backup_reports = []
+        for backup_id, entries in sorted(grouped.items()):
+            keys = {item.key for item in entries}
+            object_prefix, payload_keys, receipt_key = self._keys(normalized, backup_id)
+            expected = set(payload_keys.values()) | {receipt_key}
+            unexpected = sorted(keys - expected)
+            missing = sorted(expected - keys)
+            if receipt_key not in keys:
+                status = "UNCOMMITTED_ORPHAN_CANDIDATE"
+            elif unexpected or missing:
+                status = "PUBLISHED_PACKAGE_INCOMPLETE_OR_UNEXPECTED_OBJECTS"
+            else:
+                try:
+                    verified = self.verify_stored_backup(prefix=normalized, backup_id=backup_id)
+                    status = "PUBLISHED_VERIFIED"
+                except BackupStorageError:
+                    status = "PUBLISHED_INVALID"
+                    verified = None
+            backup_reports.append({
+                "backup_id": backup_id,
+                "object_prefix": object_prefix,
+                "status": status,
+                "object_count": len(entries),
+                "total_size_bytes": sum(item.size_bytes for item in entries),
+                "object_keys": sorted(keys),
+                "missing_expected_keys": missing,
+                "unexpected_keys": unexpected,
+                "reclamation_recommendation": (
+                    "MANUAL_REVIEW_REQUIRED" if status == "UNCOMMITTED_ORPHAN_CANDIDATE"
+                    else "DO_NOT_RECLAIM_AUTOMATICALLY"
+                ),
+                "approval_status": "PROPOSED_NOT_APPROVED",
+                "reclamation_executable": False,
+            })
+        multipart = list_uploads(normalized)
+        return {
+            "result": "INVENTORY_COMPLETE",
+            "prefix": normalized,
+            "object_count": len(objects),
+            "backup_count": len(backup_reports),
+            "backups": backup_reports,
+            "unclassified_object_keys": sorted(unclassified),
+            "incomplete_multipart_uploads": multipart,
+            "destructive_operations": False,
+            "automatic_reclamation": False,
+            "approval_status": "PROPOSED_NOT_APPROVED",
+        }
 
     def _keys(self, prefix: str, backup_id: str) -> tuple[str, dict[str, str], str]:
         prefix = _safe_prefix(prefix)
@@ -311,7 +637,7 @@ class BackupStorageAdapter:
             payload_rows = []
             for name in PAYLOAD_FILES:
                 data = payload_data[name]
-                record = self.provider.put_if_absent(payload_keys[name], data)
+                record = self._upload_payload(payload_keys[name], data)
                 payload_rows.append({
                     "file_name": name,
                     "object_key": payload_keys[name],
