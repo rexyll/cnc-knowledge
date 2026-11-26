@@ -132,3 +132,11 @@ Coordinator scope 权威状态增加 archive metadata 时，至少需要：
 - SRC-000404：etcd v3.7 data model，MVCC revisions 与 compaction 语义。
 - SRC-000405：etcd v3.7 API，Txn Compare/Then/Else 的原子性与请求结构。
 - KNOW-000055 / KNOW-000056：统一 Coordinator schema-v2 与容量画像。
+
+
+## 9. CI验收记录
+
+- **最终代码/测试head：** 4ed91a04138e30ecf2275c07bb947ecc872fadd2（main）。初始实现提交为 e0c168864826389bfd6bcfe2740a0069e1b063fe；随后修正了未知提交结果的故障注入时点，以及对应测试断言字段名。
+- **CI：** [GitHub Actions Run 45817146500](https://github.com/rexyll/cnc-knowledge/actions/runs/45817146500)，head SHA与最终main提交一致，两个必需Job均completed/success。
+- **测试结果：** 全库380项unittest通过（其中新增24项归档模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。既有合成夹具验证报告有5项非阻断warning，内容仍为DRAFT/未获企业环境批准/业务用例NOT_RUN。
+- **验收边界：** CI验证的是纯内存归档协议参考模型，不是实际对象存储持久性、真实etcd事务、多主机Coordinator、生产archive lookup或企业保留/法律保留验收。ASSET-000088的25条场景仍PROPOSED_NOT_APPROVED / NOT_RUN。

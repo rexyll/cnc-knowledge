@@ -168,3 +168,6 @@ Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope
 ## CH17-T004 Operation Ledger生命周期与安全归档（第四十三轮）
 
 新增 [Coordinator Operation Ledger 生命周期与安全归档协议](spare-parts-inventory-backup-provider-operation-ledger-archival.md)（KNOW-000057），明确终态候选筛选、未决操作保护、内容寻址不可变归档、manifest链、scope指针CAS、跨归档精确幂等和fail-closed恢复。配套25项企业待批准场景矩阵为ASSET-000088。新增脚本仅是纯内存协议参考模型，未接入当前StoreBackedCoordinatorAuthority或真实etcd/对象存储。
+
+
+第四十三轮归档协议参考模型及CI验收：最终测试head提交 4ed91a04138e30ecf2275c07bb947ecc872fadd2；CI Run 45817146500 两个必需Job均completed/success。全库380项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；结构与数据质量0 errors。新增24个归档参考模型测试全部通过；ASSET-000088的25条正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN，未接入真实etcd/对象存储或生产Coordinator。

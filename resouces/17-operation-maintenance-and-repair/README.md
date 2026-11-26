@@ -529,3 +529,6 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 新增 spare-parts-coordinator-operation-ledger-archive-test-matrix-v1.csv（ASSET-000088），包含25条待批准/未执行场景，覆盖归档准入、pending保护、幂等、CAS、manifest链、恢复及物理删除边界。
 - 协议正文位于 docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-operation-ledger-archival.md（KNOW-000057）；纯内存参考模型位于 scripts/spare_parts_operation_ledger_archive.py，单元测试位于 tests/test_spare_parts_operation_ledger_archive.py。
 - CSV是形式化场景定义，不包含企业执行结果；ASSET-000088保持PROPOSED_NOT_APPROVED / NOT_RUN。参考模型不连接真实etcd或对象存储，不启用生产归档。
+
+
+第四十三轮归档协议参考模型最终测试head 4ed91a04138e30ecf2275c07bb947ecc872fadd2；[CI Run 45817146500](https://github.com/rexyll/cnc-knowledge/actions/runs/45817146500)两个必需Job均通过。全库380项unittest、CH12 143项数值资源测试通过，strict lint和知识结构质量均0 errors。新增24项归档模型测试通过；ASSET-000088的25项正式场景仍待企业批准/执行，不等同于生产归档验收。
