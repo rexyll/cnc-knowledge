@@ -1,0 +1,79 @@
+{
+  "entity_id": "KNOW-000049",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件备份远程 Coordinator 与对象存储 Provider 分布式 fencing 提交协议",
+  "english_name": "CNC spare-parts backup distributed fencing commit protocol for remote Coordinator and object storage Provider",
+  "aliases": [
+    "object-store conditional fencing",
+    "distributed lease activation and revocation CAS",
+    "single control-object manifest publication"
+  ],
+  "description": "建立远程Coordinator与对象存储Provider间的分布式fencing参考协议：单调scope token、Ed25519操作证明、不可变staging payload、单控制对象CAS发布指针、activation/revoke两阶段收敛、操作序号与OUTCOME_UNKNOWN幂等恢复。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Provider Ed25519公钥验签和在线撤销"
+  ],
+  "tags": [
+    "CH17",
+    "Ed25519",
+    "Public Key Verification",
+    "KMS",
+    "HSM",
+    "Lease Revocation",
+    "Fail Closed"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T14:20:00+08:00",
+  "updated_at": "2026-11-26T06:20:00Z",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000393",
+    "SRC-000394",
+    "SRC-000395",
+    "SRC-000396"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-distributed-fencing.md",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-distributed-fencing-test-matrix-v1.csv",
+    "reference_module": "scripts/spare_parts_provider_distributed_fencing.py",
+    "reference_test": "tests/test_spare_parts_provider_distributed_fencing.py",
+    "control_store_protocol": "ConditionalObjectControlStore",
+    "reference_control_store": "InMemoryConditionalObjectControlStore",
+    "token_algorithm": "MONOTONIC_PER_SCOPE",
+    "proof_algorithm": "ED25519_V2",
+    "required_operations": [
+      "fencing:activate",
+      "fencing:revoke",
+      "fencing:publish"
+    ],
+    "control_object_cas": "ETAG_OR_GENERATION_MATCH",
+    "control_object_scope": "ONE_CONTROL_OBJECT_PER_TENANT_AND_FENCING_SCOPE",
+    "payload_visibility": "IMMUTABLE_STAGING_UNTIL_CONTROL_POINTER_CAS",
+    "publication_linearization_point": "CONTROL_OBJECT_CONDITIONAL_REPLACEMENT",
+    "revocation_linearization_point": "CONTROL_OBJECT_ACTIVE_TO_REVOKED_CAS",
+    "operation_sequence": "MONOTONIC_PER_SCOPE",
+    "receipt_history_default": 128,
+    "aged_out_retry_behavior": "OUTCOME_UNKNOWN_FAIL_CLOSED",
+    "s3_adapter_integrated": false,
+    "gcs_adapter_integrated": false,
+    "azure_adapter_integrated": false,
+    "remote_coordinator_integrated": false,
+    "kms_hsm_integrated": false,
+    "production_provider_integrated": false,
+    "production_backup_enabled": false,
+    "code_ci_status": "PENDING"
+  },
+  "notes": "该知识条目仅定义厂商中立协议和合成CAS状态机。现有Coordinator接口尚未实现fencing:activate/revoke/publish远程proof签发端点，也未分配生产分布式operation_sequence；对象存储SDK、IAM策略、网络服务、KMS/HSM均未接入。协议依赖单scope control object的强一致读取与ETag/generation条件替换，并要求Gateway独占control key写权限；payload与control object不构成跨对象事务。InMemoryConditionalObjectControlStore仅单进程测试，不能作为真实多主机证据。"
+}
