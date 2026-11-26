@@ -36,7 +36,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T13:20:00+08:00",
-  "updated_at": "2026-11-26T05:20:00Z",
+  "updated_at": "2026-11-26T13:40:08+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -70,15 +70,15 @@
     "multi_host_status_service": false,
     "production_cloud_provider_integrated": false,
     "dependency": "cryptography==50.0.2",
-    "repository_unit_test_count": 252,
+    "repository_unit_test_count": 254,
     "ch12_test_count": 143,
     "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
-    "latest_verified_code_commit": "0912a95576de39816c924338bb649556ce0393b7",
-    "latest_verified_ci_run": 45760844653,
+    "latest_verified_code_commit": "1efa13adab92a87a6b4353b848637ec730d0b95f",
+    "latest_verified_ci_run": 45762883991,
     "latest_verified_ci_status": "completed/success",
-    "provider_self_check_artifact_id": 15089847421,
-    "admission_self_check_artifact_id": 15089209106,
-    "adapter_self_check_artifact_id": 15089074481,
+    "provider_self_check_artifact_id": 15091340011,
+    "admission_self_check_artifact_id": 15090661225,
+    "adapter_self_check_artifact_id": 15090885721,
     "atomic_online_lease_status_api": "SQLiteProviderAdmissionCoordinator.is_attestation_active_in_transaction",
     "atomic_provider_option": "require_atomic_online_attestation_status",
     "atomic_shared_database_mode_available": true,
@@ -87,5 +87,5 @@
     "atomic_mode_lease_release_serialized": true,
     "atomic_mode_scope": "SAME_HOST_LOCAL_SQLITE_ONLY"
   },
-  "notes": "Ed25519 v2签名证明使用规范化claims并由Coordinator signer callback签名，Provider只持公钥验证；CallbackEd25519Signer为外部KMS/HSM适配接口，不代表已经连接具体云KMS。旧HMAC v1仍作为迁移兼容。第三十三轮的require_online_attestation_status分库模式仍存在status check到Provider commit的TOCTOU竞态；第三十四轮新增require_atomic_online_attestation_status同库模式，要求Coordinator和Provider指向同一SQLite文件，Provider复用BEGIN IMMEDIATE连接调用is_attestation_active_in_transaction，从而使lease release与Provider对象/multipart事务串行。SQLite WAL仅同机，不支持网络文件系统/多主机。ASSET-000078 22条形式化场景PROPOSED_NOT_APPROVED/NOT_RUN。未连接真实KMS/HSM，生产备份继续关闭。"
+  "notes": "Ed25519 v2签名证明使用规范化claims并由Coordinator signer callback签名，Provider只持公钥验证；CallbackEd25519Signer为外部KMS/HSM适配接口，不代表已经连接具体云KMS。旧HMAC v1仍作为迁移兼容。第三十三轮的require_online_attestation_status分库模式仍存在status check到Provider commit的TOCTOU竞态；第三十四轮新增require_atomic_online_attestation_status同库模式，要求Coordinator和Provider指向同一SQLite文件，Provider复用BEGIN IMMEDIATE连接调用is_attestation_active_in_transaction，使lease release与Provider对象/multipart事务串行。SQLite WAL仅同机，不支持网络文件系统/多主机。Run 45762883991已验证全库254项、CH12 143项和strict lint 0 errors/5 warnings。ASSET-000078的22条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。未连接真实KMS/HSM，生产备份继续关闭。"
 }

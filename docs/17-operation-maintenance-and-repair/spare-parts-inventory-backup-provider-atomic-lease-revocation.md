@@ -97,3 +97,11 @@ Provider 写入路径先在自身数据库执行 BEGIN IMMEDIATE，然后在该�
 若生产架构必须将 Coordinator 与 Provider 拆为不同主机/数据库，应重新选取单一权威线性化点，例如支持事务租约与资源变更的集中服务，或由目标对象存储提供并经验证的条件写/fencing机制；不能将本地同库实现直接宣称为远程部署安全保证。
 
 **生产状态不变：** 未连接真实云 KMS/HSM、远程 Coordinator 或云对象存储；未执行企业批准的备份/恢复演练；production_backup_enabled=false，治理门禁仍为 BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+## 8. 本轮CI验证记录
+
+- 代码与资源验收：[Run 45762883991](https://github.com/rexyll/cnc-knowledge/actions/runs/45762883991)，两个必需Job success；全库254项unittest、CH12数值资源143项通过；strict knowledge lint 0 errors / 5 warnings。
+- 最终文档同步：[Run 45762994591](https://github.com/rexyll/cnc-knowledge/actions/runs/45762994591)，两个必需Job success；全库254项、CH12 143项通过；知识结构与数据质量检查0 errors。
+- Artifact：Provider fenced 15091340011；Admission Coordinator 15090661225；Adapter 15090885721；Backup governance readiness 15089609979。
+
+上述CI仅验证仓库内合成测试与结构门禁。ASSET-000079的12条参考验收场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；CI通过不代表已批准或逐项执行，不代表真实KMS/HSM、云Provider、多主机网络或生产灾备验证。

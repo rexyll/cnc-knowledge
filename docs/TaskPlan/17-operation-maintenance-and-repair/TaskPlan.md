@@ -553,3 +553,11 @@
 - **新增知识与资源：** KNOW-000048；ASSET-000079（12条同库原子撤销场景，均PROPOSED_NOT_APPROVED / NOT_RUN）；补齐既有ASSET-000078结构化实体记录。新增文章 spare-parts-inventory-backup-provider-atomic-lease-revocation.md。
 - **代码提交：** Coordinator 1504a0d8；Provider 3bed9959；Provider专项测试 1efa13ad。最终CI以本节后续补录为准。
 - **限制：** 仅支持同一主机、同一真实SQLite文件和受支持本地文件系统；WAL/NFS/SMB/多主机不支持；没有真实KMS/HSM、远程Coordinator、真实对象存储或生产Provider接入。数据库共置扩大安全/备份边界，SQLite单写事务限制吞吐。生产备份继续关闭，治理门禁 BLOCKED_PENDING_ENTERPRISE_APPROVAL，CH17-T004保持IN_PROGRESS。
+
+### 第三十四轮最终代码与文档CI验收补记
+
+- **代码与资源验收：** [GitHub Actions Run 45762883991](https://github.com/rexyll/cnc-knowledge/actions/runs/45762883991)两个必需Job均completed/success；全库254项unittest通过（约6.2秒），CH12数值资源143项通过；strict knowledge lint PASS（0 errors，5 warnings）；Provider/Coordinator相关自检所在Job success。
+- **最终文档同步验收：** [GitHub Actions Run 45762994591](https://github.com/rexyll/cnc-knowledge/actions/runs/45762994591)两个必需Job均completed/success；全库254项unittest、CH12 143项均通过；strict lint 0 errors/5 warnings；知识结构与数据质量Job结果PASS（0 errors）。
+- **Artifacts：** Provider fenced self-check 15091340011；Admission Coordinator self-check 15090661225；BackupStorageAdapter self-check 15090885721；Backup governance readiness 15089609979；CH12 S-curve资源 15090308493。
+- **登记：** CH17更新为28篇KNOW、79个登记实体、72项资源、11条去重来源。ASSET-000079的12条形式化场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；CI单测通过不等于矩阵场景获批或执行。
+- **安全边界：** 同库原子模式仅同一主机、同一SQLite文件及受支持的本地文件系统；分库在线检查仍有TOCTOU；WAL不支持网络文件系统/多主机。真实KMS/HSM、远程Provider、企业灾备和生产备份启用仍未完成。
