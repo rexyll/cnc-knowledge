@@ -326,3 +326,13 @@
 - **最终实现/矩阵修正CI验收：** 提交 9e8e3e0b19d7052b2899515575747f1c0b100834 对应Run 45732010499，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库127个unittest方法通过。新增校验器检查5个CSV schema、10条DRB用例状态和验收定义字段，报告0 errors；strict knowledge lint 0 errors。
 - **治理报告Artifact：** ch17-backup-governance-readiness-45732010499，Artifact ID 15076713318；报告模板文件5个、策略记录0条、批准策略0条、恢复演练10条；governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，production_backup_enabled=false，enterprise_backup_test_status=NOT_RUN。
 - **实施与文档CI：** 实现/初版模板提交 095deffdbf173c70f973d15844033b7a0deeaa7b 对应Run 45731635763两个Job均success；文档/实体同步提交 32fa8aa889350398539945620df7ad418e9e46a5 对应Run 45731937638两个Job均success。
+
+## 6.27 CH17-T004 供应商中立备份存储适配器与Mock验证第二十轮（2026-11-26）
+
+- **状态：** IN_PROGRESS；仅完成本地文件和进程内Mock Provider契约，不接真实对象存储。
+- **知识条目：** 新增KNOW-000034《数控机床备件库存账本备份存储适配器契约》。
+- **实现：** `scripts/spare_parts_backup_storage_adapter.py` 定义ObjectStorageProvider的capabilities、put_if_absent、get_object；实现FileSystemStorageProvider和MockObjectStorageProvider；BackupStorageAdapter提供publish_backup、verify_stored_backup、restore_from_provider。
+- **提交协议：** 四个负载对象先写，BACKUP-RECEIPT.json最后发布作为提交标记。失败留下未提交孤儿对象，无回执不视为完整备份；同字节重试幂等，不同内容冲突；无delete/list API。
+- **安全边界：** 能力声明附带evidence_scope；Mock的版本/对象锁/加密/TLS仅为模拟声明。无真实网络、凭据、KMS/HSM、加密、对象锁、云区域或远端副本。
+- **测试：** 新增12项左右Provider/适配器合成测试，覆盖幂等、冲突、中断续传、回执最后提交、篡改/缺失、版本ID、路径安全和隔离恢复；CI增加Mock self-check与Artifact。
+- **生产门禁：** 真实Provider接入前须评审条件创建/读后写语义、身份权限、加密与密钥、对象锁/保留、数据驻留、恢复吞吐、RPO/RTO与供应商退出证据；production_backup_enabled=false，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL。

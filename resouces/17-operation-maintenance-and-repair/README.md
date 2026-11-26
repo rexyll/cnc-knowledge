@@ -235,3 +235,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 新增 scripts/spare_parts_backup_governance_validator.py 与 tests/test_spare_parts_backup_governance_validator.py；校验schema、行宽、唯一ID、审批状态及已批准记录证据；CI输出readiness报告。
 - 校验器PASS只代表结构/审批证据完整性；治理就绪与production_backup_enabled继续BLOCKED_PENDING_ENTERPRISE_APPROVAL / false。
 - 未接入KMS/HSM、云对象存储或远端账户，不配置或使用密钥，不发起备份/删除操作；企业BIA、保留政策、安全评审和真实恢复演练仍待批准。
+
+
+## CH17-T004 备份存储适配器与Mock Provider第二十轮（2026-11-26）
+
+- 新增 `scripts/spare_parts_backup_storage_adapter.py`：供应商中立的ObjectStorageProvider契约、FileSystemStorageProvider和内存MockObjectStorageProvider；使用put_if_absent/get_object，不提供delete/list。
+- 多对象备份按负载先写、BACKUP-RECEIPT.json最后提交；回执记录负载SHA-256、长度及版本ID。半途失败没有回执，不视为已提交；同内容可重试，不同内容冲突，不自动删除孤儿对象。
+- 验证先校验回执和对象摘要，再调用原备份包校验；恢复只写空白隔离目录。
+- Mock只模拟行为和能力声明，不访问网络/云服务，不使用凭据/密钥，不实现真实加密、对象锁或异地耐久存储。

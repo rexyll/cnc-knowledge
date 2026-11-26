@@ -74,3 +74,6 @@
 | spare-parts-inventory-backup-security-key-management-template.csv | CSV空白模板 / ASSET-000059 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-governance.md / KNOW-000033 | 安全/密钥管理空白评估模板；禁止录入任何密钥或秘密，控制值及审批待安全责任方确认。 |
 | spare-parts-inventory-backup-offsite-storage-assessment-template.csv | CSV空白模板 / ASSET-000060 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-governance.md / KNOW-000033 | 异地存储供应商评估空白模板；不指定厂商、区域、合同条款或服务等级。 |
 | spare-parts-inventory-backup-restore-drill-acceptance-matrix-v1.csv | CSV测试矩阵 / ASSET-000061 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-governance.md / KNOW-000033 | 10个恢复演练场景；全部PROPOSED_NOT_APPROVED / NOT_RUN，不构成真实灾备测试结果。 |
+
+| spare-parts-inventory-backup-storage-provider-capability-matrix-template.csv | CSV能力评估模板 / ASSET-000062 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-storage-adapter.md / KNOW-000034 | 供应商中立的对象存储能力评估空白表；条件创建、版本控制、对象锁、加密、TLS、读后写一致性、区域、SLA和证据均待实测/批准。 |
+| spare-parts-inventory-backup-storage-adapter-test-cases-v1.csv | CSV测试矩阵 / ASSET-000063 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-storage-adapter.md / KNOW-000034 | 12个纯合成场景覆盖Provider条件创建、回执最后提交、失败续传、内容篡改、版本固定、路径安全和隔离恢复；不代表真实云Provider验收。 |

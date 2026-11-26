@@ -1,0 +1,72 @@
+{
+  "entity_id": "KNOW-000034",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份存储适配器契约",
+  "english_name": "CNC spare-parts inventory ledger backup storage adapter contract",
+  "aliases": [
+    "备份Provider适配器",
+    "Mock对象存储验证",
+    "Backup storage adapter contract"
+  ],
+  "description": "定义本地文件与Mock对象存储Provider的供应商中立接口、条件创建/读取、回执最后提交、多对象部分失败续传、对象版本固定及隔离恢复契约。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "合成测试夹具"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "合成夹具",
+    "SPAT",
+    "库存事务",
+    "BOM适用性",
+    "测试数据"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T09:30:00+08:00",
+  "updated_at": "2026-11-26T09:30:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-storage-adapter.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-26",
+    "provider_contract_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "provider_contract_methods": [
+      "capabilities",
+      "put_if_absent",
+      "get_object"
+    ],
+    "providers": [
+      "FileSystemStorageProvider",
+      "MockObjectStorageProvider"
+    ],
+    "receipt_last_commit_marker": true,
+    "delete_api_exposed": false,
+    "real_cloud_provider_implemented": false,
+    "cloud_credentials_used": false,
+    "encryption_or_key_management_implemented": false,
+    "object_lock_verified": false,
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED",
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-storage-provider-capability-matrix-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-storage-adapter-test-cases-v1.csv"
+    ],
+    "adapter_test_status": "SYNTHETIC_MOCK_ONLY"
+  },
+  "notes": "适配器只在本地文件系统和进程内Mock上验证；Mock能力声明不是真实供应商证据。回执最后发布用于标识多对象备份完整性；半途上传可能留下未提交对象，当前无自动清理。未实现真实云连接、KMS/HSM、加密、对象锁或异地复制。"
+}

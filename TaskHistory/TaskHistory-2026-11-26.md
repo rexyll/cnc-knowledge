@@ -43,3 +43,14 @@
 - **治理readiness Artifact：** ch17-backup-governance-readiness-45732010499，Artifact ID 15076713318。5个CSV文件schema全部PASS，4份企业政策模板均无记录，10条恢复演练均为PROPOSED_NOT_APPROVED / NOT_RUN；governance_readiness保持BLOCKED_PENDING_ENTERPRISE_APPROVAL，production_backup_enabled=false。
 - **提交序列：** 治理实现/模板 095deffdbf173c70f973d15844033b7a0deeaa7b / Run 45731635763两个Job成功；知识文档/实体登记 32fa8aa889350398539945620df7ad418e9e46a5 / Run 45731937638两个Job成功；恢复演练矩阵定义和校验加强 9e8e3e0b19d7052b2899515575747f1c0b100834 / Run 45732010499两个Job成功。
 - **遗留：** 未批准企业保留、RPO/RTO、密钥和供应商政策；未实现KMS/HSM/远端存储/加密或真实灾备测试；CH17-T004仍IN_PROGRESS，业务断言NOT_EVALUATED。
+
+
+## CH17-T004 供应商中立备份存储适配器与Mock验证第二十轮（2026-11-26）
+
+- **所在分支：** main；未创建新分支。
+- **新增代码：** `scripts/spare_parts_backup_storage_adapter.py`，定义ObjectStorageProvider最小契约（capabilities / put_if_absent / get_object），实现FileSystemStorageProvider、MockObjectStorageProvider和BackupStorageAdapter；无delete/list接口。
+- **提交协议：** 上传BACKUP.json、COMMIT.json、ledger.json、snapshot.json四个负载后，最后发布BACKUP-RECEIPT.json作为提交标记；回执包含负载键、版本ID、长度、SHA-256和原始manifest摘要。半途失败无回执，不是完整备份；同内容可续传，不同内容冲突。
+- **验证/恢复：** 验证回执自摘要、对象键集合、负载长度/摘要/版本和原备份语义；通过后才恢复到空白隔离目录。
+- **新增资源：** ASSET-000062 Provider能力评估矩阵；ASSET-000063 12项适配器测试矩阵。新增KNOW-000034和独立知识文档。
+- **CI：** Knowledge Quality新增Mock适配器self-check与报告Artifact；初始CI发现版本读取和测试篡改样本问题，已修复并提交新版本。最终Run和Job状态待确认后补录。
+- **边界：** 仅本地临时目录/内存Mock，无真实云网络、账户/凭据、KMS/HSM、加密、对象锁、远端副本或删除操作。Mock声明不是真实供应商能力证据；企业备份启用门禁保持BLOCKED_PENDING_ENTERPRISE_APPROVAL。
