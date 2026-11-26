@@ -347,3 +347,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 - 新增 `spare-parts-inventory-backup-provider-sqlite-coordinator-test-matrix-v1.csv`（ASSET-000072）：10条SQLite持久化准入、request_id幂等、多进程竞争和租约恢复场景；全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
 - 新增KNOW-000042及SQLite协调器实现；仅验证同主机多进程共享本地数据库，不支持多主机或HA。
+
+
+### 第二十八轮最终验收补记（2026-11-26）
+
+- 修复提交 8d2a36b6240f20b1968a7e2ef148dcc02e745f88 对应CI Run [45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053)两个Job均completed/success；全库202项unittest、CH12资源143项通过，strict lint 0 errors。
+- SQLite持久化协调器CLI self-check PASS，Artifact ID 15084821221；Provider Mock self-check PASS，Artifact ID 15084277008。
+- 首轮文档同步Run 45748616308的SQLite CLI导入路径问题已在上述提交修复；新增11项SQLite协调测试全部包含于202项全库测试。ASSET-000072的10项场景仍未批准/未执行。

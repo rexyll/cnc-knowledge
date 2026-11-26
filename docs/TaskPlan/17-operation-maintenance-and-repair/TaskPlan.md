@@ -456,3 +456,12 @@
 - **资源：** 新增KNOW-000042与ASSET-000072，10条测试场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **边界：** SQLite仅同主机本地文件系统多进程；不支持多主机、NFS/SMB、HA/复制/quorum；无自动心跳、持久QPS令牌桶、下游fencing、文件静态加密/备份恢复、tombstone清理和生产容量测量。墙钟跳变是租约恢复依赖。
 - **状态：** CH17-T004继续IN_PROGRESS；生产备份保持关闭，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，`business_rule_assertions=NOT_EVALUATED`。
+
+
+### 第二十八轮最终CI验收与SQLite CLI导入路径修复
+
+- 代码提交 3867b6c2ad3a3ab8832cf518b1c3b27db056bd6f 对应Run 45748405672通过：全库201项unittest、CH12资源测试143项，两个Job success。
+- 文档同步提交 8f7211c213131f4ceb972fcbb3228daa2b6b21f4 增加续租测试与SQLite CLI自检。其Run 45748616308中全库202项unittest通过，但SQLite CLI因脚本直接运行时仓库根目录没有加入sys.path而失败。
+- 修复提交 8d2a36b6240f20b1968a7e2ef148dcc02e745f88 在CLI入口补充仓库根目录sys.path；最终Run 45748707053两个必需Job均completed/success，全库202项unittest通过，CH12数值资源测试143项通过，strict lint 0 errors。
+- SQLite本地持久化自检PASS，Artifact ID 15084821221；Provider Mock adapter self-check PASS，Artifact ID 15084277008。
+- ASSET-000072的10项场景仍PROPOSED_NOT_APPROVED / NOT_RUN；本轮没有真实多主机、NFS/SMB、HA、数据库灾备或下游fencing验证。

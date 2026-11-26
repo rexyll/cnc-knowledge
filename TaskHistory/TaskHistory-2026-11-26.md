@@ -223,3 +223,15 @@
 - **资源：** 新增KNOW-000042和ASSET-000072；10条持久化协调测试规格均TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
 - **限制：** 仅为GitHub Linux runner同主机SQLite多进程合成验证；无真实部署、跨主机/NFS/SMB/HA、数据库损坏/灾备、静态加密、外部QPS限流、自动心跳、下游fencing或生产容量验证。request终态记录目前不自动压缩；SQLite lease expiry依赖Unix wall-clock秒数。
 - **状态：** 生产备份关闭；governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+
+### 第二十八轮最终CI验收与CLI导入修复补记（2026-11-26）
+
+- **代码实现提交：** 3867b6c2ad3a3ab8832cf518b1c3b27db056bd6f；新增SQLite WAL持久化协调器、request_id幂等租约、持久fencing token和同主机多进程竞争测试。首次代码Run 45748405672两个必需Job均completed/success，全库201项unittest通过，CH12资源143项通过，strict lint 0 errors。
+- **文档/续租测试/CI自检同步提交：** 8f7211c213131f4ceb972fcbb3228daa2b6b21f4；SQLite测试文件新增续租持久化回归，并将SQLite CLI自检接入工作流。
+- **首轮文档同步CI失败：** Run 45748616308的全库202项unittest均通过，但SQLite CLI阶段因脚本直接执行时sys.path未包含仓库根目录，触发ModuleNotFoundError: No module named 'scripts'；该失败不是SQLite测试断言失败。
+- **修复提交：** 8d2a36b6240f20b1968a7e2ef148dcc02e745f88；SQLite CLI入口显式把仓库根目录加入sys.path，保留包模块导入方式。
+- **最终CI：** [Run 45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053)，两个必需Job Knowledge structure and data quality、CH12 numerical resource tests均completed/success；全库202项unittest通过，CH12资源测试143项通过，knowledge_lint.py --strict为PASS（0 errors）。
+- **SQLite独立自检：** CLI返回PASS，Artifact [ch17-provider-admission-sqlite-45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053/artifacts/15084821221)，ID 15084821221。Provider Mock self-check Artifact [15084277008](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053/artifacts/15084277008)。
+- **资源状态：** KNOW-000042、ASSET-000072；10条测试矩阵场景仍全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。SQLite同主机多进程测试只代表GitHub Linux runner本机SQLite合成测试。
+- **严格边界：** 不支持多主机/NFS/SMB/HA；未验证文件系统故障/数据库损坏/灾备还原/静态加密；无自动心跳、QPS令牌桶、下游fencing enforcement或生产容量测量。生产备份关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

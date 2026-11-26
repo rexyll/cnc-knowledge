@@ -61,10 +61,20 @@
     "production_backup_enabled": false,
     "business_rule_assertions": "NOT_EVALUATED",
     "latest_code_commit": "3867b6c2ad3a3ab8832cf518b1c3b27db056bd6f",
-    "latest_code_ci_run": 45748405672,
+    "latest_code_ci_run": 45748707053,
     "latest_code_ci_status": "completed/success",
-    "full_unittest_count": 201,
-    "strict_knowledge_lint": "PASS_0_ERRORS"
+    "full_unittest_count": 202,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "sqlite_coordinator_unittest_count": 11,
+    "latest_verified_commit": "8d2a36b6240f20b1968a7e2ef148dcc02e745f88",
+    "latest_verified_ci_run": 45748707053,
+    "latest_sqlite_self_check_artifact_id": 15084821221,
+    "latest_adapter_report_artifact_id": 15084277008,
+    "sqlite_self_check": "PASS",
+    "ci_jobs": {
+      "Knowledge structure and data quality": "completed/success",
+      "CH12 numerical resource tests": "completed/success"
+    }
   },
-  "notes": "SQLite协调器只适用于同一主机、受支持本地文件系统上的多进程共享；不支持多主机/NFS/SMB/HA。墙钟跳变、数据库文件权限/加密/备份/损坏恢复、tombstone保留策略、自动心跳、QPS token bucket及下游fencing仍未解决。两个子进程竞争同一SQLite文件的测试只代表CI本机合成证据；ASSET-000072场景尚未批准/执行。"
+  "notes": "SQLite协调器只适用于同一主机、受支持本地文件系统上的多进程共享；不支持多主机/NFS/SMB/HA。墙钟跳变、数据库文件权限/加密/备份/损坏恢复、tombstone保留策略、自动心跳、QPS token bucket及下游fencing仍未解决。两个子进程竞争同一SQLite文件的测试只代表CI本机合成证据；ASSET-000072场景尚未批准/执行。 文档同步Run 45748616308的202项unittest通过，但SQLite脚本直接执行时因未将仓库根目录加入sys.path而失败；修复提交8d2a36b6240f20b1968a7e2ef148dcc02e745f88后，最终Run 45748707053两Job均completed/success，202项unittest、CH12资源143项通过，strict lint 0 errors；SQLite自检PASS（Artifact 15084821221），Provider Mock self-check PASS（Artifact 15084277008）。"
 }

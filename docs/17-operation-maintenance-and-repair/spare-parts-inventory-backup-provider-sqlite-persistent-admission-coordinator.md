@@ -70,4 +70,11 @@ SQLite后端把租约到期时间保存为Unix wall-clock秒数，使进程重�
 
 ## 7. 验收记录
 
-代码/测试提交与文档同步提交的CI均必须以GitHub Actions实际结果为准。所有SQLite用例仍是合成技术测试，不改变ASSET-000072中场景的批准/执行状态。完整测试通过也不能作为生产Provider、企业安全评审或灾备恢复验收。
+**最终代码与CI验收（2026-11-26）：**
+
+- 实现提交 3867b6c2ad3a3ab8832cf518b1c3b27db056bd6f 对应 [Run 45748405672](https://github.com/rexyll/cnc-knowledge/actions/runs/45748405672)，两个必需Job成功，全库201项unittest、CH12资源测试143项通过。
+- 文档/续租测试/CI自检提交 8f7211c213131f4ceb972fcbb3228daa2b6b21f4 的Run 45748616308中全库202项测试通过，但SQLite CLI自检因脚本直接执行时仓库根目录没有加入sys.path而失败。
+- 修复提交 8d2a36b6240f20b1968a7e2ef148dcc02e745f88 为SQLite CLI显式增加仓库根目录导入路径。最终 [Run 45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053) 两个必需Job均completed/success；全库202项unittest通过，CH12资源测试143项通过，knowledge_lint.py --strict返回RESULT: PASS (0 errors)。
+- SQLite持久化自检PASS，Artifact [ch17-provider-admission-sqlite-45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053/artifacts/15084821221)，ID 15084821221；Provider Mock self-check PASS，Artifact ID 15084277008。
+
+**未覆盖边界：** 所有SQLite用例仍是GitHub runner同主机本地文件的合成技术测试，不改变ASSET-000072中10条场景的批准/执行状态。未验证多主机/NFS/SMB/HA、数据库文件损坏/备份还原、静态加密、自动心跳、持久QPS令牌桶、下游fencing enforcement或生产容量。完整测试通过不能作为生产Provider、企业安全评审或灾备恢复验收。
