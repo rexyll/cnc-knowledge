@@ -790,6 +790,10 @@ class StoreBackedCoordinatorAuthority:
                 or row.get("request_sha256") != operation.request_sha256
                 or int(row.get("fencing_token", -1)) != operation.fencing_token
                 or row.get("lease_id") != operation.lease_id
+                or row.get("owner_id") != operation.owner_id
+                or row.get("tenant_id") != operation.tenant_id
+                or row.get("domain") != operation.domain
+                or abs(float(row.get("lease_expires_at", 0)) - operation.lease_expires_at) > 1e-6
                 or row.get("state") != expected
                 or row.get("operation_sequence") != operation.operation_sequence
                 or row.get("manifest_key") != operation.manifest_key

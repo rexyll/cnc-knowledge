@@ -5,6 +5,7 @@ import threading
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -185,6 +186,11 @@ class StoreBackedCoordinatorAuthorityContract:
         self.assertEqual(len(decoded["coordinator"]["operations"]), 3)
 
     def test_leader_epoch_ttl_and_old_leader_fencing_share_store(self):
+        second_authority = StoreBackedCoordinatorAuthority(
+            self.scheduler, clock_fn=self.clock
+        )
+        with self.assertRaises(CoordinatorAuthorityConflictError):
+            second_authority.claim_leadership("leader-competing", ttl_seconds=30)
         lease = self.acquire("leader-expiry")
         pending = self.authority.prepare_activation(
             self.leader, lease, scope=self.SCOPE, idempotency_key="pending-before-takeover"
@@ -238,6 +244,16 @@ class StoreBackedCoordinatorAuthorityContract:
                 scope=self.SCOPE,
                 idempotency_key="activation-after-release",
             )
+
+    def test_signing_authorization_rejects_tampered_operation_identity(self):
+        lease = self.acquire("tamper-operation")
+        operation = self.authority.prepare_activation(
+            self.leader, lease, scope=self.SCOPE, idempotency_key="tamper-activate"
+        )
+        self.authority.authorize_operation_signing(self.leader, operation)
+        tampered = replace(operation, owner_id="attacker-owner")
+        with self.assertRaises(CoordinatorAuthorityStaleLeaderError):
+            self.authority.authorize_operation_signing(self.leader, tampered)
 
     def test_parallel_operation_sequence_allocations_are_unique_and_idempotent(self):
         lease = self.acquire("parallel-publish")
