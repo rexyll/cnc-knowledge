@@ -28,6 +28,7 @@ if str(ROOT) not in sys.path:
 
 from scripts.spare_parts_fencing_attestation import (
     FencingAttestationError, verify_fencing_attestation_signature,
+    _load_ed25519_public_key,
 )
 
 from scripts.spare_parts_backup_storage_adapter import (
@@ -67,6 +68,10 @@ class FencingAttestationRejectedError(BackupStorageError):
     """A Coordinator signature or scope-bound fencing claim is invalid."""
 
 
+class FencingAttestationStatusUnavailableError(BackupStorageError):
+    """The required online Coordinator lease-status check failed closed."""
+
+
 class SQLiteProviderObjectNotFoundError(BackupStorageError):
     """The requested tenant-scoped object does not exist."""
 
@@ -90,7 +95,10 @@ class SQLiteFencedObjectStorageProvider:
         *,
         principal_id: str,
         principal_secret: str,
-        trusted_attestation_keys: dict[str, str | bytes],
+        trusted_attestation_keys: dict[str, str | bytes] | None = None,
+        trusted_ed25519_public_keys: dict[str, Any] | None = None,
+        attestation_status_checker: Any | None = None,
+        require_online_attestation_status: bool = False,
         busy_timeout_seconds: float = 5.0,
         fault_hook: Callable[[str], None] | None = None,
     ):
@@ -112,25 +120,45 @@ class SQLiteFencedObjectStorageProvider:
             raise BackupStorageError("SQLite busy timeout must be in (0, 120] seconds")
         self.principal_id = principal_id.strip()
         self._principal_secret = principal_secret.encode("utf-8")
-        if not isinstance(trusted_attestation_keys, dict) or not trusted_attestation_keys:
-            raise BackupStorageError("Provider requires at least one trusted fencing attestation key")
+        hmac_keys = trusted_attestation_keys or {}
+        ed25519_keys = trusted_ed25519_public_keys or {}
+        if not isinstance(hmac_keys, dict) or not isinstance(ed25519_keys, dict):
+            raise BackupStorageError("Provider trusted attestation key rings must be dictionaries")
+        if not hmac_keys and not ed25519_keys:
+            raise BackupStorageError("Provider requires at least one trusted HMAC or Ed25519 verification key")
         self._trusted_attestation_keys: dict[str, bytes] = {}
-        for key_id, secret in trusted_attestation_keys.items():
+        for key_id, secret in hmac_keys.items():
             if not isinstance(key_id, str) or not re.fullmatch(
                 r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
             ):
-                raise BackupStorageError("trusted attestation key ID is invalid")
+                raise BackupStorageError("trusted HMAC attestation key ID is invalid")
             if isinstance(secret, str):
                 key_bytes = secret.encode("utf-8")
             elif isinstance(secret, bytes):
                 key_bytes = secret
             else:
-                raise BackupStorageError("trusted attestation key must be bytes or text")
+                raise BackupStorageError("trusted HMAC attestation key must be bytes or text")
             if len(key_bytes) < 32:
                 raise BackupStorageError("trusted HMAC attestation keys must contain at least 32 bytes")
             self._trusted_attestation_keys[key_id] = key_bytes
+        self._trusted_ed25519_public_keys: dict[str, Any] = {}
+        for key_id, public_key in ed25519_keys.items():
+            if not isinstance(key_id, str) or not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+            ):
+                raise BackupStorageError("trusted Ed25519 attestation key ID is invalid")
+            self._trusted_ed25519_public_keys[key_id] = _load_ed25519_public_key(public_key)
+        if not isinstance(require_online_attestation_status, bool):
+            raise BackupStorageError("require_online_attestation_status must be boolean")
+        if require_online_attestation_status and not callable(
+            getattr(attestation_status_checker, "is_attestation_active", None)
+        ):
+            raise BackupStorageError("online attestation status is required but no status checker is configured")
+        self.attestation_status_checker = attestation_status_checker
+        self.require_online_attestation_status = require_online_attestation_status
         self.busy_timeout_seconds = float(busy_timeout_seconds)
         self.fault_hook = fault_hook
+        self._ensure_ed25519_registry_schema()
         self._capabilities = ProviderCapabilities(
             provider_kind="SQLITE_LOCAL_FENCED_REFERENCE",
             conditional_create=True,
@@ -147,6 +175,37 @@ class SQLiteFencedObjectStorageProvider:
             scoped_inventory=True,
             evidence_scope="SAME_HOST_LOCAL_SQLITE_REFERENCE_NOT_CLOUD_OR_MULTI_HOST",
         )
+    def _ensure_ed25519_registry_schema(self) -> None:
+        """Additive migration; older HMAC-only Provider DBs remain readable."""
+        connection = None
+        try:
+            connection = sqlite3.connect(
+                str(self.database_path), timeout=self.busy_timeout_seconds, isolation_level=None
+            )
+            connection.execute("PRAGMA busy_timeout = " + str(int(self.busy_timeout_seconds * 1000)))
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                """CREATE TABLE IF NOT EXISTS trusted_ed25519_keys (
+                    issuer_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    algorithm TEXT NOT NULL CHECK(algorithm='ED25519'),
+                    public_key_sha256 TEXT NOT NULL CHECK(length(public_key_sha256)=64),
+                    status TEXT NOT NULL CHECK(status IN ('ACTIVE','RETIRING','REVOKED')),
+                    not_before REAL NOT NULL,
+                    not_after REAL,
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY(issuer_id,key_id)
+                )"""
+            )
+            connection.commit()
+        except sqlite3.Error as exc:
+            if connection is not None:
+                connection.rollback()
+            raise BackupStorageError("cannot migrate Provider Ed25519 trusted key registry") from exc
+        finally:
+            if connection is not None:
+                connection.close()
+
         self._authenticate_initial_session()
         self._validate_configured_attestation_keys()
 
@@ -268,15 +327,144 @@ class SQLiteFencedObjectStorageProvider:
             if connection is not None:
                 connection.close()
 
+    @staticmethod
+    def _ed25519_public_key_fingerprint(public_key: Any) -> str:
+        from cryptography.hazmat.primitives import serialization
+        raw = public_key.public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        return hashlib.sha256(raw).hexdigest()
+
+    @classmethod
+    def admin_register_trusted_ed25519_key(
+        cls, database_path: str | os.PathLike[str], *, issuer_id: str, key_id: str,
+        public_key_sha256: str, not_before: float | None = None,
+    ) -> dict[str, Any]:
+        path = Path(database_path).expanduser()
+        if path.is_symlink():
+            raise BackupStorageError("Provider key registry database cannot be a symlink")
+        path = path.resolve()
+        if not path.is_file():
+            raise BackupStorageError("Provider key registry database does not exist")
+        if not isinstance(issuer_id, str) or not issuer_id.strip() or len(issuer_id) > 128:
+            raise BackupStorageError("trusted issuer ID is invalid")
+        if not isinstance(key_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+        ):
+            raise BackupStorageError("trusted Ed25519 key ID is invalid")
+        if not isinstance(public_key_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", public_key_sha256):
+            raise BackupStorageError("Ed25519 public key fingerprint is invalid")
+        boundary = time.time() if not_before is None else not_before
+        if not isinstance(boundary, (int, float)) or isinstance(boundary, bool) or not 0 <= float(boundary) < float("inf"):
+            raise BackupStorageError("trusted Ed25519 key not_before is invalid")
+        connection = None
+        try:
+            connection = sqlite3.connect(str(path), isolation_level=None)
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                """INSERT INTO trusted_ed25519_keys(
+                    issuer_id,key_id,algorithm,public_key_sha256,status,not_before,not_after,created_at
+                ) VALUES(?,?,'ED25519',?,'ACTIVE',?,NULL,?)""",
+                (issuer_id.strip(), key_id, public_key_sha256, float(boundary), time.time()),
+            )
+            connection.commit()
+            return {
+                "result": "REGISTERED", "issuer_id": issuer_id.strip(),
+                "key_id": key_id, "algorithm": "ED25519", "status": "ACTIVE",
+                "public_key_sha256": public_key_sha256, "private_key_stored": False,
+            }
+        except sqlite3.IntegrityError as exc:
+            if connection is not None:
+                connection.rollback()
+            raise BackupStorageError("trusted Ed25519 issuer/key ID already exists") from exc
+        except sqlite3.Error as exc:
+            if connection is not None:
+                connection.rollback()
+            raise BackupStorageError("cannot register trusted Ed25519 Provider key") from exc
+        finally:
+            if connection is not None:
+                connection.close()
+
+    @classmethod
+    def admin_set_trusted_ed25519_key_status(
+        cls, database_path: str | os.PathLike[str], *, issuer_id: str, key_id: str,
+        status: str, not_after: float | None = None,
+    ) -> dict[str, Any]:
+        if status not in {"RETIRING", "REVOKED"}:
+            raise BackupStorageError("Ed25519 key status transition must be RETIRING or REVOKED")
+        now = time.time()
+        boundary = now if status == "REVOKED" else not_after
+        if status == "RETIRING" and (
+            not isinstance(boundary, (int, float)) or isinstance(boundary, bool)
+            or not now < float(boundary) < float("inf")
+        ):
+            raise BackupStorageError("retiring Ed25519 key requires a future not_after deadline")
+        path = Path(database_path).expanduser()
+        if path.is_symlink() or not path.is_file():
+            raise BackupStorageError("Provider key registry database is missing or unsafe")
+        connection = None
+        try:
+            connection = sqlite3.connect(str(path), isolation_level=None)
+            connection.row_factory = sqlite3.Row
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT status FROM trusted_ed25519_keys WHERE issuer_id=? AND key_id=?",
+                (issuer_id, key_id),
+            ).fetchone()
+            if row is None:
+                raise BackupStorageError("trusted Ed25519 issuer/key ID is not registered")
+            if row["status"] == "REVOKED":
+                if status != "REVOKED":
+                    raise BackupStorageError("revoked Ed25519 keys cannot be reactivated")
+                connection.commit()
+                return {"result": "UNCHANGED", "status": "REVOKED", "key_id": key_id}
+            connection.execute(
+                "UPDATE trusted_ed25519_keys SET status=?,not_after=? WHERE issuer_id=? AND key_id=?",
+                (status, float(boundary), issuer_id, key_id),
+            )
+            connection.commit()
+            return {
+                "result": "UPDATED", "issuer_id": issuer_id, "key_id": key_id,
+                "algorithm": "ED25519", "status": status, "not_after": float(boundary),
+            }
+        except BackupStorageError:
+            if connection is not None:
+                connection.rollback()
+            raise
+        except sqlite3.Error as exc:
+            if connection is not None:
+                connection.rollback()
+            raise BackupStorageError("cannot update trusted Ed25519 Provider key status") from exc
+        finally:
+            if connection is not None:
+                connection.close()
+
     def _validate_configured_attestation_keys(self) -> None:
         try:
             with self._transaction() as c:
-                rows = c.execute(
+                hmac_rows = c.execute(
                     "SELECT key_id FROM trusted_fencing_keys WHERE status IN ('ACTIVE','RETIRING')"
                 ).fetchall()
-                trusted = {row["key_id"] for row in rows}
-                if not trusted or not trusted.intersection(self._trusted_attestation_keys):
-                    raise BackupStorageError("Provider has no matching runtime key for trusted Coordinator attestations")
+                ed_rows = c.execute(
+                    """SELECT key_id,public_key_sha256 FROM trusted_ed25519_keys
+                       WHERE status IN ('ACTIVE','RETIRING')"""
+                ).fetchall()
+                hmac_match = {
+                    row["key_id"] for row in hmac_rows
+                    if row["key_id"] in self._trusted_attestation_keys
+                }
+                ed_match = {
+                    row["key_id"] for row in ed_rows
+                    if row["key_id"] in self._trusted_ed25519_public_keys
+                    and self._ed25519_public_key_fingerprint(
+                        self._trusted_ed25519_public_keys[row["key_id"]]
+                    ) == row["public_key_sha256"]
+                }
+                if not hmac_match and not ed_match:
+                    raise BackupStorageError(
+                        "Provider has no matching active runtime key in its trusted Coordinator key registry"
+                    )
         except sqlite3.Error as exc:
             raise BackupStorageError("cannot load trusted Coordinator attestation key registry") from exc
 
@@ -286,7 +474,8 @@ class SQLiteFencedObjectStorageProvider:
         database_path: str | os.PathLike[str],
         *,
         principals: list[dict[str, Any]],
-        trusted_attestation_keys: list[dict[str, Any]],
+        trusted_attestation_keys: list[dict[str, Any]] | None = None,
+        trusted_ed25519_keys: list[dict[str, Any]] | None = None,
         minimum_fencing_token: int = 0,
     ) -> dict[str, Any]:
         """Create a new DB and principal verifier records; never overwrites a DB."""
@@ -321,6 +510,17 @@ class SQLiteFencedObjectStorageProvider:
                     issuer_id TEXT NOT NULL,
                     key_id TEXT NOT NULL,
                     algorithm TEXT NOT NULL CHECK(algorithm='HMAC-SHA256'),
+                    status TEXT NOT NULL CHECK(status IN ('ACTIVE','RETIRING','REVOKED')),
+                    not_before REAL NOT NULL,
+                    not_after REAL,
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY(issuer_id,key_id)
+                );
+                CREATE TABLE trusted_ed25519_keys (
+                    issuer_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    algorithm TEXT NOT NULL CHECK(algorithm='ED25519'),
+                    public_key_sha256 TEXT NOT NULL CHECK(length(public_key_sha256)=64),
                     status TEXT NOT NULL CHECK(status IN ('ACTIVE','RETIRING','REVOKED')),
                     not_before REAL NOT NULL,
                     not_after REAL,
@@ -421,10 +621,14 @@ class SQLiteFencedObjectStorageProvider:
                 "INSERT INTO provider_meta(key,value) VALUES('provisioned_at',?)",
                 (str(now),),
             )
-            if not isinstance(trusted_attestation_keys, list) or not trusted_attestation_keys:
-                raise BackupStorageError("at least one trusted Coordinator attestation key is required")
+            hmac_registry = trusted_attestation_keys or []
+            ed25519_registry = trusted_ed25519_keys or []
+            if not isinstance(hmac_registry, list) or not isinstance(ed25519_registry, list):
+                raise BackupStorageError("trusted attestation key registries must be lists")
+            if not hmac_registry and not ed25519_registry:
+                raise BackupStorageError("at least one trusted HMAC or Ed25519 Coordinator key is required")
             trusted_seen: set[tuple[str, str]] = set()
-            for trusted in trusted_attestation_keys:
+            for trusted in hmac_registry:
                 if not isinstance(trusted, dict):
                     raise BackupStorageError("trusted attestation key metadata must be objects")
                 issuer_id, key_id = trusted.get("issuer_id"), trusted.get("key_id")
@@ -459,6 +663,48 @@ class SQLiteFencedObjectStorageProvider:
                         issuer_id,key_id,algorithm,status,not_before,not_after,created_at
                     ) VALUES(?,?,?, ?,?,?,?)""",
                     (identity[0], key_id, algorithm, status, float(not_before),
+                     float(not_after) if not_after is not None else None, now),
+                )
+            ed25519_seen: set[tuple[str, str]] = set()
+            for trusted in ed25519_registry:
+                if not isinstance(trusted, dict):
+                    raise BackupStorageError("trusted Ed25519 key metadata must be objects")
+                issuer_id, key_id = trusted.get("issuer_id"), trusted.get("key_id")
+                algorithm = trusted.get("algorithm", "ED25519")
+                status = trusted.get("status", "ACTIVE")
+                fingerprint = trusted.get("public_key_sha256")
+                not_before = trusted.get("not_before", 0.0)
+                not_after = trusted.get("not_after")
+                if not isinstance(issuer_id, str) or not issuer_id.strip() or len(issuer_id) > 128:
+                    raise BackupStorageError("trusted Ed25519 issuer ID is invalid")
+                if not isinstance(key_id, str) or not re.fullmatch(
+                    r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+                ):
+                    raise BackupStorageError("trusted Ed25519 key ID is invalid")
+                if algorithm != "ED25519" or status not in {"ACTIVE", "RETIRING"}:
+                    raise BackupStorageError("trusted Ed25519 algorithm or initial status is invalid")
+                if not isinstance(fingerprint, str) or not re.fullmatch(r"[0-9a-f]{64}", fingerprint):
+                    raise BackupStorageError("trusted Ed25519 public key SHA256 fingerprint is invalid")
+                if (
+                    not isinstance(not_before, (int, float)) or isinstance(not_before, bool)
+                    or not 0 <= float(not_before) < float("inf")
+                ):
+                    raise BackupStorageError("trusted Ed25519 not_before is invalid")
+                if not_after is not None and (
+                    not isinstance(not_after, (int, float)) or isinstance(not_after, bool)
+                    or not float(not_before) < float(not_after) < float("inf")
+                ):
+                    raise BackupStorageError("trusted Ed25519 not_after is invalid")
+                identity = (issuer_id.strip(), key_id)
+                if identity in ed25519_seen or identity in trusted_seen:
+                    raise BackupStorageError("duplicate trusted issuer/key ID across signature algorithms")
+                ed25519_seen.add(identity)
+                connection.execute(
+                    """INSERT INTO trusted_ed25519_keys(
+                        issuer_id,key_id,algorithm,public_key_sha256,status,
+                        not_before,not_after,created_at
+                    ) VALUES(?,?,?, ?,?,?,?,?)""",
+                    (identity[0], key_id, algorithm, fingerprint, status, float(not_before),
                      float(not_after) if not_after is not None else None, now),
                 )
             seen: set[str] = set()
@@ -516,6 +762,7 @@ class SQLiteFencedObjectStorageProvider:
                 "file_mode": oct(path.stat().st_mode & 0o777),
                 "plaintext_secrets_stored": False,
                 "trusted_attestation_key_count": len(trusted_seen),
+                "trusted_ed25519_key_count": len(ed25519_seen),
             }
         except Exception:
             if connection is not None:
@@ -673,13 +920,17 @@ class SQLiteFencedObjectStorageProvider:
     ) -> dict[str, Any]:
         try:
             claims, key_id = verify_fencing_attestation_signature(
-                token, trusted_keys=self._trusted_attestation_keys
+                token,
+                trusted_keys=self._trusted_attestation_keys,
+                trusted_ed25519_public_keys=self._trusted_ed25519_public_keys,
             )
         except FencingAttestationError as exc:
             raise FencingAttestationRejectedError(str(exc)) from exc
         expected_domain = "write" if operation == "object:put_if_absent" else "multipart"
+        algorithm = claims.get("alg", "HMAC-SHA256")
+        expected_version = 2 if algorithm == "ED25519" else 1
         expected = {
-            "v": 1, "kid": key_id, "tenant_id": self.tenant_id,
+            "v": expected_version, "kid": key_id, "tenant_id": self.tenant_id,
             "fencing_scope": fencing_scope, "resource_key": resource_key,
             "fencing_token": fencing_token, "operation": operation,
             "idempotency_key": idempotency_key, "domain": expected_domain,
@@ -714,21 +965,41 @@ class SQLiteFencedObjectStorageProvider:
             or float(lease_expires) <= now
         ):
             raise FencingAttestationRejectedError("fencing attestation is expired or exceeds its lease")
-        if len(claims) != 15:
+        if (
+            (algorithm == "HMAC-SHA256" and len(claims) != 15)
+            or (algorithm == "ED25519" and (len(claims) != 16 or claims.get("alg") != "ED25519"))
+            or algorithm not in {"HMAC-SHA256", "ED25519"}
+        ):
             raise FencingAttestationRejectedError("fencing attestation contains unknown or missing claims")
         return claims
 
     def _authorize_fencing_attestation(
         self, c: sqlite3.Connection, *, claims: dict[str, Any], tenant_id: str
     ) -> None:
-        row = c.execute(
-            """SELECT algorithm,status,not_before,not_after
-               FROM trusted_fencing_keys WHERE issuer_id=? AND key_id=?""",
-            (claims["iss"], claims["kid"]),
-        ).fetchone()
+        algorithm = claims.get("alg", "HMAC-SHA256")
+        if algorithm == "ED25519":
+            row = c.execute(
+                """SELECT algorithm,public_key_sha256,status,not_before,not_after
+                   FROM trusted_ed25519_keys WHERE issuer_id=? AND key_id=?""",
+                (claims["iss"], claims["kid"]),
+            ).fetchone()
+            public_key = self._trusted_ed25519_public_keys.get(claims["kid"])
+            fingerprint_matches = bool(
+                row is not None and public_key is not None
+                and self._ed25519_public_key_fingerprint(public_key) == row["public_key_sha256"]
+            )
+            algorithm_matches = row is not None and row["algorithm"] == "ED25519"
+        else:
+            row = c.execute(
+                """SELECT algorithm,status,not_before,not_after
+                   FROM trusted_fencing_keys WHERE issuer_id=? AND key_id=?""",
+                (claims["iss"], claims["kid"]),
+            ).fetchone()
+            fingerprint_matches = claims["kid"] in self._trusted_attestation_keys
+            algorithm_matches = row is not None and row["algorithm"] == "HMAC-SHA256"
         now = time.time()
         if (
-            row is None or row["algorithm"] != "HMAC-SHA256"
+            row is None or not algorithm_matches or not fingerprint_matches
             or row["status"] not in {"ACTIVE", "RETIRING"}
             or now < float(row["not_before"])
             or (row["not_after"] is not None and now >= float(row["not_after"]))
@@ -739,6 +1010,17 @@ class SQLiteFencedObjectStorageProvider:
             raise FencingAttestationRejectedError(
                 "fencing attestation issuer/key is not trusted for this tenant or time window"
             )
+        if self.require_online_attestation_status:
+            try:
+                active = bool(self.attestation_status_checker.is_attestation_active(claims))
+            except Exception as exc:
+                raise FencingAttestationStatusUnavailableError(
+                    "Coordinator online attestation status is unavailable; Provider write refused"
+                ) from exc
+            if not active:
+                raise FencingAttestationRejectedError(
+                    "Coordinator reports the fencing lease is released, expired or unknown"
+                )
 
     @staticmethod
     def _validate_fenced_arguments(
