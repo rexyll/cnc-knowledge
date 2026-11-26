@@ -230,7 +230,6 @@ class ProviderFairBulkhead:
         with self._condition:
             self._next_sequence += 1
             waiter = _AdmissionWaiter(self._next_sequence, task, self.clock_fn())
-            self._check_availability_locked("acquire")
             self._waiters.append(waiter)
             try:
                 while True:
@@ -524,6 +523,7 @@ class InMemoryProviderAdmissionCoordinator:
         with self._condition:
             self._next_sequence += 1
             waiter = _CoordinatorWaiter(self._next_sequence, task, domain, self.clock_fn())
+            self._check_availability_locked("acquire")
             self._waiters.append(waiter)
             try:
                 while True:
