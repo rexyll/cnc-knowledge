@@ -153,3 +153,5 @@ Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope
 第四十一轮文档同步CI Run 45811108498（提交 706cfcf36204c1bfe996501e65031a21e8536783）两个必需Job均completed/success：344项全库unittest、CH12 143项测试、strict lint 0 errors、知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000086场景仍待批准/未执行。
 
 第四十一轮文档同步CI Run 45811108498（提交 706cfcf36204c1bfe996501e65031a21e8536783）两个必需Job均completed/success：344项全库unittest、CH12 143项测试、strict lint 0 errors、知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000086场景仍待批准/未执行。
+
+第四十一轮文档同步CI Run 45811108498两个必需Job均completed/success：344项全库unittest、CH12 143项测试通过，strict lint与结构质量均0 errors（5条非阻断warning）。ASSET-000086的35条场景尚未批准或执行。
