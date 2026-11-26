@@ -188,6 +188,19 @@ jobs:
           path: ${{ runner.temp }}/ch17-provider-admission-sqlite.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Run SQLite fenced Provider reference self-check
+        run: >-
+          python scripts/spare_parts_provider_sqlite_fenced.py
+          --self-check
+          --report-json "$RUNNER_TEMP/ch17-provider-sqlite-fenced.json"
+      - name: Upload SQLite fenced Provider reference report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch17-provider-sqlite-fenced-${{ github.run_id }}
+          path: ${{ runner.temp }}/ch17-provider-sqlite-fenced.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Run repository knowledge lint
         run: python scripts/knowledge_lint.py --strict
 
