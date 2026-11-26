@@ -519,3 +519,6 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 新增 spare-parts-coordinator-capacity-profile-v1.csv（ASSET-000087），包含14条合成负载定义，覆盖scope、operation、active lease、waiter和混合负载。
 - 离线探针位于 scripts/spare_parts_coordinator_capacity_probe.py；运行后只向stdout输出JSON，不修改仓库文件，不连接任何store或etcd集群。
 - CSV是合成输入矩阵，不是实测报告；ASSET-000087保持PROPOSED_NOT_APPROVED，自动化测试也不替代企业批准或真实etcd容量验收。
+
+
+第四十二轮离线容量探针实现提交 `f52937e1af7b622c11801e2ca502661365e75d05`；CI Run 45814052446两个必需Job均通过。全库356项unittest、CH12 143项数值资源测试通过，strict lint与结构质量均0 errors（5项非阻断warning）。14个profile已在CI合成测试中执行；CSV本身不含真实性能测量，ASSET-000087仍待企业批准，真实etcd容量验收未执行。

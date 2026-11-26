@@ -573,3 +573,13 @@
 - **新增知识/资源：** KNOW-000056、ASSET-000087、SRC-000402；新增容量模型正文及14条合成profile CSV；同步CH17正文导航、任务计划与资源索引。
 - **实现边界：** 只读取内存中生成的合成schema-v2状态，不连接SQLite/etcd/Provider；canonical JSON value字节数精确，完整gRPC/protobuf请求大小及实际延迟/吞吐不测量。50%预算是内部画像假设，不是生产硬阈值。
 - **验收状态：** 仓库CI待本轮实现提交触发后确认；ASSET-000087正式场景仍PROPOSED_NOT_APPROVED，未开展真实etcd或企业容量验收。
+
+
+### 第四十二轮CI验收（2026-11-26）
+
+- **实现提交：** `f52937e1af7b622c11801e2ca502661365e75d05`；分支main。
+- **CI：** [GitHub Actions Run 45814052446](https://github.com/rexyll/cnc-knowledge/actions/runs/45814052446)，head SHA与实现提交一致，两个必需Job均completed/success。
+- **测试结果：** 全库356项unittest通过（新增容量探针12项全部通过）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors，5项为既有非阻断warning。
+- **合成范围：** 14个容量profile在CI合成测试中执行，scope/operation索引增长关系与active lease比较项模型检查通过。
+- **限制：** 没有连接真实etcd、SQLite生产数据或对象存储Provider；没有测量真实gRPC/protobuf请求大小、Txn延迟/吞吐和多主机quorum。50%只是分析展示预算，不是生产限值。ASSET-000087仍PROPOSED_NOT_APPROVED；真实etcd容量验收NOT_RUN。
+- **状态：** CH17-T004继续IN_PROGRESS；未执行生产迁移或cutover。

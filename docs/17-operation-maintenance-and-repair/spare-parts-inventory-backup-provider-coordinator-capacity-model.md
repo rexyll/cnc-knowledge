@@ -85,3 +85,8 @@ python -m scripts.spare_parts_coordinator_capacity_probe \
 
 - SRC-000402：etcd v3.7官方System limits页面；请求大小默认值及可配置性。
 - KNOW-000054、KNOW-000055：统一Admission及Unified Coordinator schema-v2状态结构。
+
+
+## 8. CI验收记录
+
+实现提交 `f52937e1af7b622c11801e2ca502661365e75d05`；[GitHub Actions Run 45814052446](https://github.com/rexyll/cnc-knowledge/actions/runs/45814052446)两个必需Job均completed/success。全库356项unittest、CH12 143项数值资源测试通过；strict knowledge lint与知识结构/数据质量检查均0 errors，5项warning为既有合成数据集尚未批准/执行等非阻断提醒。新增12个容量探针测试通过，14个profile场景在测试中执行。该结果仅验证离线合成探针，不构成真实etcd请求大小、延迟、吞吐或生产容量验收。

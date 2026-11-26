@@ -160,3 +160,6 @@ Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope
 ## CH17-T004 Unified Coordinator Aggregate容量画像（第四十二轮）
 
 容量模型见 [备件库存备份 Unified Coordinator Aggregate 容量模型与观测边界](spare-parts-inventory-backup-provider-coordinator-capacity-model.md)（KNOW-000056）：新增离线合成容量探针，复用schema-v2真实记录构造和canonical JSON编码，统计aggregate、scope、operation索引字节数，并给出活动Admission lease对应的Coordinator比较项模型。ASSET-000087定义14个合成场景。该轮不设置写入硬阈值，不连接真实etcd或生产Provider，不代表生产容量/性能验收。
+
+
+第四十二轮离线容量探针代码提交 `f52937e1af7b622c11801e2ca502661365e75d05`；[CI Run 45814052446](https://github.com/rexyll/cnc-knowledge/actions/runs/45814052446)两个必需Job均completed/success。全库356项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项既有非阻断warning）。14个容量profile在CI合成测试中通过；真实etcd容量与性能仍未验证。

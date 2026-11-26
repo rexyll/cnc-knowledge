@@ -58,7 +58,17 @@
     "synthetic_only": true,
     "real_etcd_connected": false,
     "sha256": null,
-    "file_size": null
+    "file_size": null,
+    "code_commit": "f52937e1af7b622c11801e2ca502661365e75d05",
+    "ci_run": 45814052446,
+    "ci_status": "completed/success",
+    "ci_synthetic_test_status": "PASS",
+    "ci_profile_count_tested": 14,
+    "repository_unit_test_count": 356,
+    "ch12_numerical_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "knowledge_structure_quality": "PASS_0_ERRORS_5_NONBLOCKING_WARNINGS",
+    "formal_capacity_acceptance": "NOT_RUN"
   },
-  "notes": "CSV只定义14个合成场景参数，不包含实测结果。探针运行与测试不会连接真实存储；profile PASS不等同于etcd容量或生产性能验收。"
+  "notes": "CSV只定义14个合成场景参数，不包含实测结果。探针运行与测试不会连接真实存储；profile PASS不等同于etcd容量或生产性能验收。 14个profile已在CI Run 45814052446的合成单元测试中构造并统计；此状态只表示离线合成探针的自动化测试通过，非真实etcd容量验收。真实etcd、生产环境与企业批准场景仍未执行。"
 }

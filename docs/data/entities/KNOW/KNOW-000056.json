@@ -57,7 +57,18 @@
     "hard_capacity_limit_enforced": false,
     "production_performance_tested": false,
     "repository_test_methods_added": 12,
-    "source_record": "docs/data/sources/SRC-000402.json"
+    "source_record": "docs/data/sources/SRC-000402.json",
+    "code_commit": "f52937e1af7b622c11801e2ca502661365e75d05",
+    "ci_run": 45814052446,
+    "ci_status": "completed/success",
+    "repository_unit_test_count": 356,
+    "ch12_numerical_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "knowledge_structure_quality": "PASS_0_ERRORS_5_NONBLOCKING_WARNINGS",
+    "capacity_profiles_ci_tested": 14,
+    "capacity_probe_tests_added": 12,
+    "real_etcd_capacity_tested": false,
+    "formal_capacity_acceptance": "NOT_RUN"
   },
-  "notes": "本工具只统计当前schema-v2结构对应的canonical JSON状态value字节数，并估算当前代码路径中Coordinator事务比较项；不计算protobuf/gRPC完整请求、Txn服务端延迟或实际吞吐量。不连接真实etcd或企业系统。1.5 MiB为官方文档默认请求上限且可配置；50%为项目画像展示预算，不是服务器硬限制或上线门禁。"
+  "notes": "本工具只统计当前schema-v2结构对应的canonical JSON状态value字节数，并估算当前代码路径中Coordinator事务比较项；不计算protobuf/gRPC完整请求、Txn服务端延迟或实际吞吐量。不连接真实etcd或企业系统。1.5 MiB为官方文档默认请求上限且可配置；50%为项目画像展示预算，不是服务器硬限制或上线门禁。 CI Run 45814052446验证head提交f52937e1af7b622c11801e2ca502661365e75d05；全库356项unittest（新增12项容量探针测试）与CH12 143项数值资源测试通过，strict lint及结构质量0 errors（5项非阻断warning）。14个profile经CI合成测试。未连接真实etcd，真实容量验收仍未执行。"
 }

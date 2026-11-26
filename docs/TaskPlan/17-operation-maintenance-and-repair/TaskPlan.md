@@ -738,3 +738,11 @@
 - **测量边界：** JSON aggregate value字节数为精确值；完整etcd请求大小只得到下界，协议封装和传输请求未测。比较项数为基于当前实现的结构模型，不是RPC延迟/吞吐测量。
 - **安全边界：** 50%仅为画像展示预算，不设生产硬限制、不修改运行写入行为。所有数据均为合成数据；未连接真实etcd、SQLite生产库或对象存储Provider。
 - **状态：** 该切片交付后，CH17-T004仍保持 IN_PROGRESS；真实etcd容量与性能、operation ledger归档/分片、迁移与cutover仍未完成。
+
+
+### 第四十二轮CI验收补记（2026-11-26）
+
+- **实现提交：** `f52937e1af7b622c11801e2ca502661365e75d05`；[GitHub Actions Run 45814052446](https://github.com/rexyll/cnc-knowledge/actions/runs/45814052446)两个必需Job均completed/success。
+- **质量结果：** 全库356项unittest（包括新增12个容量探针测试）、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项非阻断warning）。
+- **范围说明：** 14个容量profile通过CI中的合成构造/统计测试。真实etcd集群、实际gRPC/protobuf请求大小、Txn latency/throughput及多主机故障未测；生产容量门禁尚未建立。
+- **状态：** KNOW-000056 / ASSET-000087已登记；ASSET-000087仍为PROPOSED_NOT_APPROVED，真实容量验收NOT_RUN。CH17-T004继续IN_PROGRESS。
