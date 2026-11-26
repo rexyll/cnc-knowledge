@@ -58,7 +58,7 @@ class StoreBackedProviderAdmissionCoordinator:
     or external etcd cluster validation.
     """
 
-    _PREFIX = b"/cnc/admission/unified/v1/"
+    _PREFIX = b"/cnc/admission/unified/v2/"
     _STATE_KEY = _PREFIX + b"scheduler/state"
     _MAX_CAS_ATTEMPTS = 64
 
@@ -166,7 +166,7 @@ class StoreBackedProviderAdmissionCoordinator:
                        tenant_limits: dict[str, dict[str, int]], max_waiters: int,
                        aging_interval_seconds: float) -> dict[str, Any]:
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "policy_hash": policy_hash,
             "global_limits": global_limits,
             "tenant_limits": tenant_limits,
@@ -176,6 +176,11 @@ class StoreBackedProviderAdmissionCoordinator:
             "next_waiter_sequence": 0,
             "active": {},
             "waiters": [],
+            "coordinator": {
+                "leader": None,
+                "scopes": {},
+                "operations": {},
+            },
             "counters": {
                 "issued_leases": 0,
                 "expired_leases": 0,
@@ -213,10 +218,20 @@ class StoreBackedProviderAdmissionCoordinator:
         required = {
             "schema_version", "policy_hash", "global_limits", "tenant_limits",
             "max_waiters", "aging_interval_seconds", "next_fencing_token",
-            "next_waiter_sequence", "active", "waiters", "counters",
+            "next_waiter_sequence", "active", "waiters", "coordinator", "counters",
         }
+        if state.get("schema_version") != 2:
+            raise UnifiedAdmissionStateError("unsupported unified admission state schema")
         if set(state) != required or not isinstance(state.get("active"), dict) or not isinstance(state.get("waiters"), list):
             raise UnifiedAdmissionStateError("unified admission state schema mismatch")
+        coordinator = state.get("coordinator")
+        if (
+            not isinstance(coordinator, dict)
+            or set(coordinator) != {"leader", "scopes", "operations"}
+            or not isinstance(coordinator.get("scopes"), dict)
+            or not isinstance(coordinator.get("operations"), dict)
+        ):
+            raise UnifiedAdmissionStateError("unified Coordinator authority state is malformed")
         if not isinstance(state.get("counters"), dict):
             raise UnifiedAdmissionStateError("unified admission counters are malformed")
         if not isinstance(state.get("next_fencing_token"), int) or state["next_fencing_token"] < 0:

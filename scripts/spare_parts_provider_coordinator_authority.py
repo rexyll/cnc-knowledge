@@ -914,8 +914,8 @@ def sign_distributed_fencing_proof(
     clock_fn: Callable[[], float] = time.time,
 ) -> str:
     """Sign an Ed25519 proof after the operation allocation is durably committed."""
-    if not isinstance(authority, SQLiteDurableCoordinatorAuthority):
-        raise CoordinatorAuthorityError("a durable SQLite Coordinator authority is required")
+    if not callable(getattr(authority, "authorize_operation_signing", None)):
+        raise CoordinatorAuthorityError("a durable Coordinator authority backend is required")
     if not isinstance(operation, DurableAuthorityOperation):
         raise CoordinatorAuthorityError("a durable Coordinator operation is required")
     authority.authorize_operation_signing(leadership, operation)
