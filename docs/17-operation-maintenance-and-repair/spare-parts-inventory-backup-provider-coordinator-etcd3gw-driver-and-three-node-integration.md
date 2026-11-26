@@ -4,7 +4,7 @@
 **章节：** CH17 操作、维护与维修  
 **关联知识：** KNOW-000051、KNOW-000059、KNOW-000060  
 **正式场景矩阵：** ASSET-000092  
-**实现状态：** etcd3gw Range/Txn/Lease 网络驱动与可选集成框架已提交；真实三节点集成尚未执行  
+**实现状态：** etcd3gw Range/Txn/Lease 网络驱动已提交；真实三成员CI集成6/6通过（含单成员停机/恢复）；Watch仍未实现  
 **生产状态：** 未启用，schema-v2仍是唯一生产权威
 
 ## 1. 本轮目标与边界
@@ -123,12 +123,12 @@ ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。�
 
 | 项目 | 当前状态 | 下一步要求 |
 |---|---|---|
-| etcd3gw网络驱动 | Range/Txn/Lease代码已实现，10项fake gateway映射单测已通过默认CI；5项真实集成测试尚未运行 | 在可用Docker主机启动三节点并执行opt-in集成测试 |
+| etcd3gw网络驱动 | Range/Txn/Lease代码已实现；10项fake gateway映射单测通过；6项真实etcd v3.7.0 live测试已在一次性三成员CI集群6/6通过（Run 45839556952） | 继续扩展2节点失去quorum/网络分区、安全认证和Watch真实协议验证 |
 | endpoint failover | 仅只读请求可跨endpoint尝试 | 测量实际故障切换延迟与错误分类 |
 | Watch/WatchProgress | 当前驱动不支持 | 实现保留完整WatchResponse envelope的gRPC/stream驱动 |
 | TLS/mTLS | 构造参数已映射，未真实握手测试 | CA链、双向证书、过期/轮换及失败注入 |
 | RBAC/认证 | 未实现账户/角色集成 | 明确最小权限和认证材料注入方案 |
-| Raft/quorum | 未执行真实节点停机/选举/分区测试 | 3成员、1节点故障、2节点失去多数派及恢复验证 |
+| Raft/quorum | 已在一次性3成员集群中验证1节点停机后剩余2/3多数派读写及节点恢复；未测2节点同时故障/失去多数派和网络分区 | 补充2成员停止时的写失败/恢复行为、网络分区与选举/恢复时延测量 |
 | Coordinator迁移 | 业务服务仍使用既有SQLite实现 | 独立迁移设计、双读比对、灰度、回滚与批准 |
 | 生产权威 | 未启用 | 所有协议、故障、安全和业务迁移验收通过前保持关闭 |
 
@@ -141,3 +141,16 @@ etcd集群的三节点成员数量不自动代表业务高可用已验收；读�
 3. 设计完整Watch driver：需要保留created/canceled/compact_revision/cancel_reason/fragment/header revision，并测试stream断线、progress、fragment和compact；
 4. 对mTLS/RBAC/认证、endpoint轮换和超时预算补充部署配置与安全验收；
 5. 完成业务层Store Port迁移设计、独立兼容测试、数据迁移/回滚和企业批准前，不替换当前SQLite Coordinator。
+
+## 8. 第四十八轮真实服务端实测补充（2026-11-26）
+
+在第四十七轮初始5项live集成测试基础上，新增真实单成员故障场景`tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py`。它在一次性三成员etcd v3.7.0 Compose环境中停止etcd1，随后：
+
+1. 通过配置为“停止成员优先、存活成员其次”的Endpoint列表，验证linearizable Range在首endpoint连接失败后成功failover，且请求仍保持`serializable=false`；
+2. 等待存活成员报告有效Leader，再向健康endpoint发送单次Txn Compare/Put，不对写操作进行自动重试；
+3. 线性一致读回新写数据，确认剩余2/3多数派接受本次验证的读写；
+4. 重启etcd1并等待其endpoint恢复、member list回到3个成员。
+
+**真实CI结果：** [Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952)在三成员集群上执行6项测试全部通过（6/6，0 failures，0 skips）；诊断Artifact [15127610627](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952/artifacts/15127610627)，SHA-256 `74b04904535cce72b7a08fdf6265020bcb9086b43003106ab4eb4271847869f2`。同一代码head的默认回归[Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)两个必需Job均成功：全库500项unittest（494通过、6项opt-in live集成测试按默认策略skip），CH12 143项数值资源测试通过，strict knowledge lint 0 errors，CH17合成夹具validator 0 errors/5项既有warning。
+
+**不可扩大的结论：** 本次验证是单次、临时、明文HTTP的集成冒烟测试。它证明限定场景下单节点停止期间2/3节点仍能完成该次linearizable Range/Txn读写，且节点重启后成员列表恢复；不证明2节点同时故障、长时间网络分区、磁盘故障、生产RPO/RTO、性能/吞吐、TLS/mTLS、RBAC、Watch或真实多主机Coordinator。ASSET-000092的30项正式企业场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；SQLite业务服务未迁移，schema-v2仍是唯一生产权威。
