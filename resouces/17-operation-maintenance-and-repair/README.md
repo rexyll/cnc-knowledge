@@ -394,3 +394,14 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - ASSET-000077：20条签名证明/密钥轮换参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - CI Run 45758028329：全库248项、CH12 143项通过，strict lint 0 errors/5 warnings，Provider self-check PASS。
 - HMAC为同机参考方案：Coordinator和Provider共享运行时secret；已签proof在lease release后仍有效至expiry（默认最多15秒）。生产远端Provider应改为非对称KMS签名并提供在线撤销。生产备份继续关闭。
+
+
+## CH17-T004 Ed25519公钥验签与在线租约状态检查第三十三轮
+
+- 新增KNOW-000047 / Ed25519 v2 fencing proof：Coordinator签名端可注入CallbackEd25519Signer，为KMS/HSM适配留出回调接口；未接入任何实际云KMS。
+- Provider仅注入Ed25519公钥，数据库仅保存公钥SHA-256指纹和key状态，HMAC v1保留迁移兼容。
+- Provider新增require_online_attestation_status和Coordinator lease状态checker；lease释放、过期或Coordinator状态查询故障时，Provider fail-closed。
+- 在线状态查询和Provider写入使用两个不同SQLite数据库/事务，检查后到commit仍有TOCTOU窗口，不是线性一致即时撤销。
+- ASSET-000078：22条Ed25519/在线撤销参考验收场景，均PROPOSED_NOT_APPROVED / NOT_RUN。
+- 依赖cryptography==50.0.2；CI Run 45760844653全库252项、CH12 143项通过，strict lint 0 errors/5 warnings，Provider self-check PASS。
+- 真实KMS/HSM、远程状态API、多主机和生产Provider未接入；生产备份继续关闭。

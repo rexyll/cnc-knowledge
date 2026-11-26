@@ -109,3 +109,5 @@
 - [备件库存备份 SQLite fenced Provider 参考实现、主体授权与恢复门禁](spare-parts-inventory-backup-provider-sqlite-fenced-reference.md)（KNOW-000045）；同主机SQLite事务内原子提交scope高水位、对象/multipart及幂等回执，ASSET-000076定义22条形式化参考场景，均未批准/未执行。
 
 - [Coordinator签发的scope-bound fencing attestation、Provider验签与密钥轮换](spare-parts-inventory-backup-provider-fencing-attestation-and-key-rotation.md)（KNOW-000046）；默认15秒HMAC proof绑定lease/tenant/scope/resource/operation/idempotency；ASSET-000077定义20条形式化参考场景，均未批准/未执行。
+
+- [Provider Ed25519 公钥验签、KMS 签名回调与在线租约状态检查](spare-parts-inventory-backup-provider-ed25519-and-online-revocation.md)（KNOW-000047）；Ed25519 v2签名与本地Coordinator在线lease状态检查已实现，在线检查不可用时fail-closed；跨数据库status check到Provider commit仍有TOCTOU竞态。ASSET-000078定义22条参考验收场景，均未批准/未执行。
