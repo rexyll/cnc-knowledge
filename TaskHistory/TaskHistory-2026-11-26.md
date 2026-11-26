@@ -370,3 +370,15 @@
 - 主要Artifacts：Provider fenced 15089229555；Coordinator 15089968457；Adapter 15089224709；Backup governance readiness 15089743985。
 - 最终资源统计：CH17 27篇KNOW、77个登记实体、71项资源；ASSET-000078的22条规格均PROPOSED_NOT_APPROVED / NOT_RUN。
 - 安全限制持续有效：CallbackEd25519Signer没有连接实际云KMS/HSM；在线lease检查与Provider提交分属两个SQLite事务，存在TOCTOU窗口；未完成多主机远程Coordinator/Provider验证。生产备份关闭。
+
+## CH17-T004 SQLite同库原子lease撤销与Provider写入顺序第三十四轮（2026-11-26）
+
+- **缺口：** 第三十三轮的在线lease状态查询和Provider对象commit在两个SQLite数据库/事务中完成，成功查询到commit之间仍有TOCTOU窗口。
+- **Coordinator实现：** scripts/spare_parts_provider_admission_sqlite.py 新增 is_attestation_active_in_transaction(connection, claims)，复用Provider持有的sqlite3.Connection；验证活动事务和PRAGMA database_list主库路径，避免另开连接或嵌套事务。
+- **Provider实现：** scripts/spare_parts_provider_sqlite_fenced.py 新增 require_atomic_online_attestation_status 严格选项；必须启用在线状态检查、checker具备事务内接口且解析后的Provider/Coordinator数据库路径相同；不满足则启动失败。旧分库模式保持兼容并保留TOCTOU警告。
+- **并发顺序：** Provider在BEGIN IMMEDIATE后同连接读取lease并提交对象/multipart、fencing high-water、幂等receipt和audit。Coordinator release使用同一个SQLite文件的写事务，因而在锁层面与Provider mutation串行化。
+- **测试：** tests/test_spare_parts_provider_sqlite_fenced.py 新增路径/启用依赖拒绝测试和多线程竞态测试：Provider在事务内状态检查通过后暂停，release线程开始并被写锁阻塞，Provider提交后release完成；使用已释放proof再次提交应被拒绝。测试仅为本地合成SQLite路径。
+- **外部来源：** 新增SRC-000391 SQLite Transaction与SRC-000392 SQLite WAL官方文档。新增 KNOW-000048；新增ASSET-000079（12条参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN），并补齐前轮遗留缺失的ASSET-000078结构化实体记录。
+- **提交：** Coordinator 1504a0d8285ddce17bbef792fb58fdcf55e38a17；Provider 3bed9959162858ae5b0d88c18c28408c86b5fa8b；测试 1efa13adab92a87a6b4353b848637ec730d0b95f。
+- **当前验收状态：** 最终CI待本轮最后一次main提交运行完成后补录；未将未完成CI表述为PASS。
+- **生产边界：** 仅同主机、同一SQLite文件、本地文件系统；WAL不适用于网络文件系统，不支持多主机/远程Coordinator/云Provider。未接入真实KMS/HSM/对象存储，生产备份仍关闭；治理门禁 BLOCKED_PENDING_ENTERPRISE_APPROVAL。
