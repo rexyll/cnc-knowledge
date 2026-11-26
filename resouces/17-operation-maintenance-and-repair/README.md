@@ -405,3 +405,13 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - ASSET-000078：22条Ed25519/在线撤销参考验收场景，均PROPOSED_NOT_APPROVED / NOT_RUN。
 - 依赖cryptography==50.0.2；CI Run 45760844653全库252项、CH12 143项通过，strict lint 0 errors/5 warnings，Provider self-check PASS。
 - 真实KMS/HSM、远程状态API、多主机和生产Provider未接入；生产备份继续关闭。
+
+## CH17-T004 同库原子 lease 撤销与 Provider 写入顺序第三十四轮（2026-11-26）
+
+- 新增KNOW-000048：SQLite Provider通过require_atomic_online_attestation_status启用同库原子在线lease状态检查。
+- Coordinator在Provider已持有的BEGIN IMMEDIATE事务connection上检查lease；Provider对象/multipart、fencing high-water、幂等receipt和audit仍共享同一事务。
+- Coordinator release使用同一SQLite文件时由单写事务锁串行化；Provider先持锁则先完成写入，release先提交则Provider拒绝已释放lease。
+- SQLite官方依据登记为SRC-000391 Transaction和SRC-000392 WAL；WAL需要同机共享内存，不支持网络文件系统。
+- ASSET-000079：12条场景全部PROPOSED_NOT_APPROVED / NOT_RUN；新增矩阵文件已归档于本目录。
+- ASSET-000078的结构化实体记录本轮补齐；ASSET-000079实体记录同步建立。
+- 本地参考实现不等于远程多主机/生产Provider验收；KMS/HSM与生产备份仍未启用。
