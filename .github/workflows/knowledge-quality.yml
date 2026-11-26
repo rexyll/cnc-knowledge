@@ -27,6 +27,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install CH17 asymmetric fencing dependency
+        run: python -m pip install -r requirements-ch17-security.txt
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
       - name: Run CH17 multidimensional synthetic inventory model self-check
