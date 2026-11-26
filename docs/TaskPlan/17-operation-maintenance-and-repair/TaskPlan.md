@@ -541,3 +541,15 @@
 
 
 - 第三十三轮文档同步CI：[Run 45761309007](https://github.com/rexyll/cnc-knowledge/actions/runs/45761309007)两个必需Job success；全库252、CH12 143测试通过，strict lint 0 errors/5 warnings；新增KNOW-000047、ASSET-000078并将CH17统计更新为27/77/71。Provider artifact 15089229555，Coordinator 15089968457。
+
+## CH17-T004 第三十四轮：SQLite 同库原子 lease 撤销与 Provider 写入顺序
+
+- **目标：** 解决第三十三轮独立 Coordinator/Provider SQLite 状态查询与对象提交之间的 TOCTOU 窗口；实现一个显式 opt-in 的本机同库原子参考模式，不将其泛化为远程分布式保证。
+- **Coordinator：** 新增 is_attestation_active_in_transaction(connection, claims)，要求传入已打开的 SQLite 写事务连接；检查 connection.in_transaction 和 PRAGMA database_list 的 main 路径，确认与 Coordinator database_path 相同；复用当前 connection 查询活动lease。
+- **Provider：** 新增 require_atomic_online_attestation_status=True；该选项要求 require_online_attestation_status=True、checker实现同事务接口且Coordinator/Provider解析后的数据库路径一致，否则Provider启动失败。原有分库在线状态检查保持兼容但仍明确有TOCTOU风险。
+- **事务顺序：** Provider通过BEGIN IMMEDIATE先取得数据库写锁，在该连接内核验lease，再执行对象PUT或multipart begin/part/complete，并把对象、scope high-water、幂等receipt和audit放在同一事务。Coordinator release也使用相同数据库的写事务，因此release与Provider mutation只能串行提交：Provider先获得锁则写入先于release，release先获得锁则Provider看到RELEASED并拒绝。
+- **测试：** 在Provider专项测试新增配置依赖/路径不一致拒绝，以及并发顺序测试：Provider在事务内完成正向状态检查并暂停时，Coordinator release被同库写锁阻塞；Provider提交后release完成；旧proof再次使用被拒绝。测试使用合成本地SQLite，不构成企业验收。
+- **外部依据：** 新增SRC-000391（SQLite Transaction）和SRC-000392（SQLite WAL）；后者明确WAL依赖同机共享内存，不适用于网络文件系统。
+- **新增知识与资源：** KNOW-000048；ASSET-000079（12条同库原子撤销场景，均PROPOSED_NOT_APPROVED / NOT_RUN）；补齐既有ASSET-000078结构化实体记录。新增文章 spare-parts-inventory-backup-provider-atomic-lease-revocation.md。
+- **代码提交：** Coordinator 1504a0d8；Provider 3bed9959；Provider专项测试 1efa13ad。最终CI以本节后续补录为准。
+- **限制：** 仅支持同一主机、同一真实SQLite文件和受支持本地文件系统；WAL/NFS/SMB/多主机不支持；没有真实KMS/HSM、远程Coordinator、真实对象存储或生产Provider接入。数据库共置扩大安全/备份边界，SQLite单写事务限制吞吐。生产备份继续关闭，治理门禁 BLOCKED_PENDING_ENTERPRISE_APPROVAL，CH17-T004保持IN_PROGRESS。
