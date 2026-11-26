@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
@@ -12,6 +13,10 @@ from scripts.spare_parts_backup_storage_adapter import (
     FileSystemStorageProvider,
     MockObjectStorageProvider,
     ProviderTransientError,
+    ProviderCircuitBreaker,
+    ProviderCircuitOpenError,
+    ProviderBulkheadFullError,
+    RetryBudgetExceededError,
     RECEIPT_NAME,
     PAYLOAD_FILES,
     _synthetic_ledger,
@@ -501,6 +506,256 @@ class BackupStorageAdapterTests(unittest.TestCase):
         )
         self.assertEqual(result.data, b"payload")
         self.assertEqual(delays, [2.0])
+
+
+    def test_circuit_opens_after_consecutive_transient_failures_and_fails_fast(self):
+        class FakeClock:
+            now = 100.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        provider = MockObjectStorageProvider()
+        provider.put_if_absent("cnc/ch17/circuit-read", b"readable")
+        clock = FakeClock()
+        adapter = BackupStorageAdapter(
+            provider,
+            retry_max_attempts=1,
+            circuit_failure_threshold=2,
+            circuit_reset_timeout_seconds=5,
+            clock_fn=clock,
+        )
+        provider._transient_failures["get"] = 2
+        for _ in range(2):
+            with self.assertRaises(ProviderTransientError):
+                adapter._provider_call(
+                    "get_payload", lambda: provider.get_object("cnc/ch17/circuit-read")
+                )
+        self.assertEqual(adapter.circuit_snapshot("read")["state"], "OPEN")
+        with self.assertRaises(ProviderCircuitOpenError):
+            adapter._provider_call(
+                "get_payload", lambda: provider.get_object("cnc/ch17/circuit-read")
+            )
+        self.assertEqual(adapter._provider_call(
+            "put_if_absent",
+            lambda: provider.put_if_absent("cnc/ch17/circuit-write", b"write-ok"),
+        ).data, b"write-ok")
+        self.assertEqual(adapter.circuit_snapshot("write")["state"], "CLOSED")
+
+    def test_half_open_probe_failure_reopens_then_success_closes_circuit(self):
+        class FakeClock:
+            now = 0.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        breaker = ProviderCircuitBreaker(
+            failure_threshold=1,
+            reset_timeout_seconds=10,
+            half_open_max_probes=1,
+            clock_fn=clock,
+        )
+        probe = breaker.acquire()
+        self.assertFalse(probe)
+        breaker.record_failure(probe)
+        self.assertEqual(breaker.snapshot()["state"], "OPEN")
+        with self.assertRaises(ProviderCircuitOpenError):
+            breaker.acquire()
+        clock.advance(10)
+        half_open_probe = breaker.acquire()
+        self.assertTrue(half_open_probe)
+        breaker.record_failure(half_open_probe)
+        self.assertEqual(breaker.snapshot()["state"], "OPEN")
+        clock.advance(10)
+        half_open_probe = breaker.acquire()
+        breaker.record_success(half_open_probe)
+        self.assertEqual(breaker.snapshot()["state"], "CLOSED")
+        self.assertEqual(breaker.snapshot()["consecutive_failures"], 0)
+
+    def test_half_open_circuit_allows_only_one_concurrent_probe(self):
+        class FakeClock:
+            def __call__(self):
+                return 50.0
+
+        breaker = ProviderCircuitBreaker(
+            failure_threshold=1, reset_timeout_seconds=0,
+            half_open_max_probes=1, clock_fn=FakeClock(),
+        )
+        breaker.record_failure(breaker.acquire())
+        first_probe = breaker.acquire()
+        self.assertTrue(first_probe)
+        with self.assertRaises(ProviderCircuitOpenError):
+            breaker.acquire()
+        breaker.record_success(first_probe)
+        self.assertEqual(breaker.snapshot()["state"], "CLOSED")
+
+    def test_circuit_breakers_are_isolated_by_operation_domain(self):
+        provider = MockObjectStorageProvider()
+        provider.put_if_absent("cnc/ch17/read-object", b"read")
+        adapter = BackupStorageAdapter(
+            provider, retry_max_attempts=1, circuit_failure_threshold=1
+        )
+        provider._transient_failures["get"] = 1
+        with self.assertRaises(ProviderTransientError):
+            adapter._provider_call(
+                "get_payload", lambda: provider.get_object("cnc/ch17/read-object")
+            )
+        self.assertEqual(adapter.circuit_snapshot("read")["state"], "OPEN")
+        self.assertEqual(
+            adapter._provider_call(
+                "put_if_absent",
+                lambda: provider.put_if_absent("cnc/ch17/write-object", b"write"),
+            ).data,
+            b"write",
+        )
+        self.assertEqual(adapter.circuit_snapshot("write")["state"], "CLOSED")
+
+    def test_bulkhead_blocks_same_domain_but_does_not_block_other_domains(self):
+        provider = MockObjectStorageProvider()
+        provider.put_if_absent("cnc/ch17/read-object", b"read")
+        adapter = BackupStorageAdapter(
+            provider,
+            bulkhead_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            bulkhead_acquire_timeout_seconds=0,
+        )
+        entered = threading.Event()
+        release = threading.Event()
+        worker_errors = []
+
+        def blocking_read():
+            entered.set()
+            if not release.wait(timeout=2):
+                raise AssertionError("test read was not released")
+            return "read-complete"
+
+        def worker():
+            try:
+                adapter._provider_call("get_payload", blocking_read)
+            except Exception as exc:
+                worker_errors.append(exc)
+
+        thread = threading.Thread(target=worker)
+        thread.start()
+        self.assertTrue(entered.wait(timeout=2))
+        try:
+            with self.assertRaises(ProviderBulkheadFullError):
+                adapter._provider_call("get_payload", lambda: "second-read")
+            self.assertEqual(
+                adapter._provider_call("put_if_absent", lambda: "independent-write"),
+                "independent-write",
+            )
+        finally:
+            release.set()
+            thread.join(timeout=2)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(worker_errors, [])
+
+    def test_bulkhead_slot_is_released_after_provider_error(self):
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            bulkhead_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+        )
+        with self.assertRaises(BackupStorageError):
+            adapter._provider_call(
+                "get_payload", lambda: (_ for _ in ()).throw(BackupStorageError("permanent"))
+            )
+        self.assertEqual(
+            adapter._provider_call("get_payload", lambda: "slot-released"),
+            "slot-released",
+        )
+
+    def test_total_retry_budget_is_shared_across_nested_provider_calls(self):
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            retry_max_attempts=4,
+            retry_budget_total=2,
+            retry_base_delay_seconds=0,
+            sleep_fn=lambda _: None,
+        )
+
+        def succeeds_after_one_failure(value):
+            calls = {"count": 0}
+            def callback():
+                calls["count"] += 1
+                if calls["count"] == 1:
+                    raise ProviderTransientError("temporary")
+                return value
+            return callback
+
+        with adapter.retry_operation() as budget:
+            self.assertEqual(adapter._provider_call(
+                "put_if_absent", succeeds_after_one_failure("write")
+            ), "write")
+            with adapter.retry_operation() as nested:
+                self.assertIs(nested, budget)
+                self.assertEqual(adapter._provider_call(
+                    "get_payload", succeeds_after_one_failure("read")
+                ), "read")
+            self.assertEqual(budget.used, 2)
+            self.assertEqual(budget.remaining, 0)
+            with self.assertRaises(RetryBudgetExceededError):
+                adapter._provider_call(
+                    "get_payload",
+                    lambda: (_ for _ in ()).throw(ProviderTransientError("budget exhausted")),
+                )
+            self.assertEqual(budget.used, 2)
+
+        # A later top-level operation receives a fresh task budget.
+        with adapter.retry_operation() as fresh:
+            self.assertEqual(fresh.used, 0)
+            self.assertEqual(adapter._provider_call("get_payload", lambda: "new-task"), "new-task")
+
+    def test_retry_budgets_are_isolated_between_concurrent_tasks(self):
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            retry_max_attempts=2,
+            retry_budget_total=1,
+            retry_base_delay_seconds=0,
+            sleep_fn=lambda _: None,
+        )
+        barrier = threading.Barrier(2)
+        results = []
+        errors = []
+
+        def task(value):
+            calls = {"count": 0}
+            def callback():
+                calls["count"] += 1
+                if calls["count"] == 1:
+                    barrier.wait(timeout=2)
+                    raise ProviderTransientError("one retry per task")
+                return value
+            try:
+                with adapter.retry_operation() as budget:
+                    result = adapter._provider_call("get_payload", callback)
+                    results.append((result, budget.used, budget.remaining))
+            except Exception as exc:
+                errors.append(exc)
+
+        threads = [
+            threading.Thread(target=task, args=("task-a",)),
+            threading.Thread(target=task, args=("task-b",)),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=3)
+        self.assertTrue(all(not thread.is_alive() for thread in threads))
+        self.assertEqual(errors, [])
+        self.assertCountEqual(results, [("task-a", 1, 0), ("task-b", 1, 0)])
+
+    def test_circuit_and_bulkhead_configuration_is_validated(self):
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), circuit_failure_threshold=0)
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), retry_budget_total=-1)
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), bulkhead_limits={"read": 0})
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), bulkhead_limits={"unknown": 1})
 
 if __name__ == "__main__":
     unittest.main()
