@@ -676,3 +676,15 @@
 - **实现边界：** 在既有AuthorityStore适配器上增加可选Watch与linearizable_range；共享单进程InMemoryEtcdV3WatchClient由两个独立adapter实例共享。未连接真实etcd/gRPC driver；没有Raft quorum、mTLS/RBAC、多主机网络分区或真实Watch压力测试。
 - **安全语义：** Watch仅做通知；断线/compaction后先执行linearizable Range，再从R+1恢复；created/fragment/canceled响应不得错误推进cursor；Txn/Lease响应丢失保持OUTCOME_UNKNOWN或fail-closed。
 - **状态：** KNOW-000060 / ASSET-000091已登记；30项正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，未执行真实etcd集成；CH17-T004继续IN_PROGRESS。
+
+
+## CH17-T004 真实 etcd v3 Gateway 驱动与三节点集成环境（第四十七轮）
+
+- **日期/分支：** 2026-11-26（Asia/Shanghai），main；未创建分支。
+- **提交：** 初始实现 `6de8e363818b0cf80fa6206bbca06a3a9f062470`；测试夹具修正 `871fe0d2673fb1b39502236568dc7dd57ad3bef0`。首次CI暴露Lease测试未给round-robin第二endpoint配置响应，修正测试夹具以模拟共享集群响应；驱动的endpoint轮转逻辑保持不变。
+- **实现：** 新增Etcd3gwV3Client，依赖固定etcd3gw 2.7.0；实现Range/Txn/Lease真实gateway请求映射、二进制Base64和revision归一化；只读连接失败可failover，写请求不自动重试。
+- **Watch审查：** 当前etcd3gw Watch helper不暴露完整WatchResponse envelope，因此驱动不声明Watch/watch_progress；不能用简化event迭代器推动revision cursor或做compaction恢复。
+- **集成拓扑：** 新增etcd v3.7.0三成员Compose、runner与5项live integration tests（须显式ETCD_INTEGRATION=1）。
+- **文档/资源：** KNOW-000061；SRC-000408/409；ASSET-000092的30项正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **最终CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success；全库499项unittest（494通过、5项live integration skip）；CH12 143项测试通过；strict lint 0 errors；结构/质量检查0 errors / 0 warnings。
+- **边界：** 未启动真实etcd集群；live integration仅skip、不记PASS；未验收mTLS/RBAC、Raft/quorum、多主机或生产延迟；SQLite Coordinator未迁移，schema-v2仍是唯一生产权威；CH17-T004继续IN_PROGRESS。

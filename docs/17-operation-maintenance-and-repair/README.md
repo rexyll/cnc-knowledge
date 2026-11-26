@@ -195,3 +195,12 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 
 
 第四十六轮最终代码head：`cdaff0dc43834b3250d8803efb0591a8656c363d`；[CI Run 45826709629](https://github.com/rexyll/cnc-knowledge/actions/runs/45826709629)两个必需Job均completed/success。全库484项unittest（含本轮21项Watch/多客户端契约测试）、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项既有非阻断warning）。真实etcd/gRPC driver、Raft quorum和多主机测试未执行；ASSET-000091的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 etcd3gw 驱动与三节点集成环境（第四十七轮）
+
+新增 [Coordinator 真实 etcd v3 Gateway 驱动与三节点集成环境](spare-parts-inventory-backup-provider-coordinator-etcd3gw-driver-and-three-node-integration.md)（KNOW-000061）。新增可选etcd3gw 2.7.0驱动实现Range/Txn/Lease，限定只读endpoint failover与写操作unknown outcome；三节点etcd v3.7.0 Compose环境和5项opt-in真实集成测试通过显式脚本运行。由于高层Watch helper不提供完整WatchResponse envelope，驱动不实现Watch/WatchProgress。新增ASSET-000092的30条正式验证场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+- **最终CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success。全库499项unittest完成，494项通过、5项跳过（5项需ETCD_INTEGRATION=1的live etcd集成测试）；CH12 143项数值测试通过；strict knowledge lint 0 errors；知识结构/数据质量检查0 errors、0 warnings。
+- **限制：** 本轮未启动真实三节点etcd；5项live integration tests只是skip，不代表通过；ASSET-000092的30项正式场景均PROPOSED_NOT_APPROVED / NOT_RUN。未验证mTLS/RBAC/Raft quorum或多主机故障；SQLite Coordinator业务服务未迁移，schema-v2仍为唯一生产权威；CH17-T004继续IN_PROGRESS。

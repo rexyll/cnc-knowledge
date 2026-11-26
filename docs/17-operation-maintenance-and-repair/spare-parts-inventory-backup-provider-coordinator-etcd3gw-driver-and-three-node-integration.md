@@ -112,6 +112,13 @@ tests/test_spare_parts_provider_authority_store_etcd_integration.py包含5项可
 
 ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。矩阵覆盖endpoint配置、Base64、Range一致性/failover、Txn compare/未知结果、Lease生命周期、三成员集群、一成员故障与Watch能力门禁。正式矩阵必须经企业审批后才可执行；10项映射单测不替代30项正式场景。
 
+### 5.4 默认CI结果
+
+- 最终代码head：`871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[GitHub Actions Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success。
+- 全库499项unittest完成，494项通过、5项跳过；5项skip是需ETCD_INTEGRATION=1的真实etcd集成测试，不作为通过证据。本轮10项fake gateway驱动映射单测全部通过。
+- CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量检查0 errors、0 warnings。
+- 默认CI不安装etcd3gw可选依赖、不启动Docker/etcd服务；因此本次CI仅证明驱动映射、错误处理和知识库回归通过，不证明与真实etcd服务端互通。
+
 ## 6. 当前限制与生产门禁
 
 | 项目 | 当前状态 | 下一步要求 |

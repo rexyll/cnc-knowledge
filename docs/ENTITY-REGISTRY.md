@@ -139,3 +139,6 @@
 - KNOW-000020 — 龙门连续移动负载时变模型与MIMO多回路disk margin（CH12）。
 
 - KNOW-000020 — 龙门移动负载时变模型与MIMO多回路disk margin（CH12，含电气驱动接口解析扩展）。
+
+- KNOW-000061 — 备件库存备份 Coordinator 真实 etcd v3 Gateway 驱动与三节点集成环境（CH17）。
+- ASSET-000092 — Coordinator etcd3gw 驱动与三节点集成正式验证矩阵v1（CH17）。

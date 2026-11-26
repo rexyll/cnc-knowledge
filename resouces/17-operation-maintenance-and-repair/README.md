@@ -568,3 +568,16 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 第四十六轮Watch/Range与多客户端故障注入参考模型最终head `cdaff0dc43834b3250d8803efb0591a8656c363d`；[CI Run 45826709629](https://github.com/rexyll/cnc-knowledge/actions/runs/45826709629)两个必需Job均通过：全库484项unittest、CH12 143项数值资源测试通过，strict lint和结构质量0 errors。本轮21项新增测试通过；真实etcd/多主机验证未执行，30项正式场景仍待批准/执行。
+
+
+## CH17-T004 etcd3gw驱动与三节点集成（第四十七轮）
+
+- 技术正文：docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-etcd3gw-driver-and-three-node-integration.md（KNOW-000061）。
+- 驱动：scripts/spare_parts_provider_etcd3gw_driver.py；requirements-ch17-etcd-integration.txt固定etcd3gw 2.7.0；仅实现KV Range/Txn/Lease，不开放Watch。
+- 测试：tests/test_spare_parts_provider_etcd3gw_driver.py（10项fake gateway契约测试）；tests/test_spare_parts_provider_authority_store_etcd_integration.py（5项须ETCD_INTEGRATION=1的真实测试，当前未运行）。
+- 集成环境：scripts/etcd-integration/compose.yaml、run.sh；etcd v3.7.0三节点本地可丢弃拓扑，尚未启动。
+- 矩阵：spare-parts-coordinator-etcd-driver-integration-matrix-v1.csv（ASSET-000092），30项均PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+- **最终CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success。全库499项unittest完成，494项通过、5项跳过（5项需ETCD_INTEGRATION=1的live etcd集成测试）；CH12 143项数值测试通过；strict knowledge lint 0 errors；知识结构/数据质量检查0 errors、0 warnings。
+- **限制：** 本轮未启动真实三节点etcd；5项live integration tests只是skip，不代表通过；ASSET-000092的30项正式场景均PROPOSED_NOT_APPROVED / NOT_RUN。未验证mTLS/RBAC/Raft quorum或多主机故障；SQLite Coordinator业务服务未迁移，schema-v2仍为唯一生产权威；CH17-T004继续IN_PROGRESS。

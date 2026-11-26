@@ -814,3 +814,14 @@
 - 所有控制器仅单Adapter/进程范围；无真实云、分布式协调、跨容器容量或生产负载验收。
 
 - 第二十三轮最终验收：代码/测试Run 45740068529两个Job success（169个unittest）；自检Run 45740213445两个Job success（breaker与retry budget self-check PASS，Artifact 15081155445）；文档同步Run 45740530720两个Job success（169个unittest、lint 0 errors，Artifact 15080399203）。
+
+
+## CH17-T004 第二十四轮：真实 etcd v3 Gateway 驱动与三节点集成框架（全局第四十七轮，2026-11-26）
+
+- **客户端选型：** 固定OpenStack维护的第三方Python etcd v3 gRPC-gateway客户端 `etcd3gw==2.7.0`，作为可选依赖，不增加普通知识库CI环境依赖。
+- **网络驱动：** 新增 `scripts/spare_parts_provider_etcd3gw_driver.py`，实现KV Range、Txn Compare/Success/Failure和Lease Grant/KeepAlive/Revoke；Base64二进制编解码、revision解码；只读Range/status/member-list在连接失败时尝试其他endpoint并保持serializable=false；Txn/Lease写请求仅发送一次，继续使用OUTCOME_UNKNOWN，不盲目重试。
+- **Watch能力门禁：** etcd3gw高层Watch helper跳过created握手并只向回调交付event，未保留完整header/canceled/compact_revision/cancel_reason/fragment；驱动故意不声明Watch/WatchProgress能力。后续需原生gRPC或完整stream-envelope适配器。
+- **集成环境：** 新增etcd v3.7.0三成员Compose、独立named volume、健康检查、显式runner和说明文档。普通CI不启动Docker/etcd服务。
+- **测试/资源：** 新增10项fake gateway契约测试和5项opt-in live integration tests；新增KNOW-000061、SRC-000408/409、ASSET-000092（30项正式场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。
+- **CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job成功。全库499项测试完成，494通过、5项live etcd测试skip；CH12 143项通过；strict lint 0 errors，结构/质量检查0 errors/0 warnings。
+- **边界：** 未启动真实三节点、未执行5项live集成测试；未验证mTLS/RBAC、Raft/quorum、多主机或生产吞吐；SQLite Coordinator业务服务未迁移，schema-v2仍是唯一生产权威；CH17-T004保持IN_PROGRESS。

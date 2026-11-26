@@ -136,3 +136,5 @@
 | spare-parts-coordinator-etcd-watch-multi-client-fault-injection-matrix-v1.csv | CSV Coordinator etcd Watch、Range恢复与多客户端故障注入正式验证矩阵 / ASSET-000091 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000060 | 30条场景覆盖linearizable prefix Range、Watch created/event/progress/fragment/compaction、Range+R+1恢复、Lease事件、多adapter共享后端CAS和unknown outcome；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
 
 | spare-parts-coordinator-etcd-watch-multi-client-fault-injection-matrix-v1.csv | CSV Coordinator etcd Watch、Range恢复与多客户端故障注入正式验证矩阵 / ASSET-000091 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000060 | 30条场景覆盖线性一致Range、Watch生命周期与compaction恢复、Lease事件、多客户端CAS和unknown outcome；CI Run 45826709629中全库484项unittest（含21项本轮测试）与CH12 143项测试通过，但正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。 |
+
+| spare-parts-coordinator-etcd-driver-integration-matrix-v1.csv | CSV Coordinator etcd3gw 驱动与三节点 etcd 集成正式验证矩阵 / ASSET-000092 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000061 | 30项场景覆盖Endpoint配置、Base64、线性一致Range、Txn Compare/unknown outcome、Lease生命周期、三成员集群和Watch能力门禁；正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
