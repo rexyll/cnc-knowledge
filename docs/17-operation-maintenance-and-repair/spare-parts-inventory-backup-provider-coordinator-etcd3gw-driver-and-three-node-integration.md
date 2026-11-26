@@ -123,7 +123,7 @@ ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。�
 
 | 项目 | 当前状态 | 下一步要求 |
 |---|---|---|
-| etcd3gw网络驱动 | Range/Txn/Lease代码已实现，fake HTTP映射单测待CI确认 | 真实三节点集成执行 |
+| etcd3gw网络驱动 | Range/Txn/Lease代码已实现，10项fake gateway映射单测已通过默认CI；5项真实集成测试尚未运行 | 在可用Docker主机启动三节点并执行opt-in集成测试 |
 | endpoint failover | 仅只读请求可跨endpoint尝试 | 测量实际故障切换延迟与错误分类 |
 | Watch/WatchProgress | 当前驱动不支持 | 实现保留完整WatchResponse envelope的gRPC/stream驱动 |
 | TLS/mTLS | 构造参数已映射，未真实握手测试 | CA链、双向证书、过期/轮换及失败注入 |
