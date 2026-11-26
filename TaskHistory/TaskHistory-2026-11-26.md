@@ -168,3 +168,13 @@
 - 同时复核发现Provider callback抛出异常时，context manager原先会跳过退出前的租约有效性检查。已加固为成功/异常退出路径均检查租约；若租约已失效，统一抛 `ProviderAdmissionLeaseLostError`，避免瞬态错误路径继续自动重试。
 - 新增回归测试验证租约到期时，Provider永久异常和瞬态/outcome_unknown异常均不触发第二次尝试；测试import补齐 `ProviderTaskContext`。
 - 测试规格ASSET-000070扩为17条；总测试预期182项，Provider专项54项。修复后CI待重新执行。
+
+
+## CH17-T004 Provider多Adapter共享协调第二十五轮最终验收（2026-11-26）
+
+- **首轮CI问题及修复：** Run 45743739362中，2个直接租约测试因测试文件遗漏导入 `ProviderTaskContext` 产生NameError。提交 `a77a4b51723fe9f2e01109cca0496cd00d843a37` 补齐导入。
+- **异常路径加固：** Provider callback无论正常返回或抛出异常，Adapter在共享租约配置下都检查租约是否仍有效；租约已失效时统一以 `ProviderAdmissionLeaseLostError.outcome_unknown=True` 失败关闭，瞬态错误不会触发第二次重试。新增回归验证永久异常/瞬态异常两类路径。
+- **最终CI：** [Run 45743927996](https://github.com/rexyll/cnc-knowledge/actions/runs/45743927996)，两个Job均completed/success；全库182个unittest通过，Provider适配器专项54项；strict knowledge lint PASS（0 errors）。
+- **Mock Artifact：** [ch17-backup-storage-adapter-45743927996](https://github.com/rexyll/cnc-knowledge/actions/runs/45743927996/artifacts/15081984380)，ID 15081984380；self-check PASS。
+- **交付：** KNOW-000039、ASSET-000070；17条同进程多Adapter共享协调场景均TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；CH17统计19篇KNOW、69个实体、63项资源。
+- **限制：** 同一Python进程的多个Adapter对象共享Mock；不证明跨进程/主机、真实Provider、网络分区、协调服务高可用、自动心跳或下游fencing。生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。

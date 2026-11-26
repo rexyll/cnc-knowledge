@@ -55,3 +55,12 @@
 **生产限制：** 当前协调器没有跨进程共享、持久化、网络故障恢复、主备切换、quorum、时钟漂移治理、租约心跳或下游fencing执行。租约过期只证明本地协调器回收名额；不保证之前的远端请求已停止。生产实现必须选定共享协调服务，定义一致性/可用性取舍、服务宕机时fail-open/fail-closed策略、租约与Provider请求超时关系、fencing落地和观测告警，并经过多进程/断网/进程崩溃/恢复风暴测试。
 
 生产备份仍关闭，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，`business_rule_assertions=NOT_EVALUATED`。
+
+
+## 7. 最终CI验收记录
+
+- 首次代码/测试CI Run 45743739362执行181个测试时，两个直接协调器租约测试因测试模块遗漏导入 `ProviderTaskContext` 发生NameError；其余共享并发、租户配额、令牌桶等测试通过。
+- 修复提交 `a77a4b51723fe9f2e01109cca0496cd00d843a37` 补齐import，并加固Provider callback异常退出时的租约有效性检查：如果Provider永久或瞬态异常发生时租约已丢失，统一返回 `ProviderAdmissionLeaseLostError`，防止错误路径继续重试。
+- 最终CI：[Run 45743927996](https://github.com/rexyll/cnc-knowledge/actions/runs/45743927996)，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库182个unittest通过，Provider适配器专项54个。
+- `knowledge_lint.py --strict` 为PASS（0 errors）；Provider Mock自检PASS；Artifact [ch17-backup-storage-adapter-45743927996](https://github.com/rexyll/cnc-knowledge/actions/runs/45743927996/artifacts/15081984380)，ID 15081984380。
+- **严格边界：** 所有多Adapter协调测试共享同一Python进程中的Mock协调器对象。17条矩阵仍PROPOSED_NOT_APPROVED / NOT_RUN；无跨进程/主机、真实Provider、网络分区、主备、quorum、自动心跳、下游fencing或生产容量验证。生产备份仍关闭。

@@ -413,3 +413,11 @@
 - 新增8项专项unittest，新增ASSET-000070：17个合成跨实例配额、限流、租约、fencing与故障场景。
 - **限制：** 当前协调器只共享于同一进程内的多个Adapter对象；无跨进程/主机共享、持久化、自动心跳、quorum、时钟漂移治理或下游fencing验证。lease TTL必须大于Provider硬超时，但当前同步Provider接口不强制实施此超时。
 - **状态：** CH17-T004继续IN_PROGRESS；无真实Provider/集群负载测试，生产备份仍关闭，企业治理审批门禁仍阻断。
+
+
+### 第二十五轮最终CI验收补记（2026-11-26）
+
+- 首次Run 45743739362暴露测试模块遗漏导入 `ProviderTaskContext` 的两处NameError；修复提交 `a77a4b51723fe9f2e01109cca0496cd00d843a37`。
+- 同一修复加固租约失效的异常出口检查，新增测试确保租约过期时Provider永久/瞬态错误都不再触发第二次调用。
+- 最终Run 45743927996：两个Job completed/success，全库182个unittest通过（Provider专项54个），strict knowledge lint 0 errors，Mock adapter self-check PASS；Artifact ID 15081984380。
+- CH17统计19篇KNOW、69个登记实体、63项资源；共享协调仍仅为同进程Mock，不能作为跨进程或生产分布式一致性证据。
