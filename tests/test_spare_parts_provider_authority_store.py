@@ -10,6 +10,7 @@ from scripts.spare_parts_provider_authority_store import (
     DurableCoordinatorAuthorityBackend,
     AuthorityStoreCompare,
     AuthorityStoreDelete,
+    AuthorityStoreGet,
     AuthorityStoreOutcomeUnknownError,
     AuthorityStorePut,
     AuthorityStoreUnavailableError,
@@ -129,6 +130,44 @@ class CoordinatorAuthorityStoreContract:
         self.assertIsNone(current)
         noop = store.transact([], [AuthorityStoreDelete(b"/authority/not-present")])
         self.assertEqual(noop.revision, removed.revision)
+
+    def test_transactional_get_observes_ordered_branch_state(self):
+        store = self.store()
+        store.transact([], [AuthorityStorePut(b"/authority/read-write", b"before")])
+        before, _ = store.linearizable_get(b"/authority/read-write")
+        result = store.transact(
+            [AuthorityStoreCompare(
+                b"/authority/read-write", "MOD", "EQUAL", before.mod_revision
+            )],
+            [
+                AuthorityStoreGet(b"/authority/read-write"),
+                AuthorityStorePut(b"/authority/read-write", b"after"),
+                AuthorityStoreGet(b"/authority/read-write"),
+            ],
+        )
+        self.assertTrue(result.succeeded)
+        self.assertEqual(len(result.reads), 2)
+        self.assertEqual(result.reads[0].value, b"before")
+        self.assertEqual(result.reads[1].value, b"after")
+        self.assertLess(result.reads[0].mod_revision, result.revision)
+        self.assertEqual(result.reads[1].mod_revision, result.revision)
+
+    def test_failed_branch_can_return_a_transactional_snapshot(self):
+        store = self.store()
+        store.transact([], [AuthorityStorePut(b"/authority/branch", b"current")])
+        current, _ = store.linearizable_get(b"/authority/branch")
+        result = store.transact(
+            [AuthorityStoreCompare(
+                b"/authority/branch", "MOD", "EQUAL", current.mod_revision + 1
+            )],
+            [AuthorityStorePut(b"/authority/branch", b"should-not-commit")],
+            [AuthorityStoreGet(b"/authority/branch")],
+        )
+        self.assertFalse(result.succeeded)
+        self.assertEqual(len(result.reads), 1)
+        self.assertEqual(result.reads[0].value, b"current")
+        unchanged, _ = store.linearizable_get(b"/authority/branch")
+        self.assertEqual(unchanged.value, b"current")
 
 
     def test_sqlite_authority_service_satisfies_application_backend_port(self):

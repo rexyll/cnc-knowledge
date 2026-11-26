@@ -95,9 +95,24 @@ AuthorityStoreMutation = AuthorityStorePut | AuthorityStoreDelete
 
 
 @dataclass(frozen=True)
+class AuthorityStoreGet:
+    """Read one exact key inside the selected atomic transaction branch."""
+
+    key: bytes
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.key, bytes) or not self.key:
+            raise ValueError("transaction get key must be non-empty bytes")
+
+
+AuthorityStoreTxnOperation = AuthorityStoreMutation | AuthorityStoreGet
+
+
+@dataclass(frozen=True)
 class AuthorityStoreTxnResult:
     succeeded: bool
     revision: int
+    reads: tuple[AuthorityStoreEntry | None, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -121,8 +136,8 @@ class CoordinatorAuthorityStore(Protocol):
     def transact(
         self,
         compares: Sequence[AuthorityStoreCompare],
-        success: Sequence[AuthorityStoreMutation],
-        failure: Sequence[AuthorityStoreMutation] = (),
+        success: Sequence[AuthorityStoreTxnOperation],
+        failure: Sequence[AuthorityStoreTxnOperation] = (),
     ) -> AuthorityStoreTxnResult: ...
 
     def lease_grant(self, ttl_seconds: int) -> AuthorityStoreLease: ...
@@ -183,17 +198,19 @@ class EtcdV3Client(Protocol):
 
 
 def _validate_mutations(
-    success: Sequence[AuthorityStoreMutation],
-    failure: Sequence[AuthorityStoreMutation],
+    success: Sequence[AuthorityStoreTxnOperation],
+    failure: Sequence[AuthorityStoreTxnOperation],
 ) -> None:
     for branch in (success, failure):
-        keys: set[bytes] = set()
+        mutated_keys: set[bytes] = set()
         for op in branch:
+            if isinstance(op, AuthorityStoreGet):
+                continue
             if not isinstance(op, (AuthorityStorePut, AuthorityStoreDelete)):
-                raise ValueError("transaction branch contains an unsupported mutation")
-            if op.key in keys:
+                raise ValueError("transaction branch contains an unsupported operation")
+            if op.key in mutated_keys:
                 raise ValueError("a transaction branch may mutate each key at most once")
-            keys.add(op.key)
+            mutated_keys.add(op.key)
 
 
 def _compare_value(actual: bytes | int, expected: bytes | int, operator: str) -> bool:
@@ -397,8 +414,8 @@ class SQLiteCoordinatorAuthorityStore:
     def transact(
         self,
         compares: Sequence[AuthorityStoreCompare],
-        success: Sequence[AuthorityStoreMutation],
-        failure: Sequence[AuthorityStoreMutation] = (),
+        success: Sequence[AuthorityStoreTxnOperation],
+        failure: Sequence[AuthorityStoreTxnOperation] = (),
     ) -> AuthorityStoreTxnResult:
         if any(not isinstance(cmp, AuthorityStoreCompare) for cmp in compares):
             raise ValueError("compares must contain AuthorityStoreCompare values")
@@ -410,30 +427,53 @@ class SQLiteCoordinatorAuthorityStore:
                 self._expire_leases(c)
                 succeeded = all(self._compare(c, cmp) for cmp in compares)
                 operations = success if succeeded else failure
-                old_rows = {
-                    op.key: c.execute(
-                        "SELECT create_revision,version FROM authority_store_kv WHERE key=?",
-                        (op.key,),
-                    ).fetchone()
-                    for op in operations if isinstance(op, AuthorityStorePut)
-                }
-                changed = self._apply(c, operations)
-                if changed:
-                    revision = self._bump_revision(c)
-                    for op in operations:
-                        if isinstance(op, AuthorityStorePut):
-                            old = old_rows[op.key]
-                            create_revision = revision if old is None else int(old["create_revision"])
-                            version = 1 if old is None else int(old["version"]) + 1
-                            c.execute(
-                                """UPDATE authority_store_kv SET create_revision=?,
-                                   mod_revision=?,version=? WHERE key=?""",
-                                (create_revision, revision, version, op.key),
-                            )
-                else:
-                    revision = self._revision(c)
+                next_revision = self._revision(c) + 1
+                changed = False
+                reads: list[AuthorityStoreEntry | None] = []
+                # Preserve operation order: a Get before a Put sees the old value,
+                # while a Get after a Put sees the tentative value in this txn.
+                for op in operations:
+                    if isinstance(op, AuthorityStoreGet):
+                        row = c.execute(
+                            "SELECT * FROM authority_store_kv WHERE key=?", (op.key,)
+                        ).fetchone()
+                        reads.append(self._entry(row))
+                    elif isinstance(op, AuthorityStorePut):
+                        if op.lease_id:
+                            valid = c.execute(
+                                "SELECT 1 FROM authority_store_leases WHERE lease_id=? AND expires_at>?",
+                                (op.lease_id, self.clock_fn()),
+                            ).fetchone()
+                            if valid is None:
+                                raise AuthorityStoreLeaseError(
+                                    "cannot attach key to an expired or unknown lease"
+                                )
+                        old = c.execute(
+                            "SELECT create_revision,version FROM authority_store_kv WHERE key=?",
+                            (op.key,),
+                        ).fetchone()
+                        create_revision = next_revision if old is None else int(old["create_revision"])
+                        version = 1 if old is None else int(old["version"]) + 1
+                        c.execute(
+                            """INSERT INTO authority_store_kv(
+                                key,value,create_revision,mod_revision,version,lease_id
+                            ) VALUES(?,?,?,?,?,?)
+                            ON CONFLICT(key) DO UPDATE SET
+                                value=excluded.value,mod_revision=excluded.mod_revision,
+                                version=excluded.version,lease_id=excluded.lease_id""",
+                            (op.key, op.value, create_revision, next_revision, version, op.lease_id),
+                        )
+                        changed = True
+                    else:
+                        deleted = c.execute(
+                            "DELETE FROM authority_store_kv WHERE key=?", (op.key,)
+                        ).rowcount
+                        changed = changed or bool(deleted)
+                revision = self._bump_revision(c) if changed else self._revision(c)
                 c.commit()
-                return AuthorityStoreTxnResult(succeeded=succeeded, revision=revision)
+                return AuthorityStoreTxnResult(
+                    succeeded=succeeded, revision=revision, reads=tuple(reads)
+                )
             except AuthorityStoreError:
                 c.rollback()
                 raise
@@ -579,7 +619,9 @@ class EtcdV3CoordinatorAuthorityStore:
         }
 
     @staticmethod
-    def _mutation_request(operation: AuthorityStoreMutation) -> dict[str, Any]:
+    def _txn_request(operation: AuthorityStoreTxnOperation) -> dict[str, Any]:
+        if isinstance(operation, AuthorityStoreGet):
+            return {"request_range": {"key": operation.key}}
         if isinstance(operation, AuthorityStorePut):
             request: dict[str, Any] = {
                 "key": operation.key,
@@ -590,11 +632,28 @@ class EtcdV3CoordinatorAuthorityStore:
             return {"request_put": request}
         return {"request_delete_range": {"key": operation.key}}
 
+    @staticmethod
+    def _entry_from_txn_range(response: Mapping[str, Any]) -> AuthorityStoreEntry | None:
+        kvs = response.get("kvs") or []
+        if not kvs:
+            return None
+        if len(kvs) != 1:
+            raise AuthorityStoreError("transaction exact-key Range returned multiple records")
+        kv = kvs[0]
+        return AuthorityStoreEntry(
+            key=bytes(kv["key"]),
+            value=bytes(kv["value"]),
+            create_revision=int(kv["create_revision"]),
+            mod_revision=int(kv["mod_revision"]),
+            version=int(kv["version"]),
+            lease_id=int(kv.get("lease", 0)),
+        )
+
     def transact(
         self,
         compares: Sequence[AuthorityStoreCompare],
-        success: Sequence[AuthorityStoreMutation],
-        failure: Sequence[AuthorityStoreMutation] = (),
+        success: Sequence[AuthorityStoreTxnOperation],
+        failure: Sequence[AuthorityStoreTxnOperation] = (),
     ) -> AuthorityStoreTxnResult:
         if any(not isinstance(cmp, AuthorityStoreCompare) for cmp in compares):
             raise ValueError("compares must contain AuthorityStoreCompare values")
@@ -602,13 +661,32 @@ class EtcdV3CoordinatorAuthorityStore:
         try:
             response = self.client.txn(
                 compare=[self._compare_request(cmp) for cmp in compares],
-                success=[self._mutation_request(op) for op in success],
-                failure=[self._mutation_request(op) for op in failure],
+                success=[self._txn_request(op) for op in success],
+                failure=[self._txn_request(op) for op in failure],
             )
             header = response.get("header", {})
+            reads: list[AuthorityStoreEntry | None] = []
+            responses = response.get("responses") or []
+            operations = success if bool(response.get("succeeded")) else failure
+            read_count = sum(isinstance(op, AuthorityStoreGet) for op in operations)
+            if len(responses) != len(operations):
+                if read_count:
+                    raise AuthorityStoreError(
+                        "etcd transaction response count does not match requested operations"
+                    )
+            else:
+                for op, result in zip(operations, responses):
+                    if isinstance(op, AuthorityStoreGet):
+                        range_result = result.get("response_range")
+                        if not isinstance(range_result, Mapping):
+                            raise AuthorityStoreError(
+                                "etcd transaction Get did not return a Range response"
+                            )
+                        reads.append(self._entry_from_txn_range(range_result))
             return AuthorityStoreTxnResult(
                 succeeded=bool(response.get("succeeded")),
                 revision=int(header.get("revision", 0)),
+                reads=tuple(reads),
             )
         except (TimeoutError, ConnectionError) as exc:
             # Txn may have committed before the response was lost.
@@ -732,10 +810,25 @@ class InMemoryEtcdV3Client:
             expected = int(expected)
         return _compare_value(actual, expected, condition["result"])
 
-    def _apply_requests(self, operations: Sequence[Mapping[str, Any]]) -> bool:
+    def _apply_requests(
+        self, operations: Sequence[Mapping[str, Any]]
+    ) -> tuple[bool, list[Mapping[str, Any]]]:
         changed = False
+        responses: list[Mapping[str, Any]] = []
         for item in operations:
-            if "request_put" in item:
+            if "request_range" in item:
+                key = item["request_range"]["key"]
+                record = self._kvs.get(key)
+                kvs = [] if record is None else [{
+                    "key": key,
+                    "value": record["value"],
+                    "create_revision": record["create_revision"],
+                    "mod_revision": record["mod_revision"],
+                    "version": record["version"],
+                    "lease": record["lease"],
+                }]
+                responses.append({"response_range": {"kvs": kvs}})
+            elif "request_put" in item:
                 req = item["request_put"]
                 key, value = req["key"], req["value"]
                 lease_id = int(req.get("lease", 0))
@@ -750,14 +843,17 @@ class InMemoryEtcdV3Client:
                     "lease": lease_id,
                 }
                 changed = True
+                responses.append({"response_put": {}})
             elif "request_delete_range" in item:
                 key = item["request_delete_range"]["key"]
-                if key in self._kvs:
+                deleted = key in self._kvs
+                if deleted:
                     self._kvs.pop(key, None)
                     changed = True
+                responses.append({"response_delete_range": {"deleted": int(deleted)}})
             else:
                 raise ValueError("unsupported etcd transaction operation")
-        return changed
+        return changed, responses
 
     def txn(
         self,
@@ -773,7 +869,7 @@ class InMemoryEtcdV3Client:
                 self.before_txn()
             succeeded = all(self._matches(item) for item in compare)
             operations = success if succeeded else failure
-            changed = self._apply_requests(operations)
+            changed, branch_responses = self._apply_requests(operations)
             if changed:
                 self._revision += 1
                 for item in operations:
@@ -782,7 +878,11 @@ class InMemoryEtcdV3Client:
                         record["mod_revision"] = self._revision
                         if record["create_revision"] == self._revision - 1:
                             record["create_revision"] = self._revision
-            response = {"header": {"revision": self._revision}, "succeeded": succeeded}
+            response = {
+                "header": {"revision": self._revision},
+                "succeeded": succeeded,
+                "responses": branch_responses,
+            }
             if self.fail_next_txn_after_commit:
                 self.fail_next_txn_after_commit = False
                 raise TimeoutError("synthetic lost transaction response after commit")
