@@ -7,6 +7,7 @@ from scripts.spare_parts_provider_authority_store import (
     AuthorityStoreCompare,
     AuthorityStoreOutcomeUnknownError,
     AuthorityStorePut,
+    AuthorityStoreUnavailableError,
     EtcdV3CoordinatorAuthorityStore,
 )
 from scripts.spare_parts_provider_etcd3gw_driver import (
@@ -45,6 +46,43 @@ class FakeGatewayClient:
         if response is None:
             raise AssertionError(f"no fake response configured for {path}")
         return response
+
+
+class FakeStreamingResponse:
+    def __init__(self, chunks, *, failure=None, status_code=200):
+        self.chunks = list(chunks)
+        self.failure = failure
+        self.status_code = status_code
+        self.text = "fake gateway error"
+        self.closed = False
+
+    def iter_content(self, chunk_size=None, decode_unicode=False):
+        for chunk in self.chunks:
+            yield chunk
+        if self.failure is not None:
+            raise self.failure
+
+    def close(self):
+        self.closed = True
+
+
+class FakeStreamingSession:
+    def __init__(self, responses=None, *, failure=None):
+        self.responses = list(responses or [])
+        self.failure = failure
+        self.calls = []
+        self.closed = False
+
+    def post(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        if self.failure is not None:
+            raise self.failure
+        if not self.responses:
+            raise AssertionError("no fake Watch response configured")
+        return self.responses.pop(0)
+
+    def close(self):
+        self.closed = True
 
 
 class Etcd3gwDriverContractTests(unittest.TestCase):
@@ -193,8 +231,144 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
         self.assertEqual(len(first.calls), 1)
         self.assertEqual(second.calls, [])
 
-    def test_driver_does_not_advertise_watch_without_watch_envelopes(self):
-        self.assertFalse(callable(getattr(self.driver, "watch", None)))
+    def test_watch_preserves_complete_envelope_and_decodes_event_bytes(self):
+        client = self.by_port[23791]
+        key = b"/watch/a"
+        value = b"\\x00value\\xff"
+        previous = b"old-value"
+        frames = [
+            {"result": {"header": {"revision": "10"}, "watch_id": "9", "created": True}},
+            {
+                "result": {
+                    "header": {"revision": "11"},
+                    "watch_id": "9",
+                    "fragment": True,
+                    "events": [{
+                        "type": "PUT",
+                        "kv": {
+                            "key": b64(key), "value": b64(value),
+                            "create_revision": "4", "mod_revision": "11",
+                            "version": "2", "lease": "0"
+                        },
+                        "prev_kv": {
+                            "key": b64(key), "value": b64(previous),
+                            "create_revision": "4", "mod_revision": "8",
+                            "version": "1", "lease": "0"
+                        }
+                    }]
+                }
+            },
+            {
+                "result": {
+                    "header": {"revision": "12"},
+                    "watch_id": "9",
+                    "fragment": False,
+                    "events": [{
+                        "type": "DELETE",
+                        "kv": {
+                            "key": b64(key), "create_revision": "4",
+                            "mod_revision": "12", "version": "0", "lease": "0"
+                        },
+                        "prev_kv": {
+                            "key": b64(key), "value": b64(value),
+                            "create_revision": "4", "mod_revision": "11",
+                            "version": "2", "lease": "0"
+                        }
+                    }]
+                }
+            },
+            {
+                "result": {
+                    "header": {"revision": "12"},
+                    "watch_id": "9",
+                    "canceled": True,
+                    "compact_revision": "7",
+                    "cancel_reason": "required revision has been compacted"
+                }
+            }
+        ]
+        stream_bytes = b"".join(
+            __import__("json").dumps(frame, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            for frame in frames
+        )
+        # Deliberately split JSON keys, base64 payloads and UTF-8/text boundaries.
+        chunks = [stream_bytes[:5], stream_bytes[5:31], stream_bytes[31:88], stream_bytes[88:173], stream_bytes[173:]]
+        response = FakeStreamingResponse(chunks)
+        client.session = FakeStreamingSession([response])
+
+        store = EtcdV3CoordinatorAuthorityStore(self.driver)
+        stream = store.watch(
+            b"/watch/",
+            start_revision=10,
+            range_end=b"/watch0",
+            progress_notify=True,
+            prev_kv=True,
+        )
+        created = next(stream)
+        self.assertTrue(created.created)
+        self.assertEqual((created.watch_id, created.header_revision), (9, 10))
+
+        put = next(stream)
+        self.assertTrue(put.fragment)
+        self.assertEqual(put.events[0].event_type, "PUT")
+        self.assertEqual(put.events[0].key, key)
+        self.assertEqual(put.events[0].entry.value, value)
+        self.assertEqual(put.events[0].previous_entry.value, previous)
+
+        deleted = next(stream)
+        self.assertFalse(deleted.fragment)
+        self.assertEqual(deleted.events[0].event_type, "DELETE")
+        self.assertEqual(deleted.events[0].previous_entry.value, value)
+
+        canceled = next(stream)
+        self.assertTrue(canceled.canceled)
+        self.assertEqual(canceled.compact_revision, 7)
+        self.assertEqual(canceled.cancel_reason, "required revision has been compacted")
+        with self.assertRaises(StopIteration):
+            next(stream)
+        self.assertTrue(response.closed)
+
+        url, kwargs = client.session.calls[0]
+        self.assertTrue(url.endswith("/v3/watch"))
+        self.assertTrue(kwargs["stream"])
+        self.assertEqual(kwargs["timeout"], (1.75, None))
+        create = kwargs["json"]["create_request"]
+        self.assertEqual(create["key"], b64(b"/watch/"))
+        self.assertEqual(create["range_end"], b64(b"/watch0"))
+        self.assertEqual(create["start_revision"], 10)
+        self.assertIs(create["progress_notify"], True)
+        self.assertIs(create["prev_kv"], True)
+
+    def test_watch_establishment_failover_and_stream_disconnect_are_explicit(self):
+        first = self.by_port[23791]
+        second = self.by_port[23792]
+        first.session = FakeStreamingSession(failure=ConnectionError("first endpoint down"))
+        created = {"result": {"header": {"revision": "20"}, "watch_id": "4", "created": True}}
+        response = FakeStreamingResponse([
+            __import__("json").dumps(created).encode("utf-8")
+        ], failure=ConnectionError("stream disconnected"))
+        second.session = FakeStreamingSession([response])
+
+        store = EtcdV3CoordinatorAuthorityStore(self.driver)
+        stream = store.watch(b"/watch/disconnect", start_revision=20)
+        created_response = next(stream)
+        self.assertTrue(created_response.created)
+        with self.assertRaises(AuthorityStoreUnavailableError):
+            next(stream)
+        self.assertEqual(len(first.session.calls), 1)
+        self.assertEqual(len(second.session.calls), 1)
+        self.assertTrue(response.closed)
+
+    def test_watch_close_before_first_frame_releases_http_response(self):
+        client = self.by_port[23791]
+        response = FakeStreamingResponse([])
+        client.session = FakeStreamingSession([response])
+        stream = self.driver.watch(b"/watch/close")
+        stream.close()
+        self.assertTrue(response.closed)
+
+    def test_watch_progress_is_not_advertised_without_bidirectional_gateway_support(self):
+        self.assertTrue(callable(getattr(self.driver, "watch", None)))
         self.assertFalse(callable(getattr(self.driver, "watch_progress", None)))
 
     def test_rejects_endpoints_with_paths_credentials_or_invalid_scheme(self):
