@@ -1,0 +1,75 @@
+{
+  "entity_id": "KNOW-000048",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件备份 Provider 同库原子 lease 撤销与写入顺序",
+  "english_name": "CNC spare-parts backup Provider atomic same-database lease revocation and write ordering",
+  "aliases": [
+    "atomic online lease revocation",
+    "same-database lease status transaction",
+    "SQLite Provider Coordinator transaction serialization"
+  ],
+  "description": "为SQLite Provider提供可选的同库原子在线lease状态检查：Coordinator使用Provider已持有的BEGIN IMMEDIATE事务连接查询lease，确保release与对象/multipart写入按同一数据库写事务顺序串行化。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Provider Ed25519公钥验签和在线撤销"
+  ],
+  "tags": [
+    "CH17",
+    "Ed25519",
+    "Public Key Verification",
+    "KMS",
+    "HSM",
+    "Lease Revocation",
+    "Fail Closed"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T13:40:00+08:00",
+  "updated_at": "2026-11-26T05:40:00Z",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000391",
+    "SRC-000392"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-atomic-lease-revocation.md",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-atomic-lease-revocation-test-matrix-v1.csv",
+    "coordinator_module": "scripts/spare_parts_provider_admission_sqlite.py",
+    "provider_module": "scripts/spare_parts_provider_sqlite_fenced.py",
+    "test_file": "tests/test_spare_parts_provider_sqlite_fenced.py",
+    "atomic_status_api": "SQLiteProviderAdmissionCoordinator.is_attestation_active_in_transaction",
+    "provider_option": "require_atomic_online_attestation_status",
+    "prerequisite_option": "require_online_attestation_status",
+    "shared_database_required": true,
+    "connection_database_identity_checked": "PRAGMA database_list",
+    "provider_write_transaction": "BEGIN IMMEDIATE",
+    "lease_release_serialized_with_mutations": true,
+    "operations_covered": [
+      "object:put_if_absent",
+      "multipart:begin",
+      "multipart:put_part",
+      "multipart:complete"
+    ],
+    "legacy_separate_database_mode_retained": true,
+    "legacy_mode_toctou_remains": true,
+    "sqlite_wal_same_host_only": true,
+    "network_filesystem_supported": false,
+    "remote_coordinator_integrated": false,
+    "cloud_kms_integrated": false,
+    "production_provider_integrated": false,
+    "production_backup_enabled": false,
+    "ci_verification_status": "PENDING"
+  },
+  "notes": "原子模式要求Coordinator和Provider使用同一个真实本地SQLite数据库文件，Provider在BEGIN IMMEDIATE写事务中通过同一个connection检查lease，再提交对象/multipart、fencing high-water、幂等receipt和审计。Coordinator release也使用该数据库写事务，因此两者只能按先后顺序提交；Provider先获得写事务则写入在release前完成，release先完成则Provider读取RELEASED并拒绝。独立数据库模式仍保留，但TOCTOU限制持续有效。SQLite WAL仅支持同机共享内存和本地文件系统，不支持网络文件系统/多主机。此为本地参考实现，不代表生产分布式线性一致性、真实云KMS/Provider或企业备份批准。"
+}
