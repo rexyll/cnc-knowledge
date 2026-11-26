@@ -385,3 +385,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - ASSET-000076：22条主体凭据、租户/前缀授权、原子fencing、multipart、恢复等参考验收场景，均PROPOSED_NOT_APPROVED / NOT_RUN。
 - 数据库使用SQLite WAL/BEGIN IMMEDIATE，仅支持同主机本地文件和多进程共享；不支持NFS/SMB/多主机，也不是云Provider。
 - 当前不验证Coordinator token来源签名；持有效Provider主体凭据的应用仍能构造高token。生产化前需scope-bound HMAC/signature attestation。恢复需要外部可信fencing floor，只准备新库，不自动切换。
+
+
+## CH17-T004 Coordinator签名证明与密钥轮换第三十二轮
+
+- 新增KNOW-000046 / scripts/spare_parts_fencing_attestation.py：Coordinator在活动lease下签发15秒默认TTL HMAC-SHA256 proof，绑定tenant、lease、scope、resource key、token、operation和idempotency key。
+- Provider要求签名证明，并在写事务内检查trusted key registry；本地admin API支持新key登记、旧key RETIRING设置截止时间、REVOKED立即撤销。key secret不写SQLite。
+- ASSET-000077：20条签名证明/密钥轮换参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- CI Run 45758028329：全库248项、CH12 143项通过，strict lint 0 errors/5 warnings，Provider self-check PASS。
+- HMAC为同机参考方案：Coordinator和Provider共享运行时secret；已签proof在lease release后仍有效至expiry（默认最多15秒）。生产远端Provider应改为非对称KMS签名并提供在线撤销。生产备份继续关闭。

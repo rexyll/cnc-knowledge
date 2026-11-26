@@ -98,3 +98,5 @@
 | spare-parts-inventory-backup-provider-adapter-fencing-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000075 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-adapter-fencing-integration.md / KNOW-000044 | 12条适配器严格fencing合成场景，覆盖coordinator/Provider能力门禁、payload、multipart、跨object key统一scope、receipt-last、模糊完成响应重放和旧token拒绝；不代表真实Provider验收。 |
 
 | spare-parts-inventory-backup-provider-sqlite-fenced-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000076 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-sqlite-fenced-reference.md / KNOW-000045 | 22条SQLite fenced Provider参考实现验收场景，覆盖主体凭据、tenant/action/prefix ACL、包级原子高水位、幂等、rollback、multipart、多进程、online backup及external fencing floor新库恢复；形式化验收均未批准/未执行。 |
+
+| spare-parts-inventory-backup-provider-fencing-attestation-rotation-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000077 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-fencing-attestation-and-key-rotation.md / KNOW-000046 | 20条Coordinator签名证明验收场景，覆盖活动lease签发、释放/过期、scope/resource/tenant/operation/idempotency绑定、proof篡改/重放、TTL边界、ACTIVE/RETIRING/REVOKED密钥轮换和Adapter端到端透传；形式化验收均未批准/未执行。 |
