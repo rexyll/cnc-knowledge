@@ -34,7 +34,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T10:52:05+08:00",
-  "updated_at": "2026-11-26T10:52:05+08:00",
+  "updated_at": "2026-11-26T02:55:58.245Z",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -72,14 +72,14 @@
     "business_rule_assertions": "NOT_EVALUATED",
     "repository_unit_test_count": 188,
     "provider_specific_unittest_count": 60,
-    "latest_verified_ci_run": null,
-    "latest_verified_commit": null,
-    "latest_adapter_report_artifact_id": 15081984380,
-    "strict_knowledge_lint": "PENDING",
+    "latest_verified_ci_run": 45745399203,
+    "latest_verified_commit": "1a9a623e52475059872d8662fb64ee8956b973c2",
+    "latest_adapter_report_artifact_id": 15083022622,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
     "mock_adapter_self_check": "PASS",
     "ci_jobs": {
-      "Knowledge structure and data quality": "PENDING",
-      "CH12 numerical resource tests": "PENDING"
+      "Knowledge structure and data quality": "completed/success",
+      "CH12 numerical resource tests": "completed/success"
     },
     "test_matrix_asset_id": "ASSET-000070",
     "failure_policy": "FAIL_CLOSED_ONLY",
@@ -96,5 +96,5 @@
     "provider_callback_with_unknown_coordinator_state": "OUTCOME_UNKNOWN_NO_AUTOMATIC_RETRY",
     "coordinator_failure_is_provider_transient": false
   },
-  "notes": "fail-closed仅表示本轮Adapter在协调控制面不能安全确认时不绕过协调器调用Provider；不是分布式容错证明。协调器set_available/inject_failure仅为同进程确定性测试钩子。acquire响应丢失可能遗留TTL租约但Provider尚未调用；Provider执行后validate/release不可用按结果未知处理且不自动重试。ASSET-000070中的24条场景均PROPOSED_NOT_APPROVED/NOT_RUN。未实现跨进程服务、真实网络分区测试、自动心跳、最大等待队列、恢复抖动/限速或下游fencing。生产备份仍关闭。"
+  "notes": "fail-closed仅表示本轮Adapter在协调控制面不能安全确认时不绕过协调器调用Provider；不是分布式容错证明。协调器set_available/inject_failure仅为同进程确定性测试钩子。acquire响应丢失可能遗留TTL租约但Provider尚未调用；Provider执行后validate/release不可用按结果未知处理且不自动重试。ASSET-000070中的24条场景均PROPOSED_NOT_APPROVED/NOT_RUN。未实现跨进程服务、真实网络分区测试、自动心跳、最大等待队列、恢复抖动/限速或下游fencing。生产备份仍关闭。 最终实现修复提交1a9a623e52475059872d8662fb64ee8956b973c2对应CI Run 45745399203两个Job均completed/success；全库188个unittest、Provider专项60项；strict lint 0 errors；Mock self-check PASS，Artifact ID 15083022622。"
 }

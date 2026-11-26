@@ -64,3 +64,14 @@
 - 最终CI：[Run 45743927996](https://github.com/rexyll/cnc-knowledge/actions/runs/45743927996)，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库182个unittest通过，Provider适配器专项54个。
 - `knowledge_lint.py --strict` 为PASS（0 errors）；Provider Mock自检PASS；Artifact [ch17-backup-storage-adapter-45743927996](https://github.com/rexyll/cnc-knowledge/actions/runs/45743927996/artifacts/15081984380)，ID 15081984380。
 - **严格边界：** 所有多Adapter协调测试共享同一Python进程中的Mock协调器对象。17条矩阵仍PROPOSED_NOT_APPROVED / NOT_RUN；无跨进程/主机、真实Provider、网络分区、主备、quorum、自动心跳、下游fencing或生产容量验证。生产备份仍关闭。
+
+## 9. 第二十六轮最终CI验收记录
+
+- **实现提交：** 首轮实现提交 fdac7308f23f4e4ab656174be92f57b987d559fc 的CI Run 45745264278暴露了准入检查插入到本地ProviderFairBulkhead而非共享协调器的错误，导致本地舱壁调用抛AttributeError；该Run失败，不能作为验收依据。
+- **修复提交：** 1a9a623e52475059872d8662fb64ee8956b973c2将acquire阶段的可用性检查移入InMemoryProviderAdmissionCoordinator.acquire()，并确认本地公平舱壁不依赖协调器故障钩子。
+- **最终CI：** [GitHub Actions Run 45745399203](https://github.com/rexyll/cnc-knowledge/actions/runs/45745399203)，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库188个unittest通过，含本轮新增6项Provider协调器故障测试。
+- **静态知识校验：** knowledge_lint.py --strict为RESULT: PASS (0 errors)。
+- **Provider Mock自检：** self-check结果PASS；报告Artifact [ch17-backup-storage-adapter-45745399203](https://github.com/rexyll/cnc-knowledge/actions/runs/45745399203/artifacts/15083022622)，ID 15083022622。该独立自检报告不单独覆盖本轮全部协调器故障路径；故障注入断言由全库unittest执行。
+- **备份治理Artifact：** [ch17-backup-governance-readiness-45745399203](https://github.com/rexyll/cnc-knowledge/actions/runs/45745399203/artifacts/15082588660)，ID 15082588660；治理状态仍为BLOCKED_PENDING_ENTERPRISE_APPROVAL，生产备份关闭。
+- **矩阵与实体：** KNOW-000040新增；ASSET-000070共享协调/故障矩阵扩展到24条，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。CH17统计20篇KNOW、70个实体、63项资源。
+- **严格边界：** 本轮测试仅为同进程Mock协调器和合成故障注入。未验证真实网络分区、跨进程/主机、服务主备/quorum、自动心跳、恢复风暴、下游fencing或生产容量；业务断言NOT_EVALUATED，CH17-T004继续IN_PROGRESS。

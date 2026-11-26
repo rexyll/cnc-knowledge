@@ -89,3 +89,6 @@
 - [备份Provider公平调度、租户配额与任务取消/截止时间](spare-parts-inventory-backup-provider-fair-scheduling-and-tenant-isolation.md)（KNOW-000038）；配套15项合成测试场景矩阵位于本章 `resouces/`。
 
 - [备份Provider多实例共享协调、租户配额与租约恢复](spare-parts-inventory-backup-provider-shared-coordination-and-lease-recovery.md)（KNOW-000039）；配套24项共享协调模拟场景矩阵位于本章 `resouces/`。
+
+
+- [备份Provider协调器故障注入、失败关闭与恢复](spare-parts-inventory-backup-provider-shared-coordination-and-lease-recovery.md)（KNOW-000040）；与KNOW-000039共用ASSET-000070矩阵，覆盖协调器不可用、响应丢失、租约校验/释放失败及恢复路径；全部合成场景NOT_RUN。

@@ -187,4 +187,9 @@
 - **安全语义：** 协调器准入前不可用时fail-closed且Provider callback不执行；acquire响应丢失时允许协调器保留未返回给调用方的TTL租约，但Provider不执行；Provider已执行后validate/release失败或协调分区时，结果按未知处理并阻止自动重试。未实现fail-open。
 - **测试/资源：** 新增6项Provider专项unittest；共享协调故障矩阵扩展到24条，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；新增KNOW-000040，扩展ASSET-000070。
 - **限制：** 故障注入仅为同进程Mock，不是真实网络分区/服务故障；未实现跨进程共享、自动心跳、协调器主备/quorum、恢复抖动/限速、队列上限或下游fencing。生产备份仍关闭。
-- **CI及提交：** 本记录为代码/文档提交前记录，待GitHub Actions验证后追加提交SHA、Run、Job、测试和lint结果。
+- **实现提交与CI修复：** 首轮实现提交 fdac7308f23f4e4ab656174be92f57b987d559fc；Run 45745264278失败，原因是acquire故障钩子误插入本地ProviderFairBulkhead，导致AttributeError。修复提交 1a9a623e52475059872d8662fb64ee8956b973c2 将检查移至InMemoryProviderAdmissionCoordinator.acquire()。
+- **最终CI：** [Run 45745399203](https://github.com/rexyll/cnc-knowledge/actions/runs/45745399203)，Knowledge structure and data quality、CH12 numerical resource tests两个Job均completed/success；全库188个unittest通过，本轮新增6项Provider故障注入测试已包含在内。
+- **专项状态：** Provider专项测试共60项；knowledge_lint.py --strict为PASS（0 errors）；Provider Mock self-check PASS，Artifact [15083022622](https://github.com/rexyll/cnc-knowledge/actions/runs/45745399203/artifacts/15083022622)；备份治理readiness Artifact 15082588660。self-check Artifact不是独立的协调器故障矩阵验收报告。
+- **资产/覆盖：** KNOW-000040；ASSET-000070共24条场景，全部PROPOSED_NOT_APPROVED / NOT_RUN；CH17统计20篇KNOW、70个实体、63项资源。
+- **最终分支与提交：** main，代码修复提交1a9a623e52475059872d8662fb64ee8956b973c2；未创建分支。
+- **限制：** 以上均为GitHub Actions中的同进程Mock/合成测试；没有真实协调服务、跨进程/主机、真实网络分区、自动心跳、下游fencing或生产备份验证。治理状态仍BLOCKED_PENDING_ENTERPRISE_APPROVAL。

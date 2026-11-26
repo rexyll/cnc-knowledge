@@ -34,7 +34,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T10:45:00+08:00",
-  "updated_at": "2026-11-26T10:45:00+08:00",
+  "updated_at": "2026-11-26T02:55:58.245Z",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -46,7 +46,7 @@
     "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
     "test_file": "tests/test_spare_parts_backup_storage_adapter.py",
     "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv",
-    "scenario_definition_count": 17,
+    "scenario_definition_count": 24,
     "added_provider_unittest_methods": 8,
     "coordinator_contract": "ProviderAdmissionCoordinator",
     "coordinator_implementation": "InMemoryProviderAdmissionCoordinator",
@@ -70,11 +70,11 @@
     "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
     "production_backup_enabled": false,
     "business_rule_assertions": "NOT_EVALUATED",
-    "repository_unit_test_count": 182,
-    "provider_specific_unittest_count": 54,
-    "latest_verified_ci_run": 45743927996,
-    "latest_verified_commit": "a77a4b51723fe9f2e01109cca0496cd00d843a37",
-    "latest_adapter_report_artifact_id": 15081984380,
+    "repository_unit_test_count": 188,
+    "provider_specific_unittest_count": 60,
+    "latest_verified_ci_run": 45745399203,
+    "latest_verified_commit": "1a9a623e52475059872d8662fb64ee8956b973c2",
+    "latest_adapter_report_artifact_id": 15083022622,
     "strict_knowledge_lint": "PASS_0_ERRORS",
     "mock_adapter_self_check": "PASS",
     "ci_jobs": {
@@ -82,5 +82,5 @@
       "CH12 numerical resource tests": "completed/success"
     }
   },
-  "notes": "同一InMemoryProviderAdmissionCoordinator对象可被多个Adapter共享，但不跨进程/主机、不持久化。租约过期不终止远端同步请求；没有自动心跳或下游fencing enforcement，必须将lease TTL设为大于Provider硬超时并对未知结果按原对象键恢复。17项资源场景全部NOT_RUN。 修正后CI Run 45743927996两个Job均completed/success；全库182项unittest、Provider专项54项；strict lint 0 errors、Mock adapter self-check PASS，Artifact ID 15081984380。"
+  "notes": "同一InMemoryProviderAdmissionCoordinator对象可被多个Adapter共享，但不跨进程/主机、不持久化。租约过期不终止远端同步请求；没有自动心跳或下游fencing enforcement，必须将lease TTL设为大于Provider硬超时并对未知结果按原对象键恢复。24项资源场景全部NOT_RUN。 修正后CI Run 45743927996两个Job均completed/success；全库182项unittest、Provider专项54项；strict lint 0 errors、Mock adapter self-check PASS，Artifact ID 15081984380。 第二十六轮共享协调故障矩阵扩展后为24条；最终CI Run 45745399203两Job成功，全库188项unittest、Provider专项60项，strict lint 0 errors，Mock adapter self-check PASS，Artifact 15083022622。"
 }

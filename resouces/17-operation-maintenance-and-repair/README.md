@@ -319,3 +319,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 扩展共享协调测试矩阵（ASSET-000070）：新增SAC-018～SAC-024，合计24项。新增场景覆盖协调服务不可用、准入响应丢失后孤儿租约TTL回收、Provider执行中协调分区、validate/release故障、服务恢复和诊断/续租故障。
 - 所有场景仍为纯合成规格，TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；不代表真实网络分区、跨进程或生产故障演练。
 - 新增 KNOW-000040；本轮新增6项Provider专项unittest。实现仍仅针对同进程Mock协调器。
+
+
+### 第二十六轮最终CI验收补记
+
+- 修复提交：1a9a623e52475059872d8662fb64ee8956b973c2；CI Run 45745399203两个Job均completed/success。
+- 全库188个unittest通过；knowledge_lint.py --strict为PASS（0 errors）。
+- Provider Mock self-check PASS，Artifact ID 15083022622；备份治理readiness Artifact ID 15082588660，生产备份仍关闭。
+- 本轮仅验证同进程Mock协调故障合同；ASSET-000070的24条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。

@@ -428,6 +428,9 @@
 - **交付：** 扩展 KNOW-000039，新增 KNOW-000040；实现协调器可用状态切换和 acquire/acquire_response/renew/release/validate/snapshot 六阶段故障注入；新增 ProviderCoordinatorUnavailableError 与 ProviderCoordinatorStateUnknownError。
 - **失败策略：** 当前只实现fail-closed，不支持fail-open。协调器在Provider调用前不可用时不调用Provider；acquire响应丢失时保留TTL租约但不执行Provider；Provider已执行后若无法验证或释放租约，则按outcome-unknown处理并禁止自动重试。
 - **资源：** 扩展ASSET-000070测试矩阵至24条。24条全部合成规格，PROPOSED_NOT_APPROVED / NOT_RUN。
-- **测试：** 新增6项Provider专项unittest，目标全库188项、Provider专项60项；以CI实际结果为准。
+- **测试与验收：** 新增6项Provider专项unittest；CI Run 45745399203两个Job均completed/success，全库188项unittest通过，Provider专项共60项；knowledge_lint.py --strict为PASS（0 errors），Provider Mock self-check PASS（Artifact 15083022622）。
 - **未实现：** 跨进程协调后端、真实网络分区/主备/quorum、自动租约心跳、下游fencing、最大等待队列、恢复抖动/限速、生产容量与故障演练。
 - **状态：** CH17-T004继续IN_PROGRESS；生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+- **CI失败修复记录：** 首轮提交fdac7308f23f4e4ab656174be92f57b987d559fc触发Run 45745264278失败，原因是acquire故障检查错误插入本地ProviderFairBulkhead；修复提交1a9a623e52475059872d8662fb64ee8956b973c2将检查移至共享协调器。最终Run 45745399203通过。
+- **治理边界：** 24条故障矩阵全部PROPOSED_NOT_APPROVED / NOT_RUN；生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
