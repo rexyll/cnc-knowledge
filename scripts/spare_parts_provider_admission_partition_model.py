@@ -144,6 +144,13 @@ class PartitionFencingRangeAllocator:
                     )
                 if floor > self._global_high_water:
                     self._global_high_water = floor
+                interval = self._ranges.get(partition_id)
+                if interval is not None and floor >= int(interval["next"]):
+                    # A newly observed external floor can invalidate the
+                    # unconsumed suffix even while the same process still
+                    # owns the partition. Abandon the remainder; the next
+                    # token is reserved above global_high_water.
+                    self._ranges.pop(partition_id, None)
                 current["expires_at"] = now + ttl
                 return int(current["epoch"])
             if floor > self._global_high_water:

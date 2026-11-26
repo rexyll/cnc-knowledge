@@ -310,6 +310,18 @@ class ShardedProviderAdmissionTests(unittest.TestCase):
             501,
         )
 
+    def test_same_leader_discards_unconsumed_range_when_external_floor_advances(self):
+        allocator = PartitionFencingRangeAllocator(block_size=8)
+        allocator.claim_leader(2, "owner", now=0, ttl_seconds=100)
+        first = allocator.next_token(2, "owner", 1, now=1)
+        self.assertEqual(first, 1)
+        allocator.claim_leader(
+            2, "owner", now=2, ttl_seconds=100,
+            external_high_water_floor=500,
+        )
+        next_token = allocator.next_token(2, "owner", 1, now=3)
+        self.assertEqual(next_token, 501)
+
     def test_expired_leader_cannot_issue_tokens(self):
         allocator = PartitionFencingRangeAllocator(block_size=4)
         allocator.claim_leader(1, "owner", now=0, ttl_seconds=2)
