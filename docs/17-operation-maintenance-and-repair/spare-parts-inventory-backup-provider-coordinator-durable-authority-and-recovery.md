@@ -169,7 +169,15 @@ Coordinator崩溃可能发生在：
 
 专项测试覆盖持久token/sequence、幂等与冲突、并发sequence分配、两阶段activation/revoke、Provider receipt绑定、Coordinator重启、Leader过期接管、旧Leader写入与签名拒绝、新Leader恢复待处理激活以及外部恢复高水位门禁。
 
-## 10. 明确未完成事项
+## 10. CI 验证记录
+
+- **代码提交：** `abb73ebd6e3268d15f149333d904369c5cc1a42d`；[Run 45769331991](https://github.com/rexyll/cnc-knowledge/actions/runs/45769331991)两个必需Job均completed/success。
+- **文档同步提交：** `262c7fe71f0a436ec1b95686cbb1c6c7448b2575`；[Run 45769584662](https://github.com/rexyll/cnc-knowledge/actions/runs/45769584662)两个必需Job均completed/success。
+- 两次最终验收均为全库283项unittest、CH12 143项数值资源测试通过；strict knowledge lint PASS（0 errors，5 warnings）；知识结构与数据质量PASS（0 errors）。
+- 文档同步Run的现有产物包括CH17 SQLite admission Coordinator self-check 15093960081、Provider fenced self-check 15093038669、BackupStorageAdapter self-check 15093925222及备份治理readiness 15093158182。这些是既有模块的自检产物，不是新Coordinator authority的多主机/云服务验收证据。
+- 新增15项Coordinator authority unittest通过；ASSET-000081的16条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。CI只验证本地SQLite/内存Provider合成测试路径。
+
+## 11. 明确未完成事项
 
 - SQLite WAL实现仅支持同一主机、同一数据库文件及受支持的本地文件系统；不支持NFS/SMB或多主机共享。
 - 没有Raft/Paxos/etcd/Consul/Spanner等分布式共识/事务后端，也没有多实例Coordinator远程API。
@@ -179,7 +187,7 @@ Coordinator崩溃可能发生在：
 - 16条ASSET-000081验收场景全部尚未获批或执行；仓库单元测试不等于企业验收。
 - 生产备份继续关闭：`production_backup_enabled=false`；治理状态为 `BLOCKED_PENDING_ENTERPRISE_APPROVAL`；`business_rule_assertions=NOT_EVALUATED`。
 
-## 11. 参考来源
+## 12. 参考来源
 
 - SRC-000391：SQLite Transactions官方文档。
 - SRC-000392：SQLite Write-Ahead Logging官方文档。WAL的共享内存协调要求决定了它不能被视为NFS/SMB多主机协调服务。

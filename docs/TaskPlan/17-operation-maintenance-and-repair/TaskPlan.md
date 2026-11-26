@@ -594,3 +594,12 @@
 - **测试：** 新增15项本地合成Coordinator authority unittest，覆盖端到端activation/publish/revoke、重启持久化、幂等与冲突、并发sequence分配、Leader TTL接管、proof签发旧Leader拒绝、新Leader恢复pending和外部高水位恢复门禁。
 - **新增知识/资源：** KNOW-000050；ASSET-000081为16条场景矩阵，全部PROPOSED_NOT_APPROVED / NOT_RUN；复用SRC-000391/392（SQLite Transaction/WAL）。
 - **限制：** 同机本地SQLite参考，不支持NFS/SMB或多主机；没有远程共识服务/Coordinator API、KMS/HSM、真实云Provider/IAM/Gateway或生产灾备环境。已签发且未过期的旧短时proof不能仅由本地Leader epoch变化撤销，仍依赖Provider token high-water、TTL和CAS防线。生产备份关闭，治理门禁不变。
+
+
+### 第三十六轮最终代码与文档同步CI验收补记
+
+- **代码提交：** `abb73ebd6e3268d15f149333d904369c5cc1a42d`；[Run 45769331991](https://github.com/rexyll/cnc-knowledge/actions/runs/45769331991)两个必需Job均completed/success。
+- **文档同步提交：** `262c7fe71f0a436ec1b95686cbb1c6c7448b2575`；[Run 45769584662](https://github.com/rexyll/cnc-knowledge/actions/runs/45769584662)两个必需Job均completed/success。
+- **验证：** 两次最终CI均全库283项unittest、CH12 143项数值资源测试通过；strict knowledge lint PASS（0 errors，5 warnings）；知识结构与数据质量PASS（0 errors）。
+- **资源/覆盖：** 新增KNOW-000050、ASSET-000081（16条参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）；CH17更新为30篇KNOW、83个登记实体、74项资源、15条去重来源。
+- **边界：** 代码只支持同一主机本地SQLite WAL；无多主机分布式共识、远程Coordinator、KMS/HSM、真实云Provider/IAM Gateway或企业灾备验收。生产备份仍关闭，CH17-T004为IN_PROGRESS。

@@ -418,6 +418,15 @@
 - **状态与确认：** activation以PENDING_ACTIVATION起步，只有Provider control object强一致读回确认ACTIVE/token/lease/generation后才转ACTIVE；revoke以REVOKING起步，只有Provider读回REVOKED后完成；publish receipt匹配token、sequence、idempotency key、manifest key和SHA-256后转COMMITTED。
 - **隔离与恢复：** scope强制`tenants/<tenant_id>/...`；proof签发前重新校验当前Leader epoch和持久pending operation；旧Leader不能继续写入/签新proof。新Leader接管后可检查pending operation，并基于Provider状态重签相同原操作。数据库恢复要求独立外部token/sequence/Leader epoch floors；不自动重放或cutover。
 - **测试：** 新增15项Coordinator authority unittest（基础14项加1项租户scope隔离）；包含本地多实例并发sequence、Leader过期接管、旧Leader签名/确认拒绝、Provider activation提交后Coordinator崩溃恢复。
-- **首轮问题修复：** Commit `cc259d2`首轮CI暴露测试manifest key未使用实际整数token目录；改为Provider要求的`<scope>/staging/<token>/...`路径后，Run 45768939343全库282项和CH12 143项通过。随后增加当前Leader proof签发校验及manifest receipt完整匹配；Run 45769230014全库282项和CH12 143项通过。进一步增加tenant-qualified scope拒绝测试，最终状态以Run 45769331991为准。
+- **首轮问题修复：** Commit `cc259d2`首轮CI暴露测试manifest key未使用实际整数token目录；改为Provider要求的`<scope>/staging/<token>/...`路径后，Run 45768939343全库282项和CH12 143项通过。随后增加当前Leader proof签发校验及manifest receipt完整匹配；Run 45769230014全库282项和CH12 143项通过。进一步增加tenant-qualified scope拒绝测试；最终代码Run 45769331991已通过。
 - **参考文件：** 新增KNOW-000050和ASSET-000081（16条场景）；复用SRC-000391/392。测试及矩阵均为本地合成范围。
 - **生产边界：** 仅同机SQLite WAL；无多主机共识、远程Coordinator/KMS/HSM、真实云对象存储/IAM Gateway、真实灾备或企业生产验收。生产备份仍关闭，治理状态BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。
+
+
+### 第三十六轮最终代码与文档同步CI验收
+
+- **最终代码提交：** `abb73ebd6e3268d15f149333d904369c5cc1a42d`；[Run 45769331991](https://github.com/rexyll/cnc-knowledge/actions/runs/45769331991)，两个必需Job均completed/success；全库283项unittest、CH12数值资源143项通过；strict knowledge lint 0 errors / 5 warnings；知识结构与数据质量0 errors。
+- **最终文档提交：** `262c7fe71f0a436ec1b95686cbb1c6c7448b2575`；[Run 45769584662](https://github.com/rexyll/cnc-knowledge/actions/runs/45769584662)，两个必需Job均completed/success；全库283项unittest、CH12 143项通过；strict lint 0 errors / 5 warnings；知识结构与数据质量0 errors。
+- **Artifacts：** SQLite admission Coordinator self-check 15093960081；Provider fenced self-check 15093038669；BackupStorageAdapter self-check 15093925222；治理readiness 15093158182；CH12数值资源与SCURVE-01等模拟结果以Run 45769584662 artifacts为准。上述Provider产物并不是新Coordinator authority的云服务或多主机验收证据。
+- **登记：** 新增KNOW-000050、ASSET-000081；矩阵16条均PROPOSED_NOT_APPROVED / NOT_RUN。CH17统计为30篇KNOW、83个登记实体、74项资源、15条去重来源。
+- **限制：** 同机SQLite WAL参考；没有多主机共识服务、远程API、真实KMS/HSM、云对象存储/IAM或企业灾备。生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

@@ -55,7 +55,12 @@
     "execution_status": "NOT_RUN",
     "synthetic_only": true,
     "sha256": null,
-    "file_size": null
+    "file_size": null,
+    "code_ci_run": 45769331991,
+    "doc_sync_ci_run": 45769584662,
+    "ci_test_count": 283,
+    "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
+    "knowledge_structure_quality": "PASS_0_ERRORS"
   },
-  "notes": "16条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI单元测试仅验证本地参考代码，不会自动批准或执行矩阵；没有多主机共识、真实Provider、KMS/HSM、企业灾备或生产验收证据。"
+  "notes": "16条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI单元测试仅验证本地参考代码，不会自动批准或执行矩阵；没有多主机共识、真实Provider、KMS/HSM、企业灾备或生产验收证据。 代码CI Run 45769331991和文档同步CI Run 45769584662均通过（全库283项unittest）；此状态不改变矩阵的PROPOSED_NOT_APPROVED / NOT_RUN。"
 }

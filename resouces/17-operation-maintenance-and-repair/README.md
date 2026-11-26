@@ -444,3 +444,6 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - `spare-parts-inventory-backup-provider-coordinator-authority-test-matrix-v1.csv`（ASSET-000081）：16条本地合成参考场景，涵盖租户scope命名空间、token/operation sequence单调与幂等、activation/revocation两阶段Provider读回、完整publish receipt、Leader epoch接管、旧Leader拒绝及外部恢复高水位；全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - 新增代码参考位于`scripts/spare_parts_provider_coordinator_authority.py`，专项测试位于`tests/test_spare_parts_provider_coordinator_authority.py`。代码与测试不是实物资源/企业测试报告；SQLite WAL仅支持同机本地文件系统，不支持NFS/SMB多主机。
 - 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-durable-authority-and-recovery.md`；实体KNOW-000050、ASSET-000081；来源复用SRC-000391/392。
+
+
+- 第三十六轮代码/文档同步CI Run 45769331991 / 45769584662均通过；全库283项unittest、CH12 143项数值资源测试通过，strict lint 0 errors/5 warnings，结构质量0 errors。ASSET-000081场景仍全部未批准/未执行；CI自检不等于多主机、云Provider或企业灾备验收。

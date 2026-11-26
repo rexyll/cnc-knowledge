@@ -71,7 +71,21 @@
     "production_backup_enabled": false,
     "unit_tests_added": 15,
     "code_ci_run": 45769331991,
-    "code_ci_status": "PENDING"
+    "code_ci_status": "PASS",
+    "latest_verified_code_commit": "abb73ebd6e3268d15f149333d904369c5cc1a42d",
+    "latest_verified_code_ci_run": 45769331991,
+    "latest_verified_code_ci_status": "completed/success",
+    "latest_verified_doc_sync_commit": "262c7fe71f0a436ec1b95686cbb1c6c7448b2575",
+    "latest_verified_doc_sync_ci_run": 45769584662,
+    "latest_verified_doc_sync_ci_status": "completed/success",
+    "repository_unit_test_count": 283,
+    "ch12_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "coordinator_sqlite_self_check_artifact_id": 15093960081,
+    "provider_fenced_self_check_artifact_id": 15093038669,
+    "backup_storage_adapter_self_check_artifact_id": 15093925222,
+    "backup_governance_readiness_artifact_id": 15093158182
   },
-  "notes": "该知识条目实现的是同一主机本地SQLite WAL参考权威，不是分布式共识服务。Coordinator以BEGIN IMMEDIATE持久分配tenant-qualified scope token和operation sequence，Leader epoch用于拒绝旧进程prepare/confirm/renew及新proof签发。activation/revocation/publish均先持久化pending，再依据受信任Provider Gateway强一致read-back/receipt确认。数据库恢复必须获得独立外部token、sequence和Leader epoch下限；reference字符串本身不是证据。无多主机线性一致性、远程HTTP/gRPC、KMS/HSM、云对象存储SDK/IAM或生产备份启用。ASSET-000081的16项场景均PROPOSED_NOT_APPROVED/NOT_RUN。"
+  "notes": "该知识条目实现的是同一主机本地SQLite WAL参考权威，不是分布式共识服务。Coordinator以BEGIN IMMEDIATE持久分配tenant-qualified scope token和operation sequence，Leader epoch用于拒绝旧进程prepare/confirm/renew及新proof签发。activation/revocation/publish均先持久化pending，再依据受信任Provider Gateway强一致read-back/receipt确认。数据库恢复必须获得独立外部token、sequence和Leader epoch下限；reference字符串本身不是证据。无多主机线性一致性、远程HTTP/gRPC、KMS/HSM、云对象存储SDK/IAM或生产备份启用。ASSET-000081的16项场景均PROPOSED_NOT_APPROVED/NOT_RUN。 最终代码CI Run 45769331991与文档同步CI Run 45769584662均completed/success；全库283项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。CI未验证多主机、云Provider/KMS/IAM或企业灾备。"
 }

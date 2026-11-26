@@ -116,3 +116,6 @@
 
 
 - [备件库存备份 Coordinator 持久权威、Leader 切换与故障恢复](spare-parts-inventory-backup-provider-coordinator-durable-authority-and-recovery.md)（KNOW-000050）；在本地SQLite WAL参考层持久分配租户scope token与publish operation sequence，增加Leader epoch门禁、activation/revocation两阶段Provider确认及崩溃恢复；ASSET-000081为16条场景，全部未批准/未执行。非多主机共识实现。
+
+
+- 第三十六轮新增 [Coordinator 持久权威、Leader 切换与故障恢复](spare-parts-inventory-backup-provider-coordinator-durable-authority-and-recovery.md)（KNOW-000050）。代码Run 45769331991、文档同步Run 45769584662均通过；全库283项测试和CH12 143项测试通过。ASSET-000081的16条场景仍未批准/未执行；当前实现仅为同机SQLite WAL参考，不是多主机协调服务。
