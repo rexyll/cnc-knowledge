@@ -1,0 +1,56 @@
+{
+  "entity_id": "ASSET-000080",
+  "entity_type": "asset_file",
+  "canonical_name": "备份Provider远程对象存储分布式fencing测试矩阵v1",
+  "english_name": "CNC backup Provider remote object-store distributed fencing test matrix v1",
+  "aliases": [
+    "Distributed fencing CAS test matrix",
+    "Remote Coordinator object-store CAS scenarios",
+    "ASSET-000080"
+  ],
+  "description": "20条合成参考场景，覆盖单控制对象CAS、token单调分配、staging隔离、manifest指针提交、release竞争、超时/幂等恢复、操作序号、过期proof、权限绕过和厂商条件写能力核验；未批准/未执行。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "库存备份",
+    "存储适配器",
+    "Object Storage",
+    "Mock Provider",
+    "ASSET-000063"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T14:20:00+08:00",
+  "updated_at": "2026-11-26T06:20:00Z",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-distributed-fencing-test-matrix-v1.csv",
+    "file_name": "spare-parts-inventory-backup-provider-distributed-fencing-test-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000049",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic distributed fencing CAS reference scenarios; no real cloud SDK or Provider evidence",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "20条形式化参考场景全部PROPOSED_NOT_APPROVED / NOT_RUN。当前CI仅运行单进程内存CAS模型测试，不代表真实对象存储、远程Coordinator、多主机、IAM/KMS或企业验收。"
+}
