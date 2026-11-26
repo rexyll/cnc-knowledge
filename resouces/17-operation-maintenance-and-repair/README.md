@@ -574,10 +574,20 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 - 技术正文：docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-etcd3gw-driver-and-three-node-integration.md（KNOW-000061）。
 - 驱动：scripts/spare_parts_provider_etcd3gw_driver.py；requirements-ch17-etcd-integration.txt固定etcd3gw 2.7.0；仅实现KV Range/Txn/Lease，不开放Watch。
-- 测试：tests/test_spare_parts_provider_etcd3gw_driver.py（10项fake gateway契约测试）；tests/test_spare_parts_provider_authority_store_etcd_integration.py（5项须ETCD_INTEGRATION=1的真实测试，当前未运行）。
-- 集成环境：scripts/etcd-integration/compose.yaml、run.sh；etcd v3.7.0三节点本地可丢弃拓扑，尚未启动。
+- 测试：tests/test_spare_parts_provider_etcd3gw_driver.py（10项fake gateway契约测试）；tests/test_spare_parts_provider_authority_store_etcd_integration.py（5项基础真实测试）+ tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py（1项单成员故障真实测试）；6项live集成测试已在Run 45839556952全部通过。
+- 集成环境：scripts/etcd-integration/compose.yaml、run.sh；etcd v3.7.0三节点可丢弃拓扑，已由Run 45835646908与45839556952在CI实际启动并在结束时清理。
 - 矩阵：spare-parts-coordinator-etcd-driver-integration-matrix-v1.csv（ASSET-000092），30项均PROPOSED_NOT_APPROVED / NOT_RUN。
 
 
 - **最终CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success。全库499项unittest完成，494项通过、5项跳过（5项需ETCD_INTEGRATION=1的live etcd集成测试）；CH12 143项数值测试通过；strict knowledge lint 0 errors；独立的CH17合成夹具校验为0 errors、5 warnings。5项均为既有治理门禁提示：数据集仍为DRAFT、未批准企业测试环境、未批准企业测试级别、30项SPAT源测试案例仍NOT_RUN、manifest checksum pending；并非etcd驱动测试失败。
-- **限制：** 本轮未启动真实三节点etcd；5项live integration tests只是skip，不代表通过；ASSET-000092的30项正式场景均PROPOSED_NOT_APPROVED / NOT_RUN。未验证mTLS/RBAC/Raft quorum或多主机故障；SQLite Coordinator业务服务未迁移，schema-v2仍为唯一生产权威；CH17-T004继续IN_PROGRESS。
+- **第四十八轮实测：** [Live CI Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952)在真实三成员etcd v3.7.0临时集群上执行6项live测试，6/6 PASS；其中单成员停机后剩余多数派完成线性一致Range/Txn写入/读回，节点重启后恢复三成员。诊断Artifact 15127610627。
+- **默认CI：** [Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)全库500项unittest（494通过、6项live opt-in测试按默认策略skip），CH12 143项通过，strict lint 0 errors。
+- **边界：** ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；本轮仅覆盖一次性环境下单成员故障，未覆盖2成员失去quorum/网络分区、性能、mTLS/RBAC或多主机；SQLite Coordinator未迁移，schema-v2仍为唯一生产权威；CH17-T004继续IN_PROGRESS。
+
+## CH17-T004 etcd 单成员故障与多数派读写实测（第四十八轮，2026-11-26）
+
+- 新增真实故障集成测试：`tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py`。
+- 运行过程：停止etcd1；使用[Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952)验证不可达首endpoint的linearizable Range failover、剩余2/3多数派事务写入及线性一致读回；重启etcd1并确认三成员恢复。
+- 结果：6项live integration测试全部PASS（6/6），0失败、0跳过；CI成功清理临时容器、volume和network。诊断Artifact [15127610627](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952/artifacts/15127610627)，SHA-256 `74b04904535cce72b7a08fdf6265020bcb9086b43003106ab4eb4271847869f2`。
+- 默认回归[Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)通过：全库500项unittest（494通过、6项opt-in skip），CH12 143项数值测试通过，strict lint 0 errors。
+- 这只是一次性CI集成验证，正式矩阵ASSET-000092的30项场景仍PROPOSED_NOT_APPROVED / NOT_RUN；没有验证2成员同时故障、网络分区、吞吐/延迟、mTLS/RBAC、生产Coordinator或多主机部署。

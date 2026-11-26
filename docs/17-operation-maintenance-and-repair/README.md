@@ -204,3 +204,9 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 
 - **最终CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success。全库499项unittest完成，494项通过、5项跳过（5项需ETCD_INTEGRATION=1的live etcd集成测试）；CH12 143项数值测试通过；strict knowledge lint 0 errors；独立的CH17合成夹具校验为0 errors、5 warnings。5项均为既有治理门禁提示：数据集仍为DRAFT、未批准企业测试环境、未批准企业测试级别、30项SPAT源测试案例仍NOT_RUN、manifest checksum pending；并非etcd驱动测试失败。
 - **限制：** 本轮未启动真实三节点etcd；5项live integration tests只是skip，不代表通过；ASSET-000092的30项正式场景均PROPOSED_NOT_APPROVED / NOT_RUN。未验证mTLS/RBAC/Raft quorum或多主机故障；SQLite Coordinator业务服务未迁移，schema-v2仍为唯一生产权威；CH17-T004继续IN_PROGRESS。
+
+## CH17-T004 etcd 单成员故障与多数派读写验证（第四十八轮）
+
+新增真实集成测试`tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py`：在一次性三成员etcd v3.7.0集群中停止etcd1，验证linearizable Range的失效endpoint failover、剩余2/3节点的Txn写入与读回，并恢复etcd1。最终[Live CI Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952)的6项集成测试全部通过（6/6），诊断Artifact 15127610627；[默认质量CI Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)的两个Job也全部成功。
+
+这只是一次性集成冒烟测试，不是企业生产验收。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；未覆盖双节点故障/失去quorum、长时间网络分区、性能、TLS/mTLS、RBAC或多主机；schema-v2仍是唯一生产权威。
