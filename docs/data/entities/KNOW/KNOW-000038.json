@@ -33,8 +33,8 @@
   ],
   "lifecycle_status": "active",
   "verification_status": "in_review",
-  "created_at": "2026-11-26T16:00:00+08:00",
-  "updated_at": "2026-11-26T16:00:00+08:00",
+  "created_at": "2026-11-26T10:22:00+08:00",
+  "updated_at": "2026-11-26T10:25:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -68,7 +68,17 @@
     "test_status": "SYNTHETIC_MOCK_ONLY",
     "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
     "production_backup_enabled": false,
-    "business_rule_assertions": "NOT_EVALUATED"
+    "business_rule_assertions": "NOT_EVALUATED",
+    "latest_verified_ci_run": 45742134721,
+    "latest_verified_commit": "dc2deced6db5138a6880f71df190dd9a6549d45b",
+    "latest_adapter_report_artifact_id": 15081747151,
+    "ci_jobs": {
+      "Knowledge structure and data quality": "completed/success",
+      "CH12 numerical resource tests": "completed/success"
+    },
+    "repository_unit_tests": 174,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "mock_adapter_self_check": "PASS"
   },
-  "notes": "优先级值及任务类型映射由调用方/企业批准策略决定，不内置恢复或备份优先级排序。租户配额与公平队列只在单Adapter/进程内有效；deadline不能强制中断已进入的同步Provider调用，真实Provider仍需独立连接/读写超时和原生取消机制。15项测试矩阵均未执行。"
+  "notes": "优先级值及任务类型映射由调用方/企业批准策略决定，不内置恢复或备份优先级排序。租户配额与公平队列只在单Adapter/进程内有效；deadline不能强制中断已进入的同步Provider调用，真实Provider仍需独立连接/读写超时和原生取消机制。15项测试矩阵均未执行。 CI Run 45742134721已通过两个Job；全库174个unittest、Provider专项46个；Mock adapter self-check PASS，Artifact ID 15081747151。"
 }

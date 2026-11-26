@@ -395,3 +395,11 @@
 - 新增5项专项unittest和15项公平调度测试规格（ASSET-000069）；默认优先级老化间隔1s、租户限额未配置、bulkhead等待仍默认0s，全部只是实现基线而非生产推荐。
 - **限制：** 调度与配额只在一个Adapter/进程/操作域内；同步Provider调用没有强制中断接口，底层连接/读写超时需由真实Provider适配器实现。未执行跨进程/跨容器/真实Provider/生产负载测试。
 - **状态：** CH17-T004继续IN_PROGRESS；生产备份仍关闭，治理门禁待企业审批，业务断言未评估。
+
+
+### 第二十四轮最终验收补记（2026-11-26）
+
+- 首次Run 45741995037因测试模块缺少两个新增异常类型的import而失败；修复提交 `dc2deced6db5138a6880f71df190dd9a6549d45b`。
+- 修复后Run 45742134721：Knowledge structure and data quality、CH12 numerical resource tests两个Job均completed/success；全库174个unittest通过，strict knowledge lint 0 errors。
+- Provider Mock自检PASS，Artifact ID 15081747151；Provider专项目标46个测试。CH17当前18篇KNOW、68个登记实体、62项资源、9条去重来源。
+- 该验收仅覆盖CI与合成/Mock测试，不代表真实Provider、跨进程/跨容器配额、企业业务测试或生产灾备验收。

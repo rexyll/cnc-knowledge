@@ -141,3 +141,12 @@
 - 新增每租户、每操作域的并发额度；加入排队期间取消、Provider边界取消/deadline及退避期间deadline检查。所有控制器本地单Adapter/进程生效。
 - 新增5项专项unittest；新增ASSET-000069，15项合成调度/取消/deadline测试场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - 代码、测试与知识/资源登记已纳入本次提交；CI状态待本提交触发后核实。未访问真实Provider/云账户/身份服务，不做跨进程或生产负载声称；生产备份维持关闭，企业治理门禁仍阻断。
+
+
+## CH17-T004 Provider公平调度与任务控制第二十四轮最终验收（2026-11-26）
+
+- **首次CI问题及修复：** Run 45741995037执行174个测试时，两项新增测试在断言处因未导入 `ProviderTaskCancelledError` 与 `ProviderTaskDeadlineExceededError` 发生NameError；调度相关的优先级、aging及租户配额测试均已通过。提交 `dc2deced6db5138a6880f71df190dd9a6549d45b` 补齐测试导入。
+- **最终代码/测试CI：** [Run 45742134721](https://github.com/rexyll/cnc-knowledge/actions/runs/45742134721)，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库174个unittest通过，其中Provider适配器专项46个。
+- **静态质量与Mock自检：** `knowledge_lint.py --strict` 为PASS（0 errors）；`spare_parts_backup_storage_adapter.py --self-check`为PASS。Provider Artifact [ch17-backup-storage-adapter-45742134721](https://github.com/rexyll/cnc-knowledge/actions/runs/45742134721/artifacts/15081747151)，ID 15081747151。
+- **交付：** KNOW-000038、ASSET-000069；15条公平调度/租户配额/任务取消/deadline场景规格全部保持TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；main提交包含功能实现 `177033b417884f5ddea4812879cb30536e068b8a`、测试import修复 `dc2deced6db5138a6880f71df190dd9a6549d45b`。
+- **当前限制：** 本地单Adapter/进程隔离；同步Provider在途请求无法强制取消；无跨进程/跨容器/真实Provider/生产负载证据。生产备份仍关闭、治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL、业务断言NOT_EVALUATED。

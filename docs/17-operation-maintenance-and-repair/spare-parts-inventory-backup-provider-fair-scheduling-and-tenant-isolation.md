@@ -64,3 +64,12 @@ Adapter可配置 `tenant_bulkhead_limits`，按tenant ID限制每个操作域内
 测试使用线程、Event和注入单调时钟/等待函数，不访问网络、云账户、真实身份服务或企业系统。
 
 **生产限制：** 公平性和配额只在单Adapter/进程内生效；多个实例之间没有协调。没有真实Provider请求取消、客户端超时、跨进程/容器配额、租户公平性、生产任务优先级或负载压测证据。生产备份仍关闭，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，`business_rule_assertions=NOT_EVALUATED`。
+
+
+## 7. 最终CI验收记录
+
+- 首次CI Run 45741995037暴露测试文件遗漏导入两种任务控制异常类型；仅测试断言阶段产生NameError。修复提交 `dc2deced6db5138a6880f71df190dd9a6549d45b` 补齐导入后重新运行。
+- 实现/测试验收CI：[Run 45742134721](https://github.com/rexyll/cnc-knowledge/actions/runs/45742134721)，两个Job（Knowledge structure and data quality、CH12 numerical resource tests）均completed/success。
+- 全库174个unittest通过，其中Provider适配器专项46个；`knowledge_lint.py --strict` 为PASS（0 errors）。
+- Provider Mock自检结果PASS，Artifact [ch17-backup-storage-adapter-45742134721](https://github.com/rexyll/cnc-knowledge/actions/runs/45742134721/artifacts/15081747151)，ID 15081747151。
+- **验收边界：** FAIR队列、优先级aging、租户配额、排队取消和退避deadline的新增测试通过仅证明本地代码/Mock行为；15项资源场景规格仍全部PROPOSED_NOT_APPROVED / NOT_RUN。CI不代表真实云Provider、跨进程/容器调度、企业租户隔离或生产负载验收。
