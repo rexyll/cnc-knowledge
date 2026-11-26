@@ -187,5 +187,139 @@ class BackupStorageAdapterTests(unittest.TestCase):
         self.assertEqual(result["execution_status"], "BLOCKED_PENDING_ENTERPRISE_APPROVAL")
 
 
+
+    def test_mock_provider_enforces_principal_action_and_prefix_scope(self):
+        provider = MockObjectStorageProvider(
+            principal_id="writer-a",
+            tenant_id="tenant-a",
+            allowed_prefixes=("cnc/site-a/",),
+            allowed_actions=("object:write",),
+        )
+        provider.put_if_absent("cnc/site-a/object", b"safe")
+        with self.assertRaises(BackupStorageError):
+            provider.get_object("cnc/site-a/object")
+        with self.assertRaises(BackupStorageError):
+            provider.put_if_absent("cnc/site-b/object", b"blocked")
+        self.assertEqual(provider.audit_log[-1]["outcome"], "DENY")
+        self.assertEqual(provider.audit_log[-1]["principal_id"], "writer-a")
+        self.assertEqual(provider.audit_log[-1]["tenant_id"], "tenant-a")
+        self.assertNotIn("safe", json.dumps(provider.audit_log))
+
+    def test_mock_provider_tenant_namespaces_are_isolated(self):
+        first = MockObjectStorageProvider(tenant_id="tenant-one")
+        second = MockObjectStorageProvider(tenant_id="tenant-two")
+        first.put_if_absent("cnc/shared/key", b"tenant-one")
+        with self.assertRaises(BackupStorageError):
+            second.get_object("cnc/shared/key")
+        self.assertTrue(first.capabilities.tenant_isolation)
+        self.assertEqual(first.capabilities.identity_authentication, "MOCK_PRINCIPAL_ONLY_NO_CREDENTIALS")
+
+    def test_multipart_upload_resumes_from_verified_parts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider(fail_after_parts=2)
+            adapter = BackupStorageAdapter(
+                provider, multipart_threshold_bytes=1, multipart_part_size_bytes=64
+            )
+            with self.assertRaises(BackupStorageError):
+                adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertGreaterEqual(len(provider._multipart), 1)
+            provider.fail_after_parts = None
+            published = adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertEqual(published["result"], "PUBLISHED")
+            self.assertEqual(published["payload_object_count"], 4)
+            self.assertEqual(provider._multipart, {})
+            self.assertEqual(
+                adapter.verify_stored_backup(prefix="cnc/ch17", backup_id="adapter-test-001")["result"],
+                "VERIFIED",
+            )
+
+    def test_multipart_part_is_idempotent_but_rejects_changed_bytes(self):
+        provider = MockObjectStorageProvider()
+        provider.begin_multipart_upload("cnc/ch17/object", "session-1")
+        from scripts.spare_parts_backup_storage_adapter import _sha
+        provider.put_multipart_part("cnc/ch17/object", "session-1", 1, b"part-a", _sha(b"part-a"))
+        same = provider.put_multipart_part("cnc/ch17/object", "session-1", 1, b"part-a", _sha(b"part-a"))
+        self.assertEqual(same.content_sha256, _sha(b"part-a"))
+        with self.assertRaises(BackupStorageConflict):
+            provider.put_multipart_part("cnc/ch17/object", "session-1", 1, b"other", _sha(b"other"))
+
+    def test_multipart_checksum_and_sequence_are_enforced(self):
+        provider = MockObjectStorageProvider()
+        provider.begin_multipart_upload("cnc/ch17/object", "session-2")
+        with self.assertRaises(BackupStorageError):
+            provider.put_multipart_part("cnc/ch17/object", "session-2", 1, b"part-a", "bad-digest")
+        from scripts.spare_parts_backup_storage_adapter import _sha
+        provider.put_multipart_part("cnc/ch17/object", "session-2", 2, b"part-b", _sha(b"part-b"))
+        with self.assertRaises(BackupStorageError):
+            provider.complete_multipart_upload(
+                "cnc/ch17/object", "session-2",
+                expected_part_count=2, expected_size_bytes=6, expected_sha256=_sha(b"part-b")
+            )
+
+    def test_abort_removes_only_unfinished_multipart_staging(self):
+        provider = MockObjectStorageProvider()
+        existing = provider.put_if_absent("cnc/ch17/complete", b"committed")
+        provider.begin_multipart_upload("cnc/ch17/pending", "session-3")
+        from scripts.spare_parts_backup_storage_adapter import _sha
+        provider.put_multipart_part("cnc/ch17/pending", "session-3", 1, b"temp", _sha(b"temp"))
+        provider.abort_multipart_upload("cnc/ch17/pending", "session-3")
+        self.assertEqual(provider.get_object("cnc/ch17/complete").data, b"committed")
+        self.assertEqual(provider.list_multipart_uploads("cnc/ch17"), [])
+        self.assertEqual(existing.data, b"committed")
+        self.assertFalse(hasattr(provider, "delete_object"))
+
+    def test_prefix_inventory_classifies_uncommitted_objects_without_deleting(self):
+        provider = MockObjectStorageProvider()
+        provider.put_if_absent("cnc/ch17/backup-orphan-001/ledger.json", b"partial")
+        provider.begin_multipart_upload("cnc/ch17/backup-pending-001/snapshot.json", "upload-pending")
+        from scripts.spare_parts_backup_storage_adapter import _sha
+        provider.put_multipart_part(
+            "cnc/ch17/backup-pending-001/snapshot.json", "upload-pending", 1, b"part", _sha(b"part")
+        )
+        adapter = BackupStorageAdapter(provider)
+        report = adapter.inventory_backup_objects(prefix="cnc/ch17")
+        self.assertEqual(report["result"], "INVENTORY_COMPLETE")
+        self.assertEqual(report["backups"][0]["status"], "UNCOMMITTED_ORPHAN_CANDIDATE")
+        self.assertEqual(len(report["incomplete_multipart_uploads"]), 1)
+        self.assertFalse(report["destructive_operations"])
+        self.assertFalse(report["automatic_reclamation"])
+        self.assertFalse(report["backups"][0]["reclamation_executable"])
+        self.assertEqual(report["backups"][0]["approval_status"], "PROPOSED_NOT_APPROVED")
+        self.assertFalse(hasattr(provider, "delete_object"))
+
+    def test_inventory_verifies_published_package_and_flags_missing_payload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider()
+            adapter = BackupStorageAdapter(provider)
+            adapter.publish_backup(backup, prefix="cnc/ch17")
+            report = adapter.inventory_backup_objects(prefix="cnc/ch17")
+            self.assertEqual(report["backups"][0]["status"], "PUBLISHED_VERIFIED")
+            del provider._objects["cnc/ch17/backup-adapter-test-001/snapshot.json"]
+            report = adapter.inventory_backup_objects(prefix="cnc/ch17")
+            self.assertEqual(
+                report["backups"][0]["status"],
+                "PUBLISHED_PACKAGE_INCOMPLETE_OR_UNEXPECTED_OBJECTS",
+            )
+
+    def test_inventory_is_prefix_scoped_and_requires_list_permission(self):
+        provider = MockObjectStorageProvider(allowed_actions=("object:write", "object:read"))
+        adapter = BackupStorageAdapter(provider)
+        with self.assertRaises(BackupStorageError):
+            adapter.inventory_backup_objects(prefix="cnc/ch17")
+
+    def test_filesystem_provider_scoped_inventory_returns_metadata_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            provider = FileSystemStorageProvider(Path(tmp) / "objects")
+            provider.put_if_absent("cnc/ch17/object-a", b"alpha")
+            provider.put_if_absent("cnc/ch18/object-b", b"beta")
+            rows = provider.list_objects("cnc/ch17")
+            self.assertEqual([row.key for row in rows], ["cnc/ch17/object-a"])
+            self.assertEqual(rows[0].size_bytes, 5)
+            self.assertFalse(hasattr(rows[0], "data"))
+
 if __name__ == "__main__":
     unittest.main()
