@@ -267,3 +267,14 @@
 - **代码CI：** [Run 45751336613](https://github.com/rexyll/cnc-knowledge/actions/runs/45751336613)，两个必需Job均completed/success；全库217项unittest、CH12资源143项通过，strict lint PASS（0 errors，5 warnings）；SQLite协调器自检PASS，Artifact ID 15084844535。
 - **严格边界：** 合成内存Sink不是真实对象存储；BackupStorageAdapter目前没有把lease token贯穿到远端写操作，真实Provider fencing仍未实现或验证。外部高水位必须来自独立、完整且可信的下游状态证据；无法核实时恢复写入必须保持BLOCKED。SQLite快照不等于经过企业批准的灾备系统。
 - **状态：** CH17-T004继续IN_PROGRESS；生产备份关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+
+### 第二十九轮文档同步最终验收
+
+- **完成时间：** 2026-11-26T11:57:08+08:00（GitHub Actions Run结束时间，Asia/Shanghai）。
+- **文档提交：** 31998e7b087f9270db8d15db430b231e8d817017；随后仅追加本条验收记录，仍在main。
+- **最终文档同步CI：** [Run 45752039910](https://github.com/rexyll/cnc-knowledge/actions/runs/45752039910)，head SHA 31998e7b087f9270db8d15db430b231e8d817017；Knowledge structure and data quality 与 CH12 numerical resource tests 两个Job均completed/success。
+- **测试结果：** 全库217项unittest通过；CH12数值资源143项通过；strict knowledge lint为PASS（0 errors，5 warnings）；SQLite协调器self-check PASS。
+- **Artifacts：** SQLite provider admission Artifact ID 15085349250；Provider backup storage adapter Artifact ID 15085483640；backup governance readiness Artifact ID 15085468691。
+- **覆盖登记：** CH17当前23篇KNOW、73个登记实体、67项资源；新增16项测试矩阵场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **限制未变：** 真实Provider fencing未集成/验证；SQLite restore仅准备新数据库，不自动cutover；生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
