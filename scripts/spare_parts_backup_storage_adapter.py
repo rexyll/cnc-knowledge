@@ -924,15 +924,33 @@ def self_check() -> dict[str, Any]:
         ledger, snapshot = _synthetic_ledger()
         publish_generation(source_root, ledger, snapshot, "adapter-synthetic-001")
         local_backup = create_backup(source_root, backup_parent, "adapter-smoke-001")
-        provider = MockObjectStorageProvider()
-        adapter = BackupStorageAdapter(provider)
+        provider = MockObjectStorageProvider(
+            object_versioning=True,
+            timeout_after_put_number=5,
+            visibility_delay_reads=1,
+            transient_failures={"get": 1},
+        )
+        adapter = BackupStorageAdapter(
+            provider,
+            retry_max_attempts=4,
+            retry_base_delay_seconds=0,
+            sleep_fn=lambda _: None,
+        )
         published = adapter.publish_backup(Path(local_backup["backup_path"]), prefix="ch17/synthetic")
         verified = adapter.verify_stored_backup(prefix="ch17/synthetic", backup_id="adapter-smoke-001")
+        receipt_key = "ch17/synthetic/backup-adapter-smoke-001/" + RECEIPT_NAME
+        receipt = json.loads(provider.get_object(receipt_key).data)
+        ledger_row = next(row for row in receipt["payload_objects"] if row["file_name"] == "ledger.json")
+        provider.inject_new_version_for_test(ledger_row["object_key"], b"newer-external-version")
+        pinned_after_version_switch = adapter.verify_stored_backup(
+            prefix="ch17/synthetic", backup_id="adapter-smoke-001"
+        )
         restored = adapter.restore_from_provider(
             prefix="ch17/synthetic", backup_id="adapter-smoke-001", target_root=target
         )
         assert published["result"] == "PUBLISHED"
         assert verified["result"] == "VERIFIED"
+        assert pinned_after_version_switch["result"] == "VERIFIED"
         assert restored["result"] == "RESTORED" and restored["ledger_record_count"] == 1
         return {
             "result": "PASS",
@@ -940,6 +958,10 @@ def self_check() -> dict[str, Any]:
             "upload_and_receipt_publish": "PASS",
             "remote_manifest_and_payload_verification": "PASS",
             "isolated_restore_from_provider": "PASS",
+            "ambiguous_put_commit_timeout_recovered": "PASS",
+            "read_after_write_and_transient_get_retried": "PASS",
+            "historical_version_pinned_after_current_version_switch": "PASS",
+            "retry_policy": "BOUNDED_EXPONENTIAL_NO_RANDOM_JITTER_IN_SYNTHETIC_TEST",
             "payload_object_count": published["payload_object_count"],
             "external_connections": False,
             "credentials_or_keys_used": False,
