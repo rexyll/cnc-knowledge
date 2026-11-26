@@ -112,3 +112,13 @@
 - **组合自检：** [Run 45738938023](https://github.com/rexyll/cnc-knowledge/actions/runs/45738938023)，两个Job均completed/success；Mock self-check中的普通对象/回执提交、写成功响应超时恢复、读可见性/瞬态GET重试、历史版本切换后的固定版本验证及隔离恢复均PASS；Artifact `ch17-backup-storage-adapter-45738938023`，ID 15079098689。
 - **矩阵列顺序修复：** [Run 45739179773](https://github.com/rexyll/cnc-knowledge/actions/runs/45739179773)两个Job均success。ASSET-000063/066/067均已复核状态字段列顺序及行宽，13条本轮场景均为TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
 - **参数边界：** 默认retry_max_attempts=4、base=0.1s、max=2s是代码默认而非生产推荐；Retry-After 10s的Mock用例按本地cap 2s封顶。当前无随机jitter；生产接入需重新评审限流语义、jitter、deadline与全局重试预算。
+
+
+## CH17-T004 熔断、舱壁与任务重试预算第二十三轮（2026-11-26）
+
+- **代码：** 新增四域CircuitBreaker（read/write/multipart/inventory）、CLOSED/OPEN/HALF_OPEN状态机、冷却后半开探测、单探测并发配额及快速OPEN拒绝。
+- **舱壁：** 各域BoundedSemaphore默认read=4/write=2/multipart=2/inventory=1；默认0秒等待，满载抛ProviderBulkheadFullError；成功和异常路径均释放槽位。
+- **任务级RetryBudget：** ContextVar将一个顶层备份/验证/恢复/盘点操作的嵌套Provider调用累计到同一预算，默认20；并发线程/任务预算隔离，耗尽抛RetryBudgetExceededError。
+- **测试：** 新增9个专项unittest；全库169个unittest通过，Run 45740068529两个Job均success。自检扩展Run 45740213445待最终确认。
+- **资源：** 新增KNOW-000037、ASSET-000068；14条熔断/舱壁/预算场景定义，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
+- **边界：** 控制仅限单Adapter实例/进程，不构成分布式熔断、全局QPS或集群公平性控制；所有默认参数均待生产测量和审批。

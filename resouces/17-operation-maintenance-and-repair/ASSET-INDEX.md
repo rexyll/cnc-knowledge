@@ -83,3 +83,5 @@
 | spare-parts-inventory-backup-provider-resilience-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000066 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-security-and-resilience.md / KNOW-000035 | 14项Mock合成测试场景，覆盖最小权限、租户隔离、分块续传、故障恢复和孤儿对象审查；不代表真实云验收。 |
 
 | spare-parts-inventory-backup-provider-retry-consistency-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000067 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-retry-consistency-and-recovery.md / KNOW-000036 | 13条合成场景，覆盖限流退避、写成功响应丢失、延迟可见、重试耗尽、版本切换/缺失、分块响应丢失及永久错误不重试；不代表真实云Provider验收。 |
+
+| spare-parts-inventory-backup-provider-circuit-breaker-bulkhead-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000068 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-circuit-breaker-bulkhead-and-budget.md / KNOW-000037 | 14条合成场景，覆盖熔断打开/半开/恢复、探测配额、读写域隔离、舱壁容量/释放、任务级总重试预算与并发任务隔离；不代表分布式/生产Provider验收。 |

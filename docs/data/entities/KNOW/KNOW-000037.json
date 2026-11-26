@@ -1,0 +1,83 @@
+{
+  "entity_id": "KNOW-000037",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份 Provider 熔断、半开探测、舱壁与总重试预算",
+  "english_name": "CNC spare-parts inventory backup provider circuit breaker, half-open probe, bulkhead and aggregate retry budget",
+  "aliases": [
+    "Provider熔断与半开探测",
+    "备份Provider并发舱壁",
+    "备份任务级总重试预算"
+  ],
+  "description": "定义备份Provider按操作域独立熔断、半开探测、并发舱壁及顶层任务级聚合重试预算，验证故障快速隔离、恢复探测和并发任务互不耗尽预算。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "合成测试夹具"
+  ],
+  "tags": [
+    "CH17",
+    "备份可靠性",
+    "Circuit Breaker",
+    "Half Open",
+    "Bulkhead",
+    "Retry Budget",
+    "Concurrency Isolation"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T13:30:00+08:00",
+  "updated_at": "2026-11-26T13:30:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-circuit-breaker-bulkhead-and-budget.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-26",
+    "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "controller_scope": "PER_BACKUP_STORAGE_ADAPTER_INSTANCE_AND_PROCESS",
+    "circuit_domains": [
+      "read",
+      "write",
+      "multipart",
+      "inventory"
+    ],
+    "circuit_defaults": {
+      "failure_threshold": 3,
+      "reset_timeout_seconds": 30,
+      "half_open_max_probes": 1
+    },
+    "bulkhead_defaults": {
+      "read": 4,
+      "write": 2,
+      "multipart": 2,
+      "inventory": 1
+    },
+    "bulkhead_acquire_timeout_seconds": 0,
+    "aggregate_retry_budget_default": 20,
+    "retry_budget_scope": "TOP_LEVEL_OPERATION_CONTEXT",
+    "concurrent_task_budget_isolation": "CONTEXTVAR_PER_THREAD_OR_TASK",
+    "retry_budget_failure_type": "RetryBudgetExceededError",
+    "circuit_open_failure_type": "ProviderCircuitOpenError",
+    "bulkhead_full_failure_type": "ProviderBulkheadFullError",
+    "linked_test_file": "tests/test_spare_parts_backup_storage_adapter.py",
+    "linked_test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-circuit-breaker-bulkhead-test-matrix-v1.csv",
+    "test_status": "SYNTHETIC_MOCK_ONLY",
+    "unit_test_count": 169,
+    "provider_specific_unittest_count": 41,
+    "resource_scenario_definition_count": 14,
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED"
+  },
+  "notes": "默认阈值和容量仅为代码默认，不构成生产推荐。熔断、舱壁和RetryBudget只在单BackupStorageAdapter实例/进程和任务上下文内生效，不是分布式/集群级控制。未验证跨进程、跨容器、真实Provider或生产RTO。"
+}

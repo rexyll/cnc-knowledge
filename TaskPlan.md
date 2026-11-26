@@ -802,3 +802,13 @@
 - Mock支持对象延迟可见、Retry-After提示、当前对象版本切换和历史版本移除；验证/恢复必须使用receipt固定版本，历史版本不可用即失败关闭。
 - 新增10项专项unittest（含Retry-After上限场景），并将关键组合路径加入CI自检。全库160个unittest通过；代码/测试Run 45739249726两个Job均success，扩展Mock自检Run 45738938023两个Job均success，Artifact 15079098689。
 - 新增KNOW-000036、ASSET-000067；没有真实云访问、凭据或生产行为。
+
+
+## CH17-T004 第二十三轮：备份Provider熔断、舱壁与总重试预算（2026-11-26）
+
+- 新增按Provider操作域分离的熔断器：read/write/multipart/inventory；连续瞬态失败达到阈值后OPEN，冷却后HALF_OPEN单探测，成功CLOSED、失败重开。
+- 新增按操作域的Bulkhead有界并发槽位，默认read=4/write=2/multipart=2/inventory=1；满载立即失败，不无限排队；异常时释放槽位。
+- 新增ContextVar任务级RetryBudget，顶层操作的嵌套Provider调用累计消耗总预算，默认20；不同并发任务上下文独立。
+- 新增9个unittest方法，代码/测试CI Run 45740068529两个Job success，全库169个unittest通过；自检增强Run 45740213445待最终确认。
+- 新增KNOW-000037与ASSET-000068（14条熔断/舱壁/总预算测试场景）。
+- 所有控制器仅单Adapter/进程范围；无真实云、分布式协调、跨容器容量或生产负载验收。

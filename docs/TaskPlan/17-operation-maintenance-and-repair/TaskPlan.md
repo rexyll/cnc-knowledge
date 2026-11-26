@@ -371,3 +371,15 @@
 
 - **代码/自检CI：** 代码及新增故障测试Run 45739249726两个Job均completed/success，全库160个unittest通过；扩展Mock自检Run 45738938023两个Job均completed/success，Artifact `ch17-backup-storage-adapter-45738938023`（ID 15079098689），自检结果PASS且无网络/凭据/删除。
 - **资源列顺序修复：** 三份Provider适配器矩阵（ASSET-000063、000066、000067）统一为 `synthetic_only=TRUE`、`approval_status=PROPOSED_NOT_APPROVED`、`execution_status=NOT_RUN`、`notes`最后列；修复CI Run 45739179773两个Job均success。
+
+
+## 6.30 CH17-T004 备份Provider熔断、舱壁和任务重试预算第二十三轮（2026-11-26）
+
+- **状态：** IN_PROGRESS；仅本地/Mock验证。
+- **知识条目：** KNOW-000037《备份Provider熔断、半开探测、舱壁与总重试预算》。
+- **熔断：** read/write/multipart/inventory四域独立CircuitBreaker；CLOSED/OPEN/HALF_OPEN；默认failure threshold=3、reset timeout=30s、half-open probe=1；仅ProviderTransientError累加失败，OPEN快速拒绝。
+- **舱壁：** 四域独立BoundedSemaphore；默认并发read=4/write=2/multipart=2/inventory=1；bulkhead等待默认0秒，满载返回ProviderBulkheadFullError；每次Provider调用结束或异常后释放。
+- **任务级总预算：** ContextVar与RetryBudget按顶层备份/验证/恢复/盘点操作作用域累计嵌套调用的重试次数；默认20次。并发线程/任务有独立上下文预算；耗尽抛RetryBudgetExceededError，不报告成功。
+- **测试：** 新增9项专项unittest；代码测试CI Run 45740068529两个Job均success，全库169个unittest通过。自检扩展Run 45740213445待最终确认。
+- **资源：** 新增KNOW-000037、ASSET-000068；14条故障/并发场景，均PROPOSED_NOT_APPROVED / NOT_RUN。
+- **限制：** 状态和舱壁仅单Adapter实例/进程内，不支持分布式协调；默认值不是生产推荐；没有真实云网络、跨进程/跨容器/集群容量与RTO验收。

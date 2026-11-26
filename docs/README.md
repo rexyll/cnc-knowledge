@@ -96,3 +96,4 @@
   - [库存账本备份存储适配器契约与Mock验证](17-operation-maintenance-and-repair/spare-parts-inventory-backup-storage-adapter.md)
   - [备份 Provider 身份权限、分块续传与孤儿回收治理](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-security-and-resilience.md)
   - [备份 Provider 重试、一致性与模糊提交恢复](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-retry-consistency-and-recovery.md)
+  - [备份 Provider 熔断、半开探测、舱壁与总重试预算](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-circuit-breaker-bulkhead-and-budget.md)

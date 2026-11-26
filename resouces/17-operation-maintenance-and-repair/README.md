@@ -282,3 +282,22 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 模拟PUT提交成功但响应丢失、multipart part写后超时、multipart complete已提交但响应丢失、对象读后写延迟和瞬态GET限流；所有重试固定同一请求身份/对象键/内容。
 - 支持Mock历史版本集合与版本切换；历史版本仍在时依回执固定版本读取，版本缺失时失败关闭，不回退到最新版本。
 - 新增ASSET-000067，定义12条重试/一致性合成场景。实现及测试全库159个unittest通过；第二十二轮组合self-check还需最终CI确认。
+
+
+## CH17-T004 Provider熔断、半开探测、舱壁与总重试预算第二十三轮（2026-11-26）
+
+- 新增按read/write/multipart/inventory四个操作域隔离的CircuitBreaker，状态CLOSED/OPEN/HALF_OPEN；达到连续瞬态失败阈值后快速熔断，冷却后执行受限探测，成功关闭、失败重开。
+- 新增同域Bulkhead有界并发槽位；read/write/multipart/inventory默认容量4/2/2/1；默认满载快速失败，调用结束/异常后释放槽位。
+- 新增ContextVar任务级RetryBudget：一个顶层备份/验证/恢复/盘点的所有嵌套Provider调用共享总预算，并发线程/任务彼此隔离；默认20次重试预算。
+- 配置默认值仅为代码基线，不构成生产容量、熔断阈值或RTO建议；控制状态仅在单Adapter实例/进程内，不是分布式限流。
+- 新增9项专项unittest，代码与测试提交全库169个unittest通过，CI Run 45740068529两个Job success；自检扩展CI Run 45740213445待最终确认。
+
+
+## CH17-T004 Provider熔断与资源隔离第二十三轮（2026-11-26）
+
+- 新增CircuitBreaker按read/write/multipart/inventory操作域隔离，默认连续瞬态失败阈值3、冷却30s、半开最多1个探测。
+- 新增Bulkhead按域限制并发，默认read=4/write=2/multipart=2/inventory=1，满载快速失败，不排无限队。
+- 新增顶层RetryBudget，默认20次总重试，任务上下文内所有Provider调用共享；并发线程/任务预算隔离。
+- 新增9项专项unittest；全库169个unittest通过；自检覆盖熔断open/half-open恢复和总预算耗尽，最终CI待确认。
+- 新增ASSET-000068，14条熔断/舱壁/任务预算合成场景，状态PROPOSED_NOT_APPROVED / NOT_RUN。
+- 严格边界：熔断/舱壁只单Adapter实例/进程生效，不是分布式控制；未进行真实云、跨容器或生产容量测试。
