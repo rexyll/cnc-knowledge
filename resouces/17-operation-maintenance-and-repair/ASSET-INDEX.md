@@ -68,3 +68,9 @@
 | spare-parts-inventory-ledger-read-gc-test-cases-v1.csv | CSV读取一致性与代际回收测试矩阵 / ASSET-000055 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | 10个纯合成场景，覆盖共享读锁、writer/GC协调、CURRENT保护、dry-run、最近N代与最短年龄保留、异常清理恢复和读写回收压力；不构成跨平台/生产删除验收证据 |
 
 | spare-parts-inventory-ledger-backup-restore-test-cases-v1.csv | CSV备份完整性与隔离恢复测试矩阵 / ASSET-000056 | 项目原创 | 2026-11-25 | 原创，可在项目内使用 | CH17-T004 / spare-parts-synthetic-fixture-baseline-v1.md / KNOW-000032 | 10个纯合成场景，覆盖版本化备份清单、负载SHA-256/长度校验、账本链与快照验证、篡改拒绝、源代际回收后的独立恢复及中断恢复；不构成异地/生产灾备验收 |
+
+| spare-parts-inventory-backup-retention-policy-template.csv | CSV空白模板 / ASSET-000057 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-governance.md / KNOW-000033 | 备份保留策略空白模板；所有期限、法律/合同依据及审批字段留空。 |
+| spare-parts-inventory-backup-rpo-rto-requirements-template.csv | CSV空白模板 / ASSET-000058 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-governance.md / KNOW-000033 | RPO/RTO目标空白模板；数值、时钟边界、测量方法和审批待企业BIA与责任人确定。 |
+| spare-parts-inventory-backup-security-key-management-template.csv | CSV空白模板 / ASSET-000059 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-governance.md / KNOW-000033 | 安全/密钥管理空白评估模板；禁止录入任何密钥或秘密，控制值及审批待安全责任方确认。 |
+| spare-parts-inventory-backup-offsite-storage-assessment-template.csv | CSV空白模板 / ASSET-000060 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-governance.md / KNOW-000033 | 异地存储供应商评估空白模板；不指定厂商、区域、合同条款或服务等级。 |
+| spare-parts-inventory-backup-restore-drill-acceptance-matrix-v1.csv | CSV测试矩阵 / ASSET-000061 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-governance.md / KNOW-000033 | 10个恢复演练场景；全部PROPOSED_NOT_APPROVED / NOT_RUN，不构成真实灾备测试结果。 |

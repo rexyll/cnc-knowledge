@@ -311,3 +311,14 @@
 - **资源与测试：** 新增ASSET-000056，10个纯合成测试场景；新增6个专项unittest，全库CI共116项测试通过。覆盖备份篡改、清单篡改、创建中断、源代际被GC后恢复、非空目标拒绝覆盖、恢复中断和路径隔离。
 - **CI：** 实现提交 0fdef80a2da217c0fbd622f3185fb820287be8f5 对应Run 45643219363，两个Job均completed/success，全库116个unittest通过，备份验证/隔离恢复self-check均PASS；文档同步提交 2f6cdb72418582c94035e4359a9171b1fcd4f1b8 对应Run 45643684590，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success。
 - **限制：** 未实现备份加密、数字签名/外部信任根、异地副本、对象存储/WORM、介质恢复、企业RPO/RTO或真实灾备演练。仅POSIX本地临时目录合成数据，无企业连接/生产写入；30项企业业务测试仍NOT_RUN，业务断言NOT_EVALUATED，审批门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## 6.26 CH17-T004 库存备份保留、RPO/RTO、安全与灾备治理第十九轮（2026-11-26）
+
+- **状态：** IN_PROGRESS；交付供应商中立的治理模板和结构校验，不代表企业备份政策已获批准。
+- **知识条目：** 新增KNOW-000033《数控机床备件库存账本备份治理、RPO/RTO与灾备验收》。
+- **资源：** ASSET-000057备份保留策略、ASSET-000058 RPO/RTO目标、ASSET-000059加密/密钥管理、ASSET-000060异地存储评估、ASSET-000061恢复演练验收矩阵（10个场景）。
+- **门禁字段：** 明确保留范围/期限/法律保全/删除角色、RPO/RTO测量边界、静态/传输加密、KMS/HSM/密钥恢复、区域/司法辖区/数据驻留、不可变保护、访问隔离、恢复吞吐及退出方案。
+- **自动校验：** scripts/spare_parts_backup_governance_validator.py 检查五个CSV的schema/行宽/唯一ID、审批状态和APPROVED记录的证据/数值字段；所有恢复演练场景初始PROPOSED_NOT_APPROVED、NOT_RUN。
+- **生产启用门禁：** 企业BIA、保留/法律保全、RPO/RTO、安全评审、供应商/异地副本验证、隔离恢复与业务对账签核全部齐全前，production_backup_enabled=false、governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+- **严格边界：** 未选择供应商/区域、未设默认保留期限或RPO/RTO、未实现KMS/HSM/加密适配器/远端复制；不连接企业系统或生产账户、不保存密钥、不实施真实删除/备份；所有恢复演练矩阵项保持NOT_RUN。

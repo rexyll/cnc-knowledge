@@ -92,3 +92,4 @@
 ## 正文组织约定
 
 章节内容尽量按“基础概念 / 结构与原理 / 参数与规格 / 设计与选型 / 操作与维护 / 故障与案例 / 来源与参考”组织。大篇幅资料拆分为主题文档；结构化数据使用可审查的CSV/JSON/表格格式，并记录字段含义和数据来源。任何图片、动图或完整资料文件均存放在对应的 `resouces/<章节目录>/`，正文通过相对路径引用。
+  - [库存备份治理、RPO/RTO与灾备验收](17-operation-maintenance-and-repair/spare-parts-inventory-backup-governance.md)

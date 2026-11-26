@@ -226,3 +226,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - scripts/spare_parts_inventory_ledger_persistence.py 提供 create_backup()、verify_backup()、restore_backup() 及对应CLI。
 - 备份包包含BACKUP.json、COMMIT.json、ledger.json、snapshot.json；清单自校验并记录各负载哈希。备份路径必须与源账本存储分离；恢复只允许新建/空白目标目录。
 - 当前为本地POSIX临时目录合成演练，不是异地备份、加密备份、WORM或企业灾备验收；无外部系统连接或生产写入。
+
+
+## CH17-T004 库存备份治理与灾备就绪第十九轮（2026-11-26）
+
+- 新增四份空白治理模板：备份保留策略、RPO/RTO目标、加密/密钥管理、异地存储供应商评估（ASSET-000057～ASSET-000060）。
+- 新增恢复演练验收矩阵（ASSET-000061），10个场景全部PROPOSED_NOT_APPROVED / NOT_RUN，不预设RPO/RTO、供应商SLA、加密算法或保留期限。
+- 新增 scripts/spare_parts_backup_governance_validator.py 与 tests/test_spare_parts_backup_governance_validator.py；校验schema、行宽、唯一ID、审批状态及已批准记录证据；CI输出readiness报告。
+- 校验器PASS只代表结构/审批证据完整性；治理就绪与production_backup_enabled继续BLOCKED_PENDING_ENTERPRISE_APPROVAL / false。
+- 未接入KMS/HSM、云对象存储或远端账户，不配置或使用密钥，不发起备份/删除操作；企业BIA、保留政策、安全评审和真实恢复演练仍待批准。

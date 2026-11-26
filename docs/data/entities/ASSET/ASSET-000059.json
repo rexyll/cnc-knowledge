@@ -1,0 +1,56 @@
+{
+  "entity_id": "ASSET-000059",
+  "entity_type": "asset_file",
+  "canonical_name": "库存备份加密与密钥管理评估模板v1",
+  "english_name": "CNC inventory backup encryption and key management assessment template v1",
+  "aliases": [
+    "库存备份加密与密钥管理评估模板v1",
+    "spare-parts-inventory-backup-security-key-management-template.csv"
+  ],
+  "description": "评估静态/传输加密、算法批准依据、KMS/HSM、密钥生命周期、恢复和职责分离。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "库存备份",
+    "备份治理",
+    "RPO",
+    "RTO",
+    "恢复演练",
+    "ASSET-000059"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T08:47:00+08:00",
+  "updated_at": "2026-11-26T08:47:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-security-key-management-template.csv",
+    "file_name": "spare-parts-inventory-backup-security-key-management-template.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000033",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored blank governance template / synthetic test specification; no enterprise policy or provider claims",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "安全/密钥管理空白评估模板；禁止录入任何密钥或秘密，控制值及审批待安全责任方确认。"
+}

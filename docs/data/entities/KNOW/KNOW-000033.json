@@ -1,0 +1,66 @@
+{
+  "entity_id": "KNOW-000033",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份治理、RPO/RTO与灾备验收",
+  "english_name": "CNC spare-parts inventory ledger backup governance, RPO/RTO and disaster-recovery acceptance",
+  "aliases": [
+    "库存备份治理",
+    "备份保留策略与灾备验收",
+    "Inventory backup governance and DR readiness"
+  ],
+  "description": "定义备件库存账本备份的保留与删除治理、RPO/RTO测量、加密与密钥管理、异地存储供应商评估及恢复演练验收门禁；配套五份模板与结构校验器。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "合成测试夹具"
+  ],
+  "tags": [
+    "CH17",
+    "备件测试",
+    "合成夹具",
+    "SPAT",
+    "库存事务",
+    "BOM适用性",
+    "测试数据"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T08:47:00+08:00",
+  "updated_at": "2026-11-26T08:47:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-governance.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-26",
+    "enterprise_policy_approved": false,
+    "enterprise_rpo_rto_approved": false,
+    "encryption_and_key_management_implemented": false,
+    "offsite_storage_provider_approved": false,
+    "restore_drill_executed": false,
+    "governance_validator_path": "scripts/spare_parts_backup_governance_validator.py",
+    "governance_validation_scope": "template schema and approval-evidence structure only; no policy approval or production integration",
+    "linked_templates": [
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-retention-policy-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-rpo-rto-requirements-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-security-key-management-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-offsite-storage-assessment-template.csv",
+      "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-restore-drill-acceptance-matrix-v1.csv"
+    ],
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED",
+    "business_test_status": "NOT_RUN"
+  },
+  "notes": "供应商中立的治理框架和空白模板；不设默认保留期限、RPO/RTO、加密算法、云厂商或区域。CI结构校验PASS不代表企业政策批准。未实施KMS/HSM、密钥操作、远端存储或真实灾备演练。"
+}

@@ -23,3 +23,13 @@
 - **归档：** `resouces/12-control-and-machining-algorithms/generated/scurve-01-synthetic/`，包括时序CSV 1551×8、分段CSV 7×12、汇总CSV 1×19和manifest；CI确认archive=VERIFIED。
 - **来源ID恢复：** 登记SCURVE原有引用SRC-000375～SRC-000378，分别对应S曲线阶次/段数论文、五轴CNC轴空间/笛卡尔空间约束论文、LinuxCNC路径控制与look-ahead官方文档。CH17七条来源统一顺延为SRC-000382～SRC-000388。
 - **边界：** 仅为合成标量参考，不是多轴CNC规划器；不包含逆运动学、块段look-ahead算法实现、拐角混合、Snap限制、伺服动力学或机床验收。CH12-T003仍IN_PROGRESS。
+
+
+## CH17-T004 库存备份治理、RPO/RTO与灾备就绪第十九轮（2026-11-26）
+
+- **所在分支：** main；未创建新分支。
+- **新增知识：** KNOW-000033《数控机床备件库存账本备份治理、RPO/RTO与灾备验收》；包含备份对象/职责、保留与删除、RPO/RTO测量边界、加密与密钥生命周期、异地存储评估和恢复演练生产启用门禁。
+- **新增资源：** ASSET-000057备份保留策略空白模板；ASSET-000058 RPO/RTO目标空白模板；ASSET-000059加密与密钥管理空白模板；ASSET-000060异地存储供应商评估空白模板；ASSET-000061恢复演练验收矩阵（10项，全部PROPOSED_NOT_APPROVED/NOT_RUN）。
+- **自动门禁：** 新增scripts/spare_parts_backup_governance_validator.py与tests/test_spare_parts_backup_governance_validator.py，校验五份CSV精确列结构、行宽、唯一ID、审批枚举、APPROVED记录的审批人/审批引用/带时区批准时间和关键字段；RPO必须非负、RTO必须为正；固定10条演练ID和未批准/未执行状态。纳入Knowledge Quality CI并归档JSON readiness Artifact。
+- **治理状态：** validator PASS只表示结构和审批证据可解析；治理就绪状态固定BLOCKED_PENDING_ENTERPRISE_APPROVAL，production_backup_enabled=false；业务断言NOT_EVALUATED。
+- **严格边界：** 未设默认保留期限、RPO/RTO、加密算法、云厂商或区域；未实施KMS/HSM、密钥操作、远端存储/复制或真实删除；不连接企业系统或生产账户、不保存密钥。所有恢复演练仍NOT_RUN，CH17-T004继续IN_PROGRESS。

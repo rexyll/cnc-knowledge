@@ -1,0 +1,56 @@
+{
+  "entity_id": "ASSET-000057",
+  "entity_type": "asset_file",
+  "canonical_name": "库存备份保留策略决策模板v1",
+  "english_name": "CNC inventory backup retention policy decision template v1",
+  "aliases": [
+    "库存备份保留策略决策模板v1",
+    "spare-parts-inventory-backup-retention-policy-template.csv"
+  ],
+  "description": "登记备份范围、分类、频率、留存期限、法律保全、删除控制和责任审批；不预置企业保留年限。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "库存备份",
+    "备份治理",
+    "RPO",
+    "RTO",
+    "恢复演练",
+    "ASSET-000057"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T08:47:00+08:00",
+  "updated_at": "2026-11-26T08:47:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-retention-policy-template.csv",
+    "file_name": "spare-parts-inventory-backup-retention-policy-template.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000033",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored blank governance template / synthetic test specification; no enterprise policy or provider claims",
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "备份保留策略空白模板；所有期限、法规/合同依据及审批字段留空。"
+}
