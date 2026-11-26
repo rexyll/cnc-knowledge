@@ -185,3 +185,6 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 
 
 第四十五轮最终代码/测试head：`a035cdf1f82e6ea9274195b2872953e9f12e83ba`；[CI Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)两个必需Job均completed/success。全库462项unittest及CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项既有非阻断warning）。本轮36项分片准入/事务预算参考模型测试通过；ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。未连接真实etcd或多主机Dispatcher，schema-v2仍是唯一生产权威。
+
+
+第四十五轮最终修正版：分区 Fencing Leader 在仍持有活动 Token 区间时若观察到更高 external high-water，会废弃尚未使用的区间，再从预留高水位以上申请新范围。修正提交 e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1；[最终 CI Run 45824510175](https://github.com/rexyll/cnc-knowledge/actions/runs/45824510175)两个必需Job均成功。全库463项unittest（本轮37项）、CH12 143项测试通过；strict lint和结构质量均0 errors，5项既有非阻断warning。

@@ -803,3 +803,11 @@
 - **质量结果：** 全库462项unittest通过（本轮新增36项分片准入/事务预算参考模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors，5项既有非阻断warning。
 - **验收边界：** 纯内存模型，不接真实etcd/native Lease/多主机Dispatcher，不测真实protobuf/gRPC请求字节、quorum或p95/p99。ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；V3公平策略变更待企业批准。
 - **状态：** schema-v2仍是唯一生产权威；无生产分片/切换；CH17-T004继续IN_PROGRESS。
+
+
+### 第四十五轮最终 Fencing floor 补强（2026-11-26）
+
+- **补强提交：** e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1；当同一有效Partition Leader观察到更高external high-water，且floor到达当前Token range的下一个未发Token时，立即丢弃未使用range，确保新Token在global reserved high-water以上重新分配。
+- **新增测试：** 1项“same leader discards unconsumed range when external floor advances”，本轮测试总数37项。
+- **最终CI：** [Run 45824510175](https://github.com/rexyll/cnc-knowledge/actions/runs/45824510175)两个必需Job均completed/success：全库463项unittest、CH12 143项测试通过；strict lint 0 errors；知识结构与数据质量0 errors（5项既有warning）。
+- **状态：** ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；不接入真实etcd或多主机Dispatcher，不执行生产schema-v3切换；CH17-T004继续IN_PROGRESS。

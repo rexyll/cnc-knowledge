@@ -225,3 +225,14 @@ etcd v3.7官方配置文档列出的--max-txn-ops默认值为128，--max-request
 - **CI：** [GitHub Actions Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)，head SHA与代码提交一致，两个必需Job均completed/success。
 - **测试结果：** 全库462项unittest通过（含本轮36项分片准入与事务预算参考模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。另有5项既有合成fixture审批/执行状态warning，非本轮测试失败。
 - **验收边界：** 只验证内存状态机、并发模型和预算公式；不代表真实etcd事务、native Lease时序、多主机Dispatcher、Raft quorum或生产性能通过。ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；V3跨Tenant round-robin与V2全局priority-aging语义差异必须先经企业批准。
+
+
+## 12. 最终 Fencing floor 补强与 CI
+
+代码复核补充了一条恢复边界：同一个仍然有效的 Partition Leader 也可能观察到更新的外部 Provider high-water。若该 floor 达到或超过当前区间的下一个待发 Token，必须丢弃当前未使用区间，并在全局已预留高水位之上重新申请区间，不能继续从旧 block 发号。
+
+- **最终代码head：** e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1（main）。
+- **最终CI：** [GitHub Actions Run 45824510175](https://github.com/rexyll/cnc-knowledge/actions/runs/45824510175)，两个必需Job均completed/success。
+- **测试结果：** 全库463项unittest通过，CH12 143项数值资源测试通过；本轮模型测试方法37项；strict knowledge lint 0 errors；知识结构与数据质量0 errors，另有5项既有非阻断warning。
+- **回归用例：** 验证同一活动Leader观察到 external high-water=500 后，未使用区间被作废，下一Token从501开始，不会继续使用旧区间剩余值。
+- **验收边界：** 仍为纯内存模型；没有真实etcd/native Lease/分布式时钟/多主机 Leader 资格验证。ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。

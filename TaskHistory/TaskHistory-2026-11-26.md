@@ -645,3 +645,12 @@
 - **实现边界：** 纯内存global/tenant双slot、队列、公平调度、fencing token range及Txn预算参考模型；未连接真实etcd/native Lease、未执行真实多主机Dispatcher/Leader或Raft quorum测试，未测实际protobuf/gRPC wire bytes及吞吐。
 - **策略边界：** V3跨Tenant round-robin、Tenant内部priority+aging与V2全局priority-aging存在语义差异，未获企业批准前不可切换。分区token数值跨分区不代表真实发号时间顺序；partition failover丢弃未用range，允许跳号但禁止复用。
 - **状态：** KNOW-000059 / ASSET-000090已登记；54条正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威，V3分片准入未启用；CH17-T004继续IN_PROGRESS。
+
+
+### 第四十五轮最终 Fencing floor 修正与验收
+
+- **最终代码head：** e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1；main分支。[CI Run 45824510175](https://github.com/rexyll/cnc-knowledge/actions/runs/45824510175)两个必需Job均completed/success。
+- **补强内容：** 对同一有效Partition Leader观察到更高external high-water的情况增加区间失效规则；若external floor达到当前range的next token，则丢弃未用后缀，下一次从global reserved high-water之上申请新range，允许跳号但不允许发出低于floor的token。
+- **测试：** 新增1项回归测试，总计37项本轮分片准入/预算模型测试；全库463项unittest通过；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有DRAFT合成夹具与审批/执行门禁。
+- **生产边界：** 纯内存模型；真实etcd/native Lease、多主机partition Leader、外部Provider floor readback与生产吞吐均未测试。V3公平策略变化仍待企业批准；ASSET-000090的54项正式场景均PROPOSED_NOT_APPROVED / NOT_RUN。
+- **状态：** schema-v2仍是唯一生产权威，未启用V3分片准入；CH17-T004继续IN_PROGRESS。

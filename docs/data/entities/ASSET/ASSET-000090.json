@@ -63,14 +63,14 @@
     "real_multi_host_dispatcher_tested": false,
     "sha256": null,
     "file_size": null,
-    "code_commit": "a035cdf1f82e6ea9274195b2872953e9f12e83ba",
-    "ci_run": 45823628905,
+    "code_commit": "e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1",
+    "ci_run": 45824510175,
     "ci_status": "completed/success",
-    "repository_unit_test_count": 462,
-    "admission_partition_test_methods": 36,
+    "repository_unit_test_count": 463,
+    "admission_partition_test_methods": 37,
     "ch12_numerical_test_count": 143,
     "strict_knowledge_lint": "PASS_0_ERRORS",
     "knowledge_structure_quality": "PASS_0_ERRORS"
   },
-  "notes": "该矩阵是待批准的正式验收场景，不包含运行结果。36项纯内存模型单测不等于生产etcd、多主机、公平性或迁移验收。 CI Run 45823628905通过，包含36项分片准入/事务预算内存参考模型测试；全库462项单测、CH12 143项数值资源测试通过。54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN，未连接真实etcd或多主机Dispatcher。"
+  "notes": "该矩阵是待批准的正式验收场景，不包含运行结果。36项纯内存模型单测不等于生产etcd、多主机、公平性或迁移验收。 CI Run 45823628905通过，包含36项分片准入/事务预算内存参考模型测试；全库462项单测、CH12 143项数值资源测试通过。54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN，未连接真实etcd或多主机Dispatcher。 最终修正代码head e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1在CI Run 45824510175通过，包含37项本轮测试；全库463项测试、CH12 143项资源测试通过。54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。"
 }
