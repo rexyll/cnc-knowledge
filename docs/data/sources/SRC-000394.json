@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000394",
+  "source_type": "other",
+  "title": "Request preconditions",
+  "publisher": "Google Cloud Documentation — Cloud Storage",
+  "author": null,
+  "url": "https://cloud.google.com/storage/docs/request-preconditions",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "ifGenerationMatch and ifMetagenerationMatch generation preconditions for conditional mutations; mismatches return 412 Precondition Failed.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to map generic CAS to Cloud Storage generation preconditions. Does not certify a production fencing integration.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
