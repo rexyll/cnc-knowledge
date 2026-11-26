@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000396",
+  "source_type": "other",
+  "title": "Multitenancy and Azure Blob Storage",
+  "publisher": "Microsoft Learn — Azure Architecture Center",
+  "author": null,
+  "url": "https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/service/blob-storage",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Concurrency-control section: Blob Storage does not provide transactions across multiple blobs; ETags/conditional requests or blob leases are per-object strategies.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to establish the cross-blob transaction boundary in the protocol design. It does not evaluate any CNC backup deployment.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
