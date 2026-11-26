@@ -111,6 +111,9 @@ def validate_governance(root: Path) -> dict[str,Any]:
    check("restore_drill_case_set",ids==DRILL_CASE_IDS,"exactly DRB-001..DRB-010 in canonical order" if ids==DRILL_CASE_IDS else "duplicate, missing, extra or reordered drill IDs")
    states=all(row.get("synthetic_only")=="TRUE" and row.get("approval_status")=="PROPOSED_NOT_APPROVED" and row.get("execution_status")=="NOT_RUN" for row in rows)
    check("restore_drill_status_gate",states,"all drill specifications are synthetic, unapproved and NOT_RUN" if states else "drill matrix must remain TRUE / PROPOSED_NOT_APPROVED / NOT_RUN")
+   required_spec_fields=("domain","scenario","preconditions","procedure_reference","acceptance_criteria_source","required_evidence")
+   definitions=all(all(row.get(field,"").strip() for field in required_spec_fields) for row in rows)
+   check("restore_drill_definition_completeness",definitions,"each drill has preconditions, procedure, approved-criteria source and evidence fields" if definitions else "each drill must define domain, scenario, preconditions, procedure, acceptance criteria source and evidence")
    continue
   id_field=RECORD_IDS[filename]; seen=set()
   for line,row in enumerate(rows,start=2):

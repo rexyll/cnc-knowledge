@@ -67,6 +67,14 @@ class BackupGovernanceValidatorTests(unittest.TestCase):
   with (self.root/validator.RESOURCE_DIR/filename).open("r",encoding="utf-8",newline="") as stream: rows=list(csv.DictReader(stream))
   rows[0]["execution_status"]="PASS"; self.write_rows(filename,rows)
   report=validator.validate_governance(self.root); self.assertTrue(any("drill matrix must remain" in e for e in report["errors"]))
+
+ def test_drill_matrix_requires_acceptance_criteria_source_and_evidence(self):
+  filename="spare-parts-inventory-backup-restore-drill-acceptance-matrix-v1.csv"
+  with (self.root/validator.RESOURCE_DIR/filename).open("r",encoding="utf-8",newline="") as stream: rows=list(csv.DictReader(stream))
+  rows[0]["acceptance_criteria_source"]=""
+  self.write_rows(filename,rows)
+  report=validator.validate_governance(self.root)
+  self.assertTrue(any("acceptance criteria source and evidence" in e for e in report["errors"]))
  def test_approved_policy_does_not_unlock_production(self):
   filename="spare-parts-inventory-backup-retention-policy-template.csv"
   self.write_rows(filename,[self.approved_row(filename,"POLICY-001")])
