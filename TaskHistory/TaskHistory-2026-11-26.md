@@ -527,3 +527,16 @@
 - **质量结果：** 全库328项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5条非阻断warning）。
 - **登记：** KNOW-000054 / ASSET-000085已同步；矩阵24条场景均PROPOSED_NOT_APPROVED / NOT_RUN。
 - **限制：** 单aggregate scheduler存在全局写串行热点；旧SQLite scheduler和Coordinator状态机未迁移；真实etcd和多主机验证未完成。
+
+
+## CH17-T004 Unified Coordinator Authority第四十一轮（2026-11-26）
+
+- **目标：** 把Leader epoch、scope high-water token、ACTIVATE/REVOKE/PUBLISH operation ledger、publish sequence、Provider generation和恢复审查，与Admission quota/queue/lease并入同一事务权威。
+- **实现：** 新增 `scripts/spare_parts_provider_unified_coordinator_authority.py` 的 `StoreBackedCoordinatorAuthority`。Unified Admission aggregate升级为schema v2、namespace `/cnc/admission/unified/v2/`；aggregate的coordinator子状态保存Leader、scopes、operations。Leader TTL key与aggregate Leader镜像通过同一Txn更新；scope/operation写入比较aggregate revision、Leader TTL key精确值，且对关联Admission Lease比较活动Lease和持久request索引。
+- **Leader：** claim采用单调epoch与TTL互斥；renew同epoch更换TTL Lease；recovery claim需要高于持久epoch的外部floor和reference。旧epoch在takeover后不能授权操作或签名。
+- **Scope/Operation：** ACTIVATE/REVOKE/PUBLISH采用两阶段状态机，需Provider read-back才能确认；PUBLISH sequence在scope内CAS单调分配，idempotency key绑定request digest；恢复操作进入RECOVERY_REVIEW，scope进入RECOVERY_REQUIRED，不自动cutover。
+- **Proof签名：** `sign_distributed_fencing_proof()`接入backend-neutral authority protocol，授权时重新校验Leader和持久operation身份（含owner、tenant、domain、lease expiry），避免使用篡改过的operation快照签发证明。
+- **测试：** 新增8个契约测试方法，SQLite与InMemoryEtcdV3Client各执行一次，共16次适配器测试执行；覆盖本地合成Provider ACTIVATE/PUBLISH/REVOKE完整链、Leader TTL/takeover/recovery floor、tenant scope、幂等、并发序列、restore review、共享aggregate和签名身份篡改拒绝。代码提交 `3d79149c1112550b4fb25efbe02b5f536b08cacd`；[Run 45810737444](https://github.com/rexyll/cnc-knowledge/actions/runs/45810737444)两个必需Job均completed/success，全库344项unittest、CH12 143项测试通过，lint与结构质量0 errors。
+- **知识/资源：** 新增KNOW-000055及ASSET-000086，矩阵35条全为PROPOSED_NOT_APPROVED/NOT_RUN；更新KNOW-000054为schema v2，复用SRC-000391/392/397/398。
+- **重要限制：** 旧SQLite Admission和Coordinator类仍未替换；v1→v2数据迁移及单一权威cutover未完成；真实etcd及多主机/真实Provider未连接。aggregate单键仍有写串行与operation ledger增长风险。
+- **生产状态：** `production_backup_enabled=false`；`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`；`business_rule_assertions=NOT_EVALUATED`。

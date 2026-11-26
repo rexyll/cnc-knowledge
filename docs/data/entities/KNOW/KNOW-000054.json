@@ -57,7 +57,7 @@
     "backend_store_port": "CoordinatorAuthorityStore",
     "sqlite_adapter": "SQLiteCoordinatorAuthorityStore",
     "etcd_adapter": "EtcdV3CoordinatorAuthorityStore",
-    "state_key": "/cnc/admission/unified/v1/scheduler/state",
+    "state_key": "/cnc/admission/unified/v2/scheduler/state",
     "state_serialization": "single aggregate key with revision CAS",
     "active_lease_keys_ttl_attached": true,
     "request_id_tombstones_persistent": true,
@@ -89,7 +89,11 @@
     "doc_sync_commit": "87d749147d2c32da547ce23ed56db69725271a00",
     "doc_sync_ci_run": 45778328441,
     "doc_sync_ci_status": "completed/success",
-    "final_metadata_ci_pending": true
+    "final_metadata_ci_pending": true,
+    "aggregate_schema_version": 2,
+    "aggregate_namespace": "/cnc/admission/unified/v2/",
+    "coordinator_authority_successor": "KNOW-000055",
+    "coordinator_authority_matrix": "ASSET-000086"
   },
-  "notes": "第四十轮新增StoreBackedProviderAdmissionCoordinator，以/cnc/admission/unified/v1/独立命名空间和单aggregate state统一策略hash、global/tenant quota、跨domain等待队列、fair priority+aging、活动lease、request_id索引和全局fencing token；所有调度状态变更以aggregate mod_revision及活动Lease/request精确值Compare保护，并与TTL附着活动键和持久幂等索引同Txn提交。6个测试方法分别在SQLite和InMemoryEtcdV3Client执行，共12次适配器执行。全库328项unittest、CH12 143项通过，lint与结构质量0 errors。单aggregate是正确性基线但构成写入热点和活动集比较扩张，不是高吞吐生产设计。旧SQLiteProviderAdmissionCoordinator和SQLiteDurableCoordinatorAuthority未迁移，真实etcd/mTLS/RBAC/quorum/multihost/Provider未验证。ASSET-000085 24条场景全部PROPOSED_NOT_APPROVED/NOT_RUN。 文档同步提交 87d749147d2c32da547ce23ed56db69725271a00 的CI Run 45778328441两个必需Job均completed/success；全库328项unittest、CH12 143项测试通过，strict lint 0 errors，结构质量0 errors（报告5项非阻断warning）。最终元数据CI待后续记录。 文档同步提交 87d749147d2c32da547ce23ed56db69725271a00 的CI Run 45778328441两个必需Job均completed/success，全库328项unittest、CH12 143项测试通过，strict lint 0 errors，结构质量0 errors（5条非阻断warning）。最终元数据CI待后续记录。"
+  "notes": "第四十轮新增StoreBackedProviderAdmissionCoordinator，以/cnc/admission/unified/v1/独立命名空间和单aggregate state统一策略hash、global/tenant quota、跨domain等待队列、fair priority+aging、活动lease、request_id索引和全局fencing token；所有调度状态变更以aggregate mod_revision及活动Lease/request精确值Compare保护，并与TTL附着活动键和持久幂等索引同Txn提交。6个测试方法分别在SQLite和InMemoryEtcdV3Client执行，共12次适配器执行。全库328项unittest、CH12 143项通过，lint与结构质量0 errors。单aggregate是正确性基线但构成写入热点和活动集比较扩张，不是高吞吐生产设计。旧SQLiteProviderAdmissionCoordinator和SQLiteDurableCoordinatorAuthority未迁移，真实etcd/mTLS/RBAC/quorum/multihost/Provider未验证。ASSET-000085 24条场景全部PROPOSED_NOT_APPROVED/NOT_RUN。 文档同步提交 87d749147d2c32da547ce23ed56db69725271a00 的CI Run 45778328441两个必需Job均completed/success；全库328项unittest、CH12 143项测试通过，strict lint 0 errors，结构质量0 errors（报告5项非阻断warning）。最终元数据CI待后续记录。 文档同步提交 87d749147d2c32da547ce23ed56db69725271a00 的CI Run 45778328441两个必需Job均completed/success，全库328项unittest、CH12 143项测试通过，strict lint 0 errors，结构质量0 errors（5条非阻断warning）。最终元数据CI待后续记录。 第四十一轮将Aggregate schema升级为v2及namespace /cnc/admission/unified/v2/，并在同一aggregate增加coordinator Leader/scopes/operations子状态；相关KNOW-000055。旧schema v1不自动读取或迁移，仍需受控cutover。第四十一轮代码CI Run 45810053803通过，全库344项unittest、CH12 143项测试通过，lint与结构质量0 errors。"
 }

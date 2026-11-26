@@ -673,7 +673,7 @@
 - **目标：** 将Admission全局/租户配额、跨domain等待队列、公平调度、fencing token、活动Lease和request_id幂等收敛到同一个强一致Txn权威快照，避免lease与容量计数分开提交。
 - **实现：** 新增 `scripts/spare_parts_provider_unified_admission_store.py` / `StoreBackedProviderAdmissionCoordinator`。单一revisioned aggregate保存policy hash、global/tenant limits、活动集合、waiters、fencing/waiter序号和统计；活动Lease键附着backend TTL，request索引持久保留。Acquire在同一个Txn比较aggregate revision、当前所有活动Lease/request精确值、目标键不存在，并一次写入aggregate/token/活动Lease/request；renew与release同步更新aggregate和两个索引。Waiter按priority + age/aging interval排序，sequence用于同分平局，全局max_waiters跨domain生效。
 - **并发与过期：** 事务根据线性一致读到的活动键构建精确Compare；backend TTL删除或lease变化会令原Txn比较失败。expired lease在成功CAS中从active map清理并把request记录标记EXPIRED。CAS失败重新读取最新状态，不使用陈旧容量计数。
-- **Namespace：** 使用 `/cnc/admission/unified/v1/` 与第三十九轮独立Lease Authority键空间隔离；禁止两套Authority对同一业务范围并行写入或双写。
+- **Namespace：** 使用 `/cnc/admission/unified/v2/` 与第三十九轮独立Lease Authority键空间隔离；禁止两套Authority对同一业务范围并行写入或双写。
 - **测试：** 新增6个测试方法，SQLite与InMemoryEtcdV3Client分别执行，共12次适配器测试执行，覆盖global/tenant quota、跨实例不超卖、公平队列/aging、waiter上限与清理、TTL回收、renew/release与同Txn authority guard、request幂等与竞争。最终代码CI Run 45778008494两个必需Job通过：全库328项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。
 - **知识/资源：** 新增KNOW-000054、ASSET-000085；24条正式验收场景均 `PROPOSED_NOT_APPROVED / NOT_RUN`；复用SRC-000391/392/397/398。
 - **限制：** 单aggregate状态键让所有domain更新全局串行化，且每次事务需比较活动集合；这是正确性参考基线，不是高吞吐/生产规模设计。旧 `SQLiteProviderAdmissionCoordinator` 的数据、队列、策略及旧 `SQLiteDurableCoordinatorAuthority` 仍未迁移；真实etcd、gRPC/JSON Gateway、mTLS/RBAC、quorum、多主机、Provider端到端和分片吞吐尚未验证。禁止与旧scheduler双写。
@@ -692,3 +692,17 @@
 - **文档提交：** `87d749147d2c32da547ce23ed56db69725271a00`；[Run 45778328441](https://github.com/rexyll/cnc-knowledge/actions/runs/45778328441)两个必需Job均completed/success。
 - **质量结果：** 全库328项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（报告5条非阻断warning）。
 - **状态：** ASSET-000085的24条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；旧SQLite Admission与Coordinator领域服务尚未迁移；生产备份关闭，治理门禁不变。
+
+
+## 6.13 CH17-T004 第四十一轮：Coordinator Leader / Scope / Operation统一事务（2026-11-26）
+
+- **目标：** 将旧 `SQLiteDurableCoordinatorAuthority` 的Leader epoch、每个tenant scope的high-water fencing token、ACTIVATE/REVOKE/PUBLISH两阶段操作、publish sequence与恢复审查状态，纳入第四十轮统一Admission scheduler的同一个存储aggregate。
+- **实现：** 新增 `scripts/spare_parts_provider_unified_coordinator_authority.py` / `StoreBackedCoordinatorAuthority`。统一Admission aggregate schema升级为v2，namespace为 `/cnc/admission/unified/v2/`；`aggregate.coordinator` 保存Leader镜像、scope map和operation map。Leader KV key附着backend TTL Lease，与aggregate Leader状态同Txn更新。Coordinator状态转换比较aggregate revision、Leader TTL key精确值，并在操作关联Admission Lease时追加活动Lease与request index精确值Compare。
+- **Leader：** claim单调递增epoch、拒绝有效TTL key重复claim；恢复claim需要严格更高外部epoch floor与reconciliation reference；renew更换TTL Lease但不改变epoch。Leader TTL过期/新epoch takeover后，旧epoch不能继续授权operation/signing。
+- **Scope/Operation：** tenant scope规范化；ACTIVATE prepare提升scope high-water token并进入PENDING_ACTIVATION，只有Provider read-back才能confirm ACTIVE；REVOKE需精确ACTIVE lease/token并read-back confirm；PUBLISH仅对ACTIVE scope lease分配每scope单调sequence，receipt匹配token/sequence/manifest后才COMMITTED；operation idempotency key绑定canonical request digest。
+- **签名授权：** `sign_distributed_fencing_proof()`改成backend-neutral authority port，要求`authorize_operation_signing()`，持久比对operation身份字段（含owner/tenant/domain/lease expiry），可由SQLite与Unified Coordinator共用。测试用Ed25519 signer及InMemoryConditionalObjectControlStore完成合成Provider端到端流程。
+- **恢复：** external high-water与sequence floors不得低于持久状态；pending operations降为RECOVERY_REVIEW，scope进入RECOVERY_REQUIRED，返回automatic_cutover=false，不自动提升为ACTIVE/COMMITTED。
+- **测试：** 新增8个契约测试方法，SQLite与InMemoryEtcdV3Client各运行一次，共16次适配器测试执行。覆盖端到端ACTIVATE/PUBLISH/REVOKE、Leader expiry/takeover、epoch recovery floor、scope tenant boundary、idempotency、并发sequence唯一、restore review、同aggregate及Admission release guard、签名身份篡改拒绝。最终代码提交 `3d79149c1112550b4fb25efbe02b5f536b08cacd`；[CI Run 45810737444](https://github.com/rexyll/cnc-knowledge/actions/runs/45810737444)两个必需Job通过，全库344项unittest、CH12 143项测试通过，strict lint 0 errors，结构质量0 errors。
+- **知识/资源：** 新增KNOW-000055、ASSET-000086；35条场景均 `PROPOSED_NOT_APPROVED / NOT_RUN`；复用SRC-000391/392/397/398。
+- **限制：** 旧 `SQLiteDurableCoordinatorAuthority` 与 `SQLiteProviderAdmissionCoordinator` 未替换；v1→v2生产导入/回滚cutover未实现；真实etcd、mTLS/RBAC/quorum、多主机和外部Provider未验证。单aggregate仍是全局写热点，operation map会增长，必须有受控归档/分片方案和容量证明。
+- **状态：** CH17-T004仍为IN_PROGRESS；生产备份关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

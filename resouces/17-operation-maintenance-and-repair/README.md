@@ -493,3 +493,13 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 - 第四十轮文档同步CI Run 45778328441两个必需Job均completed/success（提交 87d749147d2c32da547ce23ed56db69725271a00）；全库328项unittest、CH12 143项数值资源测试通过，strict lint 0 errors，知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000085的24项场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 Unified Coordinator Authority统一事务（第四十一轮）
+
+- `spare-parts-inventory-backup-provider-unified-coordinator-authority-matrix-v1.csv`（ASSET-000086）：35条场景覆盖Leader TTL/epoch、recovery floor、tenant scope fencing、ACTIVATE/REVOKE/PUBLISH、publish sequence、proof授权和Admission同事务比较；全部 `PROPOSED_NOT_APPROVED / NOT_RUN`。
+- 代码：`scripts/spare_parts_provider_unified_coordinator_authority.py`；测试：`tests/test_spare_parts_provider_unified_coordinator_authority.py`；8个测试方法在SQLite与InMemoryEtcdV3Client各执行一次，共16次适配器测试执行。
+- 关联KNOW-000055；统一Admission aggregate升级为schema v2，namespace `/cnc/admission/unified/v2/`。旧SQLite Coordinator/Admission仍未迁移，禁止双写。
+
+
+- 第四十一轮最终代码提交 `3d79149c1112550b4fb25efbe02b5f536b08cacd`，CI Run 45810737444两个必需Job均completed/success；全库344项unittest、CH12 143项数值资源测试通过，strict lint与结构质量均0 errors。ASSET-000086的35条场景仍PROPOSED_NOT_APPROVED / NOT_RUN。

@@ -18,13 +18,13 @@
 测试：`tests/test_spare_parts_provider_unified_admission_store.py`  
 核心类型：`StoreBackedProviderAdmissionCoordinator`
 
-本轮使用独立命名空间 `/cnc/admission/unified/v1/`，避免与第三十九轮独立 `StoreBackedAdmissionLeaseAuthority` 的 `/cnc/admission/v1/` 参考键冲突。两个原型不能对同一个业务Admission范围并行写入，也不构成双写迁移方案。
+本轮使用独立命名空间 `/cnc/admission/unified/v2/`，避免与第三十九轮独立 `StoreBackedAdmissionLeaseAuthority` 的 `/cnc/admission/v1/` 参考键冲突。两个原型不能对同一个业务Admission范围并行写入，也不构成双写迁移方案。
 
 | 键 | 生命周期 | 内容/职责 |
 |---|---|---|
-| `/cnc/admission/unified/v1/scheduler/state` | 持久、revision CAS | 全域策略指纹、global/tenant quota、活动lease记录、全局waiter数组、fencing/waiter序号和统计 |
-| `/cnc/admission/unified/v1/leases/<sha256(lease_id)>` | Store TTL Lease | 活动lease权威记录；TTL到期时由后端删除 |
-| `/cnc/admission/unified/v1/requests/<sha256(request_id)>` | 持久 | request identity、lease、fencing token及ACTIVE/RELEASED/EXPIRED终态索引 |
+| `/cnc/admission/unified/v2/scheduler/state` | 持久、revision CAS | 全域策略指纹、global/tenant quota、活动lease记录、全局waiter数组、fencing/waiter序号和统计 |
+| `/cnc/admission/unified/v2/leases/<sha256(lease_id)>` | Store TTL Lease | 活动lease权威记录；TTL到期时由后端删除 |
+| `/cnc/admission/unified/v2/requests/<sha256(request_id)>` | 持久 | request identity、lease、fencing token及ACTIVE/RELEASED/EXPIRED终态索引 |
 
 Scheduler aggregate中每一个活动记录必须与活动Lease键和持久request索引的规范化记录字节相匹配。每次影响容量、等待队列或lease生命周期的事务都比较aggregate的mod_revision，并对当前活动lease/request索引追加精确值比较。这样活动键的TTL到期、release或renew发生在读取和写入之间时，原事务比较会失败，而不能使用陈旧活动集合提交新的配额决策。
 
@@ -105,7 +105,7 @@ ASSET-000085定义24条统一scheduler场景，全部 `PROPOSED_NOT_APPROVED / N
 
 ## 9. 与旧Admission系统及第四十轮以后迁移的边界
 
-本轮组件使用独立 `/cnc/admission/unified/v1/` 命名空间，不能与第三十九轮 `StoreBackedAdmissionLeaseAuthority` 原型或旧 `SQLiteProviderAdmissionCoordinator` 对同一业务范围并行写入。它是候选统一状态模型，不是线上自动切换器。
+本轮组件使用独立 `/cnc/admission/unified/v2/` 命名空间，不能与第三十九轮 `StoreBackedAdmissionLeaseAuthority` 原型或旧 `SQLiteProviderAdmissionCoordinator` 对同一业务范围并行写入。它是候选统一状态模型，不是线上自动切换器。
 
 尚未完成：
 
@@ -141,3 +141,8 @@ business_rule_assertions = NOT_EVALUATED
 ### 第四十轮最终文档同步说明
 
 文档同步提交 `87d749147d2c32da547ce23ed56db69725271a00`；[GitHub Actions Run 45778328441](https://github.com/rexyll/cnc-knowledge/actions/runs/45778328441)两个必需Job均completed/success。全库328项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（报告包含5条非阻断warning）。ASSET-000085的24条场景继续保持 `PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+### 第四十一轮关联更新：Coordinator authority纳入Aggregate schema v2
+
+第四十一轮已将Coordinator Leader、Scope Fencing与Operation Ledger接入本轮统一Aggregate；参见 [KNOW-000055：Unified Coordinator Authority统一事务模型](spare-parts-inventory-backup-provider-unified-coordinator-authority.md)。统一Admission状态schema现为v2，namespace统一为 `/cnc/admission/unified/v2/`；第四十轮原型状态不再以v1键空间作为当前运行版本。Coordinator状态嵌入 `aggregate.coordinator`，通过同一Txn比较Leader TTL键与Admission活动Lease/request索引。旧SQLite Coordinator未迁移，不能进行新旧双写或未经审批的自动切换。

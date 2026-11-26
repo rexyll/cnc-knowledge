@@ -114,3 +114,5 @@
 | spare-parts-inventory-backup-provider-admission-lease-authority-matrix-v1.csv | CSV Admission Lease Authority统一事务场景矩阵 / ASSET-000084 | 项目原创 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000053 | 20条场景，覆盖全局单调token、request_id幂等、backend TTL、renew/release CAS、持久终态索引、authority双键Txn guard与OUTCOME_UNKNOWN；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
 
 | spare-parts-inventory-backup-provider-unified-admission-scheduler-matrix-v1.csv | CSV Unified Admission Scheduler与配额统一事务场景矩阵 / ASSET-000085 | 项目原创 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000054 | 24条场景，覆盖aggregate CAS、global/tenant quota、跨domain waiter公平调度、TTL与lease生命周期、幂等、authority guard、namespace隔离及迁移边界；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
+
+| spare-parts-inventory-backup-provider-unified-coordinator-authority-matrix-v1.csv | CSV Unified Coordinator Authority统一事务场景矩阵 / ASSET-000086 | 项目原创 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000055 | 35条场景，覆盖Leader TTL/epoch、恢复floor、tenant scope fencing、ACTIVATE/REVOKE/PUBLISH、publish sequence、持久operation idempotency、proof签名授权和Admission同Txn边界；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
