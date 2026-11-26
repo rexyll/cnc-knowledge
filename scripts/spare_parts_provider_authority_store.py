@@ -13,7 +13,7 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Mapping, Protocol, Sequence, runtime_checkable
+from typing import Any, Callable, Iterable, Iterator, Mapping, Protocol, Sequence, runtime_checkable
 
 
 class AuthorityStoreError(RuntimeError):
@@ -121,6 +121,63 @@ class AuthorityStoreLease:
     ttl_seconds: int
 
 
+@dataclass(frozen=True)
+class AuthorityStoreRangeResult:
+    entries: tuple[AuthorityStoreEntry, ...]
+    revision: int
+
+
+@dataclass(frozen=True)
+class AuthorityStoreWatchEvent:
+    event_type: str
+    key: bytes
+    revision: int
+    entry: AuthorityStoreEntry | None = None
+    previous_entry: AuthorityStoreEntry | None = None
+
+
+@dataclass(frozen=True)
+class AuthorityStoreWatchResponse:
+    watch_id: int
+    header_revision: int
+    created: bool = False
+    canceled: bool = False
+    compact_revision: int = 0
+    cancel_reason: str = ""
+    fragment: bool = False
+    events: tuple[AuthorityStoreWatchEvent, ...] = ()
+
+    @property
+    def is_progress(self) -> bool:
+        return not self.created and not self.canceled and not self.events
+
+    @property
+    def resume_revision(self) -> int | None:
+        """Inclusive revision for a safe new watch after this complete response.
+
+        A canceled/compacted watch needs a fresh linearizable rebuild; a
+        fragment must not advance the cursor until its final fragment arrives.
+        """
+        if self.canceled or self.fragment or self.created:
+            return None
+        return self.header_revision + 1
+
+
+@runtime_checkable
+class CoordinatorAuthorityWatchStore(Protocol):
+    """Optional watch capability; Watch is a wake-up hint, never authority."""
+
+    def watch(
+        self,
+        key: bytes,
+        *,
+        start_revision: int = 0,
+        range_end: bytes | None = None,
+        progress_notify: bool = True,
+        prev_kv: bool = True,
+    ) -> Iterator[AuthorityStoreWatchResponse]: ...
+
+
 @runtime_checkable
 class CoordinatorAuthorityStore(Protocol):
     """Minimal port required by a distributed Coordinator state machine.
@@ -177,10 +234,17 @@ class EtcdV3Client(Protocol):
     A concrete driver may use etcd's gRPC API or its gRPC-JSON gateway. It must
     return snake_case response fields and bytes for keys/values, use a
     linearizable Range when serializable=False, and expose the transaction and
-    Lease RPCs without weakening their consistency semantics.
+    Lease RPCs without weakening their consistency semantics. Watch is an
+    optional extension so existing non-watching drivers remain constructible.
     """
 
-    def range(self, key: bytes, *, serializable: bool = False) -> Mapping[str, Any]: ...
+    def range(
+        self,
+        key: bytes,
+        *,
+        range_end: bytes | None = None,
+        serializable: bool = False,
+    ) -> Mapping[str, Any]: ...
 
     def txn(
         self,
@@ -195,6 +259,34 @@ class EtcdV3Client(Protocol):
     def lease_keepalive(self, lease_id: int) -> Mapping[str, Any]: ...
 
     def lease_revoke(self, lease_id: int) -> Mapping[str, Any]: ...
+
+
+@runtime_checkable
+class EtcdV3WatchClient(Protocol):
+    """Optional normalized bidirectional Watch stream driver."""
+
+    def watch(
+        self,
+        key: bytes,
+        *,
+        start_revision: int = 0,
+        range_end: bytes | None = None,
+        progress_notify: bool = True,
+        prev_kv: bool = True,
+    ) -> Iterable[Mapping[str, Any]]: ...
+
+    def watch_progress(self, watch_id: int) -> None: ...
+
+
+def _watch_kv_entry(kv: Mapping[str, Any]) -> AuthorityStoreEntry:
+    return AuthorityStoreEntry(
+        key=bytes(kv["key"]),
+        value=bytes(kv.get("value", b"")),
+        create_revision=int(kv.get("create_revision", 0)),
+        mod_revision=int(kv.get("mod_revision", 0)),
+        version=int(kv.get("version", 0)),
+        lease_id=int(kv.get("lease", 0)),
+    )
 
 
 def _validate_mutations(
@@ -595,6 +687,163 @@ class EtcdV3CoordinatorAuthorityStore:
         except Exception as exc:
             raise AuthorityStoreUnavailableError("etcd Range response is invalid or unavailable") from exc
 
+    def linearizable_range(
+        self, key: bytes, *, range_end: bytes | None = None
+    ) -> AuthorityStoreRangeResult:
+        if not isinstance(key, bytes) or not key:
+            raise ValueError("range start key must be non-empty bytes")
+        if range_end is not None and (
+            not isinstance(range_end, bytes) or (range_end and range_end <= key)
+        ):
+            raise ValueError("range_end must be empty or lexicographically greater than key")
+        try:
+            response = self.client.range(
+                key, range_end=range_end, serializable=False
+            )
+            header = response.get("header", {})
+            revision = int(header.get("revision", 0))
+            entries = tuple(
+                AuthorityStoreEntry(
+                    key=bytes(kv["key"]),
+                    value=bytes(kv["value"]),
+                    create_revision=int(kv["create_revision"]),
+                    mod_revision=int(kv["mod_revision"]),
+                    version=int(kv["version"]),
+                    lease_id=int(kv.get("lease", 0)),
+                )
+                for kv in (response.get("kvs") or [])
+            )
+            if any(item.mod_revision > revision for item in entries):
+                raise AuthorityStoreError("Range entry revision exceeds response header")
+            return AuthorityStoreRangeResult(entries=entries, revision=revision)
+        except AuthorityStoreError:
+            raise
+        except (TimeoutError, ConnectionError) as exc:
+            raise AuthorityStoreUnavailableError(
+                "etcd linearizable Range failed"
+            ) from exc
+        except Exception as exc:
+            raise AuthorityStoreUnavailableError(
+                "etcd Range response is invalid or unavailable"
+            ) from exc
+
+    def watch(
+        self,
+        key: bytes,
+        *,
+        start_revision: int = 0,
+        range_end: bytes | None = None,
+        progress_notify: bool = True,
+        prev_kv: bool = True,
+    ) -> Iterator[AuthorityStoreWatchResponse]:
+        if not isinstance(key, bytes) or not key:
+            raise ValueError("watch key must be non-empty bytes")
+        if (
+            not isinstance(start_revision, int)
+            or isinstance(start_revision, bool)
+            or start_revision < 0
+        ):
+            raise ValueError("watch start_revision must be a non-negative integer")
+        if range_end is not None and (
+            not isinstance(range_end, bytes) or (range_end and range_end <= key)
+        ):
+            raise ValueError("watch range_end must be empty or greater than key")
+        driver_watch = getattr(self.client, "watch", None)
+        if not callable(driver_watch):
+            raise AuthorityStoreUnavailableError(
+                "etcd client driver does not expose the optional Watch capability"
+            )
+
+        def stream() -> Iterator[AuthorityStoreWatchResponse]:
+            raw_stream: Any = None
+            try:
+                raw_stream = driver_watch(
+                    key,
+                    start_revision=start_revision,
+                    range_end=range_end,
+                    progress_notify=progress_notify,
+                    prev_kv=prev_kv,
+                )
+                for raw in raw_stream:
+                    if not isinstance(raw, Mapping):
+                        raise AuthorityStoreError("etcd Watch response is not a mapping")
+                    header = raw.get("header", {})
+                    revision = int(header.get("revision", 0))
+                    if revision < 0:
+                        raise AuthorityStoreError("etcd Watch response revision is invalid")
+                    watch_id = int(raw.get("watch_id", 0))
+                    events: list[AuthorityStoreWatchEvent] = []
+                    for event in (raw.get("events") or []):
+                        raw_type = event.get("type")
+                        if raw_type in (0, "PUT", "put"):
+                            event_type = "PUT"
+                        elif raw_type in (1, "DELETE", "delete"):
+                            event_type = "DELETE"
+                        else:
+                            raise AuthorityStoreError("etcd Watch event type is invalid")
+                        kv = event.get("kv")
+                        if not isinstance(kv, Mapping) or not kv.get("key"):
+                            raise AuthorityStoreError("etcd Watch event KV is malformed")
+                        entry = _watch_kv_entry(kv) if event_type == "PUT" else None
+                        previous = event.get("prev_kv")
+                        events.append(
+                            AuthorityStoreWatchEvent(
+                                event_type=event_type,
+                                key=bytes(kv["key"]),
+                                revision=int(kv.get("mod_revision", revision)),
+                                entry=entry,
+                                previous_entry=(
+                                    _watch_kv_entry(previous)
+                                    if isinstance(previous, Mapping) and previous.get("key")
+                                    else None
+                                ),
+                            )
+                        )
+                    response = AuthorityStoreWatchResponse(
+                        watch_id=watch_id,
+                        header_revision=revision,
+                        created=bool(raw.get("created", False)),
+                        canceled=bool(raw.get("canceled", False)),
+                        compact_revision=int(raw.get("compact_revision", 0)),
+                        cancel_reason=str(raw.get("cancel_reason", "")),
+                        fragment=bool(raw.get("fragment", False)),
+                        events=tuple(events),
+                    )
+                    if response.canceled and response.compact_revision < 0:
+                        raise AuthorityStoreError("Watch compact_revision is invalid")
+                    yield response
+                    if response.canceled:
+                        return
+            except AuthorityStoreError:
+                raise
+            except (TimeoutError, ConnectionError) as exc:
+                raise AuthorityStoreUnavailableError(
+                    "etcd Watch stream disconnected; rebuild from a linearizable Range"
+                ) from exc
+            except Exception as exc:
+                raise AuthorityStoreUnavailableError(
+                    "etcd Watch stream failed or returned an invalid response"
+                ) from exc
+            finally:
+                close = getattr(raw_stream, "close", None)
+                if callable(close):
+                    close()
+
+        return stream()
+
+    def watch_progress(self, watch_id: int) -> None:
+        request_progress = getattr(self.client, "watch_progress", None)
+        if not callable(request_progress):
+            raise AuthorityStoreUnavailableError(
+                "etcd client driver does not expose WatchProgress"
+            )
+        try:
+            request_progress(watch_id)
+        except (TimeoutError, ConnectionError) as exc:
+            raise AuthorityStoreUnavailableError(
+                "etcd WatchProgress request failed"
+            ) from exc
+
     @staticmethod
     def _compare_request(condition: AuthorityStoreCompare) -> dict[str, Any]:
         target_field = {
@@ -922,6 +1171,331 @@ class InMemoryEtcdV3Client:
             if deleted:
                 self._revision += 1
             return {"id": lease_id}
+
+
+class InMemoryEtcdV3WatchClient(InMemoryEtcdV3Client):
+    """Shared single-process fake with revisioned Watch and failure injection.
+
+    Multiple EtcdV3CoordinatorAuthorityStore instances may share one instance
+    to test independent clients against the same deterministic backend. This
+    remains a process-local fake: no Raft, quorum, transport or server clock.
+    """
+
+    def __init__(self, *, clock_fn: Callable[[], float] = time.time):
+        super().__init__(clock_fn=clock_fn)
+        self._condition = threading.Condition(self._lock)
+        self._watch_history: list[dict[str, Any]] = []
+        self._watchers: dict[int, dict[str, Any]] = {}
+        self._next_watch_id = 1
+        self._compact_revision = 0
+        self.fail_next_txn_before_commit = False
+        self.fail_next_lease_grant_after_commit = False
+        self.fail_next_lease_keepalive_after_commit = False
+        self.fail_next_lease_revoke_after_commit = False
+        self.fail_next_watch_after_create = False
+
+    @staticmethod
+    def _copy_kv(value: Mapping[str, Any]) -> dict[str, Any]:
+        return {key: item for key, item in value.items()}
+
+    def _record_diff(
+        self,
+        before: Mapping[bytes, Mapping[str, Any]],
+        *,
+        revision: int,
+    ) -> None:
+        events: list[dict[str, Any]] = []
+        keys = set(before) | set(self._kvs)
+        for key in sorted(keys):
+            old = before.get(key)
+            current = self._kvs.get(key)
+            if old == current:
+                continue
+            if current is None:
+                deleted_kv = {
+                    "key": key,
+                    "value": b"",
+                    "create_revision": int(old["create_revision"]),
+                    "mod_revision": revision,
+                    "version": 0,
+                    "lease": 0,
+                }
+                events.append({
+                    "type": 1,
+                    "kv": deleted_kv,
+                    "prev_kv": {"key": key, **self._copy_kv(old)},
+                })
+            else:
+                events.append({
+                    "type": 0,
+                    "kv": {"key": key, **self._copy_kv(current)},
+                    "prev_kv": (
+                        None if old is None
+                        else {"key": key, **self._copy_kv(old)}
+                    ),
+                })
+        if events:
+            self._watch_history.extend(
+                {"revision": revision, "event": event} for event in events
+            )
+            self._condition.notify_all()
+
+    def _expire(self) -> None:
+        before = {key: self._copy_kv(value) for key, value in self._kvs.items()}
+        old_revision = self._revision
+        super()._expire()
+        if self._revision > old_revision:
+            self._record_diff(before, revision=self._revision)
+
+    def range(
+        self,
+        key: bytes,
+        *,
+        range_end: bytes | None = None,
+        serializable: bool = False,
+    ) -> Mapping[str, Any]:
+        with self._lock:
+            self._ensure_available()
+            self._expire()
+            self.serializable_flags.append(serializable)
+            if range_end is None:
+                keys = [key] if key in self._kvs else []
+            elif range_end == b"\x00":
+                keys = sorted(candidate for candidate in self._kvs if candidate >= key)
+            else:
+                keys = sorted(
+                    candidate for candidate in self._kvs
+                    if key <= candidate < range_end
+                )
+            return {
+                "header": {"revision": self._revision},
+                "kvs": [
+                    {"key": candidate, **self._copy_kv(self._kvs[candidate])}
+                    for candidate in keys
+                ],
+            }
+
+    def txn(
+        self,
+        *,
+        compare: Sequence[Mapping[str, Any]],
+        success: Sequence[Mapping[str, Any]],
+        failure: Sequence[Mapping[str, Any]],
+    ) -> Mapping[str, Any]:
+        with self._condition:
+            self._ensure_available()
+            self._expire()
+            if self.fail_next_txn_before_commit:
+                self.fail_next_txn_before_commit = False
+                raise TimeoutError("synthetic Txn response lost before commit")
+            before = {key: self._copy_kv(value) for key, value in self._kvs.items()}
+            old_revision = self._revision
+            try:
+                return super().txn(compare=compare, success=success, failure=failure)
+            finally:
+                if self._revision > old_revision:
+                    self._record_diff(before, revision=self._revision)
+
+    def lease_grant(self, ttl_seconds: int) -> Mapping[str, Any]:
+        response = super().lease_grant(ttl_seconds)
+        if self.fail_next_lease_grant_after_commit:
+            self.fail_next_lease_grant_after_commit = False
+            raise TimeoutError("synthetic LeaseGrant response lost after grant")
+        return response
+
+    def lease_keepalive(self, lease_id: int) -> Mapping[str, Any]:
+        response = super().lease_keepalive(lease_id)
+        if self.fail_next_lease_keepalive_after_commit:
+            self.fail_next_lease_keepalive_after_commit = False
+            raise TimeoutError("synthetic LeaseKeepAlive response lost after extension")
+        return response
+
+    def lease_revoke(self, lease_id: int) -> Mapping[str, Any]:
+        with self._condition:
+            self._ensure_available()
+            self._expire()
+            before = {key: self._copy_kv(value) for key, value in self._kvs.items()}
+            old_revision = self._revision
+            try:
+                response = super().lease_revoke(lease_id)
+            finally:
+                if self._revision > old_revision:
+                    self._record_diff(before, revision=self._revision)
+            if self.fail_next_lease_revoke_after_commit:
+                self.fail_next_lease_revoke_after_commit = False
+                raise TimeoutError("synthetic LeaseRevoke response lost after revoke")
+            return response
+
+    def compact(self, revision: int) -> None:
+        with self._condition:
+            if (
+                not isinstance(revision, int)
+                or isinstance(revision, bool)
+                or revision < 0
+                or revision > self._revision
+            ):
+                raise ValueError("compact revision must be within current revision")
+            self._compact_revision = max(self._compact_revision, revision)
+            self._watch_history = [
+                item for item in self._watch_history
+                if int(item["revision"]) > self._compact_revision
+            ]
+            self._condition.notify_all()
+
+    def watch(
+        self,
+        key: bytes,
+        *,
+        start_revision: int = 0,
+        range_end: bytes | None = None,
+        progress_notify: bool = True,
+        prev_kv: bool = True,
+    ) -> Iterator[Mapping[str, Any]]:
+        if not isinstance(key, bytes) or not key:
+            raise ValueError("watch key must be non-empty bytes")
+        if not isinstance(start_revision, int) or isinstance(start_revision, bool) or start_revision < 0:
+            raise ValueError("start_revision must be non-negative")
+
+        def matches(candidate: bytes) -> bool:
+            if range_end is None:
+                return candidate == key
+            if range_end == b"\x00":
+                return candidate >= key
+            return key <= candidate < range_end
+
+        def stream() -> Iterator[Mapping[str, Any]]:
+            with self._condition:
+                self._ensure_available()
+                self._expire()
+                watch_id = self._next_watch_id
+                self._next_watch_id += 1
+                current_revision = self._revision
+                if start_revision and start_revision <= self._compact_revision:
+                    yield {
+                        "header": {"revision": current_revision},
+                        "watch_id": watch_id,
+                        "canceled": True,
+                        "compact_revision": self._compact_revision,
+                        "cancel_reason": "required revision has been compacted",
+                        "events": [],
+                    }
+                    return
+                cursor = current_revision + 1 if start_revision == 0 else start_revision
+                self._watchers[watch_id] = {
+                    "cursor": cursor,
+                    "progress_requested": False,
+                    "cancel_requested": False,
+                }
+                self._condition.notify_all()
+                created = {
+                    "header": {"revision": current_revision},
+                    "watch_id": watch_id,
+                    "created": True,
+                    "events": [],
+                }
+
+            try:
+                yield created
+                while True:
+                    with self._condition:
+                        while True:
+                            self._ensure_available()
+                            if self.fail_next_watch_after_create:
+                                self.fail_next_watch_after_create = False
+                                raise ConnectionError("synthetic Watch stream disconnected")
+                            self._expire()
+                            watcher = self._watchers.get(watch_id)
+                            if watcher is None:
+                                return
+                            cursor = int(watcher["cursor"])
+                            if watcher["cancel_requested"]:
+                                self._watchers.pop(watch_id, None)
+                                response = {
+                                    "header": {"revision": self._revision},
+                                    "watch_id": watch_id,
+                                    "canceled": True,
+                                    "cancel_reason": "watch canceled by client",
+                                    "events": [],
+                                }
+                                break
+                            if cursor <= self._compact_revision:
+                                self._watchers.pop(watch_id, None)
+                                response = {
+                                    "header": {"revision": self._revision},
+                                    "watch_id": watch_id,
+                                    "canceled": True,
+                                    "compact_revision": self._compact_revision,
+                                    "cancel_reason": "watch fell behind compacted history",
+                                    "events": [],
+                                }
+                                break
+
+                            available = [
+                                item for item in self._watch_history
+                                if int(item["revision"]) >= cursor
+                            ]
+                            if available:
+                                upper = max(int(item["revision"]) for item in available)
+                                raw_events = [
+                                    item["event"] for item in available
+                                    if int(item["revision"]) <= upper
+                                    and matches(bytes(item["event"]["kv"]["key"]))
+                                ]
+                                watcher["cursor"] = upper + 1
+                                response = {
+                                    "header": {"revision": upper},
+                                    "watch_id": watch_id,
+                                    "events": [
+                                        {
+                                            **self._copy_kv(event),
+                                            "prev_kv": (
+                                                event.get("prev_kv")
+                                                if prev_kv else None
+                                            ),
+                                        }
+                                        for event in raw_events
+                                    ],
+                                }
+                                if not raw_events and not progress_notify:
+                                    response = None
+                                break
+
+                            if watcher["progress_requested"]:
+                                watcher["progress_requested"] = False
+                                response = {
+                                    "header": {"revision": self._revision},
+                                    "watch_id": watch_id,
+                                    "events": [],
+                                }
+                                break
+                            self._condition.wait()
+
+                    if response is not None:
+                        yield response
+                    if response is not None and response.get("canceled"):
+                        return
+            finally:
+                with self._condition:
+                    self._watchers.pop(watch_id, None)
+                    self._condition.notify_all()
+
+        return stream()
+
+    def watch_progress(self, watch_id: int) -> None:
+        with self._condition:
+            watcher = self._watchers.get(watch_id)
+            if watcher is None:
+                raise ValueError("watch ID is not active")
+            watcher["progress_requested"] = True
+            self._condition.notify_all()
+
+    def watch_cancel(self, watch_id: int) -> None:
+        with self._condition:
+            watcher = self._watchers.get(watch_id)
+            if watcher is None:
+                return
+            watcher["cancel_requested"] = True
+            self._condition.notify_all()
 
 
 def main() -> int:

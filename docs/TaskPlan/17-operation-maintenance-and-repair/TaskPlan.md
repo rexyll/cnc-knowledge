@@ -811,3 +811,14 @@
 - **新增测试：** 1项“same leader discards unconsumed range when external floor advances”，本轮测试总数37项。
 - **最终CI：** [Run 45824510175](https://github.com/rexyll/cnc-knowledge/actions/runs/45824510175)两个必需Job均completed/success：全库463项unittest、CH12 143项测试通过；strict lint 0 errors；知识结构与数据质量0 errors（5项既有warning）。
 - **状态：** ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；不接入真实etcd或多主机Dispatcher，不执行生产schema-v3切换；CH17-T004继续IN_PROGRESS。
+
+
+## 6.18 CH17-T004 etcd v3 Watch、Range恢复与多实例故障注入（第四十六轮，2026-11-26）
+
+- **现状复用：** 本轮复用既有CoordinatorAuthorityStore、EtcdV3CoordinatorAuthorityStore、EtcdV3Client、InMemoryEtcdV3Client和Txn/Lease契约，不重复创建KV/Txn/Lease层。
+- **可选Watch：** 在scripts/spare_parts_provider_authority_store.py增加AuthorityStoreWatchResponse/Event、CoordinatorAuthorityWatchStore/EtcdV3WatchClient可选extension，ETCD Adapter提供watch/watch_progress，并增加linearizable_range(prefix)。SQLite不被强制实现Watch。
+- **Cursor语义：** start_revision包含式；created不推进业务cursor；完整event/progress response可按header_revision+1恢复；fragment未完成不能推进；compact cancellation必须Range重建后R+1重订阅；Watch永远不作为授权判据。
+- **多客户端故障注入：** 新增InMemoryEtcdV3WatchClient共享后端测试替身，多个独立EtcdV3CoordinatorAuthorityStore实例共享revision/KV/Lease/watch history；注入Txn提交前/后超时、LeaseGrant/KeepAlive/Revoke响应丢失、Watcher断线/compact/cancel。
+- **测试/资源：** 新增tests/test_spare_parts_provider_authority_store_watch.py，共21项测试方法；新增KNOW-000060、SRC-000407、ASSET-000091和30项正式场景矩阵，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **范围：** 共享Python fake不是多etcd成员/多主机共识，不模拟真实gRPC Watch stream、Raft quorum、mTLS/RBAC或网络分区。真实etcd driver和Coordinator领域服务从SQLite SQL迁移仍未完成。
+- **状态：** schema-v2仍为唯一生产权威；没有真实etcd接入/迁移；CH17-T004继续IN_PROGRESS。

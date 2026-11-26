@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000407",
+  "source_type": "other",
+  "title": "API reference and Watch API — etcd v3.7",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/dev-guide/api_reference_v3/",
+  "version": "etcd v3.7 official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "WatchCreateRequest start_revision is inclusive; progress notifications carry a header revision; WatchResponse includes created, canceled, compact_revision, cancel_reason and fragment; a watch starting at a compacted revision is canceled and must not be recreated at the same revision.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to define watch stream cursor, compaction recovery and fragment handling. Watch is notification only and never an authority decision. No live etcd driver or cluster was used in this project round.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

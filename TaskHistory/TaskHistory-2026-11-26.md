@@ -654,3 +654,16 @@
 - **测试：** 新增1项回归测试，总计37项本轮分片准入/预算模型测试；全库463项unittest通过；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有DRAFT合成夹具与审批/执行门禁。
 - **生产边界：** 纯内存模型；真实etcd/native Lease、多主机partition Leader、外部Provider floor readback与生产吞吐均未测试。V3公平策略变化仍待企业批准；ASSET-000090的54项正式场景均PROPOSED_NOT_APPROVED / NOT_RUN。
 - **状态：** schema-v2仍是唯一生产权威，未启用V3分片准入；CH17-T004继续IN_PROGRESS。
+
+
+## CH17-T004 etcd Watch、Range恢复与多客户端故障注入（第四十六轮）
+
+- **日期/分支：** 2026-11-26（Asia/Shanghai），main；未创建分支。
+- **基线：** 复用已有EtcdV3CoordinatorAuthorityStore/EtcdV3Client KV/Txn/Lease adapter和单进程InMemoryEtcdV3Client，不重建既有契约。
+- **新增能力：** scripts/spare_parts_provider_authority_store.py加入可选CoordinatorAuthorityWatchStore、EtcdV3WatchClient、AuthorityStoreWatchResponse/Event、linearizable_range(prefix)、watch/watch_progress，以及InMemoryEtcdV3WatchClient共享后端测试替身。Watch response包含created/canceled/compact_revision/cancel_reason/fragment与events；complete response cursor为header_revision+1，created/fragment/cancel不得推进cursor。
+- **恢复协议：** Watch断线/compaction后先线性一致Range恢复缓存，取得revision R，再从R+1重建Watch。Watch仅通知，不作为Leader/Lease/scope安全授权判断。
+- **故障注入：** 两个独立adapter实例共享同一进程内fake后端；注入Txn commit前/后响应丢失、LeaseGrant/KeepAlive/Revoke响应丢失、Lease过期DELETE、Watch progress/compaction/cancel/disconnect。
+- **新增测试/资源：** tests/test_spare_parts_provider_authority_store_watch.py（21项）；KNOW-000060；SRC-000407；ASSET-000091（30条正式场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。
+- **验证边界：** 单进程共享锁不代表多etcd成员或多主机quorum；没有真实gRPC/JSON gateway driver、TLS/mTLS、RBAC、网络分区或服务端Watch压力测试。SQLite Coordinator领域逻辑仍未迁移到Store port；schema-v2仍是唯一生产权威。
+- **CI：** 待本轮提交触发执行。
+- **状态：** CH17-T004继续IN_PROGRESS。

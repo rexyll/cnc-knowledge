@@ -556,3 +556,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 第四十五轮最终 Fencing floor 补强提交 e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1；同一有效Leader观察到更高external high-water时，废弃未使用的token range并从新高水位之后重新分配。最终 [CI Run 45824510175](https://github.com/rexyll/cnc-knowledge/actions/runs/45824510175)通过：全库463项、CH12 143项测试全部通过，strict lint和结构质量0 errors；本轮37项参考模型测试已通过。真实etcd/多主机验收未执行，54项正式场景仍待批准/执行。
+
+
+## CH17-T004 etcd Watch、Range恢复与多客户端故障注入（第四十六轮）
+
+- 设计：docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-etcd-watch-range-recovery-and-multi-client-fault-injection.md（KNOW-000060）。
+- 实现增量：scripts/spare_parts_provider_authority_store.py，补充可选Watch和linearizable_range；保留原KV/Txn/Lease接口。
+- 测试：tests/test_spare_parts_provider_authority_store_watch.py，21项新增测试，使用共享单进程InMemoryEtcdV3WatchClient和两个独立EtcdV3CoordinatorAuthorityStore实例。
+- 资源：spare-parts-coordinator-etcd-watch-multi-client-fault-injection-matrix-v1.csv（ASSET-000091），30条正式场景均PROPOSED_NOT_APPROVED / NOT_RUN；SRC-000407记录etcd v3.7 Watch API revision/compaction/fragment语义。
+- 未连接真实etcd、未构造gRPC driver、未验证Raft quorum或多主机故障；Watch只用于通知，权威读取仍必须线性一致Range/Txn。

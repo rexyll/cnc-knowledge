@@ -1,0 +1,31 @@
+scenario_id,category,purpose,precondition,action,expected_result,approval_status,execution_status
+WATCH-001,range,linearizable prefix range,keys exist inside and outside one prefix,read prefix range,only keys in range with one header revision,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-002,range,linearizable flag,range request for authority state,call adapter,driver uses serializable=false,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-003,range,entry revision bound,range returns key values,verify response,every entry mod_revision <= header revision,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-004,created,watch created handshake,watch stream established,create watcher,created response does not authorize or advance app cursor,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-005,start-revision,inclusive historical start,history exists from revision R,create watch start_revision R,events at R and later are available if not compacted,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-006,start-revision,start now semantics,create watch with start_revision 0,create watcher,only changes after create response are delivered,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-007,events,PUT event,watched key changes,commit Put,deliver current entry and correct mod revision,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-008,events,DELETE event,watched key removed,commit Delete,deliver delete key and deletion revision,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-009,prev-kv,previous value requested,prev_kv true,overwrite existing key,previous entry available when history permits,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-010,prev-kv,previous value omitted,prev_kv false,overwrite existing key,previous entry omitted,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-011,txn-revision,multiple keys same transaction,one Txn changes multiple watched keys,watch transaction revision,events share transaction revision and all are handled,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-012,progress,progress notification,watch has no recent matching events,request progress,header revision is surfaced as progress only,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-013,progress,progress not authority,Leader event not yet received,attempt safety decision,require linearizable Range/Txn guard,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-014,fragment,fragmented revision,one revision split into fragments,consume partial fragment,do not advance cursor before final fragment,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-015,fragment,final fragment,all pieces of one revision received,consume final fragment,advance resume revision only after complete revision,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-016,compaction,watch creation at compacted revision,requested start revision already compacted,create watch,receive canceled with compact_revision,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-017,compaction,active watch falls behind compaction,watch cannot keep up,compact needed revisions,watch canceled and marked stale,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-018,compaction,no retry same revision,watch canceled due compaction,recreate at same revision,reject recovery strategy and require fresh Range,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-019,recovery,linearizable range rebuild,watch canceled or stream lost,range prefix snapshot,build cache at header revision R,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-020,recovery,watch restart after snapshot,range rebuild returned R,create watch from R+1,no change between snapshot and watch is missed,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-021,disconnect,watch stream disconnect,transport stream terminates,consume watch,mark subscription unavailable and rebuild with Range,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-022,lifecycle,watch close,watcher no longer required,close client stream,release server-side watcher resources,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-023,lease,lease expiry delete event,key attached to lease expires,observe Watch,DELETE notification delivered and linearizable read confirms absence,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-024,lease,lease revoke delete event,key attached to lease is revoked,revoke lease,DELETE notification delivered; readback remains authority,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-025,multi-client,independent adapters shared backend,two adapters share one test backend,read/Txn/watch,each client observes one revisioned keyspace,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-026,multi-client,CAS single winner,two adapters read same mod_revision,submit competing Txns,exactly one compare wins,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-027,unknown-outcome,Txn response lost after commit,server applies Txn and response lost,reconcile with second adapter,OUTCOME_UNKNOWN then original idempotency readback,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-028,unknown-outcome,Txn timeout before commit,request not committed but response times out,reconcile with second adapter,still report OUTCOME_UNKNOWN until readback,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-029,unknown-outcome,LeaseGrant response lost,lease granted but ID response lost,inject timeout,OUTCOME_UNKNOWN and do not blind retry logical operation,PROPOSED_NOT_APPROVED,NOT_RUN
+WATCH-030,unknown-outcome,KeepAlive/Revoke response lost,lease operation may have applied,inject response loss,fail closed or reconcile same lease ID and attached keys,PROPOSED_NOT_APPROVED,NOT_RUN

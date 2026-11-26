@@ -188,3 +188,7 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 
 
 第四十五轮最终修正版：分区 Fencing Leader 在仍持有活动 Token 区间时若观察到更高 external high-water，会废弃尚未使用的区间，再从预留高水位以上申请新范围。修正提交 e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1；[最终 CI Run 45824510175](https://github.com/rexyll/cnc-knowledge/actions/runs/45824510175)两个必需Job均成功。全库463项unittest（本轮37项）、CH12 143项测试通过；strict lint和结构质量均0 errors，5项既有非阻断warning。
+
+## CH17-T004 etcd Watch、Range恢复与多实例故障注入（第四十六轮）
+
+新增 [Coordinator etcd v3 Watch、Range恢复与多实例故障注入契约](spare-parts-inventory-backup-provider-coordinator-etcd-watch-range-recovery-and-multi-client-fault-injection.md)（KNOW-000060）。在既有Etcd v3 KV/Txn/Lease端口上增量添加可选Watch和线性一致前缀Range能力，定义created/PUT/DELETE/progress/fragment/compaction语义及Range snapshot + R+1断线恢复；共享fake backend由两个独立adapter实例执行多客户端CAS、Txn/Lease响应丢失测试。新增ASSET-000091的30条正式场景矩阵，全部PROPOSED_NOT_APPROVED / NOT_RUN。没有真实etcd driver/集群或多主机quorum测试。

@@ -43,6 +43,7 @@
   - [备件系统 Unified Coordinator Aggregate 容量模型与观测边界](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-capacity-model.md)
 -   - [备件库存备份 Coordinator Operation Ledger 生命周期与安全归档](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-operation-ledger-archival.md)
   - [备件库存备份 Coordinator Operation Ledger 生命周期与安全归档](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-operation-ledger-archival.md)
+  - [备件库存备份 Coordinator etcd v3 Watch、Range恢复与多实例故障注入契约](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-etcd-watch-range-recovery-and-multi-client-fault-injection.md)
   - [备件库存备份 Coordinator Schema v3：分片准入、配额槽位与etcd分布式事务预算](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-v3-sharded-admission-and-transaction-budget.md)
   - [备件库存备份 Archive Index与Coordinator Schema v3迁移/回滚设计](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-archive-index-and-schema-v3-migration.md)
 [18. 故障诊断与可靠性](./18-fault-diagnosis-and-reliability/README.md) — 机械、电气、数控、伺服、通信、软件和加工质量故障，以及根因分析、可靠性、可维护性和故障统计。
