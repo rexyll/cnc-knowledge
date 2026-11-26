@@ -4,32 +4,33 @@
 **章节：** CH17 操作、维护与维修  
 **关联知识：** KNOW-000051、KNOW-000059、KNOW-000060  
 **正式场景矩阵：** ASSET-000092  
-**实现状态：** etcd3gw Range/Txn/Lease 网络驱动已提交；真实三成员CI集成7/7通过（含单/双成员故障及恢复）；Watch仍未实现  
+**实现状态：** etcd3gw Range/Txn/Lease 与低层HTTP Watch server-streaming均已提交；真实三成员CI集成8/8通过；WatchProgress/WatchCancel双向控制未实现  
 **生产状态：** 未启用，schema-v2仍是唯一生产权威
 
 ## 1. 本轮目标与边界
 
 在既有 EtcdV3CoordinatorAuthorityStore / EtcdV3Client 注入接口上提供一个可安装、可连接实际 etcd v3 HTTP gRPC-gateway 的 Python 驱动，并建立本地三节点 etcd 测试拓扑。驱动采用 OpenStack 项目维护的 etcd3gw 2.7.0，版本固定在独立的 requirements-ch17-etcd-integration.txt，不增加普通知识库CI的安装依赖。SRC-000408记录该客户端的PyPI发行信息、OpenStack源码位置和接口；etcd三节点静态启动方式见SRC-000409。
 
-本轮只实现下列真实协议请求映射：
+当前驱动实现以下真实协议请求映射：
 - KV Range：精确Key与range_end前缀/范围读取、Base64字节编解码、header revision归一化、强一致读(serializable=false)；
 - KV Txn：VERSION/CREATE/MOD/VALUE Compare、Range/Put/DeleteRange操作、Txn响应和嵌套Range KV解码；
 - Lease：Grant、同步KeepAlive、Revoke；
-- 多endpoint：只读Range/status/member-list在连接超时或连接失败时尝试下一endpoint；Txn/Lease操作不自动重试。
+- Watch：低层HTTP server-streaming WatchCreate请求和完整响应包络保真，不依赖高层事件回调；
+- 多endpoint：只读Range/status/member-list和Watch连接建立阶段在连接超时/连接失败时尝试下一endpoint；Txn/Lease操作不自动重试，Watch流建立后不自动迁移或重放。
 
 **这不是生产Authority后端切换。** 本轮没有将现有SQLite Coordinator业务状态迁移到Store Port；未将驱动接入实际业务服务；没有现场数据或真实生产读写。普通CI不会启动etcd容器。CI通过只能证明驱动映射和错误语义单测通过。
 
 ## 2. 客户端选型与Watch能力审查
 
-etcd3gw是OpenStack维护的Python etcd v3 gRPC-gateway客户端，当前固定版本为2.7.0。它通过HTTP JSON transcoding访问v3 API；接口覆盖Range、Txn、Lease以及Watch事件辅助方法。它不是etcd-io官方Go/Java客户端，也不是直接的Python gRPC WatchResponse类型绑定。引用：SRC-000408。
+etcd3gw是OpenStack维护的Python etcd v3 gRPC-gateway客户端，当前固定版本为2.7.0。它通过HTTP JSON transcoding访问v3 API；它不是etcd-io官方Go/Java客户端，也不是直接的Python gRPC WatchResponse类型绑定。引用：SRC-000408。
 
-对当前OpenStack源码中的Watch实现进行审查后，本轮**明确不在Etcd3gwV3Client上声明EtcdV3WatchClient能力**：
-- Watcher的流解析器将每个stream chunk中的result拆出；
-- created=true握手响应会被直接跳过；
-- 只有events会被逐条送入回调；
-- canceled/compact_revision/cancel_reason、完整header revision和fragment响应状态没有以完整WatchResponse对象暴露给上层调用方。
+对etcd3gw 2.7.0高层Watch helper的审查结论仍然成立：该helper将stream响应转换成事件回调，会跳过created握手并丢失部分WatchResponse控制字段。因此，本驱动不使用该高层Watcher，而是复用已配置的HTTP session直接请求/v3/watch server-streaming endpoint。
 
-当前CoordinatorAuthorityStore Watch契约必须保留这些信息，才能正确处理created、progress、fragment、compaction和断线续订。仅有事件迭代器不足以实现可靠的revision cursor与R+1恢复。因此，当前驱动不提供watch/watch_progress；调用既有store.watch时会由原适配器明确报Watch能力不可用，不会静默回退为轮询，也不会推进缓存cursor。后续需采用能够保留完整WatchResponse envelope的原生gRPC驱动或专门的低层HTTP streaming解析适配器，再通过真实服务端测试后才能开放该能力。
+低层适配器逐个解析HTTP响应中的JSON对象，能够跨任意网络chunk边界重组UTF-8/JSON帧，并保留完整result包络：header revision、watch_id、created、canceled、compact_revision、cancel_reason、fragment、events和KV/prev_kv；二进制键值解码为bytes。protobuf JSON可能省略零值PUT枚举，因此缺失/0 event type按默认PUT解释；DELETE显式保留，未知枚举失败关闭。
+
+Watch创建阶段可以在连接超时/连接失败时尝试下一个endpoint；HTTP流建立后不自动重连或重放事件，传输断线显式传播给上层。上层必须执行linearizable Range snapshot并从R+1恢复，不能依据断线前的局部事件缓存继续授权。
+
+WatchCreate支持start_revision、progress_notify、filters、prev_kv、range_end、watch_id及fragment。请求progress_notify=true允许服务端按自身机制周期发送进度响应，但当前HTTP实现没有双向WatchProgress/WatchCancel消息，也没有服务端cancel ack；调用方取消/结束消费时只关闭响应流，不把本地close描述为服务端已确认撤销。
 
 ## 3. 网络驱动实现
 
@@ -61,6 +62,16 @@ Grant映射到/lease/grant，KeepAlive映射到/lease/keepalive同步请求，Re
 
 Grant和Revoke属于写操作，不自动跨endpoint重试。Grant响应丢失可能产生尚未附着业务key的孤儿Lease；Revoke响应丢失不能据此认定已撤销。恢复决策必须读取业务附着key/Leader状态，而非通过重发猜测结果。
 
+### 3.5 Watch server-streaming与响应包络
+
+Etcd3gwV3Client.watch()返回可关闭的响应迭代器。客户端使用已配置session发送单个WatchCreate JSON请求，并以HTTP stream读取服务端连续JSON响应。解析器不假设一个HTTP chunk就是一个JSON对象，而是增量解码UTF-8并从缓冲区读取完整JSON frame，避免跨chunk边界拆分字段时损坏包络。
+
+响应保留header.revision、watch_id、created、canceled、compact_revision、cancel_reason、fragment、events及事件中的KV/prev_kv，二进制key/value解码为bytes。protobuf JSON可能省略零值PUT枚举字段，因此缺失/0 event type按PUT默认值解码；DELETE使用显式非零类型，未知类型失败关闭。
+
+WatchCreate请求支持start_revision、progress_notify、filters、prev_kv、range_end、watch_id和fragment。当前HTTP实现不提供后续双向WatchProgress/WatchCancel请求及服务端cancel acknowledgement；调用方取消/结束消费时通过关闭响应流释放资源。progress_notify只请求服务端周期发送进度响应，不表示客户端能够在同一连接上主动发送双向控制消息。
+
+连接建立阶段的endpoint failover仅用于创建Watch的只读请求；建立流后的超时/断线不进行自动切换或重放。应由CoordinatorAuthorityWatchStore检测流失败，先做linearizable Range恢复，再从revision R+1重建Watch。Watch事件仅作通知，永远不能替代Coordinator的线性一致Range/Txn授权判断。
+
 ## 4. 三节点集成环境
 
 目录：scripts/etcd-integration/  
@@ -83,7 +94,7 @@ Compose：scripts/etcd-integration/compose.yaml
 
 ### 5.1 默认CI执行的网络映射契约单测
 
-tests/test_spare_parts_provider_etcd3gw_driver.py新增10项测试方法，使用fake gateway transport，不需要安装etcd3gw或启动服务端：
+tests/test_spare_parts_provider_etcd3gw_driver.py包含13项契约测试，使用fake gateway transport，不需要安装etcd3gw或启动服务端：
 - Range key/value二进制Base64往返和header revision；
 - prefix range_end映射及多条KV解码；
 - Compare + Put事务字段映射与响应revision；
@@ -91,7 +102,7 @@ tests/test_spare_parts_provider_etcd3gw_driver.py新增10项测试方法，使�
 - Lease Grant/KeepAlive/Revoke路径和返回字段；
 - 线性一致Range在第一个endpoint连接失败时尝试第二endpoint；
 - Txn超时后不自动发送到第二endpoint，并由现有Store适配器转为OUTCOME_UNKNOWN；
-- 未实现Watch时不暴露watch/watch_progress；
+- Watch stream跨chunk解码、created/fragment/canceled/compaction/header保留、PUT/DELETE KV与prev_kv Base64解码、连接建立failover、流断线传播和close-before-first-frame资源释放；不暴露双向watch_progress；
 - 拒绝含认证信息、非/v3路径、错误scheme或query的endpoint；
 - from_env缺少endpoint配置时失败关闭。
 
@@ -99,20 +110,20 @@ tests/test_spare_parts_provider_etcd3gw_driver.py新增10项测试方法，使�
 
 ### 5.2 需要人工显式启动的真实集成测试
 
-tests/test_spare_parts_provider_authority_store_etcd_integration.py包含5项可选集成测试：
-1. member list返回三个成员；
-2. 二进制KV Range与Compare/Txn写入读回；
-3. 两个独立Etcd3gwV3Client/Store adapter并发竞争同一个VERSION=0条件，恰好一个CAS赢家；
-4. Lease附着key、KeepAlive后保留、Revoke后删除；
-5. 故障endpoint之后的线性一致Range endpoint failover。
+真实集成测试文件共包含8项可选场景：
+- tests/test_spare_parts_provider_authority_store_etcd_integration.py：6项，覆盖3成员发现、二进制Range/Txn、双客户端CAS、Lease生命周期、endpoint failover，以及真实Watch created/PUT/DELETE/prev_kv与关闭流；
+- tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py：1项，停止一个成员验证剩余2/3多数派线性一致读写和节点恢复；
+- tests/test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py：1项，停止两个成员验证失去quorum时读写失败关闭，恢复后重新CAS写入。
 
-只有在ETCD_INTEGRATION=1且ETCD_ENDPOINTS显式设置时执行。**本轮没有Docker三节点运行时，故5项真实集成测试没有执行；默认CI会将其标记为skip。** 后续实际执行后应把每项运行环境、etcd版本、节点状态、输出和CI/日志证据补写入本实体和ASSET矩阵；不可将skip记成PASS。
+只有在ETCD_INTEGRATION=1且ETCD_ENDPOINTS显式设置时执行。最终真实CI [Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310)使用一次性etcd v3.7.0三成员Compose运行8/8 PASS；诊断Artifact [15128407498](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310/artifacts/15128407498)。这只是一次性集成证据，不是正式企业场景矩阵验收。
 
 ### 5.3 正式场景矩阵
 
-ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。矩阵覆盖endpoint配置、Base64、Range一致性/failover、Txn compare/未知结果、Lease生命周期、三成员集群、一成员故障与Watch能力门禁。正式矩阵必须经企业审批后才可执行；10项映射单测不替代30项正式场景。
+ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。矩阵覆盖endpoint配置、Base64、Range一致性/failover、Txn compare/未知结果、Lease生命周期、三成员集群、成员故障与Watch能力门禁。Fake contract和live smoke均不改变正式场景的审批/执行状态；正式矩阵必须经企业审批后才可执行。
 
 ### 5.4 默认CI结果
+
+- 最新默认回归：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个必需Job均completed/success；全库505项unittest，497通过、8项opt-in live测试按默认策略skip；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构和数据质量0 errors，另有5项既有DRAFT/企业审批warning。
 
 - 最终代码head：`871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[GitHub Actions Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success。
 - 全库499项unittest完成，494项通过、5项跳过；5项skip是需ETCD_INTEGRATION=1的真实etcd集成测试，不作为通过证据。本轮10项fake gateway驱动映射单测全部通过。
@@ -123,9 +134,9 @@ ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。�
 
 | 项目 | 当前状态 | 下一步要求 |
 |---|---|---|
-| etcd3gw网络驱动 | Range/Txn/Lease代码已实现；10项fake gateway映射单测通过；6项真实etcd v3.7.0 live测试已在一次性三成员CI集群6/6通过（Run 45839556952） | 继续扩展2节点失去quorum/网络分区、安全认证和Watch真实协议验证 |
-| endpoint failover | 仅只读请求可跨endpoint尝试 | 测量实际故障切换延迟与错误分类 |
-| Watch/WatchProgress | 当前驱动不支持 | 实现保留完整WatchResponse envelope的gRPC/stream驱动 |
+| etcd3gw网络驱动 | Range/Txn/Lease与HTTP Watch server-streaming已实现；13项fake契约测试与8项真实etcd live测试通过（Run 45842517310） | 继续验证更复杂网络分区、mTLS/RBAC、长时流背压 |
+| endpoint failover | 只读请求/Watch建立阶段可跨endpoint尝试；已建立Watch流不自动迁移 | 测量连接建立与断线恢复策略，必须保持Range+R+1 |
+| Watch/WatchProgress | Watch响应完整包络与PUT/DELETE/prev_kv可用；WatchProgress/WatchCancel双向请求不支持，取消仅关闭HTTP响应 | 如需显式进度/取消与服务端ack，改用原生gRPC双向流驱动并进行多主机/长期压力验收 |
 | TLS/mTLS | 构造参数已映射，未真实握手测试 | CA链、双向证书、过期/轮换及失败注入 |
 | RBAC/认证 | 未实现账户/角色集成 | 明确最小权限和认证材料注入方案 |
 | Raft/quorum | 已在一次性3成员集群验证1节点停机后2/3多数派读写，以及2节点停机时失去quorum、读写失败关闭和恢复；未测网络分区与磁盘故障 | 补充非对称网络分区、长时间失联、磁盘/快照恢复与选举/恢复时延测量 |
@@ -138,7 +149,7 @@ etcd集群的三节点成员数量不自动代表业务高可用已验收；读�
 
 1. 在可用Docker主机执行run.sh，记录etcd server/client版本、所有成员的status与member list、5项live integration结果和测试日志；
 2. 单节点停止后使用其余两个成员验证读写与leader变化；再研究无多数派行为及恢复，不将故障注入放到生产集群；
-3. 设计完整Watch driver：需要保留created/canceled/compact_revision/cancel_reason/fragment/header revision，并测试stream断线、progress、fragment和compact；
+3. 评估是否需要原生gRPC双向Watch驱动以支持主动WatchProgress/Cancel和服务端确认；当前HTTP Watch已保留完整响应包络，但只通过关闭流取消；
 4. 对mTLS/RBAC/认证、endpoint轮换和超时预算补充部署配置与安全验收；
 5. 完成业务层Store Port迁移设计、独立兼容测试、数据迁移/回滚和企业批准前，不替换当前SQLite Coordinator。
 
@@ -167,3 +178,13 @@ etcd集群的三节点成员数量不自动代表业务高可用已验收；读�
 **真实CI结果：** [Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997)在一次性三成员etcd v3.7.0集群上运行7项live集成测试，7/7 PASS、0 failures、0 skips；集群资源清理成功。诊断Artifact [15128755397](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997/artifacts/15128755397)，SHA-256 `d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8`。同一代码head默认回归[Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)：全库501项unittest（494通过、7项opt-in live测试按默认策略skip），CH12 143项数值测试通过，strict knowledge lint 0 errors，合成fixture validator 0 errors/5项既有warning。
 
 **验收边界：** 这只验证受控的两成员停止/恢复流程，不涵盖非对称网络分区、长时间网络分割、磁盘/文件系统故障、性能指标、mTLS/RBAC、Watch或多主机Coordinator。ASSET-000092的30项正式场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威。
+
+## 10. 第五十轮 Watch Gateway 流式包络真实验收（2026-11-26）
+
+第五十轮在不改变KV/Txn/Lease协议的前提下，增加低层HTTP Watch server-streaming解析。驱动直接通过已配置的etcd3gw session发送/v3/watch WatchCreate请求，不使用会丢弃控制响应的高层Watcher；解析器对任意HTTP chunk边界进行增量UTF-8/JSON重组，保留完整result包络和event KV/prev_kv。proto3零值PUT枚举可在JSON中省略，适配器按默认PUT解释；DELETE和未知枚举按明确类型处理/失败关闭。
+
+**真实CI：** [Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310)在一次性三成员etcd v3.7.0集群中执行8项测试全部通过（8/8，0 failures，0 skips），其中真实Watch测试收到created握手、PUT、DELETE及DELETE previous KV，结束时关闭响应流。诊断Artifact [15128407498](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310/artifacts/15128407498)，SHA-256 `9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9`。
+
+**默认CI：** [Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个必需Job成功；全库505项unittest（497通过、8项opt-in live测试按默认策略skip），CH12 143项数值资源测试通过，strict knowledge lint 0 errors，结构/数据质量0 errors（5项既有治理warning）。
+
+**能力边界：** WatchCreate支持progress_notify参数以请求服务端周期进度通知，但当前HTTP请求/响应模型不提供双向WatchProgress和WatchCancel消息，故驱动不暴露watch_progress；取消仅关闭HTTP流，不宣称服务端取消已确认。建立流之后的网络中断不自动failover/replay，调用方需执行linearizable Range + R+1恢复。mTLS握手、RBAC、复杂网络分区与长期流压力仍未验证；正式矩阵ASSET-000092的30项场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
