@@ -5,6 +5,8 @@ import tempfile
 import threading
 import time
 import unittest
+
+from scripts.spare_parts_fencing_attestation import verify_fencing_attestation_signature
 from pathlib import Path
 
 from scripts.spare_parts_backup_storage_adapter import (
@@ -62,6 +64,66 @@ class SQLiteProviderAdmissionCoordinatorTests(unittest.TestCase):
             lease_ttl_seconds=30, timeout_seconds=timeout,
             check_task=lambda _: None, request_id=request_id,
         )
+
+    def test_signed_attestation_is_bound_to_active_lease_and_refuses_after_release(self):
+        signer_secret = "coordinator-signing-secret-32-bytes-minimum-value"
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            self.database_path, **self.policy,
+            attestation_issuer_id="unit-test-coordinator",
+            attestation_key_id="unit-test-kid-v1",
+            attestation_secret=signer_secret,
+            attestation_ttl_seconds=10,
+        )
+        task = ProviderTaskContext("attested-task", "tenant-A")
+        lease = coordinator.acquire(
+            task=task, domain="write", owner_id="attested-owner",
+            lease_ttl_seconds=30, timeout_seconds=0,
+            check_task=lambda _: None, request_id="attested-request",
+        )
+        proof = coordinator.issue_fencing_attestation(
+            lease, fencing_scope="cnc/ch17/pkg-1",
+            resource_key="cnc/ch17/pkg-1/object.bin",
+            operation="object:put_if_absent", idempotency_key="attested-idem",
+        )
+        claims, key_id = verify_fencing_attestation_signature(
+            proof, trusted_keys={"unit-test-kid-v1": signer_secret}
+        )
+        self.assertEqual(key_id, "unit-test-kid-v1")
+        self.assertEqual(claims["tenant_id"], "tenant-A")
+        self.assertEqual(claims["fencing_scope"], "cnc/ch17/pkg-1")
+        self.assertEqual(claims["resource_key"], "cnc/ch17/pkg-1/object.bin")
+        self.assertEqual(claims["fencing_token"], lease.fencing_token)
+        self.assertEqual(claims["lease_id"], lease.lease_id)
+        self.assertLessEqual(claims["expires_at"], lease.expires_at)
+        self.assertTrue(coordinator.release(lease))
+        with self.assertRaises(BackupStorageError):
+            coordinator.issue_fencing_attestation(
+                lease, fencing_scope="cnc/ch17/pkg-1",
+                resource_key="cnc/ch17/pkg-1/late.bin",
+                operation="object:put_if_absent", idempotency_key="late-idem",
+            )
+
+    def test_coordinator_refuses_to_sign_a_resource_outside_lease_scope(self):
+        signer_secret = "coordinator-signing-secret-32-bytes-minimum-value"
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            self.database_path, **self.policy,
+            attestation_issuer_id="unit-test-coordinator",
+            attestation_key_id="unit-test-kid-v1",
+            attestation_secret=signer_secret,
+        )
+        lease = coordinator.acquire(
+            task=ProviderTaskContext("attested-task", "tenant-A"),
+            domain="write", owner_id="attested-owner",
+            lease_ttl_seconds=30, timeout_seconds=0,
+            check_task=lambda _: None, request_id="attested-request-scope",
+        )
+        with self.assertRaises(BackupStorageError):
+            coordinator.issue_fencing_attestation(
+                lease, fencing_scope="cnc/ch17/pkg-1",
+                resource_key="cnc/ch17/pkg-2/escape.bin",
+                operation="object:put_if_absent", idempotency_key="escape-idem",
+            )
+        self.assertTrue(coordinator.release(lease))
 
     def test_request_idempotency_conflict_and_finalized_key_rejection(self):
         lease = self.acquire()

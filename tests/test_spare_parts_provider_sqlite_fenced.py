@@ -122,13 +122,17 @@ def _wrap_test_attestations(provider):
     return provider
 
 
-def _new_provider(database: Path, *, principal_id: str = "writer-a", secret: str = SECRET_A):
+def _new_provider(
+    database: Path, *, principal_id: str = "writer-a", secret: str = SECRET_A,
+    fault_hook=None,
+):
     provider = SQLiteFencedObjectStorageProvider(
         database, principal_id=principal_id, principal_secret=secret,
         trusted_attestation_keys={
             KEY_ID: ATTESTATION_SECRET,
             OLD_KEY_ID: OLD_ATTESTATION_SECRET,
         },
+        fault_hook=fault_hook,
     )
     return _wrap_test_attestations(provider)
 
@@ -426,7 +430,7 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
             if phase == "after_object_mutation_before_fence_commit" and not state["failed"]:
                 state["failed"] = True
                 raise RuntimeError("synthetic crash before fencing metadata commit")
-        provider = _new_provider(self.database)
+        provider = _new_provider(self.database, fault_hook=fault)
         key = "cnc/ch17/backup-reference-001/rollback.bin"
         with self.assertRaisesRegex(RuntimeError, "synthetic crash"):
             provider.put_if_absent_fenced(

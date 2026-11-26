@@ -198,6 +198,7 @@ class SQLiteProviderAdmissionCoordinator:
                     "schema_version": "1", "policy_hash": self._policy_hash,
                     "next_fencing_token": "0", "issued_leases": "0",
                     "expired_leases": "0", "rejected_capacity": "0", "rejected_queue": "0",
+                    "attestations_issued": "0",
                 }
                 for key, value in defaults.items():
                     c.execute("INSERT OR IGNORE INTO coordinator_meta(key,value) VALUES(?,?)", (key, value))
