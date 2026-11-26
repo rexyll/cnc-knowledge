@@ -65,7 +65,10 @@
     "code_ci_run": 45810737444,
     "code_test_count": 344,
     "strict_knowledge_lint": "PASS_0_ERRORS",
-    "knowledge_structure_quality": "PASS_0_ERRORS"
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "doc_sync_commit": "706cfcf36204c1bfe996501e65031a21e8536783",
+    "doc_sync_ci_run": 45811108498,
+    "doc_sync_ci_status": "completed/success"
   },
-  "notes": "35条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI执行8个测试方法，每个分别在SQLite与单进程InMemoryEtcdV3Client运行，共16次适配器测试；本地Provider与签名路径仅为合成验证，不等同于真实etcd、生产Provider或企业验收。 最终恢复floor补强测试随代码提交3d79149c1112550b4fb25efbe02b5f536b08cacd的CI Run 45810737444通过；矩阵35条场景仍未批准/未执行。"
+  "notes": "35条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI执行8个测试方法，每个分别在SQLite与单进程InMemoryEtcdV3Client运行，共16次适配器测试；本地Provider与签名路径仅为合成验证，不等同于真实etcd、生产Provider或企业验收。 最终恢复floor补强测试随代码提交3d79149c1112550b4fb25efbe02b5f536b08cacd的CI Run 45810737444通过；矩阵35条场景仍未批准/未执行。 文档同步提交 706cfcf36204c1bfe996501e65031a21e8536783 的CI Run 45811108498两个必需Job均completed/success；ASSET-000086的35条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。"
 }

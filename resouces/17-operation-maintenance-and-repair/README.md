@@ -503,3 +503,6 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 - 第四十一轮最终代码提交 `3d79149c1112550b4fb25efbe02b5f536b08cacd`，CI Run 45810737444两个必需Job均completed/success；全库344项unittest、CH12 143项数值资源测试通过，strict lint与结构质量均0 errors。ASSET-000086的35条场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+- 第四十一轮文档同步CI Run 45811108498两个必需Job均completed/success（提交 706cfcf36204c1bfe996501e65031a21e8536783）；全库344项unittest、CH12 143项数值资源测试通过，strict lint 0 errors，知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000086的35项场景仍PROPOSED_NOT_APPROVED / NOT_RUN。

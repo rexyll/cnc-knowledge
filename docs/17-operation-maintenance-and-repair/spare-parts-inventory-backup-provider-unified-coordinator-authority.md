@@ -185,3 +185,8 @@ business_rule_assertions = NOT_EVALUATED
 - SRC-000397、SRC-000398：etcd v3线性一致Range、KV Txn与Lease API。
 - KNOW-000051、KNOW-000052：原 Coordinator authority store及事务读写接口。
 - KNOW-000054：统一Admission scheduler aggregate及配额状态参考。
+
+
+### 文档同步CI验收
+
+文档同步提交 `706cfcf36204c1bfe996501e65031a21e8536783`；[GitHub Actions Run 45811108498](https://github.com/rexyll/cnc-knowledge/actions/runs/45811108498)两个必需Job均completed/success。全库344项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（报告5条非阻断warning）。ASSET-000086的35条场景继续保持 `PROPOSED_NOT_APPROVED / NOT_RUN`。

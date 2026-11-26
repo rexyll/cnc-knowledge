@@ -149,3 +149,5 @@ Admission调度与配额统一事务参考模型见 [Unified Admission Scheduler
 Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope Fencing与Operation Ledger](spare-parts-inventory-backup-provider-unified-coordinator-authority.md)（KNOW-000055）：Leader TTL/epoch、tenant scope高水位token和ACTIVATE/REVOKE/PUBLISH操作账本已纳入Admission aggregate schema v2。ASSET-000086为35条待批准/未执行场景。旧SQLite Coordinator尚未替换，真实etcd与生产Provider未验证。
 
 第四十一轮最终代码提交 `3d79149c1112550b4fb25efbe02b5f536b08cacd`；[CI Run 45810737444](https://github.com/rexyll/cnc-knowledge/actions/runs/45810737444)两个必需Job均completed/success：344项全库unittest、CH12 143项数值资源测试通过，strict lint 0 errors，结构质量0 errors。ASSET-000086的35条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。
+
+第四十一轮文档同步CI Run 45811108498（提交 706cfcf36204c1bfe996501e65031a21e8536783）两个必需Job均completed/success：344项全库unittest、CH12 143项测试、strict lint 0 errors、知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000086场景仍待批准/未执行。

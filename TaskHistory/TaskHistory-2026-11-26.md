@@ -540,3 +540,11 @@
 - **知识/资源：** 新增KNOW-000055及ASSET-000086，矩阵35条全为PROPOSED_NOT_APPROVED/NOT_RUN；更新KNOW-000054为schema v2，复用SRC-000391/392/397/398。
 - **重要限制：** 旧SQLite Admission和Coordinator类仍未替换；v1→v2数据迁移及单一权威cutover未完成；真实etcd及多主机/真实Provider未连接。aggregate单键仍有写串行与operation ledger增长风险。
 - **生产状态：** `production_backup_enabled=false`；`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`；`business_rule_assertions=NOT_EVALUATED`。
+
+
+### 第四十一轮文档同步CI验收
+
+- **文档提交：** `706cfcf36204c1bfe996501e65031a21e8536783`；[Run 45811108498](https://github.com/rexyll/cnc-knowledge/actions/runs/45811108498)两个必需Job均completed/success。
+- **质量结果：** 全库344项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5条非阻断warning）。
+- **登记：** KNOW-000055与ASSET-000086已同步；矩阵35条场景均PROPOSED_NOT_APPROVED / NOT_RUN。
+- **限制：** 旧SQLite Coordinator / Admission尚未迁移；v1→v2生产导入/回滚未完成；真实etcd、多主机和生产Provider未验证。

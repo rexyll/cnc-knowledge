@@ -706,3 +706,10 @@
 - **知识/资源：** 新增KNOW-000055、ASSET-000086；35条场景均 `PROPOSED_NOT_APPROVED / NOT_RUN`；复用SRC-000391/392/397/398。
 - **限制：** 旧 `SQLiteDurableCoordinatorAuthority` 与 `SQLiteProviderAdmissionCoordinator` 未替换；v1→v2生产导入/回滚cutover未实现；真实etcd、mTLS/RBAC/quorum、多主机和外部Provider未验证。单aggregate仍是全局写热点，operation map会增长，必须有受控归档/分片方案和容量证明。
 - **状态：** CH17-T004仍为IN_PROGRESS；生产备份关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+
+### 第四十一轮文档同步CI验收补记
+
+- **文档提交：** `706cfcf36204c1bfe996501e65031a21e8536783`；[Run 45811108498](https://github.com/rexyll/cnc-knowledge/actions/runs/45811108498)两个必需Job均completed/success。
+- **质量结果：** 全库344项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5条非阻断warning）。
+- **状态：** ASSET-000086的35条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；旧SQLite Coordinator和Admission服务仍未迁移；生产备份关闭，治理门禁不变。
