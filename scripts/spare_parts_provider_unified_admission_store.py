@@ -272,7 +272,9 @@ class StoreBackedProviderAdmissionCoordinator:
             expires_at=float(record["expires_at"]),
         )
 
-    def _load_prepared(self, now: float) -> tuple[
+    def _load_prepared(
+        self, now: float, _attempt: int = 0
+    ) -> tuple[
         AuthorityStoreEntry, dict[str, Any], list[AuthorityStoreCompare],
         list[AuthorityStoreTxnOperation], list[int], dict[str, AuthorityStoreEntry]
     ]:
@@ -302,8 +304,14 @@ class StoreBackedProviderAdmissionCoordinator:
             lease_entry, _ = self.store.linearizable_get(lease_key)
             request_entry, _ = self.store.linearizable_get(request_key)
             if request_entry is None or request_entry.value != encoded:
+                latest_state, _ = self.store.linearizable_get(self._STATE_KEY)
+                if latest_state is not None and latest_state.mod_revision != state_entry.mod_revision and _attempt < 16:
+                    return self._load_prepared(now, _attempt + 1)
                 raise UnifiedAdmissionStateError("active lease and persistent request index diverged")
             if lease_entry is not None and lease_entry.value != encoded:
+                latest_state, _ = self.store.linearizable_get(self._STATE_KEY)
+                if latest_state is not None and latest_state.mod_revision != state_entry.mod_revision and _attempt < 16:
+                    return self._load_prepared(now, _attempt + 1)
                 raise UnifiedAdmissionStateError("active lease key value diverged from scheduler state")
             if lease_entry is None or float(record["expires_at"]) <= now:
                 if lease_entry is None:
@@ -589,7 +597,10 @@ class StoreBackedProviderAdmissionCoordinator:
                                     return self._public_lease(found)
                         except Exception:
                             pass
-                        self._revoke_backend_leases([backend_lease.lease_id] + expired_ids)
+                        # The acquire Txn may have committed despite the lost
+                        # response. Keep its candidate Lease alive until TTL so
+                        # a later retry with the same request ID can reconcile it.
+                        self._revoke_backend_leases(expired_ids)
                         raise ProviderCoordinatorUnavailableError(
                             "Admission acquire outcome is unknown; reconcile using the same request ID",
                             phase="acquire", reservation_outcome_unknown=True,
@@ -700,7 +711,11 @@ class StoreBackedProviderAdmissionCoordinator:
             record = state["active"].get(lease.lease_id)
             if record is None or self._public_lease(record) != lease:
                 if cleanup_ops:
-                    self._commit_state(state_entry, compares, state, cleanup_ops)
+                    cleanup_result = self._commit_state(
+                        state_entry, compares, state, cleanup_ops
+                    )
+                    if not cleanup_result.succeeded:
+                        continue
                     self._revoke_backend_leases(expired_ids)
                 return None
             encoded = self._encode(record)
@@ -736,7 +751,9 @@ class StoreBackedProviderAdmissionCoordinator:
                 if current_lease is not None and current_request is not None and current_lease.value == current_request.value == self._encode(renewed) and current_lease.lease_id == new_backend.lease_id:
                     self._revoke_backend_leases([int(record["backend_lease_id"])] + expired_ids)
                     return self._public_lease(renewed)
-                self._revoke_backend_leases([new_backend.lease_id] + expired_ids)
+                # Preserve both native Lease candidates while the transaction
+                # outcome is unknown. Any unattached Lease expires by TTL.
+                self._revoke_backend_leases(expired_ids)
                 raise ProviderCoordinatorUnavailableError(
                     "Admission renewal outcome is unknown; reconcile the same lease ID",
                     phase="renew", outcome_unknown=True,
@@ -754,7 +771,11 @@ class StoreBackedProviderAdmissionCoordinator:
             record = state["active"].get(lease.lease_id)
             if record is None or self._public_lease(record) != lease:
                 if cleanup_ops:
-                    self._commit_state(state_entry, compares, state, cleanup_ops)
+                    cleanup_result = self._commit_state(
+                        state_entry, compares, state, cleanup_ops
+                    )
+                    if not cleanup_result.succeeded:
+                        continue
                     self._revoke_backend_leases(expired_ids)
                 return False
             encoded = self._encode(record)

@@ -37,6 +37,9 @@ class StoreBackedAdmissionSchedulerContract:
     def store(self):
         raise NotImplementedError
 
+    def fresh_store(self):
+        raise NotImplementedError
+
     def setUpContract(self):
         self.clock = MutableClock()
         self.policy = {
@@ -64,7 +67,7 @@ class StoreBackedAdmissionSchedulerContract:
         )
 
     def test_global_and_tenant_capacity_are_atomic_across_instances(self):
-        store = self.store()
+        store = self.fresh_store()
         policy = dict(self.policy)
         policy["global_limits"] = {
             "read": 2, "write": 1, "multipart": 1, "inventory": 1
@@ -132,7 +135,7 @@ class StoreBackedAdmissionSchedulerContract:
             self.scheduler.release(lease)
 
     def test_queue_limit_fails_fast_without_leaving_waiter(self):
-        store = self.store()
+        store = self.fresh_store()
         policy = dict(self.policy)
         policy["max_waiters"] = 1
         scheduler = StoreBackedProviderAdmissionCoordinator(store, **policy)
@@ -280,6 +283,15 @@ class SQLiteUnifiedAdmissionTests(StoreBackedAdmissionSchedulerContract, unittes
 
     def store(self):
         return self._store
+
+    def fresh_store(self):
+        client = InMemoryEtcdV3Client(clock_fn=self.clock)
+        return EtcdV3CoordinatorAuthorityStore(client)
+
+    def fresh_store(self):
+        return SQLiteCoordinatorAuthorityStore(
+            Path(self.tmp.name) / "variant.sqlite3", clock_fn=self.clock
+        )
 
 
 class EtcdUnifiedAdmissionTests(StoreBackedAdmissionSchedulerContract, unittest.TestCase):
