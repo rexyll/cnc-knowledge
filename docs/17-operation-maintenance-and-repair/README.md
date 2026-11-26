@@ -95,3 +95,6 @@
 
 
 - [备份 Provider 准入队列容量保护与恢复](spare-parts-inventory-backup-provider-admission-queue-bounds-and-recovery.md)（KNOW-000041）；新增7项本地/共享队列上限、故障中断和恢复后重新准入合成场景（ASSET-000071），全部NOT_RUN。
+
+
+- [备份 Provider 持久化准入协调器与幂等租约](spare-parts-inventory-backup-provider-sqlite-persistent-admission-coordinator.md)（KNOW-000042）；使用SQLite WAL/BEGIN IMMEDIATE验证同主机多进程原子准入、租约恢复、request_id幂等和持久fencing序列；新增10条合成验收场景（ASSET-000072）。

@@ -341,3 +341,9 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - CI Run [45746342659](https://github.com/rexyll/cnc-knowledge/actions/runs/45746342659)两个Job均completed/success；全库191项unittest通过，CH12数控资源测试143项通过。
 - `knowledge_lint.py --strict` 为PASS（0 errors）；Provider Mock self-check PASS，Artifact ID 15083925258。
 - Provider适配器测试文件含64个测试方法定义；7条SAQ场景仍PROPOSED_NOT_APPROVED / NOT_RUN。没有真实Provider、跨进程协调或生产恢复风暴证据。
+
+
+## CH17-T004 Provider持久化准入协调器第二十八轮
+
+- 新增 `spare-parts-inventory-backup-provider-sqlite-coordinator-test-matrix-v1.csv`（ASSET-000072）：10条SQLite持久化准入、request_id幂等、多进程竞争和租约恢复场景；全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
+- 新增KNOW-000042及SQLite协调器实现；仅验证同主机多进程共享本地数据库，不支持多主机或HA。

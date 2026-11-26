@@ -210,3 +210,16 @@
 - **Provider Mock自检：** `spare_parts_backup_storage_adapter.py --self-check` 返回 `PASS`；Artifact [ch17-backup-storage-adapter-45746342659](https://github.com/rexyll/cnc-knowledge/actions/runs/45746342659/artifacts/15083925258)，ID 15083925258。该自检报告不单独覆盖新增队列回归；本轮新增3项队列/故障测试由全库191项unittest执行。
 - **资源状态：** KNOW-000041、ASSET-000071；7项矩阵场景仍为 `TRUE / PROPOSED_NOT_APPROVED / NOT_RUN`。Provider适配器测试文件包含64个测试方法定义；这不是单独的64项测试子任务运行报告。
 - **限制：** 仍是同进程Mock/合成测试；没有跨进程/主机真实协调服务、真实网络分区、真实Provider、生产容量/恢复风暴或现场灾备验证。未实现随机jitter、恢复预热/速率斜坡、持久队列、自动心跳与下游fencing。生产备份关闭，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，`business_rule_assertions=NOT_EVALUATED`。
+
+
+## CH17-T004 Provider持久化准入协调器与幂等租约第二十八轮（2026-11-26）
+
+- **分支：** main；未创建新分支。
+- **实现提交：** `3867b6c2ad3a3ab8832cf518b1c3b27db056bd6f`。
+- **持久化后端：** 新增 `scripts/spare_parts_provider_admission_sqlite.py`，采用SQLite WAL、synchronous FULL、BEGIN IMMEDIATE；活动租约、等待队列、请求终态和持久化fencing序列保存于同一本地数据库。
+- **接口集成：** ProviderAdmissionCoordinator.acquire增加可选request_id；InMemory与SQLite均实现相同请求身份幂等。Adapter每个准入尝试生成UUID request_id；Coordinator acquire响应未知时异常暴露该ID，可用同一身份和ID重放获取原租约。
+- **跨进程竞争：** 新增multiprocessing.spawn测试：两个操作系统子进程在barrier同步后同时申请同一SQLite数据库的read容量1，断言恰好一个得到租约、另一个被拒绝。另测试租约/等待队列跨协调器实例可见、进程重启后的持久状态、租约续期与单调fencing。
+- **自动化测试：** 新增11个协调器专项unittest；CI [Run 45748405672](https://github.com/rexyll/cnc-knowledge/actions/runs/45748405672) 两个必需Job均completed/success；全库201个unittest通过，CH12资源测试143项通过，strict knowledge lint PASS（0 errors）。Provider旧Mock self-check PASS，Artifact ID 15084965462。
+- **资源：** 新增KNOW-000042和ASSET-000072；10条持久化协调测试规格均TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
+- **限制：** 仅为GitHub Linux runner同主机SQLite多进程合成验证；无真实部署、跨主机/NFS/SMB/HA、数据库损坏/灾备、静态加密、外部QPS限流、自动心跳、下游fencing或生产容量验证。request终态记录目前不自动压缩；SQLite lease expiry依赖Unix wall-clock秒数。
+- **状态：** 生产备份关闭；governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

@@ -133,6 +133,34 @@ class SQLiteProviderAdmissionCoordinatorTests(unittest.TestCase):
         admitted = self.acquire(coordinator=other, request_id="blocked", task=self.task("blocked", "tenant-B"))
         self.assertTrue(other.release(admitted))
 
+    def test_lease_renewal_persists_new_expiry_and_fences_old_lease_value(self):
+        class FakeClock:
+            now = 2000.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        renewal_path = str(Path(self.tmp.name) / "renewal.sqlite3")
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            renewal_path, **self.policy, clock_fn=clock
+        )
+        old = coordinator.acquire(
+            task=self.task(), domain="read", owner_id="owner-1",
+            lease_ttl_seconds=2, timeout_seconds=0, check_task=lambda _: None,
+            request_id="renewal-1",
+        )
+        renewed = coordinator.renew(old, lease_ttl_seconds=5)
+        self.assertIsNotNone(renewed)
+        self.assertFalse(coordinator.validate(old))
+        reopened = SQLiteProviderAdmissionCoordinator(
+            renewal_path, **self.policy, clock_fn=clock
+        )
+        clock.advance(3)
+        self.assertTrue(reopened.validate(renewed))
+        self.assertTrue(reopened.release(renewed))
+
     def test_policy_mismatch_is_rejected_for_same_database(self):
         with self.assertRaises(BackupStorageError):
             SQLiteProviderAdmissionCoordinator(

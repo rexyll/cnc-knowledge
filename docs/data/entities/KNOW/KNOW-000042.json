@@ -1,0 +1,70 @@
+{
+  "entity_id": "KNOW-000042",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份 Provider 持久化准入协调器与幂等租约",
+  "english_name": "CNC spare-parts inventory backup provider durable admission coordination and idempotent leases",
+  "aliases": [
+    "SQLite Provider共享协调器",
+    "本地多进程备份准入",
+    "Provider request_id与fencing token持久化"
+  ],
+  "description": "使用SQLite WAL和BEGIN IMMEDIATE构建同主机多进程可共享的Provider持久化准入原型，支持原子全局/租户配额、持久等待队列、request_id幂等、租约续期/释放/回收及跨重启单调fencing token。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "备份Provider持久化准入协调器"
+  ],
+  "tags": [
+    "CH17",
+    "Provider Coordination",
+    "SQLite",
+    "Durable Lease",
+    "Idempotency",
+    "Fencing Token",
+    "Multi-process"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T11:45:00+08:00",
+  "updated_at": "2026-11-26T03:25:00Z",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-sqlite-persistent-admission-coordinator.md",
+    "implementation_path": "scripts/spare_parts_provider_admission_sqlite.py",
+    "adapter_integration_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "test_file": "tests/test_spare_parts_provider_admission_sqlite.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-sqlite-coordinator-test-matrix-v1.csv",
+    "scenario_definition_count": 10,
+    "added_unittest_methods": 11,
+    "backend": "SQLITE_WAL_SYNCHRONOUS_FULL",
+    "transaction_isolation": "BEGIN_IMMEDIATE",
+    "coordination_scope": "MULTI_PROCESS_SAME_HOST_LOCAL_FILESYSTEM",
+    "multi_host_supported": false,
+    "lease_clock": "UNIX_WALL_CLOCK_SECONDS",
+    "request_id_idempotency": true,
+    "durable_fencing_sequence": true,
+    "downstream_fencing_enforced": false,
+    "rate_limit_token_bucket_supported": false,
+    "automatic_lease_heartbeat": false,
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED",
+    "latest_code_commit": "3867b6c2ad3a3ab8832cf518b1c3b27db056bd6f",
+    "latest_code_ci_run": 45748405672,
+    "latest_code_ci_status": "completed/success",
+    "full_unittest_count": 201,
+    "strict_knowledge_lint": "PASS_0_ERRORS"
+  },
+  "notes": "SQLite协调器只适用于同一主机、受支持本地文件系统上的多进程共享；不支持多主机/NFS/SMB/HA。墙钟跳变、数据库文件权限/加密/备份/损坏恢复、tombstone保留策略、自动心跳、QPS token bucket及下游fencing仍未解决。两个子进程竞争同一SQLite文件的测试只代表CI本机合成证据；ASSET-000072场景尚未批准/执行。"
+}

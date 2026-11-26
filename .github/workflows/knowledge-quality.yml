@@ -175,6 +175,19 @@ jobs:
           path: ${{ runner.temp }}/ch17-backup-storage-adapter.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Run durable SQLite provider admission coordinator self-check
+        run: >-
+          python scripts/spare_parts_provider_admission_sqlite.py
+          --self-check
+          --report-json "$RUNNER_TEMP/ch17-provider-admission-sqlite.json"
+      - name: Upload SQLite provider admission coordinator report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch17-provider-admission-sqlite-${{ github.run_id }}
+          path: ${{ runner.temp }}/ch17-provider-admission-sqlite.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Run repository knowledge lint
         run: python scripts/knowledge_lint.py --strict
 

@@ -444,3 +444,15 @@
 - **交付：** 新增KNOW-000041和ASSET-000071（7条合成场景）；新增3项Provider专项unittest，并补充配置边界检查。
 - **最终验收：** CI Run 45746342659两个必需Job均completed/success；全库191个unittest通过，CH12数控资源测试143项通过；`knowledge_lint.py --strict` 为PASS（0 errors）。Provider适配器测试文件共有64个测试方法定义（含本轮新增3项）。Provider Mock self-check PASS，Artifact ID 15083925258。
 - **限制：** 仍仅同进程Mock；无跨进程/主机协调、真实网络故障、生产容量和恢复风暴证据。生产备份保持关闭，CH17-T004继续IN_PROGRESS。
+
+
+## CH17-T004 第二十八轮：Provider持久化准入协调器与幂等租约
+
+- **实现：** 新增 `SQLiteProviderAdmissionCoordinator`，SQLite WAL + synchronous FULL + `BEGIN IMMEDIATE`；将活动租约、等待者、终态request ID和fencing token序列持久化。
+- **准入：** 支持read/write/multipart/inventory域全局容量、租户配额、优先级aging/FIFO和有界共享等待队列；数据库策略哈希不一致时拒绝连接。
+- **幂等：** Protocol及InMemory/SQLite实现增加request_id。相同请求身份重放返回原租约；身份冲突和已释放/过期请求键分别拒绝。Adapter每次Provider准入尝试生成request ID；响应丢失时在异常中暴露request_id，调用方可用相同key重放准入。
+- **持久化语义：** SQLite租约期限使用Unix wall-clock秒数，支持进程重启后验证；fencing token在事务中持久化单调递增。InMemory依旧使用单调时钟，两个后端的expires_at不可跨实现比较。
+- **测试：** 新增11项Provider协调器unittest，含`multiprocessing.spawn`两个子进程同时争抢同一数据库的容量竞争测试、响应丢失后重放、策略冲突、续租、过期回收、独立实例队列可见性。
+- **资源：** 新增KNOW-000042与ASSET-000072，10条测试场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **边界：** SQLite仅同主机本地文件系统多进程；不支持多主机、NFS/SMB、HA/复制/quorum；无自动心跳、持久QPS令牌桶、下游fencing、文件静态加密/备份恢复、tombstone清理和生产容量测量。墙钟跳变是租约恢复依赖。
+- **状态：** CH17-T004继续IN_PROGRESS；生产备份保持关闭，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，`business_rule_assertions=NOT_EVALUATED`。
