@@ -9,7 +9,8 @@ from pathlib import Path
 from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageError, InMemoryProviderAdmissionCoordinator,
     ProviderAdmissionIdempotencyConflictError, ProviderAdmissionRequestFinalizedError,
-    ProviderBulkheadFullError, ProviderCoordinatorUnavailableError, ProviderTaskContext,
+    ProviderAdmissionQueueFullError, ProviderBulkheadFullError,
+    ProviderCoordinatorUnavailableError, ProviderTaskContext,
 )
 from scripts.spare_parts_provider_admission_sqlite import SQLiteProviderAdmissionCoordinator
 
