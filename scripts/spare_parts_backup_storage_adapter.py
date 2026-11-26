@@ -136,8 +136,10 @@ class FileSystemStorageProvider:
         parts = normalized.split("/")
         for part in parts[:-1]:
             path = path / part
+            if path.is_symlink():
+                raise BackupStorageError("object-key parent is a symlink")
             if path.exists():
-                if path.is_symlink() or not path.is_dir():
+                if not path.is_dir():
                     raise BackupStorageError("object-key parent is not a safe directory")
             elif create_parents:
                 path.mkdir()
@@ -252,7 +254,7 @@ class MockObjectStorageProvider:
             result = self._objects[normalized]
         except KeyError as exc:
             raise BackupStorageError("mock object does not exist") from exc
-        if version_id != result.version_id:
+        if version_id is not None and version_id != result.version_id:
             raise BackupStorageError("requested object version does not match the stored version")
         return result
 
@@ -273,34 +275,58 @@ class BackupStorageAdapter:
 
     def publish_backup(self, backup_dir: Path, *, prefix: str) -> dict[str, Any]:
         backup_dir = Path(backup_dir)
-        verified = verify_backup(backup_dir)
-        backup_id = verified["backup_id"]
-        object_prefix, payload_keys, receipt_key = self._keys(prefix, backup_id)
-        receipt_path = self.provider.get_object(receipt_key) if False else None
-        del receipt_path
-        payload_rows = []
-        for name in PAYLOAD_FILES:
-            data = (backup_dir / name).read_bytes()
-            record = self.provider.put_if_absent(payload_keys[name], data)
-            payload_rows.append({
-                "file_name": name,
-                "object_key": payload_keys[name],
-                "size_bytes": record.size_bytes,
-                "sha256": record.content_sha256,
-                "version_id": record.version_id,
-            })
-        receipt_base = {
-            "schema_version": RECEIPT_SCHEMA_VERSION,
-            "receipt_state": "PUBLISHED",
-            "backup_id": backup_id,
-            "object_prefix": object_prefix,
-            "backup_manifest_sha256": verified["backup_manifest_sha256"],
-            "payload_objects": payload_rows,
-            "provider_kind": self.provider.capabilities.provider_kind,
-        }
-        receipt = {**receipt_base, "receipt_sha256": _sha(_json_bytes(receipt_base))}
-        receipt_data = _json_bytes(receipt)
-        receipt_record = self.provider.put_if_absent(receipt_key, receipt_data)
+        if backup_dir.is_symlink() or not backup_dir.is_dir():
+            raise BackupStorageError("local backup package is missing or unsafe")
+        expected_names = set(PAYLOAD_FILES)
+        try:
+            if {item.name for item in backup_dir.iterdir()} != expected_names:
+                raise BackupStorageError("local backup package has missing or unexpected entries")
+        except OSError as exc:
+            raise BackupStorageError("local backup package cannot be listed") from exc
+
+        # Snapshot bytes once, then validate that exact snapshot before publishing.
+        with tempfile.TemporaryDirectory(prefix="ch17-backup-provider-stage-") as tmp:
+            staged = Path(tmp) / "backup"
+            staged.mkdir()
+            payload_data: dict[str, bytes] = {}
+            for name in PAYLOAD_FILES:
+                source = backup_dir / name
+                if source.is_symlink() or not source.is_file():
+                    raise BackupStorageError("local backup payload is not a regular file: " + name)
+                data = source.read_bytes()
+                payload_data[name] = data
+                (staged / name).write_bytes(data)
+            try:
+                verified = verify_backup(staged)
+            except PersistenceError as exc:
+                raise BackupStorageError("local backup package failed integrity verification") from exc
+
+            backup_id = verified["backup_id"]
+            object_prefix, payload_keys, receipt_key = self._keys(prefix, backup_id)
+            payload_rows = []
+            for name in PAYLOAD_FILES:
+                data = payload_data[name]
+                record = self.provider.put_if_absent(payload_keys[name], data)
+                payload_rows.append({
+                    "file_name": name,
+                    "object_key": payload_keys[name],
+                    "size_bytes": record.size_bytes,
+                    "sha256": record.content_sha256,
+                    "version_id": record.version_id,
+                })
+            receipt_base = {
+                "schema_version": RECEIPT_SCHEMA_VERSION,
+                "receipt_state": "PUBLISHED",
+                "backup_id": backup_id,
+                "object_prefix": object_prefix,
+                "backup_manifest_sha256": verified["backup_manifest_sha256"],
+                "payload_objects": payload_rows,
+                "provider_kind": self.provider.capabilities.provider_kind,
+            }
+            receipt = {**receipt_base, "receipt_sha256": _sha(_json_bytes(receipt_base))}
+            receipt_data = _json_bytes(receipt)
+            receipt_record = self.provider.put_if_absent(receipt_key, receipt_data)
+
         checked = self.verify_stored_backup(prefix=prefix, backup_id=backup_id)
         return {
             "result": "PUBLISHED",
@@ -354,7 +380,10 @@ class BackupStorageAdapter:
                 raise BackupStorageError("stored object size or digest differs from receipt")
             (target_dir / name).write_bytes(record.data)
             observed[name] = record
-        verified = verify_backup(target_dir)
+        try:
+            verified = verify_backup(target_dir)
+        except PersistenceError as exc:
+            raise BackupStorageError("downloaded backup failed package integrity verification") from exc
         if (
             verified["backup_id"] != backup_id
             or verified["backup_manifest_sha256"] != receipt.get("backup_manifest_sha256")

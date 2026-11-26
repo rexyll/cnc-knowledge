@@ -118,7 +118,10 @@ class BackupStorageAdapterTests(unittest.TestCase):
             adapter.publish_backup(backup, prefix="cnc/ch17")
             key = "cnc/ch17/backup-adapter-test-001/" + RECEIPT_NAME
             record = provider._objects[key]
-            provider._objects[key] = type(record)(key, record.data + b" ", record.content_sha256, record.size_bytes, record.version_id)
+            receipt = json.loads(record.data)
+            receipt["backup_id"] = "tampered-id"
+            tampered = json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            provider._objects[key] = type(record)(key, tampered, record.content_sha256, len(tampered), record.version_id)
             with self.assertRaises(BackupStorageError):
                 adapter.verify_stored_backup(prefix="cnc/ch17", backup_id="adapter-test-001")
 
