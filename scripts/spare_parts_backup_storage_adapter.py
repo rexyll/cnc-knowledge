@@ -972,7 +972,7 @@ class FencingAwareObjectStorageProvider(Protocol):
 
     def put_if_absent_fenced(
         self, key: str, data: bytes, *, fencing_scope: str,
-        fencing_scope: str, fencing_token: int, idempotency_key: str
+        fencing_token: int, idempotency_key: str
     ) -> StoredObject: ...
 
 
@@ -993,7 +993,7 @@ class FencingAwareMultipartObjectStorageProvider(Protocol):
     def complete_multipart_upload_fenced(
         self, key: str, upload_id: str, *, expected_part_count: int,
         expected_size_bytes: int, expected_sha256: str,
-        fencing_token: int, idempotency_key: str
+        fencing_scope: str, fencing_token: int, idempotency_key: str
     ) -> StoredObject: ...
 
 
