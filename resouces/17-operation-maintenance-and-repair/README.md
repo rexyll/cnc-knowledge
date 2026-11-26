@@ -487,3 +487,6 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - `spare-parts-inventory-backup-provider-unified-admission-scheduler-matrix-v1.csv`（ASSET-000085）：24条合成参考场景，覆盖单aggregate CAS、global/tenant quota、跨domain waiter公平调度、max_waiters、TTL、renew/release、同Txn authority guard和迁移边界；全部 `PROPOSED_NOT_APPROVED / NOT_RUN`。
 - 代码：`scripts/spare_parts_provider_unified_admission_store.py`；专项测试：`tests/test_spare_parts_provider_unified_admission_store.py`；新增6个测试方法，SQLite与InMemoryEtcdV3Client分别运行，共12次适配器测试执行。
 - 关联正文KNOW-000054；复用SRC-000391/392/397/398。统一scheduler使用独立 `/cnc/admission/unified/v1/` namespace；不能与旧SQLite scheduler或第三十九轮独立Lease Authority对同一业务范围并行写入。
+
+
+- 第四十轮文档同步CI Run 45778328441两个必需Job均completed/success（提交 87d749147d2c32da547ce23ed56db69725271a00）；全库328项unittest、CH12 143项数值资源测试通过，strict lint 0 errors，知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000085的24项场景仍PROPOSED_NOT_APPROVED / NOT_RUN。

@@ -511,3 +511,11 @@
 - **知识/资源：** 新增KNOW-000054与ASSET-000085；矩阵24条均PROPOSED_NOT_APPROVED / NOT_RUN；复用SRC-000391/392/397/398。
 - **重要限制：** 单aggregate状态键导致各domain写入串行及活动集Compare扩张，不是高吞吐生产scheduler。旧 `SQLiteProviderAdmissionCoordinator` 和 `SQLiteDurableCoordinatorAuthority` 仍未迁移，真实etcd及mTLS/RBAC/quorum/multihost/Provider端到端未接入。必须单一权威cutover，禁止双写。
 - **生产状态：** `production_backup_enabled=false`；`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`；`business_rule_assertions=NOT_EVALUATED`。
+
+
+### 第四十轮文档同步CI验收
+
+- **文档提交：** `87d749147d2c32da547ce23ed56db69725271a00`；[Run 45778328441](https://github.com/rexyll/cnc-knowledge/actions/runs/45778328441)两个必需Job均completed/success。
+- **质量结果：** 全库328项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors，报告含5条非阻断warning。
+- **登记：** KNOW-000054与ASSET-000085已纳入文档及资源索引；矩阵24条均PROPOSED_NOT_APPROVED/NOT_RUN。
+- **限制：** 单aggregate状态键存在全局写串行热点；旧SQLite scheduler/Coordinator状态机仍未迁移；真实etcd集群及多主机验证未完成。

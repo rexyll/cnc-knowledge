@@ -140,3 +140,5 @@ Admission lease 统一事务参考模型见 [Admission Lease Authority 与Coordi
 
 
 Admission调度与配额统一事务参考模型见 [Unified Admission Scheduler 与配额状态统一事务模型](spare-parts-inventory-backup-provider-unified-admission-scheduler-and-quota-state.md)（KNOW-000054）：将global/tenant quota、跨domain公平等待队列、fencing token和活动Lease收敛到一个revisioned aggregate Txn；ASSET-000085有24条待批准/未执行场景。单aggregate存在全局写入串行热点；旧SQLite Admission及Coordinator服务尚未切换，真实etcd未连接。
+
+第四十轮文档同步CI Run 45778328441（提交 87d749147d2c32da547ce23ed56db69725271a00）两个必需Job均completed/success：328项全库unittest、CH12 143项测试、strict lint 0 errors、知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000085场景仍待批准/未执行。
