@@ -8,13 +8,16 @@ network client API. A receipt object is published last as the commit marker.
 from __future__ import annotations
 
 import argparse
+import contextvars
 import hashlib
 import json
 import os
 import re
 import tempfile
+import threading
 import time
 import sys
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Protocol
@@ -51,6 +54,128 @@ class ProviderTransientError(BackupStorageError):
         super().__init__(message)
         self.retry_after_seconds = retry_after_seconds
         self.outcome_unknown = outcome_unknown
+
+
+class ProviderCircuitOpenError(BackupStorageError):
+    """Circuit is open or its half-open probe slot is already occupied."""
+
+
+class RetryBudgetExceededError(BackupStorageError):
+    """A backup operation exhausted its aggregate retry budget."""
+
+
+class ProviderBulkheadFullError(BackupStorageError):
+    """A provider operation domain has no available concurrency slot."""
+
+
+class RetryBudget:
+    """Thread-safe retry allowance scoped to one top-level backup operation."""
+
+    def __init__(self, max_retries: int):
+        if max_retries < 0:
+            raise BackupStorageError("total retry budget cannot be negative")
+        self.max_retries = max_retries
+        self._used = 0
+        self._lock = threading.Lock()
+
+    def consume(self) -> bool:
+        with self._lock:
+            if self._used >= self.max_retries:
+                return False
+            self._used += 1
+            return True
+
+    @property
+    def used(self) -> int:
+        with self._lock:
+            return self._used
+
+    @property
+    def remaining(self) -> int:
+        with self._lock:
+            return self.max_retries - self._used
+
+
+class ProviderCircuitBreaker:
+    """Thread-safe CLOSED/OPEN/HALF_OPEN breaker with bounded probe admission."""
+
+    def __init__(
+        self,
+        *,
+        failure_threshold: int = 3,
+        reset_timeout_seconds: float = 30.0,
+        half_open_max_probes: int = 1,
+        clock_fn: Callable[[], float] = time.monotonic,
+    ):
+        if failure_threshold < 1 or reset_timeout_seconds < 0 or half_open_max_probes < 1:
+            raise BackupStorageError("invalid circuit breaker configuration")
+        self.failure_threshold = failure_threshold
+        self.reset_timeout_seconds = reset_timeout_seconds
+        self.half_open_max_probes = half_open_max_probes
+        self.clock_fn = clock_fn
+        self._state = "CLOSED"
+        self._consecutive_failures = 0
+        self._opened_at: float | None = None
+        self._half_open_inflight = 0
+        self._lock = threading.RLock()
+
+    def acquire(self) -> bool:
+        """Return True when this call owns a half-open probe slot."""
+        with self._lock:
+            now = self.clock_fn()
+            if self._state == "OPEN":
+                assert self._opened_at is not None
+                if now - self._opened_at < self.reset_timeout_seconds:
+                    raise ProviderCircuitOpenError("provider circuit is OPEN")
+                self._state = "HALF_OPEN"
+                self._half_open_inflight = 0
+            if self._state == "HALF_OPEN":
+                if self._half_open_inflight >= self.half_open_max_probes:
+                    raise ProviderCircuitOpenError("provider circuit HALF_OPEN probe slot is occupied")
+                self._half_open_inflight += 1
+                return True
+            return False
+
+    def record_success(self, half_open_probe: bool) -> None:
+        with self._lock:
+            if half_open_probe and self._half_open_inflight:
+                self._half_open_inflight -= 1
+            if self._state == "HALF_OPEN":
+                self._state = "CLOSED"
+                self._consecutive_failures = 0
+                self._opened_at = None
+                self._half_open_inflight = 0
+            elif self._state == "CLOSED":
+                self._consecutive_failures = 0
+
+    def record_failure(self, half_open_probe: bool) -> None:
+        with self._lock:
+            now = self.clock_fn()
+            if half_open_probe and self._half_open_inflight:
+                self._half_open_inflight -= 1
+            if self._state == "HALF_OPEN":
+                self._state = "OPEN"
+                self._opened_at = now
+                self._half_open_inflight = 0
+                return
+            if self._state == "CLOSED":
+                self._consecutive_failures += 1
+                if self._consecutive_failures >= self.failure_threshold:
+                    self._state = "OPEN"
+                    self._opened_at = now
+                    self._half_open_inflight = 0
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "state": self._state,
+                "consecutive_failures": self._consecutive_failures,
+                "half_open_inflight": self._half_open_inflight,
+                "opened_at": self._opened_at,
+                "failure_threshold": self.failure_threshold,
+                "reset_timeout_seconds": self.reset_timeout_seconds,
+                "half_open_max_probes": self.half_open_max_probes,
+            }
 
 
 @dataclass(frozen=True)
@@ -568,33 +693,136 @@ class BackupStorageAdapter:
         retry_max_attempts: int = 4,
         retry_base_delay_seconds: float = 0.1,
         retry_max_delay_seconds: float = 2.0,
+        retry_budget_total: int = 20,
+        circuit_failure_threshold: int = 3,
+        circuit_reset_timeout_seconds: float = 30.0,
+        circuit_half_open_max_probes: int = 1,
+        bulkhead_limits: dict[str, int] | None = None,
+        bulkhead_acquire_timeout_seconds: float = 0.0,
         sleep_fn: Callable[[float], None] = time.sleep,
+        clock_fn: Callable[[], float] = time.monotonic,
     ):
         if multipart_threshold_bytes < 1 or multipart_part_size_bytes < 1:
             raise BackupStorageError("multipart thresholds and part sizes must be positive")
         if retry_max_attempts < 1 or retry_base_delay_seconds < 0 or retry_max_delay_seconds < 0:
             raise BackupStorageError("retry attempts must be positive and delays cannot be negative")
+        if retry_budget_total < 0 or bulkhead_acquire_timeout_seconds < 0:
+            raise BackupStorageError("retry budget and bulkhead wait cannot be negative")
+        defaults = {"read": 4, "write": 2, "multipart": 2, "inventory": 1}
+        if bulkhead_limits is not None:
+            unknown = set(bulkhead_limits) - set(defaults)
+            if unknown or any(not isinstance(v, int) or v < 1 for v in bulkhead_limits.values()):
+                raise BackupStorageError("bulkhead limits must be positive integers for known domains")
+            defaults.update(bulkhead_limits)
         self.provider = provider
         self.multipart_threshold_bytes = multipart_threshold_bytes
         self.multipart_part_size_bytes = multipart_part_size_bytes
         self.retry_max_attempts = retry_max_attempts
         self.retry_base_delay_seconds = retry_base_delay_seconds
         self.retry_max_delay_seconds = retry_max_delay_seconds
+        self.retry_budget_total = retry_budget_total
+        self.bulkhead_acquire_timeout_seconds = bulkhead_acquire_timeout_seconds
         self.sleep_fn = sleep_fn
+        self.clock_fn = clock_fn
+        self._retry_budget_context: contextvars.ContextVar[RetryBudget | None] = (
+            contextvars.ContextVar(f"backup-retry-budget-{id(self)}", default=None)
+        )
+        self._circuit_breakers = {
+            domain: ProviderCircuitBreaker(
+                failure_threshold=circuit_failure_threshold,
+                reset_timeout_seconds=circuit_reset_timeout_seconds,
+                half_open_max_probes=circuit_half_open_max_probes,
+                clock_fn=clock_fn,
+            )
+            for domain in ("read", "write", "multipart", "inventory")
+        }
+        self._bulkheads = {
+            domain: threading.BoundedSemaphore(limit)
+            for domain, limit in defaults.items()
+        }
+        self._bulkhead_limits = defaults
+
+    @contextmanager
+    def retry_operation(self):
+        """Share one aggregate retry budget across nested calls in this task context."""
+        current = self._retry_budget_context.get()
+        if current is not None:
+            yield current
+            return
+        budget = RetryBudget(self.retry_budget_total)
+        token = self._retry_budget_context.set(budget)
+        try:
+            yield budget
+        finally:
+            self._retry_budget_context.reset(token)
+
+    @staticmethod
+    def _operation_domain(operation: str) -> str:
+        if operation in {"put_if_absent", "put_receipt", "write", "put_object"}:
+            return "write"
+        if operation in {"get_receipt", "get_payload", "get_object", "read"}:
+            return "read"
+        if operation in {
+            "begin_multipart_upload", "list_multipart_parts", "put_multipart_part",
+            "complete_multipart_upload", "multipart",
+        }:
+            return "multipart"
+        if operation in {"list_objects", "list_multipart_uploads", "inventory"}:
+            return "inventory"
+        raise BackupStorageError("unknown provider operation domain: " + operation)
+
+    @contextmanager
+    def _bulkhead_slot(self, domain: str):
+        semaphore = self._bulkheads[domain]
+        acquired = semaphore.acquire(timeout=self.bulkhead_acquire_timeout_seconds)
+        if not acquired:
+            raise ProviderBulkheadFullError(f"provider {domain} bulkhead is full")
+        try:
+            yield
+        finally:
+            semaphore.release()
+
+    def circuit_snapshot(self, domain: str) -> dict[str, Any]:
+        if domain not in self._circuit_breakers:
+            raise BackupStorageError("unknown circuit breaker domain")
+        return self._circuit_breakers[domain].snapshot()
 
     def _provider_call(self, operation: str, callback: Callable[[], Any]) -> Any:
+        if self._retry_budget_context.get() is None:
+            with self.retry_operation():
+                return self._provider_call(operation, callback)
+        domain = self._operation_domain(operation)
+        breaker = self._circuit_breakers[domain]
+        budget = self._retry_budget_context.get()
+        assert budget is not None
         for attempt in range(self.retry_max_attempts):
-            try:
-                return callback()
-            except ProviderTransientError as exc:
-                if attempt + 1 >= self.retry_max_attempts:
+            with self._bulkhead_slot(domain):
+                half_open_probe = breaker.acquire()
+                try:
+                    result = callback()
+                except ProviderTransientError as exc:
+                    breaker.record_failure(half_open_probe)
+                    last_error = exc
+                except Exception:
+                    # A permanent provider response proves reachability; it is not
+                    # counted as an availability failure and releases any probe.
+                    breaker.record_success(half_open_probe)
                     raise
+                else:
+                    breaker.record_success(half_open_probe)
+                    return result
+            if attempt + 1 >= self.retry_max_attempts:
+                raise last_error
+            if not budget.consume():
+                raise RetryBudgetExceededError(
+                    f"total retry budget exhausted during {operation}"
+                ) from last_error
+            delay = min(self.retry_max_delay_seconds,
+                        self.retry_base_delay_seconds * (2 ** attempt))
+            if last_error.retry_after_seconds is not None:
                 delay = min(self.retry_max_delay_seconds,
-                            self.retry_base_delay_seconds * (2 ** attempt))
-                if exc.retry_after_seconds is not None:
-                    delay = min(self.retry_max_delay_seconds,
-                                max(delay, exc.retry_after_seconds))
-                self.sleep_fn(delay)
+                            max(delay, last_error.retry_after_seconds))
+            self.sleep_fn(delay)
         raise AssertionError(f"unreachable retry loop for {operation}")
 
     def _upload_payload(self, key: str, data: bytes) -> StoredObject:
@@ -652,6 +880,10 @@ class BackupStorageAdapter:
         return result
 
     def inventory_backup_objects(self, *, prefix: str) -> dict[str, Any]:
+        if self._retry_budget_context.get() is None:
+            with self.retry_operation():
+                return self.inventory_backup_objects(prefix=prefix)
+
         list_objects = getattr(self.provider, "list_objects", None)
         list_uploads = getattr(self.provider, "list_multipart_uploads", None)
         if not callable(list_objects) or not callable(list_uploads):
@@ -732,6 +964,10 @@ class BackupStorageAdapter:
         return object_prefix, payload_keys, f"{object_prefix}/{RECEIPT_NAME}"
 
     def publish_backup(self, backup_dir: Path, *, prefix: str) -> dict[str, Any]:
+        if self._retry_budget_context.get() is None:
+            with self.retry_operation():
+                return self.publish_backup(backup_dir, prefix=prefix)
+
         backup_dir = Path(backup_dir)
         if backup_dir.is_symlink() or not backup_dir.is_dir():
             raise BackupStorageError("local backup package is missing or unsafe")
@@ -859,6 +1095,10 @@ class BackupStorageAdapter:
         }
 
     def verify_stored_backup(self, *, prefix: str, backup_id: str) -> dict[str, Any]:
+        if self._retry_budget_context.get() is None:
+            with self.retry_operation():
+                return self.verify_stored_backup(prefix=prefix, backup_id=backup_id)
+
         with tempfile.TemporaryDirectory(prefix="ch17-backup-provider-verify-") as tmp:
             result = self._download_verified(prefix=prefix, backup_id=backup_id, target_dir=Path(tmp) / "backup")
         return {
@@ -877,6 +1117,11 @@ class BackupStorageAdapter:
         backup_id: str,
         target_root: Path,
     ) -> dict[str, Any]:
+        if self._retry_budget_context.get() is None:
+            with self.retry_operation():
+                return self.restore_from_provider(
+                    prefix=prefix, backup_id=backup_id, target_root=target_root
+                )
         with tempfile.TemporaryDirectory(prefix="ch17-backup-provider-restore-") as tmp:
             staged_backup = Path(tmp) / "backup"
             self._download_verified(prefix=prefix, backup_id=backup_id, target_dir=staged_backup)
@@ -962,6 +1207,9 @@ def self_check() -> dict[str, Any]:
             "read_after_write_and_transient_get_retried": "PASS",
             "historical_version_pinned_after_current_version_switch": "PASS",
             "retry_policy": "BOUNDED_EXPONENTIAL_NO_RANDOM_JITTER_IN_SYNTHETIC_TEST",
+            "circuit_breaker_and_half_open": "TESTED_BY_UNIT_SUITE",
+            "operation_domain_bulkheads": "TESTED_BY_UNIT_SUITE",
+            "aggregate_retry_budget": "TESTED_BY_UNIT_SUITE",
             "payload_object_count": published["payload_object_count"],
             "external_connections": False,
             "credentials_or_keys_used": False,
