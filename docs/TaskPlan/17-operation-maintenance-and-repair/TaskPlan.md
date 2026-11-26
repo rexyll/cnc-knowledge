@@ -666,3 +666,15 @@
 - 最终元数据提交 `7209c094079830eb0789fbbe041757ee764e611c`；[Run 45776292616](https://github.com/rexyll/cnc-knowledge/actions/runs/45776292616)两个必需Job均completed/success。
 - 全库314项unittest、CH12 143项数值资源测试通过；strict lint 0 errors/5 warnings；知识结构质量0 errors。
 - ASSET-000084的20条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；生产备份关闭，业务断言NOT_EVALUATED。
+
+
+## 6.12 CH17-T004 第四十轮：Unified Admission Scheduler与配额状态统一事务模型（2026-11-26）
+
+- **目标：** 将Admission全局/租户配额、跨domain等待队列、公平调度、fencing token、活动Lease和request_id幂等收敛到同一个强一致Txn权威快照，避免lease与容量计数分开提交。
+- **实现：** 新增 `scripts/spare_parts_provider_unified_admission_store.py` / `StoreBackedProviderAdmissionCoordinator`。单一revisioned aggregate保存policy hash、global/tenant limits、活动集合、waiters、fencing/waiter序号和统计；活动Lease键附着backend TTL，request索引持久保留。Acquire在同一个Txn比较aggregate revision、当前所有活动Lease/request精确值、目标键不存在，并一次写入aggregate/token/活动Lease/request；renew与release同步更新aggregate和两个索引。Waiter按priority + age/aging interval排序，sequence用于同分平局，全局max_waiters跨domain生效。
+- **并发与过期：** 事务根据线性一致读到的活动键构建精确Compare；backend TTL删除或lease变化会令原Txn比较失败。expired lease在成功CAS中从active map清理并把request记录标记EXPIRED。CAS失败重新读取最新状态，不使用陈旧容量计数。
+- **Namespace：** 使用 `/cnc/admission/unified/v1/` 与第三十九轮独立Lease Authority键空间隔离；禁止两套Authority对同一业务范围并行写入或双写。
+- **测试：** 新增6个测试方法，SQLite与InMemoryEtcdV3Client分别执行，共12次适配器测试执行，覆盖global/tenant quota、跨实例不超卖、公平队列/aging、waiter上限与清理、TTL回收、renew/release与同Txn authority guard、request幂等与竞争。最终代码CI Run 45778008494两个必需Job通过：全库328项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。
+- **知识/资源：** 新增KNOW-000054、ASSET-000085；24条正式验收场景均 `PROPOSED_NOT_APPROVED / NOT_RUN`；复用SRC-000391/392/397/398。
+- **限制：** 单aggregate状态键让所有domain更新全局串行化，且每次事务需比较活动集合；这是正确性参考基线，不是高吞吐/生产规模设计。旧 `SQLiteProviderAdmissionCoordinator` 的数据、队列、策略及旧 `SQLiteDurableCoordinatorAuthority` 仍未迁移；真实etcd、gRPC/JSON Gateway、mTLS/RBAC、quorum、多主机、Provider端到端和分片吞吐尚未验证。禁止与旧scheduler双写。
+- **状态：** CH17-T004保持IN_PROGRESS；生产备份关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

@@ -86,7 +86,9 @@
     "final_metadata_ci_pending": false,
     "final_metadata_commit": "7209c094079830eb0789fbbe041757ee764e611c",
     "final_metadata_ci_run": 45776292616,
-    "final_metadata_ci_status": "completed/success"
+    "final_metadata_ci_status": "completed/success",
+    "unified_scheduler_successor": "KNOW-000054",
+    "unified_scheduler_matrix": "ASSET-000085"
   },
-  "notes": "第三十九轮新增StoreBackedAdmissionLeaseAuthority参考组件，基于CoordinatorAuthorityStore原子管理活动Lease、持久request_id索引、全局单调fencing token、创建/续租/释放和authority事务双键Compare guard。活动lease key附着backend TTL lease，request索引保留终态防止request_id重用。5项契约测试分别在SQLite和InMemoryEtcdV3Client执行，共10次适配器测试执行。该组件没有替换SQLiteProviderAdmissionCoordinator中的公平等待队列、全局/租户配额、policy hash及capacity调度，也未接入SQLiteDurableCoordinatorAuthority；不能双写分离运行。真实etcd、mTLS/RBAC、quorum、多主机和生产Provider未验证。ASSET-000084 20条场景全部PROPOSED_NOT_APPROVED/NOT_RUN。 文档同步提交 b79aede8a06cc55ac60681cbfc9acf03b1f44a55 的CI Run 45776156101两个必需Job均completed/success；全库314项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，结构质量0 errors。最终元数据CI待后续提交。 最终元数据提交 7209c094079830eb0789fbbe041757ee764e611c 的CI Run 45776292616两个必需Job均completed/success；全库314项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，结构质量0 errors。"
+  "notes": "第三十九轮新增StoreBackedAdmissionLeaseAuthority参考组件，基于CoordinatorAuthorityStore原子管理活动Lease、持久request_id索引、全局单调fencing token、创建/续租/释放和authority事务双键Compare guard。活动lease key附着backend TTL lease，request索引保留终态防止request_id重用。5项契约测试分别在SQLite和InMemoryEtcdV3Client执行，共10次适配器测试执行。该组件没有替换SQLiteProviderAdmissionCoordinator中的公平等待队列、全局/租户配额、policy hash及capacity调度，也未接入SQLiteDurableCoordinatorAuthority；不能双写分离运行。真实etcd、mTLS/RBAC、quorum、多主机和生产Provider未验证。ASSET-000084 20条场景全部PROPOSED_NOT_APPROVED/NOT_RUN。 文档同步提交 b79aede8a06cc55ac60681cbfc9acf03b1f44a55 的CI Run 45776156101两个必需Job均completed/success；全库314项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，结构质量0 errors。最终元数据CI待后续提交。 最终元数据提交 7209c094079830eb0789fbbe041757ee764e611c 的CI Run 45776292616两个必需Job均completed/success；全库314项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，结构质量0 errors。 第四十轮新建独立 /cnc/admission/unified/v1/ aggregate scheduler namespace，将global/tenant quota、跨domain公平队列和lease状态收敛；旧 standalone lease authority仍为独立原型，两个键空间不可为同一业务范围双写。统一scheduler单aggregate有全局写串行性能边界，CI Run 45778008494通过，全库328项unittest、CH12 143项测试通过；ASSET-000085 24条待批准未执行。"
 }

@@ -71,7 +71,9 @@
     "doc_sync_ci_status": "completed/success",
     "final_metadata_commit": "7209c094079830eb0789fbbe041757ee764e611c",
     "final_metadata_ci_run": 45776292616,
-    "final_metadata_ci_status": "completed/success"
+    "final_metadata_ci_status": "completed/success",
+    "unified_scheduler_successor": "KNOW-000054",
+    "unified_scheduler_matrix": "ASSET-000085"
   },
-  "notes": "20条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI运行5个契约测试方法，分别由SQLite和单进程InMemoryEtcdV3Client执行，共10次适配器测试执行；这不是矩阵执行或企业验收。该模块未接管旧SQLite Admission scheduler的等待队列、capacity/tenant quota或Coordinator领域表。 文档同步提交 b79aede8a06cc55ac60681cbfc9acf03b1f44a55 的CI Run 45776156101两个必需Job均completed/success；ASSET-000084的20条矩阵场景仍PROPOSED_NOT_APPROVED/NOT_RUN。 最终元数据提交 7209c094079830eb0789fbbe041757ee764e611c 的CI Run 45776292616两个必需Job均completed/success；ASSET-000084的20条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。"
+  "notes": "20条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI运行5个契约测试方法，分别由SQLite和单进程InMemoryEtcdV3Client执行，共10次适配器测试执行；这不是矩阵执行或企业验收。该模块未接管旧SQLite Admission scheduler的等待队列、capacity/tenant quota或Coordinator领域表。 文档同步提交 b79aede8a06cc55ac60681cbfc9acf03b1f44a55 的CI Run 45776156101两个必需Job均completed/success；ASSET-000084的20条矩阵场景仍PROPOSED_NOT_APPROVED/NOT_RUN。 最终元数据提交 7209c094079830eb0789fbbe041757ee764e611c 的CI Run 45776292616两个必需Job均completed/success；ASSET-000084的20条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。 第四十轮增加单aggregate Unified Admission Scheduler替代方向KNOW-000054/ASSET-000085；原20条lease lifecycle场景状态不变。"
 }

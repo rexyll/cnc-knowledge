@@ -1,0 +1,72 @@
+{
+  "entity_id": "ASSET-000085",
+  "entity_type": "asset_file",
+  "canonical_name": "备件库存备份 Unified Admission Scheduler 与配额状态测试矩阵v1",
+  "english_name": "CNC spare-parts backup unified Admission scheduler and quota state conformance matrix v1",
+  "aliases": [
+    "Unified Admission Scheduler matrix",
+    "Quota state atomicity scenarios",
+    "ASSET-000085"
+  ],
+  "description": "24条合成参考场景，覆盖aggregate state、policy hash、global/tenant quota、跨domain公平等待队列、TTL、renew/release、幂等、Txn guard及迁移阻断；全部未批准/未执行。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "Admission",
+    "Coordinator",
+    "Quota",
+    "Fair Queue",
+    "CAS",
+    "ASSET-000085"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T16:40:00+08:00",
+  "updated_at": "2026-11-26T16:40:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000391",
+    "SRC-000392",
+    "SRC-000397",
+    "SRC-000398"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-unified-admission-scheduler-matrix-v1.csv",
+    "file_name": "spare-parts-inventory-backup-provider-unified-admission-scheduler-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000054",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic Admission scheduler transaction requirements",
+    "scenario_count": 24,
+    "approval_status": "PROPOSED_NOT_APPROVED",
+    "execution_status": "NOT_RUN",
+    "synthetic_only": true,
+    "real_etcd_connected": false,
+    "sha256": null,
+    "file_size": null,
+    "code_commit": "34023050272f41c725396d1737ea4b394c22cf3d",
+    "code_ci_run": 45778008494,
+    "code_test_count": 328,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "knowledge_structure_quality": "PASS_0_ERRORS"
+  },
+  "notes": "24条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI执行6个合约测试方法，每个分别在SQLite与单进程InMemoryEtcdV3Client运行，共12次适配器测试；不等同于矩阵执行或企业验收。单aggregate scheduler存在写入热点；旧SQLite scheduler与Coordinator领域服务尚未迁移。"
+}

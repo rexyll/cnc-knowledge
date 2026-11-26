@@ -497,3 +497,17 @@
 - **最终元数据提交：** `7209c094079830eb0789fbbe041757ee764e611c`；[Run 45776292616](https://github.com/rexyll/cnc-knowledge/actions/runs/45776292616)两个必需Job均completed/success。
 - **质量结果：** 全库314项unittest、CH12 143项测试通过；strict knowledge lint 0 errors/5 warnings；知识结构和数据质量0 errors。
 - **状态：** KNOW-000053/ASSET-000084及资源索引、覆盖统计同步；ASSET-000084的20条场景仍PROPOSED_NOT_APPROVED / NOT_RUN。旧Admission scheduler和Coordinator领域服务尚未迁移。
+
+
+## CH17-T004 Unified Admission Scheduler与配额状态统一事务第四十轮（2026-11-26）
+
+- **目标：** 将旧Admission scheduler中分散在同一SQLite事务的global/tenant quota、waiter、公平调度、fencing token、Lease和request_id幂等，建立为后端无关的单权威Txn参考模型。
+- **实现：** 新增 `scripts/spare_parts_provider_unified_admission_store.py` 的 `StoreBackedProviderAdmissionCoordinator`。单一aggregate存储policy hash、global/tenant limits、所有domain活动lease、全局waiter集合、fencing/waiter sequence和指标。活动Lease key附着原生TTL Lease，request索引持久保留ACTIVE/RELEASED/EXPIRED。全局与tenant容量从同一个aggregate活动集合计算，Acquire将aggregate、fencing token、TTL活动Lease和request索引在同一Txn提交。
+- **调度：** waiter使用priority + waiting age / aging interval评分，sequence做稳定平局；global max_waiters跨所有domain。timeout和check_task异常会清理waiter；过期lease先通过TTL key状态与精确Compare识别，再在aggregate CAS事务中清除容量占用并记录EXPIRED。
+- **Lease与Authority：** renew同步改写aggregate、active key和request index，并切换native TTL Lease；release同Txn从active map移除、删除active key及写RELEASED tombstone。新增active lease exact-value guard，可与Leader/scope/operation比较一起放入被保护的authority Txn。
+- **隔离：** 新版本独立使用 `/cnc/admission/unified/v1/`，不与第三十九轮 `/cnc/admission/v1/` standalone lease prototype重叠；不得对同一业务范围并行写入。
+- **测试：** 新增6个契约测试方法，SQLite和InMemoryEtcdV3Client各执行一次，共12次适配器测试，覆盖跨实例global/tenant配额、no-oversubscription、priority/aging公平队列、全局waiter上限、过期reclaim、renew/release、authority guard及request幂等竞争。
+- **修正记录：** 首轮CI暴露两项测试夹具在同一store上使用不同policy hash；已改为每个策略变体使用独立SQLite/etcd测试store。另将scheduler key namespace与第三十九轮Lease Authority隔离。最终代码提交 `34023050272f41c725396d1737ea4b394c22cf3d`；[Run 45778008494](https://github.com/rexyll/cnc-knowledge/actions/runs/45778008494)两个必需Job均completed/success，全库328项unittest、CH12 143项测试通过，strict knowledge lint 0 errors，知识结构和数据质量0 errors。
+- **知识/资源：** 新增KNOW-000054与ASSET-000085；矩阵24条均PROPOSED_NOT_APPROVED / NOT_RUN；复用SRC-000391/392/397/398。
+- **重要限制：** 单aggregate状态键导致各domain写入串行及活动集Compare扩张，不是高吞吐生产scheduler。旧 `SQLiteProviderAdmissionCoordinator` 和 `SQLiteDurableCoordinatorAuthority` 仍未迁移，真实etcd及mTLS/RBAC/quorum/multihost/Provider端到端未接入。必须单一权威cutover，禁止双写。
+- **生产状态：** `production_backup_enabled=false`；`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`；`business_rule_assertions=NOT_EVALUATED`。
