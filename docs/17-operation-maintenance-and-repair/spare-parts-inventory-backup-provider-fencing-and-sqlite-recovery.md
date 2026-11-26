@@ -75,3 +75,13 @@ restore_to_new_database() 不是原位覆盖恢复，而是准备一个独立的
 未覆盖项仍包括：WAL/SHM与磁盘故障策略、加密和签名、访问控制、备份介质耐久性、保留/清理、旧数据库隔离、跨主机协调、自动心跳、持久QPS限流、真实 Provider 的条件事务、multipart 与 receipt 的 fencing 集成、下游高水位全量盘点和恢复切换演练。
 
 生产备份继续关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。ASSET-000073～ASSET-000074的16个场景全部为 PROPOSED_NOT_APPROVED / NOT_RUN，不得视作已审批或已执行。
+
+
+## 第三十轮补充：适配器层 token 贯穿与备份包 scope fencing
+
+- 新增显式 BackupStorageAdapter(require_provider_fencing=True) 严格模式。缺少 admission coordinator、Provider supports_fencing 声明或必需 fenced 方法时启动失败，不回退到普通 PUT。默认值为False以兼容既有Provider；默认模式不得声称下游fencing开启。
+- _bulkhead_slot()现在向内部调用者交付当前admission lease；_provider_call()把该lease的fencing_token传递给fenced callback。每个实际写操作独立获得租约；重试使用新token，但保留稳定idempotency key。
+- 同一个备份包使用 object_prefix 作为统一 fencing_scope，覆盖payload PUT、multipart begin/part/complete和最后的 BACKUP-RECEIPT.json。scope高水位推进后，同包其他object key上更小token的迟到写入也应被拒绝。
+- 新增 FencedMockObjectStorageProvider 作为合成夹具；不是生产Provider。严格模式测试覆盖：门禁、token传递、跨key stale writer、multipart part stale token、receipt以及complete响应丢失后的幂等重放。
+- **代码CI：** [Run 45753519142](https://github.com/rexyll/cnc-knowledge/actions/runs/45753519142) 两个必需Job均completed/success；全库221项unittest、CH12数值资源143项通过；strict lint 0 errors（5 warnings）。Provider self-check中的 downstream_fencing_token_propagation_payload_multipart_receipt 为PASS；Artifact [15086063425](https://github.com/rexyll/cnc-knowledge/actions/runs/45753519142/artifacts/15086063425)。
+- **生产边界：** 当前只有FencedMock内存夹具支持该合同。真实Provider仍需实现认证主体与授权scope绑定、持久scope高水位、对象/分块/完成/回执同事务原子提交及网络竞态故障验证；不能只根据supports_fencing布尔值认定供应商能力已通过审查。生产备份保持关闭。

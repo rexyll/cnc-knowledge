@@ -34,7 +34,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T11:49:19+08:00",
-  "updated_at": "2026-11-26T04:05:00Z",
+  "updated_at": "2026-11-26T04:11:10Z",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -67,14 +67,21 @@
     "business_rule_assertions": "NOT_EVALUATED",
     "repository_unit_test_count": 217,
     "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
-    "latest_code_commit": "1307ef462b920d9bf745ffb5ff5606e859f3a669",
-    "latest_verified_ci_run": 45751336613,
+    "latest_code_commit": "38226d4b48a60dfba7a4b59f2951cf37a570f52c",
+    "latest_verified_ci_run": 45753519142,
     "latest_verified_ci_status": "completed/success",
     "sqlite_self_check_artifact_id": 15084844535,
     "ci_jobs": {
       "Knowledge structure and data quality": "completed/success",
       "CH12 numerical resource tests": "completed/success"
-    }
+    },
+    "adapter_fencing_mode_supported": true,
+    "strict_fencing_mode_parameter": "BackupStorageAdapter.require_provider_fencing",
+    "package_scope_fencing_supported": true,
+    "latest_code_ci_run": 45753519142,
+    "latest_code_ci_status": "completed/success",
+    "full_unittest_count": 221,
+    "latest_verified_commit": "38226d4b48a60dfba7a4b59f2951cf37a570f52c"
   },
-  "notes": "Fencing contract and SyntheticFencedObjectSink are test fixtures only; BackupStorageAdapter does not yet propagate the lease fencing token into remote object writes, multipart operations or receipt commit. No cloud Provider or production endpoint has been tested. SQLite restore requires an independently reconciled downstream fencing high-water; without complete evidence and real downstream atomic fencing, remain BLOCKED. All 16 scenario definitions are PROPOSED_NOT_APPROVED / NOT_RUN. CI Run 45751336613 passed both required jobs; full repo 217 unit tests, CH12 143, strict lint 0 errors and 5 warnings."
+  "notes": "Fencing contract and SyntheticFencedObjectSink are test fixtures only; BackupStorageAdapter does not yet propagate the lease fencing token into remote object writes, multipart operations or receipt commit. No cloud Provider or production endpoint has been tested. SQLite restore requires an independently reconciled downstream fencing high-water; without complete evidence and real downstream atomic fencing, remain BLOCKED. All 16 scenario definitions are PROPOSED_NOT_APPROVED / NOT_RUN. CI Run 45751336613 passed both required jobs; full repo 217 unit tests, CH12 143, strict lint 0 errors and 5 warnings. 第三十轮增加BackupStorageAdapter严格fencing模式，支持把lease fencing token传递给普通payload、multipart begin/part/complete及receipt提交；整个backup object_prefix作为统一fencing scope，保护同一备份包的跨object key迟到写。严格模式要求coordinator和Provider完整fenced方法；默认兼容模式不代表fencing开启。仅FencedMock合成验证，真实Provider仍未集成。CI Run 45753519142两个Job success，全库221项、CH12 143项，strict lint 0 errors/5 warnings；Provider self-check token propagation PASS。"
 }

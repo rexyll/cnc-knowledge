@@ -101,3 +101,6 @@
 
 
 - [备份 Provider fencing 契约与 SQLite 安全恢复](spare-parts-inventory-backup-provider-fencing-and-sqlite-recovery.md)（KNOW-000043）；定义下游原子陈旧写入防护与本地SQLite在线备份/新库恢复门禁，配套16条合成场景（ASSET-000073/000074），均未批准/未执行。
+
+
+- [备份 Provider 适配器 fencing token 贯穿与备份包范围原子提交](spare-parts-inventory-backup-provider-adapter-fencing-integration.md)（KNOW-000044）；显式严格模式下覆盖payload、multipart与receipt-last写入，ASSET-000075定义12条合成场景，均未批准/未执行。
