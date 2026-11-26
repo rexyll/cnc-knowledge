@@ -58,7 +58,7 @@ class StoreBackedProviderAdmissionCoordinator:
     or external etcd cluster validation.
     """
 
-    _PREFIX = b"/cnc/admission/v1/"
+    _PREFIX = b"/cnc/admission/unified/v1/"
     _STATE_KEY = _PREFIX + b"scheduler/state"
     _MAX_CAS_ATTEMPTS = 64
 
