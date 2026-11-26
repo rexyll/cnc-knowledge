@@ -14,6 +14,11 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageError, ProviderAdmissionIdempotencyConflictError,
