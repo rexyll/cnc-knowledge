@@ -642,3 +642,13 @@
 - **文档提交：** `a1548dad6ad1c47d4645600a162a866076de6993`；[Run 45772844275](https://github.com/rexyll/cnc-knowledge/actions/runs/45772844275)两个必需Job均completed/success。
 - **质量结果：** 全库304项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors/5 warnings；知识结构与数据质量0 errors。
 - **状态：** ASSET-000083的16条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；领域状态机和Admission lease尚未迁移到CoordinatorAuthorityStore；生产备份关闭，治理门禁不变。
+
+
+## 6.11 CH17-T004 第三十九轮：Admission Lease Authority统一事务参考组件（2026-11-26）
+
+- **目标：** 在KNOW-000051/052定义的CoordinatorAuthorityStore与事务内读写契约上，建立后端无关Admission lease生命周期与authority事务保护比较。
+- **实现：** 新增 `scripts/spare_parts_provider_admission_authority_store.py` / `StoreBackedAdmissionLeaseAuthority`。活动lease键附着backend TTL Lease；request_id索引为持久幂等/终态tombstone；全局fencing token通过counter revision CAS递增。Acquire原子写counter/lease/request，renew同Txn切换backend lease并更新两条记录，release同Txn删除活动键并写RELEASED。新增 `active_lease_compares()` 与 `transact_with_active_lease()`，让调用方把Admission lease检查与Leader/scope/operation写入置于同一Txn。
+- **测试：** 新增5个契约测试方法，SQLite与InMemoryEtcdV3Client分别执行，共10次适配器测试执行；覆盖幂等、身份冲突、终态request ID、token单调、renew/release、TTL失效、Txn guard竞争和提交响应丢失恢复。代码CI Run 45775642132通过：全库314项unittest、CH12 143项测试、strict lint 0 errors/5 warnings、结构质量0 errors。
+- **知识/资源：** 新增KNOW-000053和ASSET-000084；20条场景均 `PROPOSED_NOT_APPROVED / NOT_RUN`；复用SRC-000391/392/397/398。
+- **未完成边界：** 这不是完整Admission scheduler迁移。旧SQLite代码仍持有等待队列、fair scheduling、global/tenant capacity quota、policy hash与Admission lease表；不能把其中一部分单独迁移并双写。SQLiteDurableCoordinatorAuthority也尚未通过store port执行。下一步需把队列/配额/lease/counter/idempotency和Coordinator Leader/scope/operation状态共同迁移，且保护写必须在同一Txn带入lease guard。真实etcd、mTLS/RBAC、quorum、多主机和Provider故障演练未完成。
+- **状态：** CH17-T004保持IN_PROGRESS；生产备份关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

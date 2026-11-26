@@ -467,3 +467,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 - 第三十八轮文档同步CI Run 45772844275两个必需Job均completed/success（提交 a1548dad6ad1c47d4645600a162a866076de6993）；全库304项unittest、CH12 143项数值资源测试通过，strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。ASSET-000083的16项场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 Admission Lease Authority统一事务存储（第三十九轮）
+
+- `spare-parts-inventory-backup-provider-admission-lease-authority-matrix-v1.csv`（ASSET-000084）：20条合成参考场景，覆盖单调fencing token、request_id幂等、backend TTL、续租迁移、释放tombstone、authority同Txn guard和OUTCOME_UNKNOWN；全部 `PROPOSED_NOT_APPROVED / NOT_RUN`。
+- 代码：`scripts/spare_parts_provider_admission_authority_store.py`；测试：`tests/test_spare_parts_provider_admission_authority_store.py`；关联知识KNOW-000053，复用SRC-000391/392/397/398。
+- 该组件仅负责Admission lease lifecycle，不是完整Admission scheduler；旧SQLite等待队列、fair scheduling、全局/租户capacity quota及SQLite Coordinator领域表尚未迁移，不可分库双写。

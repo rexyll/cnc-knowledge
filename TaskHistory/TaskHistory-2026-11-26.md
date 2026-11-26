@@ -470,3 +470,15 @@
 - **质量结果：** 全库304项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors/5 warnings；知识结构与数据质量0 errors。
 - **登记：** KNOW-000052和ASSET-000083已纳入文档与资源索引；矩阵16条均PROPOSED_NOT_APPROVED/NOT_RUN。
 - **限制：** SQLite领域状态机仍SQL专用；Admission lease没有迁移到通用Txn存储；未连接真实etcd集群、多主机或生产Provider。
+
+
+## CH17-T004 Admission Lease Authority统一事务存储第三十九轮（2026-11-26）
+
+- **新增实现：** `scripts/spare_parts_provider_admission_authority_store.py`，新增 `StoreBackedAdmissionLeaseAuthority`，建立后端无关的Admission lease create/renew/release、全局monotonic fencing token与request_id幂等管理。
+- **键模型：** 活动lease记录附着底层Store TTL Lease；永久request_id索引保留ACTIVE/RELEASED/EXPIRED记录防止重复使用；全局token counter由mod_revision/version CAS递增。获取Lease在一个Txn中提交counter、active lease和request索引；续租一个Txn将active key迁移到新backend TTL并更新request索引；release一个Txn删除active key并写RELEASED tombstone。
+- **原子保护：** 新增 `active_lease_compares()` / `transact_with_active_lease()`，返回Lease记录和request索引的精确值Compare，要求被保护的authority mutation把这些比较与Leader/scope/operation比较放进同一个Store Txn。独立validate后再写入仍不构成原子保护。
+- **测试：** 新增5个测试方法，SQLite与InMemoryEtcdV3Client两适配器各执行一次，共10次新增测试执行；覆盖token单调、request_id幂等/冲突/终态、lease TTL、renew迁移、release、同Txn guard及提交后响应丢失恢复。
+- **代码CI：** Commit `b9b7f6af6f34fc012fee95c96e77cca10c5e6442`；[Run 45775642132](https://github.com/rexyll/cnc-knowledge/actions/runs/45775642132)两个必需Job均completed/success；全库314项unittest、CH12 143项数值资源测试通过；strict lint 0 errors/5 warnings；知识结构与数据质量0 errors。
+- **知识与资源：** 新增KNOW-000053与ASSET-000084；矩阵20条全部PROPOSED_NOT_APPROVED / NOT_RUN；复用SRC-000391/392/397/398。
+- **关键限制：** 本轮没有替换 `SQLiteProviderAdmissionCoordinator` 的等待队列、公平调度、global/tenant quota、policy hash和原SQL lease表，也没有把 `SQLiteDurableCoordinatorAuthority` 迁移至store port。不能分库双写或把该组件作为完整Admission scheduler投产。真实etcd、gRPC/JSON Gateway、mTLS/RBAC、quorum、多主机、生产Provider和企业场景均未接入/验收。
+- **生产状态：** `production_backup_enabled=false`；`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`；`business_rule_assertions=NOT_EVALUATED`。
