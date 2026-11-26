@@ -17,6 +17,8 @@ from scripts.spare_parts_backup_storage_adapter import (
     ProviderCircuitBreaker,
     ProviderCircuitOpenError,
     ProviderBulkheadFullError,
+    ProviderTaskCancelledError,
+    ProviderTaskDeadlineExceededError,
     RetryBudgetExceededError,
     RECEIPT_NAME,
     PAYLOAD_FILES,
