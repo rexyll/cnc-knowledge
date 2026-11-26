@@ -667,3 +667,12 @@
 - **验证边界：** 单进程共享锁不代表多etcd成员或多主机quorum；没有真实gRPC/JSON gateway driver、TLS/mTLS、RBAC、网络分区或服务端Watch压力测试。SQLite Coordinator领域逻辑仍未迁移到Store port；schema-v2仍是唯一生产权威。
 - **CI：** 待本轮提交触发执行。
 - **状态：** CH17-T004继续IN_PROGRESS。
+
+
+### 第四十六轮CI验收记录
+
+- **最终代码head：** `cdaff0dc43834b3250d8803efb0591a8656c363d`；main分支；[GitHub Actions Run 45826709629](https://github.com/rexyll/cnc-knowledge/actions/runs/45826709629)两个必需Job均completed/success。
+- **测试结果：** 全库484项unittest通过，其中本轮新增21项Watch/多客户端故障注入测试；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有DRAFT合成夹具和企业审批/执行门禁。
+- **实现边界：** 在既有AuthorityStore适配器上增加可选Watch与linearizable_range；共享单进程InMemoryEtcdV3WatchClient由两个独立adapter实例共享。未连接真实etcd/gRPC driver；没有Raft quorum、mTLS/RBAC、多主机网络分区或真实Watch压力测试。
+- **安全语义：** Watch仅做通知；断线/compaction后先执行linearizable Range，再从R+1恢复；created/fragment/canceled响应不得错误推进cursor；Txn/Lease响应丢失保持OUTCOME_UNKNOWN或fail-closed。
+- **状态：** KNOW-000060 / ASSET-000091已登记；30项正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，未执行真实etcd集成；CH17-T004继续IN_PROGRESS。

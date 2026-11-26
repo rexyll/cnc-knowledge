@@ -565,3 +565,6 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 测试：tests/test_spare_parts_provider_authority_store_watch.py，21项新增测试，使用共享单进程InMemoryEtcdV3WatchClient和两个独立EtcdV3CoordinatorAuthorityStore实例。
 - 资源：spare-parts-coordinator-etcd-watch-multi-client-fault-injection-matrix-v1.csv（ASSET-000091），30条正式场景均PROPOSED_NOT_APPROVED / NOT_RUN；SRC-000407记录etcd v3.7 Watch API revision/compaction/fragment语义。
 - 未连接真实etcd、未构造gRPC driver、未验证Raft quorum或多主机故障；Watch只用于通知，权威读取仍必须线性一致Range/Txn。
+
+
+第四十六轮Watch/Range与多客户端故障注入参考模型最终head `cdaff0dc43834b3250d8803efb0591a8656c363d`；[CI Run 45826709629](https://github.com/rexyll/cnc-knowledge/actions/runs/45826709629)两个必需Job均通过：全库484项unittest、CH12 143项数值资源测试通过，strict lint和结构质量0 errors。本轮21项新增测试通过；真实etcd/多主机验证未执行，30项正式场景仍待批准/执行。

@@ -822,3 +822,11 @@
 - **测试/资源：** 新增tests/test_spare_parts_provider_authority_store_watch.py，共21项测试方法；新增KNOW-000060、SRC-000407、ASSET-000091和30项正式场景矩阵，全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **范围：** 共享Python fake不是多etcd成员/多主机共识，不模拟真实gRPC Watch stream、Raft quorum、mTLS/RBAC或网络分区。真实etcd driver和Coordinator领域服务从SQLite SQL迁移仍未完成。
 - **状态：** schema-v2仍为唯一生产权威；没有真实etcd接入/迁移；CH17-T004继续IN_PROGRESS。
+
+
+### 第四十六轮CI验收补记（2026-11-26）
+
+- **最终代码head：** `cdaff0dc43834b3250d8803efb0591a8656c363d`；[GitHub Actions Run 45826709629](https://github.com/rexyll/cnc-knowledge/actions/runs/45826709629)两个必需Job均completed/success。
+- **质量结果：** 全库484项unittest通过（本轮新增21项Watch/多客户端故障注入测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors，5项既有非阻断warning。
+- **边界：** 多客户端测试为两个adapter共享单进程fake backend；没有真实etcd server、Raft quorum、多主机gRPC Watch、mTLS/RBAC或网络分区验证。30条ASSET-000091正式场景保持PROPOSED_NOT_APPROVED / NOT_RUN。
+- **状态：** schema-v2仍为唯一生产权威；真实etcd driver和Coordinator领域服务迁移未完成；CH17-T004继续IN_PROGRESS。

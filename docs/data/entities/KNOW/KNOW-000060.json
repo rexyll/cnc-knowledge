@@ -3,12 +3,36 @@
   "entity_type": "knowledge_article",
   "canonical_name": "备件库存备份 Coordinator etcd v3 Watch、Range恢复与多实例故障注入契约",
   "english_name": "CNC spare-parts backup Coordinator etcd v3 Watch, Range recovery and multi-client fault-injection contract",
-  "aliases": ["Coordinator etcd Watch extension", "Watch compaction recovery", "multi-client authority store contract", "KNOW-000060"],
+  "aliases": [
+    "Coordinator etcd Watch extension",
+    "Watch compaction recovery",
+    "multi-client authority store contract",
+    "KNOW-000060"
+  ],
   "description": "在既有CoordinatorAuthorityStore和EtcdV3CoordinatorAuthorityStore上增加可选Watch能力、线性一致前缀Range恢复、fragment/progress/compaction游标规则与共享fake backend多客户端故障注入测试。",
   "primary_chapter": "CH17",
-  "related_chapters": ["CH17", "CH18", "CH19", "CH21"],
-  "classification_path": ["数控机床运行维护", "维修与备件管理", "备件系统验收与测试数据治理", "Coordinator etcd Watch与故障恢复"],
-  "tags": ["CH17", "Coordinator", "etcd v3", "Watch", "Range", "Compaction", "Multi-client", "Unknown outcome"],
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Coordinator etcd Watch与故障恢复"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "etcd v3",
+    "Watch",
+    "Range",
+    "Compaction",
+    "Multi-client",
+    "Unknown outcome"
+  ],
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T20:38:00+08:00",
@@ -16,7 +40,14 @@
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
-  "source_ids": ["SRC-000397", "SRC-000398", "SRC-000399", "SRC-000400", "SRC-000401", "SRC-000407"],
+  "source_ids": [
+    "SRC-000397",
+    "SRC-000398",
+    "SRC-000399",
+    "SRC-000400",
+    "SRC-000401",
+    "SRC-000407"
+  ],
   "attributes": {
     "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-etcd-watch-range-recovery-and-multi-client-fault-injection.md",
     "implementation_module": "scripts/spare_parts_provider_authority_store.py",
@@ -30,7 +61,16 @@
     "multi_host_consensus_tested": false,
     "production_coordinator_migrated_to_store_port": false,
     "formal_scenarios_approval": "PROPOSED_NOT_APPROVED",
-    "formal_scenarios_execution": "NOT_RUN"
+    "formal_scenarios_execution": "NOT_RUN",
+    "code_commit": "cdaff0dc43834b3250d8803efb0591a8656c363d",
+    "ci_run": 45826709629,
+    "ci_status": "completed/success",
+    "repository_unit_test_count": 484,
+    "watch_multi_client_test_methods": 21,
+    "ch12_numerical_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "existing_fixture_warnings": 5
   },
-  "notes": "在既有KV/Txn/Lease适配器上增量添加可选Watch与linearizable_range。21项新增单测使用一个共享单进程fake backend和两个独立adapter实例，覆盖Watch cursor/compaction/fragment/reconnect及Txn/Lease未知结果；不代表真实etcd、多主机quorum或生产应用领域服务迁移。ASSET-000091的30项正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。"
+  "notes": "在既有KV/Txn/Lease适配器上增量添加可选Watch与linearizable_range。21项新增单测使用一个共享单进程fake backend和两个独立adapter实例，覆盖Watch cursor/compaction/fragment/reconnect及Txn/Lease未知结果；不代表真实etcd、多主机quorum或生产应用领域服务迁移。ASSET-000091的30项正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。 最终代码head cdaff0dc43834b3250d8803efb0591a8656c363d在CI Run 45826709629通过；全库484项unittest（含21项新增Watch/多客户端测试）、CH12 143项测试通过；strict lint与结构质量0 errors，5项既有非阻断warning。未连接真实etcd或多主机环境。"
 }

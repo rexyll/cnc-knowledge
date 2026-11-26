@@ -134,3 +134,5 @@
 | spare-parts-coordinator-v3-sharded-admission-transaction-matrix-v1.csv | CSV Coordinator Schema v3分片准入与etcd事务预算正式验证矩阵 / ASSET-000090 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000059 | 最终代码head e8a4fb4c91bac3b279c5a0f8a06d3ae121da75a1通过CI Run 45824510175：全库463项unittest、CH12 143项资源测试、strict lint 0 errors、结构质量0 errors；37项本轮测试已通过。54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。 |
 
 | spare-parts-coordinator-etcd-watch-multi-client-fault-injection-matrix-v1.csv | CSV Coordinator etcd Watch、Range恢复与多客户端故障注入正式验证矩阵 / ASSET-000091 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000060 | 30条场景覆盖linearizable prefix Range、Watch created/event/progress/fragment/compaction、Range+R+1恢复、Lease事件、多adapter共享后端CAS和unknown outcome；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
+
+| spare-parts-coordinator-etcd-watch-multi-client-fault-injection-matrix-v1.csv | CSV Coordinator etcd Watch、Range恢复与多客户端故障注入正式验证矩阵 / ASSET-000091 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000060 | 30条场景覆盖线性一致Range、Watch生命周期与compaction恢复、Lease事件、多客户端CAS和unknown outcome；CI Run 45826709629中全库484项unittest（含21项本轮测试）与CH12 143项测试通过，但正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。 |

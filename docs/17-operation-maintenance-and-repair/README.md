@@ -192,3 +192,6 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 ## CH17-T004 etcd Watch、Range恢复与多实例故障注入（第四十六轮）
 
 新增 [Coordinator etcd v3 Watch、Range恢复与多实例故障注入契约](spare-parts-inventory-backup-provider-coordinator-etcd-watch-range-recovery-and-multi-client-fault-injection.md)（KNOW-000060）。在既有Etcd v3 KV/Txn/Lease端口上增量添加可选Watch和线性一致前缀Range能力，定义created/PUT/DELETE/progress/fragment/compaction语义及Range snapshot + R+1断线恢复；共享fake backend由两个独立adapter实例执行多客户端CAS、Txn/Lease响应丢失测试。新增ASSET-000091的30条正式场景矩阵，全部PROPOSED_NOT_APPROVED / NOT_RUN。没有真实etcd driver/集群或多主机quorum测试。
+
+
+第四十六轮最终代码head：`cdaff0dc43834b3250d8803efb0591a8656c363d`；[CI Run 45826709629](https://github.com/rexyll/cnc-knowledge/actions/runs/45826709629)两个必需Job均completed/success。全库484项unittest（含本轮21项Watch/多客户端契约测试）、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项既有非阻断warning）。真实etcd/gRPC driver、Raft quorum和多主机测试未执行；ASSET-000091的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。

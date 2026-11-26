@@ -138,3 +138,11 @@ Txn read-back必须验证足够的业务身份字段、scope、idempotency key�
 - SRC-000407：etcd v3.7 API Reference与Watch API，start_revision、created/canceled/compact_revision、fragment及progress revision语义；
 - KNOW-000051：Coordinator authority store基础KV/Txn/Lease端口；
 - KNOW-000052：Txn分支内有序Get读批次。
+
+
+## 10. CI验收记录
+
+- **最终代码head：** `cdaff0dc43834b3250d8803efb0591a8656c363d`（main）。
+- **CI：** [GitHub Actions Run 45826709629](https://github.com/rexyll/cnc-knowledge/actions/runs/45826709629)，head SHA与提交一致，两个必需Job均completed/success。
+- **测试结果：** 全库484项unittest通过（含本轮21项Watch/多客户端故障注入测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。另有5项既有合成fixture审批/执行状态warning。
+- **边界：** CI使用单进程共享InMemoryEtcdV3WatchClient及两个独立adapter实例，不连接etcd server，不证明Raft quorum、多主机网络分区、mTLS/RBAC、真实gRPC Watch流或生产吞吐。ASSET-000091的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
