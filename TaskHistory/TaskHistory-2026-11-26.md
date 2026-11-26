@@ -346,3 +346,18 @@
 - **Artifacts：** Provider fenced 15089140399；SQLite admission coordinator 15089115409；Provider adapter 15089015697。
 - **知识资源：** KNOW-000046、ASSET-000077（20条formal scenarios，PROPOSED_NOT_APPROVED / NOT_RUN）已写入；CH17统计26篇KNOW、76个登记实体、70项资源。
 - **安全限制：** 当前HMAC signer secret需在本机Coordinator与Provider进程分别注入；Provider进程持有对称verify secret；lease释放后已签proof仍可用到expires_at，默认最多15秒。生产远端Provider应使用Coordinator/KMS私钥、Provider公钥的非对称验签，增加在线撤销、同步时钟、TLS/KMS/HSM及真实多主机网络测试。生产备份仍关闭。
+
+
+## CH17-T004 Ed25519 v2与在线Coordinator lease状态复核第三十三轮
+
+- **实现：** fencing attestation协议新增Ed25519 v2，签名格式v2.ed25519.kid.payload.signature，claims固定16项；HMAC v1保持迁移兼容。新增FencingAttestationSigner/CallbackEd25519Signer和本地Ed25519PrivateKeySigner；Coordinator接受attestation_signer回调，私钥不写入Coordinator SQLite。
+- **Provider：** 新增trusted_ed25519_keys表，保存公钥SHA256指纹而非私钥；Provider只注入公钥。支持Ed25519公钥指纹校验和ACTIVE/RETIRING/REVOKED key registry接口。
+- **在线撤销：** Coordinator增加is_attestation_active(claims)；Provider配置require_online_attestation_status=True时在Provider写事务中复核lease ACTIVE，Coordinator不可用则fail-closed。测试覆盖lease RELEASED拒绝和Coordinator status故障时无对象提交。
+- **限制：** CallbackEd25519Signer只提供KMS/HSM适配接口，没有实际云KMS SDK、凭据或网络调用。在线status-check和Provider commit属于两个独立SQLite事务，检查后到commit之间存在TOCTOU，不是线性一致即时撤销；SQLite仍仅同主机参考。
+- **中间CI失败及修复：**
+  - Run 45760498433：先增加cryptography导入但workflow未安装依赖，失败为ModuleNotFoundError；新增requirements-ch17-security.txt并在Knowledge Quality workflow安装。
+  - Run 45760532361：requirements文件首版把换行误写成字面量\\n，pip拒绝；修正为真正换行。
+  - Run 45760704241：Coordinator将issuer_id误判为与Ed25519 signer冲突；修复为允许issuer并从signer读取key ID，只拒绝与HMAC secret混用。
+- **最终代码CI：** [Run 45760844653](https://github.com/rexyll/cnc-knowledge/actions/runs/45760844653)两个必需Job completed/success；全库252 tests、CH12 143 tests通过；strict lint 0 errors/5 warnings；Provider CLI self-check PASS。Artifacts：Provider 15089847421，Admission 15089209106，Adapter 15089074481。
+- **资产：** 新增KNOW-000047、ASSET-000078（22条参考场景，PROPOSED_NOT_APPROVED / NOT_RUN）。CH17统计从26/76/70更新至27篇KNOW、77个登记实体、71项资源。
+- **生产限制：** 未配置/连接AWS/Azure/GCP KMS或HSM；没有真实Provider/远程Coordinator/多主机网络；在线状态复核与对象提交之间尚未原子化；生产备份仍关闭，治理状态BLOCKED_PENDING_ENTERPRISE_APPROVAL。

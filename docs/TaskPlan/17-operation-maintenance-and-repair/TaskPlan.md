@@ -523,3 +523,18 @@
 - **测试/资产：** Coordinator及Provider增加签名、lease释放、scope、tenant、resource、operation、idempotency、过期proof、key rotation覆盖。新增KNOW-000046和ASSET-000077，20条正式参考验收场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **验收：** [CI Run 45758028329](https://github.com/rexyll/cnc-knowledge/actions/runs/45758028329)两个必需Job completed/success；全库248项unittest、CH12 143项通过；strict lint 0 errors（5 warnings）；Provider fenced self-check PASS（Artifact 15087973420），Admission Artifact 15087604559，Adapter Artifact 15087868629。
 - **限制：** 当前是本机HMAC共享secret参考方案，Provider进程持有verify secret，不是公钥验签；已签proof在lease release后仍可生存至expires_at，默认最大15秒。admin key API依赖本地数据库文件owner权限。生产远端Provider应改为Coordinator/KMS私钥、Provider公钥的非对称签名，并实现在线撤销、时钟同步、TLS/KMS/HSM；真实网络/多主机Provider未接入。生产备份继续关闭，CH17-T004仍IN_PROGRESS。
+
+
+## CH17-T004 第三十三轮：Ed25519 v2、公钥验签与在线lease状态查询
+
+- **目标：** 将Coordinator签名证明从HMAC-only参考实现升级到非对称签名；Provider只持公钥，支持在线检查当前lease状态。
+- **签名协议：** 保留v1 HMAC-SHA256作为迁移兼容；新增v2.ed25519.kid.payload.signature。新增FencingAttestationSigner协议、Ed25519PrivateKeySigner本地参考实现和CallbackEd25519Signer回调适配接口。Coordinator配置attestation_signer，私钥只在Signer/KMS边界，Coordinator SQLite不保存私钥。
+- **KMS边界：** CallbackEd25519Signer可对接外部KMS/HSM的签名回调，但当前没有任何云KMS SDK、凭据、网络调用或真实服务集成。实际KMS Provider/算法策略/密钥IAM仍待后续部署项目。
+- **Provider：** 新增trusted_ed25519_keys注册表，保存issuer/key ID、算法、公钥SHA-256指纹、状态与有效时间；Provider只注入公钥。新增admin_register_trusted_ed25519_key、admin_set_trusted_ed25519_key_status，支持ACTIVE/RETIRING/REVOKED。
+- **在线状态：** Coordinator新增is_attestation_active(claims)；Provider可开启require_online_attestation_status=True并配置attestation_status_checker。检查发现lease RELEASED/EXPIRED/unknown则拒绝；状态接口不可用时抛FencingAttestationStatusUnavailableError并回滚Provider写事务。
+- **竞态限制：** Coordinator和Provider是两个SQLite数据库及事务；lease状态检查成功到Provider commit之间仍有TOCTOU。当前不是线性一致的即时撤销，也无远程HTTP/gRPC checker。真正严格顺序需要同一个线性化事务服务或Provider原生条件写/单调high-water保障。
+- **依赖：** requirements-ch17-security.txt锁定cryptography==50.0.2；Knowledge Quality workflow在单测前安装。
+- **测试：** 新增Ed25519 callback签发、公钥-only Provider验签、ACTIVE/RELEASED在线检查、Coordinator不可用fail-closed；全库252项unittest通过，CH12 143项通过。
+- **资产：** 新增KNOW-000047和ASSET-000078（22条Ed25519/online status参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。本轮真实KMS/HSM和远程多主机场景不具备凭据/环境，不宣称已测试。
+- **验收：** 代码提交0912a955通过[CI Run 45760844653](https://github.com/rexyll/cnc-knowledge/actions/runs/45760844653)两个必需Job；252项全库、143项CH12通过，strict lint 0 errors/5 warnings；Provider self-check PASS。
+- **安全状态：** HMAC v1仍可用于迁移；生产远端应启用Ed25519/KMS签名、公钥验签、require_online_attestation_status fail-closed，并解决跨事务TOCTOU。真实云Provider/多主机网络仍未接入；生产备份继续关闭，CH17-T004仍IN_PROGRESS。
