@@ -133,7 +133,7 @@ etcd MVCC compaction只清理被后续版本取代的历史版本，不替应用
 新增：
 - scripts/spare_parts_operation_archive_index.py：16/256/4096桶精确分片索引、旧manifest链回填、逐批增量更新、精确hit/miss、目标batch回读校验和全链审计。
 - scripts/spare_parts_coordinator_schema_migration.py：schema-v2写冻结、source digest、schema-v3逻辑对象候选、完整对象校验、Leader/source revision/外部floor保护、cutover、写入前指针回切和写入后重建式反向迁移。
-- 对应两份测试文件，当前合计45个测试方法。
+- 对应两份测试文件，当前合计46个测试方法。
 - ASSET-000089定义独立于参考模型单测的正式迁移/索引场景矩阵，全部 PROPOSED_NOT_APPROVED / NOT_RUN。
 
 参考模型不执行真实etcd Compare/Txn、不接入对象存储、不实现生产认证/权限/密钥管理、不保证网络分区下的多实例行为，也不替代真实p95/p99、吞吐、quorum、恢复时间和保留策略验收。单元测试通过只验证代码模型，不表示Schema v3已获准实施。
@@ -155,3 +155,11 @@ etcd MVCC compaction只清理被后续版本取代的历史版本，不替应用
 - SRC-000404：etcd v3.7 Data model，MVCC revision/compaction语义。
 - SRC-000405：etcd v3.7 API，Txn Compare/Then/Else原子语义。
 - KNOW-000057：Coordinator Operation Ledger生命周期与安全归档协议。
+
+
+## 10. CI验收记录
+
+- **最终代码/测试head：** `2b66224909d2bcd9b326c1cffcf220bef5d14b7f`（main）。首个实现提交为 `b3eaf4807028783681a424228ffed76b3a8a4245`；随后修正了历史archive pointer测试中的权威计数夹具，以及reverse-migration容量测试的状态机前置步骤。
+- **CI：** [GitHub Actions Run 45819520749](https://github.com/rexyll/cnc-knowledge/actions/runs/45819520749)，head SHA与最终代码提交一致，两个必需Job均completed/success。
+- **测试结果：** 全库426项unittest通过（含本轮21项Archive Index测试及25项Schema migration测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。另有5项既有合成fixture审批/执行状态warning，非本轮测试失败。
+- **验收边界：** 只验证内存精确索引及迁移状态机模型；不表示真实对象存储/etcd事务、真实多主机Leader/Coordinator、schema-v3生产keyspace或生产迁移回滚通过。ASSET-000089的47项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。

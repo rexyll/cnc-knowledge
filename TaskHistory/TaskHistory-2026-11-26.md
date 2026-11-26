@@ -614,3 +614,11 @@
 - **设计原则：** Exact miss必须由完整root/桶索引与Coordinator权威archived count共同证明；v3事务围绕本次scope和operation key，不能按全局active lease数量线性增加Compare；迁移使用冻结写入和控制指针CAS；V3有任何mutation后禁止指向旧v2快照，反向迁移须全量rehydrate并核对容量/floors。
 - **范围边界：** 不修改StoreBackedCoordinatorAuthority生产schema-v2；不连接真实etcd/对象存储/SQLite；不执行迁移或cutover；ASSET-000089所有正式场景待批准/未执行。
 - **验收：** 自动化CI待本轮提交触发后确认；CH17-T004继续IN_PROGRESS。
+
+
+### 第四十四轮CI验收记录
+
+- **最终代码/测试head：** `2b66224909d2bcd9b326c1cffcf220bef5d14b7f`；main分支；[GitHub Actions Run 45819520749](https://github.com/rexyll/cnc-knowledge/actions/runs/45819520749)两个必需Job均completed/success。
+- **结果：** 全库426项unittest通过，其中本轮Archive Index 21项、Schema v3 Migration 25项，共46项；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有DRAFT合成夹具及企业批准/执行门禁。
+- **CI修正：** Run 45819355334发现两个测试夹具问题：历史pointer读取使用当前archive count；reverse-migration容量测试未进入V3冻结迁移状态。最终测试夹具在提交 `2b66224909d2bcd9b326c1cffcf220bef5d14b7f` 修正，Run 45819520749完整通过。
+- **范围限制：** 纯内存参考模型，不接入StoreBackedCoordinatorAuthority生产schema-v2，不连接真实etcd、SQLite生产库或云对象存储；47条ASSET-000089正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。未执行Schema v3迁移、cutover、回滚或历史数据删除；CH17-T004继续IN_PROGRESS。

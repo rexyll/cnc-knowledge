@@ -61,7 +61,18 @@
     "real_etcd_connected": false,
     "real_archive_store_connected": false,
     "sha256": null,
-    "file_size": null
+    "file_size": null,
+    "code_commit": "2b66224909d2bcd9b326c1cffcf220bef5d14b7f",
+    "ci_run": 45819520749,
+    "ci_status": "completed/success",
+    "repository_unit_test_count": 426,
+    "archive_index_test_methods": 21,
+    "schema_migration_test_methods": 25,
+    "ch12_numerical_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "formal_scenario_approval": "PROPOSED_NOT_APPROVED",
+    "formal_scenario_execution": "NOT_RUN"
   },
-  "notes": "正式矩阵不包含执行结果；自动化内存模型测试通过不等于企业批准、真实etcd集群迁移或生产回滚验收。"
+  "notes": "正式矩阵不包含执行结果；自动化内存模型测试通过不等于企业批准、真实etcd集群迁移或生产回滚验收。 CI Run 45819520749通过，包含21项Archive Index和25项Schema v3迁移参考模型测试；全库426项单测、CH12 143项数值资源测试通过。47项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN，未连接真实etcd或对象存储。"
 }

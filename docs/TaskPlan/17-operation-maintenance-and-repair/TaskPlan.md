@@ -775,3 +775,11 @@
 - **测试/资源：** 新增2个实现文件与2个测试文件，共46个自动化测试方法；新增KNOW-000058、ASSET-000089和47项企业正式场景矩阵；来源沿用SRC-000403～SRC-000405。
 - **范围：** 两个脚本均为纯内存参考模型；不修改StoreBackedCoordinatorAuthority生产schema-v2，不接入真实etcd/对象存储，不执行迁移/cutover/回滚。ASSET-000089保持PROPOSED_NOT_APPROVED / NOT_RUN。
 - **状态：** CH17-T004继续IN_PROGRESS；schema-v2仍是唯一生产权威，生产归档与Schema v3均未启用。
+
+
+### 第四十四轮CI验收补记（2026-11-26）
+
+- **最终代码/测试head：** `2b66224909d2bcd9b326c1cffcf220bef5d14b7f`；[GitHub Actions Run 45819520749](https://github.com/rexyll/cnc-knowledge/actions/runs/45819520749)两个必需Job均completed/success。
+- **质量结果：** 全库426项unittest通过（本轮新增21项索引测试+25项迁移测试，共46项）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。另有5项既有合成fixture的非阻断warning。
+- **修正记录：** 首轮CI发现两个测试夹具前置条件不正确：历史指针测试使用了当前archived count，reverse-migration size测试未进入V3冻结反向迁移状态。最终修正提交为 `2b66224909d2bcd9b326c1cffcf220bef5d14b7f`，Run 45819520749通过。
+- **状态：** KNOW-000058 / ASSET-000089已同步；47项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。参考模型没有连接真实etcd/对象存储，没有执行生产Schema v3迁移或回滚；CH17-T004继续IN_PROGRESS。
