@@ -490,3 +490,13 @@
 - **代码验收：** Run 45751336613两个必需Job均success；全库217项unittest、CH12 143项资源测试通过，strict lint 0 errors（5 warnings）。
 - **状态：** CH17-T004继续IN_PROGRESS；生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务规则断言NOT_EVALUATED；ASSET-000073/074共16条情景全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **后续：** 完成真实Provider能力合同审查、资源级高水位完整性证明和企业受控恢复演练后，才能评估是否集成真实fencing。不得以Mock测试替代供应商或生产验收。
+
+
+## CH17-T004 第三十轮：Provider 适配器 fencing token 贯穿
+
+- **目标：** 将 admission lease token 贯穿实际Provider对象写入、multipart和receipt最后提交，阻止同一备份包内的陈旧写入者。
+- **实现：** 新增显式 require_provider_fencing=True 严格模式；_bulkhead_slot()向Provider调用提供当前租约；fenced Provider方法接收token和稳定幂等键。以备份 object_prefix 作为统一 fencing_scope，而非每个object key单独计数。
+- **交付：** 更新 scripts/spare_parts_backup_storage_adapter.py 与Provider专项测试；新增KNOW-000044和ASSET-000075（12条场景）。
+- **测试：** 适配器新增4项unittest，覆盖strict mode门禁、payload/multipart/receipt token传递、同scope跨key旧token拒绝、complete响应丢失重放。默认兼容模式保持非fenced，不能宣称安全模式已启用。
+- **验收：** Run 45753519142两个必需Job均success；全库221项unittest、CH12 143项资源测试通过；strict lint 0 errors（5 warnings），Provider self-check token propagation PASS。
+- **边界：** FencedMock仅单进程内存模拟，真实云Provider/本地生产Provider仍未接入。真实实现需认证/授权绑定、持久scope高水位和对象/分块/完成/回执原子提交。ASSET-000075全部12条场景PROPOSED_NOT_APPROVED / NOT_RUN；生产备份继续关闭，CH17-T004仍IN_PROGRESS。

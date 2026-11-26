@@ -278,3 +278,15 @@
 - **Artifacts：** SQLite provider admission Artifact ID 15085349250；Provider backup storage adapter Artifact ID 15085483640；backup governance readiness Artifact ID 15085468691。
 - **覆盖登记：** CH17当前23篇KNOW、73个登记实体、67项资源；新增16项测试矩阵场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **限制未变：** 真实Provider fencing未集成/验证；SQLite restore仅准备新数据库，不自动cutover；生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## CH17-T004 Provider适配器 fencing token 贯穿第三十轮
+
+- **代码实现与测试：** 新增显式 require_provider_fencing=True 严格模式；_bulkhead_slot()向_provider_call()传递当前ProviderAdmissionLease，实际fenced callback获得lease fencing_token及稳定idempotency key。普通payload、multipart begin/part/complete及receipt-last均使用fenced方法；同一备份包共用object_prefix fencing_scope，使旧token不能迟到写入同包的另一object key。
+- **合成Provider：** 新增FencedMockObjectStorageProvider，按备份包scope模拟高水位、对象/分块提交、幂等回执及响应丢失；不代表生产/真实云Provider。
+- **新增测试：** 适配器专项新增4项unittest，覆盖strict mode fail-closed、payload/multipart/receipt token传递、跨key stale token和multipart complete响应丢失重放。
+- **首次CI问题及修复：** 提交 82ca417d380977ef8196fe924a1df89a02ed43f4 的Run 45753100673，在新增旧token测试中因fencing错误类定义重复、实现抛出类型与测试导入类型不一致而NameError；修复提交 b2b5d3f76eff87bb41c12af49959eabacecf311d 统一异常类，Run 45753154675通过，全库221项unittest，CH12 143项。
+- **scope收紧及第二次CI问题：** 提交 c9448e64fecf533e42d66387ed79aeaa5efe8687 将高水位 scope 从单object key收紧为整个backup object_prefix，并补充跨key旧写测试；其Run 45753403126因Provider Protocol定义参数替换产生duplicate argument语法错误，导入阶段失败。修复提交 38226d4b48a60dfba7a4b59f2951cf37a570f52c 校正普通PUT与multipart complete协议签名。
+- **最终代码CI：** [Run 45753519142](https://github.com/rexyll/cnc-knowledge/actions/runs/45753519142) 两个必需Job均completed/success；全库221项unittest、CH12 143项通过，strict lint PASS（0 errors，5 warnings）；Provider self-check token propagation PASS，Artifact ID 15086063425；SQLite Artifact ID 15086272742。
+- **资源与知识：** 新增KNOW-000044与ASSET-000075，12条合成场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CH17覆盖统计更新为24篇KNOW、74个登记实体、68项资源。
+- **限制：** 默认兼容模式 require_provider_fencing=False 不提供fencing；严格模式当前仅由FencedMock内存夹具证明。没有真实Provider认证/授权绑定、持久化scope高水位、跨进程远端原子事务或生产环境证据。生产备份关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。
