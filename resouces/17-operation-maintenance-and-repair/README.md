@@ -312,3 +312,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 ## 第二十五轮新增资源
 
 - `spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv`（ASSET-000070）：17项同进程多Adapter共享配额、令牌桶、租约恢复和异常路径结果未知场景；全部PROPOSED_NOT_APPROVED / NOT_RUN，不构成跨进程或生产分布式协调验收。
+
+
+## CH17-T004 Provider协调器故障模型第二十六轮
+
+- 扩展共享协调测试矩阵（ASSET-000070）：新增SAC-018～SAC-024，合计24项。新增场景覆盖协调服务不可用、准入响应丢失后孤儿租约TTL回收、Provider执行中协调分区、validate/release故障、服务恢复和诊断/续租故障。
+- 所有场景仍为纯合成规格，TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；不代表真实网络分区、跨进程或生产故障演练。
+- 新增 KNOW-000040；本轮新增6项Provider专项unittest。实现仍仅针对同进程Mock协调器。

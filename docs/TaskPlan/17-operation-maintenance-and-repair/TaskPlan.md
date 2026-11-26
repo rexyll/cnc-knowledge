@@ -421,3 +421,13 @@
 - 同一修复加固租约失效的异常出口检查，新增测试确保租约过期时Provider永久/瞬态错误都不再触发第二次调用。
 - 最终Run 45743927996：两个Job completed/success，全库182个unittest通过（Provider专项54个），strict knowledge lint 0 errors，Mock adapter self-check PASS；Artifact ID 15081984380。
 - CH17统计19篇KNOW、69个登记实体、63项资源；共享协调仍仅为同进程Mock，不能作为跨进程或生产分布式一致性证据。
+
+
+### 第二十六轮：共享协调器故障注入与 fail-closed 恢复策略（2026-11-26）
+
+- **交付：** 扩展 KNOW-000039，新增 KNOW-000040；实现协调器可用状态切换和 acquire/acquire_response/renew/release/validate/snapshot 六阶段故障注入；新增 ProviderCoordinatorUnavailableError 与 ProviderCoordinatorStateUnknownError。
+- **失败策略：** 当前只实现fail-closed，不支持fail-open。协调器在Provider调用前不可用时不调用Provider；acquire响应丢失时保留TTL租约但不执行Provider；Provider已执行后若无法验证或释放租约，则按outcome-unknown处理并禁止自动重试。
+- **资源：** 扩展ASSET-000070测试矩阵至24条。24条全部合成规格，PROPOSED_NOT_APPROVED / NOT_RUN。
+- **测试：** 新增6项Provider专项unittest，目标全库188项、Provider专项60项；以CI实际结果为准。
+- **未实现：** 跨进程协调后端、真实网络分区/主备/quorum、自动租约心跳、下游fencing、最大等待队列、恢复抖动/限速、生产容量与故障演练。
+- **状态：** CH17-T004继续IN_PROGRESS；生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。

@@ -85,6 +85,27 @@ class ProviderRateLimitExceededError(BackupStorageError):
         self.retry_after_seconds = retry_after_seconds
 
 
+class ProviderCoordinatorUnavailableError(BackupStorageError):
+    """The shared admission coordinator cannot safely answer a control request."""
+
+    def __init__(
+        self, message: str, *, phase: str,
+        outcome_unknown: bool = False,
+        reservation_outcome_unknown: bool = False,
+    ):
+        super().__init__(message)
+        self.phase = phase
+        self.outcome_unknown = outcome_unknown
+        self.reservation_outcome_unknown = reservation_outcome_unknown
+
+
+class ProviderCoordinatorStateUnknownError(ProviderCoordinatorUnavailableError):
+    """Provider may have run, but coordinator state cannot be confirmed; never retry blindly."""
+
+    def __init__(self, message: str, *, phase: str):
+        super().__init__(message, phase=phase, outcome_unknown=True)
+
+
 class ProviderAdmissionLeaseLostError(BackupStorageError):
     """A provider operation returned after its shared admission lease expired."""
 
@@ -209,6 +230,7 @@ class ProviderFairBulkhead:
         with self._condition:
             self._next_sequence += 1
             waiter = _AdmissionWaiter(self._next_sequence, task, self.clock_fn())
+            self._check_availability_locked("acquire")
             self._waiters.append(waiter)
             try:
                 while True:
@@ -384,6 +406,45 @@ class InMemoryProviderAdmissionCoordinator:
         self._issued_lease_count = 0
         self._rejected_capacity_count = 0
         self._rate_limited_count = 0
+        self._available = True
+        self._injected_failures: dict[str, int] = {}
+        self._coordinator_failure_count = 0
+
+    FAILURE_PHASES = ("acquire", "acquire_response", "renew", "release", "validate", "snapshot")
+
+    def set_available(self, available: bool) -> None:
+        """Toggle coordinator availability for same-process fault-injection tests."""
+        if not isinstance(available, bool):
+            raise BackupStorageError("coordinator availability must be boolean")
+        with self._condition:
+            self._available = available
+            self._condition.notify_all()
+
+    def inject_failure(self, phase: str, *, times: int = 1) -> None:
+        """Inject one-shot control-plane failures; acquire_response fails after reserving a lease."""
+        if phase not in self.FAILURE_PHASES:
+            raise BackupStorageError("unknown coordinator failure phase")
+        if not isinstance(times, int) or isinstance(times, bool) or times < 1:
+            raise BackupStorageError("coordinator injected failure count must be a positive integer")
+        with self._condition:
+            self._injected_failures[phase] = self._injected_failures.get(phase, 0) + times
+
+    def _check_availability_locked(
+        self, phase: str, *, reservation_outcome_unknown: bool = False,
+    ) -> None:
+        injected = self._injected_failures.get(phase, 0)
+        if not self._available or injected:
+            if injected:
+                if injected == 1:
+                    self._injected_failures.pop(phase, None)
+                else:
+                    self._injected_failures[phase] = injected - 1
+            self._coordinator_failure_count += 1
+            raise ProviderCoordinatorUnavailableError(
+                f"shared provider admission coordinator unavailable during {phase}",
+                phase=phase,
+                reservation_outcome_unknown=reservation_outcome_unknown,
+            )
 
     def _expire_locked(self, now: float) -> None:
         expired = [
@@ -494,6 +555,11 @@ class InMemoryProviderAdmissionCoordinator:
                         self._leases[lease.lease_id] = lease
                         self._issued_lease_count += 1
                         self._condition.notify_all()
+                        # A response can be lost after the reservation commits.
+                        # The caller must not invoke Provider; the orphan lease expires by TTL.
+                        self._check_availability_locked(
+                            "acquire_response", reservation_outcome_unknown=True,
+                        )
                         return lease
                     remaining = timeout_seconds - (time.monotonic() - started)
                     if remaining <= 0:
@@ -526,6 +592,7 @@ class InMemoryProviderAdmissionCoordinator:
         if not math.isfinite(lease_ttl_seconds) or lease_ttl_seconds <= 0:
             raise BackupStorageError("shared coordinator lease TTL must be finite and positive")
         with self._condition:
+            self._check_availability_locked("renew")
             now = self.clock_fn()
             self._expire_locked(now)
             current = self._leases.get(lease.lease_id)
@@ -544,6 +611,7 @@ class InMemoryProviderAdmissionCoordinator:
 
     def release(self, lease: ProviderAdmissionLease) -> bool:
         with self._condition:
+            self._check_availability_locked("release")
             self._expire_locked(self.clock_fn())
             current = self._leases.get(lease.lease_id)
             if current != lease:
@@ -554,13 +622,17 @@ class InMemoryProviderAdmissionCoordinator:
 
     def validate(self, lease: ProviderAdmissionLease) -> bool:
         with self._condition:
+            self._check_availability_locked("validate")
             self._expire_locked(self.clock_fn())
             return self._leases.get(lease.lease_id) == lease
 
     def snapshot(self) -> dict[str, Any]:
         with self._condition:
+            self._check_availability_locked("snapshot")
             self._expire_locked(self.clock_fn())
             return {
+                "coordinator_available": self._available,
+                "coordinator_failures": self._coordinator_failure_count,
                 "global_limits": dict(self.global_limits),
                 "active_by_domain": {
                     domain: self._active_count_locked(domain) for domain in self.global_limits
@@ -1397,21 +1469,47 @@ class BackupStorageAdapter:
             try:
                 yield
             except Exception as exc:
-                if lease is not None and not self.admission_coordinator.validate(lease):
-                    raise ProviderAdmissionLeaseLostError(
-                        f"shared {domain} admission lease expired during provider operation; outcome may be unknown"
-                    ) from exc
+                if lease is not None:
+                    try:
+                        lease_valid = self.admission_coordinator.validate(lease)
+                    except ProviderCoordinatorUnavailableError as coordinator_error:
+                        raise ProviderCoordinatorStateUnknownError(
+                            f"shared {domain} coordinator state is unavailable after provider error; outcome may be unknown",
+                            phase="validate",
+                        ) from coordinator_error
+                    if not lease_valid:
+                        raise ProviderAdmissionLeaseLostError(
+                            f"shared {domain} admission lease expired during provider operation; outcome may be unknown"
+                        ) from exc
                 raise
             else:
-                if lease is not None and not self.admission_coordinator.validate(lease):
-                    raise ProviderAdmissionLeaseLostError(
-                        f"shared {domain} admission lease expired during provider operation; outcome may be unknown"
-                    )
+                if lease is not None:
+                    try:
+                        lease_valid = self.admission_coordinator.validate(lease)
+                    except ProviderCoordinatorUnavailableError as coordinator_error:
+                        raise ProviderCoordinatorStateUnknownError(
+                            f"shared {domain} coordinator could not confirm lease after provider response; outcome may be unknown",
+                            phase="validate",
+                        ) from coordinator_error
+                    if not lease_valid:
+                        raise ProviderAdmissionLeaseLostError(
+                            f"shared {domain} admission lease expired during provider operation; outcome may be unknown"
+                        )
         finally:
-            if lease is not None:
-                self.admission_coordinator.release(lease)
-            if local_acquired:
-                bulkhead.release(task.tenant_id)
+            try:
+                if lease is not None:
+                    try:
+                        self.admission_coordinator.release(lease)
+                    except ProviderCoordinatorUnavailableError as coordinator_error:
+                        # Do not let a caller retry a Provider operation merely because
+                        # coordinator cleanup failed; the lease may remain until TTL expiry.
+                        raise ProviderCoordinatorStateUnknownError(
+                            f"shared {domain} coordinator could not release admission lease; reconcile before retry",
+                            phase="release",
+                        ) from coordinator_error
+            finally:
+                if local_acquired:
+                    bulkhead.release(task.tenant_id)
 
     def circuit_snapshot(self, domain: str) -> dict[str, Any]:
         if domain not in self._circuit_breakers:

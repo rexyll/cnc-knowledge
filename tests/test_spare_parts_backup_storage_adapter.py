@@ -18,6 +18,8 @@ from scripts.spare_parts_backup_storage_adapter import (
     ProviderCircuitOpenError,
     ProviderBulkheadFullError,
     ProviderAdmissionLeaseLostError,
+    ProviderCoordinatorUnavailableError,
+    ProviderCoordinatorStateUnknownError,
     InMemoryProviderAdmissionCoordinator,
     ProviderRateLimitExceededError,
     ProviderTaskContext,
@@ -1229,6 +1231,133 @@ class BackupStorageAdapterTests(unittest.TestCase):
                         adapter._provider_call("get_payload", failing_callback)
                 self.assertEqual(calls, ["attempt"])
                 self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 0)
+
+
+    def test_coordinator_outage_fails_closed_before_provider_callback_and_recovers(self):
+        coordinator = InMemoryProviderAdmissionCoordinator()
+        adapter = BackupStorageAdapter(MockObjectStorageProvider(), admission_coordinator=coordinator)
+        calls = []
+        coordinator.set_available(False)
+        with adapter.task_context(task_id="coordinator-down", tenant_id="tenant-A"):
+            with self.assertRaises(ProviderCoordinatorUnavailableError) as caught:
+                adapter._provider_call("get_payload", lambda: calls.append("provider"))
+        self.assertEqual(caught.exception.phase, "acquire")
+        self.assertEqual(calls, [])
+        coordinator.set_available(True)
+        with adapter.task_context(task_id="coordinator-restored", tenant_id="tenant-A"):
+            self.assertEqual(adapter._provider_call("get_payload", lambda: "admitted"), "admitted")
+
+    def test_lost_acquire_response_leaves_expiring_orphan_lease_without_provider_call(self):
+        class FakeClock:
+            now = 0.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        coordinator = InMemoryProviderAdmissionCoordinator(clock_fn=clock)
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(), admission_coordinator=coordinator,
+            coordinator_lease_ttl_seconds=2, clock_fn=clock,
+        )
+        coordinator.inject_failure("acquire_response")
+        calls = []
+        with adapter.task_context(task_id="acquire-response-lost", tenant_id="tenant-A"):
+            with self.assertRaises(ProviderCoordinatorUnavailableError) as caught:
+                adapter._provider_call("get_payload", lambda: calls.append("must-not-run"))
+        self.assertEqual(caught.exception.phase, "acquire_response")
+        self.assertTrue(caught.exception.reservation_outcome_unknown)
+        self.assertEqual(calls, [])
+        self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 1)
+        clock.advance(2.1)
+        with adapter.task_context(task_id="after-orphan-expiry", tenant_id="tenant-A"):
+            self.assertEqual(adapter._provider_call("get_payload", lambda: "recovered"), "recovered")
+        snapshot = coordinator.snapshot()
+        self.assertEqual(snapshot["expired_leases"], 1)
+        self.assertEqual(snapshot["active_by_domain"]["read"], 0)
+
+    def test_validation_failure_after_provider_callback_marks_outcome_unknown_without_retry(self):
+        coordinator = InMemoryProviderAdmissionCoordinator()
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(), admission_coordinator=coordinator,
+            retry_max_attempts=3, retry_base_delay_seconds=0,
+        )
+        calls = []
+        coordinator.inject_failure("validate")
+        with adapter.task_context(task_id="validation-lost", tenant_id="tenant-A"):
+            with self.assertRaises(ProviderCoordinatorStateUnknownError) as caught:
+                adapter._provider_call("get_payload", lambda: calls.append("provider-ran") or "result")
+        self.assertEqual(caught.exception.phase, "validate")
+        self.assertTrue(caught.exception.outcome_unknown)
+        self.assertEqual(calls, ["provider-ran"])
+        self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 0)
+
+    def test_release_failure_after_provider_callback_marks_outcome_unknown_without_retry(self):
+        class FakeClock:
+            now = 0.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        coordinator = InMemoryProviderAdmissionCoordinator(clock_fn=clock)
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(), admission_coordinator=coordinator,
+            coordinator_lease_ttl_seconds=2, retry_max_attempts=3, clock_fn=clock,
+        )
+        calls = []
+        coordinator.inject_failure("release")
+        with adapter.task_context(task_id="release-lost", tenant_id="tenant-A"):
+            with self.assertRaises(ProviderCoordinatorStateUnknownError) as caught:
+                adapter._provider_call("get_payload", lambda: calls.append("provider-ran") or "result")
+        self.assertEqual(caught.exception.phase, "release")
+        self.assertTrue(caught.exception.outcome_unknown)
+        self.assertEqual(calls, ["provider-ran"])
+        self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 1)
+        clock.advance(2.1)
+        self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 0)
+        self.assertEqual(coordinator.snapshot()["expired_leases"], 1)
+
+    def test_coordinator_partition_during_provider_call_is_not_reported_as_success(self):
+        coordinator = InMemoryProviderAdmissionCoordinator()
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(), admission_coordinator=coordinator,
+            retry_max_attempts=3, retry_base_delay_seconds=0,
+        )
+        calls = []
+
+        def callback():
+            calls.append("provider-ran")
+            coordinator.set_available(False)
+            return "provider-result"
+
+        with adapter.task_context(task_id="partition-in-flight", tenant_id="tenant-A"):
+            with self.assertRaises(ProviderCoordinatorStateUnknownError) as caught:
+                adapter._provider_call("get_payload", callback)
+        self.assertEqual(caught.exception.phase, "release")
+        self.assertTrue(caught.exception.outcome_unknown)
+        self.assertEqual(calls, ["provider-ran"])
+        coordinator.set_available(True)
+        self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 1)
+
+    def test_coordinator_renew_and_snapshot_failures_are_explicit(self):
+        coordinator = InMemoryProviderAdmissionCoordinator()
+        lease = coordinator.acquire(
+            task=ProviderTaskContext(task_id="fault-phases", tenant_id="tenant-A"),
+            domain="read", owner_id="adapter-a", lease_ttl_seconds=5,
+            timeout_seconds=0, check_task=lambda _: None,
+        )
+        coordinator.inject_failure("renew")
+        with self.assertRaises(ProviderCoordinatorUnavailableError) as renew_error:
+            coordinator.renew(lease, lease_ttl_seconds=5)
+        self.assertEqual(renew_error.exception.phase, "renew")
+        coordinator.inject_failure("snapshot")
+        with self.assertRaises(ProviderCoordinatorUnavailableError) as snapshot_error:
+            coordinator.snapshot()
+        self.assertEqual(snapshot_error.exception.phase, "snapshot")
+        self.assertTrue(coordinator.release(lease))
 
 
 if __name__ == "__main__":

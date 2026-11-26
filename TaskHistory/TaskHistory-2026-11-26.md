@@ -178,3 +178,13 @@
 - **Mock Artifact：** [ch17-backup-storage-adapter-45743927996](https://github.com/rexyll/cnc-knowledge/actions/runs/45743927996/artifacts/15081984380)，ID 15081984380；self-check PASS。
 - **交付：** KNOW-000039、ASSET-000070；17条同进程多Adapter共享协调场景均TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；CH17统计19篇KNOW、69个实体、63项资源。
 - **限制：** 同一Python进程的多个Adapter对象共享Mock；不证明跨进程/主机、真实Provider、网络分区、协调服务高可用、自动心跳或下游fencing。生产备份仍关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。
+
+
+## CH17-T004 Provider共享协调器故障注入与fail-closed第二十六轮（2026-11-26）
+
+- **分支：** main；未创建新分支。
+- **实现：** InMemoryProviderAdmissionCoordinator新增协调器可用状态和六阶段一次性故障注入（acquire、acquire_response、renew、release、validate、snapshot）；新增ProviderCoordinatorUnavailableError与ProviderCoordinatorStateUnknownError。
+- **安全语义：** 协调器准入前不可用时fail-closed且Provider callback不执行；acquire响应丢失时允许协调器保留未返回给调用方的TTL租约，但Provider不执行；Provider已执行后validate/release失败或协调分区时，结果按未知处理并阻止自动重试。未实现fail-open。
+- **测试/资源：** 新增6项Provider专项unittest；共享协调故障矩阵扩展到24条，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；新增KNOW-000040，扩展ASSET-000070。
+- **限制：** 故障注入仅为同进程Mock，不是真实网络分区/服务故障；未实现跨进程共享、自动心跳、协调器主备/quorum、恢复抖动/限速、队列上限或下游fencing。生产备份仍关闭。
+- **CI及提交：** 本记录为代码/文档提交前记录，待GitHub Actions验证后追加提交SHA、Run、Job、测试和lint结果。

@@ -1,0 +1,100 @@
+{
+  "entity_id": "KNOW-000040",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份 Provider 协调器故障注入、失败关闭与恢复",
+  "english_name": "CNC spare-parts inventory backup provider coordinator fault injection, fail-closed behavior and recovery",
+  "aliases": [
+    "Provider协调服务不可用处理",
+    "共享租约准入响应丢失恢复",
+    "备份Provider协调器故障关闭策略"
+  ],
+  "description": "定义同进程Mock共享协调器的可注入控制面故障，并明确准入前不可用、准入响应丢失、Provider执行后租约校验/释放失败时的fail-closed及outcome-unknown语义。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "备份Provider多实例资源协调"
+  ],
+  "tags": [
+    "CH17",
+    "Provider Coordination",
+    "Shared Admission",
+    "Tenant Quota",
+    "Token Bucket",
+    "Lease",
+    "Fencing Token"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T10:52:05+08:00",
+  "updated_at": "2026-11-26T10:52:05+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-shared-coordination-and-lease-recovery.md",
+    "article_version": "0.2",
+    "reviewed_on": "2026-11-26",
+    "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "test_file": "tests/test_spare_parts_backup_storage_adapter.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv",
+    "scenario_definition_count": 24,
+    "added_provider_unittest_methods": 6,
+    "coordinator_contract": "ProviderAdmissionCoordinator",
+    "coordinator_implementation": "InMemoryProviderAdmissionCoordinator",
+    "coordinator_scope": "SHARED_OBJECT_BETWEEN_ADAPTERS_IN_ONE_PYTHON_PROCESS",
+    "global_concurrency_scope": "PER_COORDINATOR_AND_PROVIDER_OPERATION_DOMAIN",
+    "tenant_quota_scope": "PER_TENANT_PER_DOMAIN_PER_COORDINATOR",
+    "rate_limit": "SHARED_TOKEN_BUCKET_PER_OPERATION_DOMAIN",
+    "lease_fields": [
+      "lease_id",
+      "owner_id",
+      "tenant_id",
+      "domain",
+      "fencing_token",
+      "expires_at"
+    ],
+    "lease_expiry_recovery": "EXPLICIT_CLOCK_BASED_RECLAMATION",
+    "automatic_lease_heartbeat": false,
+    "downstream_fencing_enforced": false,
+    "lease_lost_outcome": "UNKNOWN_FAIL_CLOSED",
+    "test_status": "SYNTHETIC_IN_PROCESS_ONLY",
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED",
+    "repository_unit_test_count": 188,
+    "provider_specific_unittest_count": 60,
+    "latest_verified_ci_run": null,
+    "latest_verified_commit": null,
+    "latest_adapter_report_artifact_id": 15081984380,
+    "strict_knowledge_lint": "PENDING",
+    "mock_adapter_self_check": "PASS",
+    "ci_jobs": {
+      "Knowledge structure and data quality": "PENDING",
+      "CH12 numerical resource tests": "PENDING"
+    },
+    "test_matrix_asset_id": "ASSET-000070",
+    "failure_policy": "FAIL_CLOSED_ONLY",
+    "fail_open_supported": false,
+    "injected_failure_phases": [
+      "acquire",
+      "acquire_response",
+      "renew",
+      "release",
+      "validate",
+      "snapshot"
+    ],
+    "acquire_response_loss": "ORPHAN_LEASE_REMAINS_UNTIL_TTL_EXPIRY_PROVIDER_NOT_CALLED",
+    "provider_callback_with_unknown_coordinator_state": "OUTCOME_UNKNOWN_NO_AUTOMATIC_RETRY",
+    "coordinator_failure_is_provider_transient": false
+  },
+  "notes": "fail-closed仅表示本轮Adapter在协调控制面不能安全确认时不绕过协调器调用Provider；不是分布式容错证明。协调器set_available/inject_failure仅为同进程确定性测试钩子。acquire响应丢失可能遗留TTL租约但Provider尚未调用；Provider执行后validate/release不可用按结果未知处理且不自动重试。ASSET-000070中的24条场景均PROPOSED_NOT_APPROVED/NOT_RUN。未实现跨进程服务、真实网络分区测试、自动心跳、最大等待队列、恢复抖动/限速或下游fencing。生产备份仍关闭。"
+}

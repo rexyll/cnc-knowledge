@@ -88,4 +88,4 @@
 
 - [备份Provider公平调度、租户配额与任务取消/截止时间](spare-parts-inventory-backup-provider-fair-scheduling-and-tenant-isolation.md)（KNOW-000038）；配套15项合成测试场景矩阵位于本章 `resouces/`。
 
-- [备份Provider多实例共享协调、租户配额与租约恢复](spare-parts-inventory-backup-provider-shared-coordination-and-lease-recovery.md)（KNOW-000039）；配套16项共享协调模拟场景矩阵位于本章 `resouces/`。
+- [备份Provider多实例共享协调、租户配额与租约恢复](spare-parts-inventory-backup-provider-shared-coordination-and-lease-recovery.md)（KNOW-000039）；配套24项共享协调模拟场景矩阵位于本章 `resouces/`。
