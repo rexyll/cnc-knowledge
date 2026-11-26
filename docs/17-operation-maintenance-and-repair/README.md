@@ -85,3 +85,5 @@
 - [备份 Provider 重试、一致性与模糊提交恢复](spare-parts-inventory-backup-provider-retry-consistency-and-recovery.md)（KNOW-000036）
 
 - [备份 Provider 熔断、半开探测、舱壁与总重试预算](spare-parts-inventory-backup-provider-circuit-breaker-bulkhead-and-budget.md)（KNOW-000037）
+
+- [备份Provider公平调度、租户配额与任务取消/截止时间](spare-parts-inventory-backup-provider-fair-scheduling-and-tenant-isolation.md)（KNOW-000038）；配套15项合成测试场景矩阵位于本章 `resouces/`。

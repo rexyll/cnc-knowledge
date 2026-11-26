@@ -11,6 +11,7 @@ import argparse
 import contextvars
 import hashlib
 import json
+import math
 import os
 import re
 import tempfile
@@ -68,6 +69,14 @@ class ProviderBulkheadFullError(BackupStorageError):
     """A provider operation domain has no available concurrency slot."""
 
 
+class ProviderTaskCancelledError(BackupStorageError):
+    """A backup task was cooperatively cancelled before another provider step."""
+
+
+class ProviderTaskDeadlineExceededError(BackupStorageError):
+    """A backup task deadline elapsed before another provider step."""
+
+
 class RetryBudget:
     """Thread-safe retry allowance scoped to one top-level backup operation."""
 
@@ -94,6 +103,148 @@ class RetryBudget:
     def remaining(self) -> int:
         with self._lock:
             return self.max_retries - self._used
+
+
+@dataclass(frozen=True)
+class ProviderTaskContext:
+    """Caller-owned task identity and cooperative control signals."""
+
+    task_id: str
+    tenant_id: str
+    priority: int = 0
+    deadline_monotonic: float | None = None
+    cancellation_event: Any | None = None
+
+
+@dataclass(frozen=True)
+class _AdmissionWaiter:
+    sequence: int
+    task: ProviderTaskContext
+    queued_at: float
+
+
+class ProviderFairBulkhead:
+    """Bounded per-domain admission with tenant caps, priority and aging."""
+
+    def __init__(
+        self,
+        capacity: int,
+        *,
+        tenant_limits: dict[str, int] | None = None,
+        default_tenant_limit: int | None = None,
+        aging_interval_seconds: float = 1.0,
+        clock_fn: Callable[[], float] = time.monotonic,
+    ):
+        if capacity < 1 or aging_interval_seconds <= 0:
+            raise BackupStorageError("fair bulkhead capacity and aging interval must be positive")
+        if default_tenant_limit is not None and (
+            not isinstance(default_tenant_limit, int) or isinstance(default_tenant_limit, bool)
+            or default_tenant_limit < 1
+        ):
+            raise BackupStorageError("default tenant concurrency limit must be a positive integer")
+        limits = dict(tenant_limits or {})
+        if any(
+            not isinstance(tenant, str) or not tenant.strip()
+            or not isinstance(limit, int) or isinstance(limit, bool) or limit < 1
+            for tenant, limit in limits.items()
+        ):
+            raise BackupStorageError("tenant concurrency limits require nonblank IDs and positive integers")
+        self.capacity = capacity
+        self.tenant_limits = limits
+        self.default_tenant_limit = default_tenant_limit
+        self.aging_interval_seconds = float(aging_interval_seconds)
+        self.clock_fn = clock_fn
+        self._condition = threading.Condition()
+        self._active_count = 0
+        self._active_by_tenant: dict[str, int] = {}
+        self._waiters: list[_AdmissionWaiter] = []
+        self._next_sequence = 0
+
+    def _tenant_limit(self, tenant_id: str) -> int:
+        return self.tenant_limits.get(
+            tenant_id, self.default_tenant_limit if self.default_tenant_limit is not None else self.capacity
+        )
+
+    def _select_waiter(self) -> _AdmissionWaiter | None:
+        now = self.clock_fn()
+        eligible = [
+            waiter for waiter in self._waiters
+            if self._active_by_tenant.get(waiter.task.tenant_id, 0)
+            < self._tenant_limit(waiter.task.tenant_id)
+        ]
+        if not eligible:
+            return None
+        # Higher caller-supplied priority wins. Waiting time raises effective
+        # priority without bound so later arrivals cannot starve old work forever.
+        return max(
+            eligible,
+            key=lambda waiter: (
+                waiter.task.priority + (now - waiter.queued_at) / self.aging_interval_seconds,
+                -waiter.sequence,
+            ),
+        )
+
+    def acquire(
+        self,
+        task: ProviderTaskContext,
+        *,
+        timeout_seconds: float,
+        check_task: Callable[[ProviderTaskContext], None],
+    ) -> None:
+        started = time.monotonic()
+        with self._condition:
+            self._next_sequence += 1
+            waiter = _AdmissionWaiter(self._next_sequence, task, self.clock_fn())
+            self._waiters.append(waiter)
+            try:
+                while True:
+                    check_task(task)
+                    tenant_active = self._active_by_tenant.get(task.tenant_id, 0)
+                    if (
+                        self._active_count < self.capacity
+                        and tenant_active < self._tenant_limit(task.tenant_id)
+                        and self._select_waiter() is waiter
+                    ):
+                        self._waiters.remove(waiter)
+                        self._active_count += 1
+                        self._active_by_tenant[task.tenant_id] = tenant_active + 1
+                        self._condition.notify_all()
+                        return
+                    remaining = timeout_seconds - (time.monotonic() - started)
+                    if remaining <= 0:
+                        raise ProviderBulkheadFullError("provider fair bulkhead is full or queued")
+                    self._condition.wait(timeout=min(remaining, 0.05))
+            except Exception:
+                if waiter in self._waiters:
+                    self._waiters.remove(waiter)
+                    self._condition.notify_all()
+                raise
+
+    def release(self, tenant_id: str) -> None:
+        with self._condition:
+            active = self._active_by_tenant.get(tenant_id, 0)
+            if active < 1 or self._active_count < 1:
+                raise BackupStorageError("fair bulkhead release has no matching admission")
+            if active == 1:
+                del self._active_by_tenant[tenant_id]
+            else:
+                self._active_by_tenant[tenant_id] = active - 1
+            self._active_count -= 1
+            self._condition.notify_all()
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._condition:
+            tenants = sorted({item.task.tenant_id for item in self._waiters})
+            return {
+                "capacity": self.capacity,
+                "active_count": self._active_count,
+                "waiting_count": len(self._waiters),
+                "active_by_tenant": dict(self._active_by_tenant),
+                "waiting_by_tenant": {
+                    tenant: sum(1 for item in self._waiters if item.task.tenant_id == tenant)
+                    for tenant in tenants
+                },
+            }
 
 
 class ProviderCircuitBreaker:
@@ -699,6 +850,9 @@ class BackupStorageAdapter:
         circuit_half_open_max_probes: int = 1,
         bulkhead_limits: dict[str, int] | None = None,
         bulkhead_acquire_timeout_seconds: float = 0.0,
+        tenant_bulkhead_limits: dict[str, int] | None = None,
+        tenant_bulkhead_default_limit: int | None = None,
+        priority_aging_interval_seconds: float = 1.0,
         sleep_fn: Callable[[float], None] = time.sleep,
         clock_fn: Callable[[], float] = time.monotonic,
     ):
@@ -708,6 +862,23 @@ class BackupStorageAdapter:
             raise BackupStorageError("retry attempts must be positive and delays cannot be negative")
         if retry_budget_total < 0 or bulkhead_acquire_timeout_seconds < 0:
             raise BackupStorageError("retry budget and bulkhead wait cannot be negative")
+        if not math.isfinite(bulkhead_acquire_timeout_seconds):
+            raise BackupStorageError("bulkhead wait timeout must be finite")
+        if not math.isfinite(priority_aging_interval_seconds) or priority_aging_interval_seconds <= 0:
+            raise BackupStorageError("priority aging interval must be finite and positive")
+        tenant_limits = dict(tenant_bulkhead_limits or {})
+        if any(
+            not isinstance(tenant, str) or not tenant.strip()
+            or not isinstance(limit, int) or isinstance(limit, bool) or limit < 1
+            for tenant, limit in tenant_limits.items()
+        ):
+            raise BackupStorageError("tenant bulkhead limits require nonblank IDs and positive integers")
+        if tenant_bulkhead_default_limit is not None and (
+            not isinstance(tenant_bulkhead_default_limit, int)
+            or isinstance(tenant_bulkhead_default_limit, bool)
+            or tenant_bulkhead_default_limit < 1
+        ):
+            raise BackupStorageError("default tenant bulkhead limit must be a positive integer")
         defaults = {"read": 4, "write": 2, "multipart": 2, "inventory": 1}
         if bulkhead_limits is not None:
             unknown = set(bulkhead_limits) - set(defaults)
@@ -727,6 +898,9 @@ class BackupStorageAdapter:
         self._retry_budget_context: contextvars.ContextVar[RetryBudget | None] = (
             contextvars.ContextVar(f"backup-retry-budget-{id(self)}", default=None)
         )
+        self._task_context_context: contextvars.ContextVar[ProviderTaskContext | None] = (
+            contextvars.ContextVar(f"backup-task-context-{id(self)}", default=None)
+        )
         self._circuit_breakers = {
             domain: ProviderCircuitBreaker(
                 failure_threshold=circuit_failure_threshold,
@@ -737,10 +911,78 @@ class BackupStorageAdapter:
             for domain in ("read", "write", "multipart", "inventory")
         }
         self._bulkheads = {
-            domain: threading.BoundedSemaphore(limit)
+            domain: ProviderFairBulkhead(
+                limit,
+                tenant_limits=tenant_limits,
+                default_tenant_limit=tenant_bulkhead_default_limit,
+                aging_interval_seconds=priority_aging_interval_seconds,
+                clock_fn=clock_fn,
+            )
             for domain, limit in defaults.items()
         }
         self._bulkhead_limits = defaults
+        self._tenant_bulkhead_limits = tenant_limits
+        self._tenant_bulkhead_default_limit = tenant_bulkhead_default_limit
+        self.priority_aging_interval_seconds = priority_aging_interval_seconds
+
+    @contextmanager
+    def task_context(
+        self,
+        *,
+        task_id: str,
+        tenant_id: str,
+        priority: int = 0,
+        timeout_seconds: float | None = None,
+        cancellation_event: Any | None = None,
+    ):
+        """Set one caller-defined context; nested calls inherit it automatically."""
+        if self._task_context_context.get() is not None:
+            raise BackupStorageError("nested provider task contexts are not supported")
+        if not isinstance(task_id, str) or not task_id.strip():
+            raise BackupStorageError("provider task ID is required")
+        if not isinstance(tenant_id, str) or not tenant_id.strip():
+            raise BackupStorageError("provider tenant ID is required")
+        if not isinstance(priority, int) or isinstance(priority, bool):
+            raise BackupStorageError("provider task priority must be an integer")
+        if timeout_seconds is not None and (
+            not isinstance(timeout_seconds, (int, float)) or isinstance(timeout_seconds, bool)
+            or not math.isfinite(timeout_seconds) or timeout_seconds < 0
+        ):
+            raise BackupStorageError("provider task timeout must be finite and non-negative")
+        if cancellation_event is not None and not callable(getattr(cancellation_event, "is_set", None)):
+            raise BackupStorageError("cancellation event must provide is_set()")
+        deadline = None if timeout_seconds is None else self.clock_fn() + timeout_seconds
+        context = ProviderTaskContext(
+            task_id=task_id.strip(),
+            tenant_id=tenant_id.strip(),
+            priority=priority,
+            deadline_monotonic=deadline,
+            cancellation_event=cancellation_event,
+        )
+        token = self._task_context_context.set(context)
+        try:
+            self._check_task_context(context)
+            yield context
+        finally:
+            self._task_context_context.reset(token)
+
+    def _current_task_context(self) -> ProviderTaskContext:
+        return self._task_context_context.get() or ProviderTaskContext(
+            task_id="implicit-task",
+            tenant_id="default",
+            priority=0,
+        )
+
+    def _check_task_context(self, context: ProviderTaskContext) -> None:
+        if context.cancellation_event is not None and context.cancellation_event.is_set():
+            raise ProviderTaskCancelledError(f"provider task cancelled: {context.task_id}")
+        if context.deadline_monotonic is not None and self.clock_fn() >= context.deadline_monotonic:
+            raise ProviderTaskDeadlineExceededError(f"provider task deadline exceeded: {context.task_id}")
+
+    def bulkhead_snapshot(self, domain: str) -> dict[str, Any]:
+        if domain not in self._bulkheads:
+            raise BackupStorageError("unknown bulkhead domain")
+        return self._bulkheads[domain].snapshot()
 
     @contextmanager
     def retry_operation(self):
@@ -773,21 +1015,46 @@ class BackupStorageAdapter:
 
     @contextmanager
     def _bulkhead_slot(self, domain: str):
-        semaphore = self._bulkheads[domain]
-        acquired = semaphore.acquire(timeout=self.bulkhead_acquire_timeout_seconds)
-        if not acquired:
-            raise ProviderBulkheadFullError(f"provider {domain} bulkhead is full")
+        task = self._current_task_context()
+        bulkhead = self._bulkheads[domain]
+        bulkhead.acquire(
+            task,
+            timeout_seconds=self.bulkhead_acquire_timeout_seconds,
+            check_task=self._check_task_context,
+        )
         try:
             yield
         finally:
-            semaphore.release()
+            bulkhead.release(task.tenant_id)
 
     def circuit_snapshot(self, domain: str) -> dict[str, Any]:
         if domain not in self._circuit_breakers:
             raise BackupStorageError("unknown circuit breaker domain")
         return self._circuit_breakers[domain].snapshot()
 
+    def _wait_retry_delay(self, delay: float, task: ProviderTaskContext) -> None:
+        self._check_task_context(task)
+        if delay <= 0:
+            return
+        if task.cancellation_event is None and task.deadline_monotonic is None:
+            self.sleep_fn(delay)
+            self._check_task_context(task)
+            return
+        wake_at = self.clock_fn() + delay
+        while True:
+            self._check_task_context(task)
+            remaining = wake_at - self.clock_fn()
+            if remaining <= 0:
+                return
+            wait_for = min(remaining, 0.05)
+            if task.cancellation_event is not None:
+                task.cancellation_event.wait(wait_for)
+            else:
+                self.sleep_fn(wait_for)
+
     def _provider_call(self, operation: str, callback: Callable[[], Any]) -> Any:
+        task = self._current_task_context()
+        self._check_task_context(task)
         if self._retry_budget_context.get() is None:
             with self.retry_operation():
                 return self._provider_call(operation, callback)
@@ -796,7 +1063,9 @@ class BackupStorageAdapter:
         budget = self._retry_budget_context.get()
         assert budget is not None
         for attempt in range(self.retry_max_attempts):
+            self._check_task_context(task)
             with self._bulkhead_slot(domain):
+                self._check_task_context(task)
                 half_open_probe = breaker.acquire()
                 try:
                     result = callback()
@@ -810,7 +1079,9 @@ class BackupStorageAdapter:
                     raise
                 else:
                     breaker.record_success(half_open_probe)
+                    self._check_task_context(task)
                     return result
+            self._check_task_context(task)
             if attempt + 1 >= self.retry_max_attempts:
                 raise last_error
             if not budget.consume():
@@ -822,7 +1093,7 @@ class BackupStorageAdapter:
             if last_error.retry_after_seconds is not None:
                 delay = min(self.retry_max_delay_seconds,
                             max(delay, last_error.retry_after_seconds))
-            self.sleep_fn(delay)
+            self._wait_retry_delay(delay, task)
         raise AssertionError(f"unreachable retry loop for {operation}")
 
     def _upload_payload(self, key: str, data: bytes) -> StoredObject:

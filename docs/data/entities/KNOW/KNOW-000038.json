@@ -1,0 +1,74 @@
+{
+  "entity_id": "KNOW-000038",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份 Provider 公平调度、租户配额与任务取消/截止时间",
+  "english_name": "CNC spare-parts inventory backup provider fair scheduling, tenant quotas, cancellation and deadlines",
+  "aliases": [
+    "备份Provider优先级公平队列",
+    "备份任务租户并发配额",
+    "备份任务取消与deadline控制"
+  ],
+  "description": "定义Provider调用任务上下文、按操作域的优先级老化公平排队、每租户并发配额，以及排队/重试边界的协作式取消和任务截止时间检查。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "备份任务可靠性与资源调度"
+  ],
+  "tags": [
+    "CH17",
+    "备份可靠性",
+    "Fair Scheduling",
+    "Priority Aging",
+    "Tenant Quota",
+    "Cancellation",
+    "Deadline"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T16:00:00+08:00",
+  "updated_at": "2026-11-26T16:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-fair-scheduling-and-tenant-isolation.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-26",
+    "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "test_file": "tests/test_spare_parts_backup_storage_adapter.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-fair-scheduling-test-matrix-v1.csv",
+    "unit_test_count": 174,
+    "provider_specific_unittest_count": 46,
+    "scenario_definition_count": 15,
+    "priority_direction": "HIGHER_INTEGER_IS_HIGHER_PRIORITY",
+    "starvation_prevention": "WAIT_TIME_AGING_THEN_FIFO",
+    "tenant_quota_scope": "PER_TENANT_PER_OPERATION_DOMAIN_PER_ADAPTER_INSTANCE",
+    "task_context_fields": [
+      "task_id",
+      "tenant_id",
+      "priority",
+      "deadline_monotonic",
+      "cancellation_event"
+    ],
+    "task_cancellation": "COOPERATIVE_AT_QUEUE_AND_PROVIDER_CALL_BOUNDARIES",
+    "synchronous_inflight_provider_cancellation": "NOT_SUPPORTED_BY_CURRENT_PROVIDER_PROTOCOL",
+    "controller_scope": "PER_BACKUP_STORAGE_ADAPTER_INSTANCE_AND_PROCESS",
+    "default_priority_aging_interval_seconds": 1,
+    "default_bulkhead_acquire_timeout_seconds": 0,
+    "default_tenant_concurrency_limit": "UNCONFIGURED",
+    "test_status": "SYNTHETIC_MOCK_ONLY",
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED"
+  },
+  "notes": "优先级值及任务类型映射由调用方/企业批准策略决定，不内置恢复或备份优先级排序。租户配额与公平队列只在单Adapter/进程内有效；deadline不能强制中断已进入的同步Provider调用，真实Provider仍需独立连接/读写超时和原生取消机制。15项测试矩阵均未执行。"
+}

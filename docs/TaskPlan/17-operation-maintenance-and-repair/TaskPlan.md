@@ -385,3 +385,13 @@
 - **限制：** 状态和舱壁仅单Adapter实例/进程内，不支持分布式协调；默认值不是生产推荐；没有真实云网络、跨进程/跨容器/集群容量与RTO验收。
 
 - **最终CI验收：** 代码与新增测试Run 45740068529两个Job均completed/success，全库169个unittest通过；增强自检Run 45740213445两个Job均success，熔断OPEN/快速拒绝/HALF_OPEN恢复与零预算失败关闭均PASS，Artifact `ch17-backup-storage-adapter-45740213445`（ID 15081155445）；文档/资源/历史最终同步Run 45740530720两个Job均success，Knowledge lint 0 errors，全库169个unittest通过，Artifact `ch17-backup-storage-adapter-45740530720`（ID 15080399203）。
+
+
+## CH17-T004 第二十四轮：备份Provider公平调度、租户配额与取消/截止时间
+
+- 新增 `ProviderTaskContext`：调用方显式携带任务ID、租户ID、整数优先级、deadline和线程安全取消事件；嵌套Provider调用自动继承同一上下文。
+- 新增按read/write/multipart/inventory域独立的公平舱壁等待队列：较大priority值优先，同分FIFO，等待时间aging增加effective priority以抑制饥饿；可配置每租户域内并发上限。
+- 排队、Provider调用边界和重试退避检查取消/截止时间；等待中的取消移除队列项，任务控制异常不计入Provider瞬态失败、不继续重试。
+- 新增5项专项unittest和15项公平调度测试规格（ASSET-000069）；默认优先级老化间隔1s、租户限额未配置、bulkhead等待仍默认0s，全部只是实现基线而非生产推荐。
+- **限制：** 调度与配额只在一个Adapter/进程/操作域内；同步Provider调用没有强制中断接口，底层连接/读写超时需由真实Provider适配器实现。未执行跨进程/跨容器/真实Provider/生产负载测试。
+- **状态：** CH17-T004继续IN_PROGRESS；生产备份仍关闭，治理门禁待企业审批，业务断言未评估。

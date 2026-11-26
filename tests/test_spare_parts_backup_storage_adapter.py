@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -756,6 +757,230 @@ class BackupStorageAdapterTests(unittest.TestCase):
             BackupStorageAdapter(MockObjectStorageProvider(), bulkhead_limits={"read": 0})
         with self.assertRaises(BackupStorageError):
             BackupStorageAdapter(MockObjectStorageProvider(), bulkhead_limits={"unknown": 1})
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), tenant_bulkhead_limits={"": 1})
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), priority_aging_interval_seconds=0)
+
+
+    def _wait_for_bulkhead_queue(self, adapter, expected, domain="read"):
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            if adapter.bulkhead_snapshot(domain)["waiting_count"] >= expected:
+                return
+            time.sleep(0.005)
+        self.fail(f"expected {expected} queued provider task(s)")
+
+    def test_priority_waiter_runs_before_normal_waiter(self):
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            bulkhead_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            bulkhead_acquire_timeout_seconds=2,
+        )
+        entered, release = threading.Event(), threading.Event()
+        order, errors = [], []
+
+        def blocker():
+            entered.set()
+            if not release.wait(timeout=2):
+                raise AssertionError("blocking task was not released")
+            return "holder"
+
+        def holder():
+            try:
+                with adapter.task_context(task_id="holder", tenant_id="holder"):
+                    adapter._provider_call("get_payload", blocker)
+            except Exception as exc:
+                errors.append(exc)
+
+        def queued(task_id, priority):
+            try:
+                with adapter.task_context(task_id=task_id, tenant_id=task_id, priority=priority):
+                    adapter._provider_call("get_payload", lambda: order.append(task_id))
+            except Exception as exc:
+                errors.append(exc)
+
+        threads = [threading.Thread(target=holder)]
+        threads[0].start()
+        self.assertTrue(entered.wait(timeout=2))
+        normal = threading.Thread(target=queued, args=("normal", 0))
+        urgent = threading.Thread(target=queued, args=("urgent", 10))
+        normal.start()
+        self._wait_for_bulkhead_queue(adapter, 1)
+        urgent.start()
+        self._wait_for_bulkhead_queue(adapter, 2)
+        release.set()
+        for thread in (threads[0], normal, urgent):
+            thread.join(timeout=3)
+        self.assertTrue(all(not thread.is_alive() for thread in (threads[0], normal, urgent)))
+        self.assertEqual(errors, [])
+        self.assertEqual(order, ["urgent", "normal"])
+
+    def test_priority_aging_prevents_a_queued_task_from_starving(self):
+        class FakeClock:
+            now = 100.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            bulkhead_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            bulkhead_acquire_timeout_seconds=2,
+            priority_aging_interval_seconds=1,
+            clock_fn=clock,
+        )
+        entered, release = threading.Event(), threading.Event()
+        order, errors = [], []
+
+        def blocker():
+            entered.set()
+            if not release.wait(timeout=2):
+                raise AssertionError("blocking task was not released")
+            return "holder"
+
+        def holder():
+            try:
+                adapter._provider_call("get_payload", blocker)
+            except Exception as exc:
+                errors.append(exc)
+
+        def run_task(task_id, priority):
+            try:
+                with adapter.task_context(task_id=task_id, tenant_id=task_id, priority=priority):
+                    adapter._provider_call("get_payload", lambda: order.append(task_id))
+            except Exception as exc:
+                errors.append(exc)
+
+        hold_thread = threading.Thread(target=holder)
+        hold_thread.start()
+        self.assertTrue(entered.wait(timeout=2))
+        older = threading.Thread(target=run_task, args=("older-low", 0))
+        older.start()
+        self._wait_for_bulkhead_queue(adapter, 1)
+        clock.advance(10)
+        newer = threading.Thread(target=run_task, args=("newer-high", 5))
+        newer.start()
+        self._wait_for_bulkhead_queue(adapter, 2)
+        release.set()
+        for thread in (hold_thread, older, newer):
+            thread.join(timeout=3)
+        self.assertTrue(all(not thread.is_alive() for thread in (hold_thread, older, newer)))
+        self.assertEqual(errors, [])
+        self.assertEqual(order, ["older-low", "newer-high"])
+
+    def test_tenant_bulkhead_quota_isolated_from_other_tenants(self):
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            bulkhead_limits={"read": 2, "write": 1, "multipart": 1, "inventory": 1},
+            tenant_bulkhead_limits={"tenant-A": 1},
+            bulkhead_acquire_timeout_seconds=0,
+        )
+        entered, release = threading.Event(), threading.Event()
+        errors = []
+
+        def blocker():
+            entered.set()
+            if not release.wait(timeout=2):
+                raise AssertionError("tenant A task was not released")
+            return "A"
+
+        def tenant_a_holder():
+            try:
+                with adapter.task_context(task_id="A-holder", tenant_id="tenant-A"):
+                    adapter._provider_call("get_payload", blocker)
+            except Exception as exc:
+                errors.append(exc)
+
+        thread = threading.Thread(target=tenant_a_holder)
+        thread.start()
+        self.assertTrue(entered.wait(timeout=2))
+        try:
+            with adapter.task_context(task_id="A-second", tenant_id="tenant-A"):
+                with self.assertRaises(ProviderBulkheadFullError):
+                    adapter._provider_call("get_payload", lambda: "must-not-run")
+            with adapter.task_context(task_id="B", tenant_id="tenant-B"):
+                self.assertEqual(adapter._provider_call("get_payload", lambda: "tenant-B"), "tenant-B")
+        finally:
+            release.set()
+            thread.join(timeout=2)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(errors, [])
+
+    def test_task_cancellation_removes_waiter_without_calling_provider(self):
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            bulkhead_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            bulkhead_acquire_timeout_seconds=2,
+        )
+        entered, release, cancelled = threading.Event(), threading.Event(), threading.Event()
+        errors, callback_calls = [], []
+
+        def blocker():
+            entered.set()
+            if not release.wait(timeout=2):
+                raise AssertionError("blocking task was not released")
+            return "holder"
+
+        def holder():
+            with adapter.task_context(task_id="holder", tenant_id="holder"):
+                adapter._provider_call("get_payload", blocker)
+
+        def waiting_task():
+            try:
+                with adapter.task_context(
+                    task_id="cancel-me", tenant_id="tenant-C", cancellation_event=cancelled
+                ):
+                    adapter._provider_call("get_payload", lambda: callback_calls.append("called"))
+            except Exception as exc:
+                errors.append(exc)
+
+        holder_thread = threading.Thread(target=holder)
+        waiter_thread = threading.Thread(target=waiting_task)
+        holder_thread.start()
+        self.assertTrue(entered.wait(timeout=2))
+        waiter_thread.start()
+        self._wait_for_bulkhead_queue(adapter, 1)
+        cancelled.set()
+        waiter_thread.join(timeout=2)
+        release.set()
+        holder_thread.join(timeout=2)
+        self.assertFalse(waiter_thread.is_alive())
+        self.assertFalse(holder_thread.is_alive())
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], ProviderTaskCancelledError)
+        self.assertEqual(callback_calls, [])
+        self.assertEqual(adapter.bulkhead_snapshot("read")["waiting_count"], 0)
+
+    def test_task_deadline_expiring_during_backoff_prevents_next_attempt(self):
+        class FakeClock:
+            now = 0.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        clock = FakeClock()
+        calls = []
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            retry_max_attempts=3,
+            retry_base_delay_seconds=0.1,
+            sleep_fn=lambda delay: clock.advance(2),
+            clock_fn=clock,
+        )
+
+        def transient():
+            calls.append("attempt")
+            raise ProviderTransientError("synthetic timeout")
+
+        with adapter.task_context(task_id="deadline-task", tenant_id="tenant-D", timeout_seconds=1):
+            with self.assertRaises(ProviderTaskDeadlineExceededError):
+                adapter._provider_call("get_payload", transient)
+        self.assertEqual(calls, ["attempt"])
+
 
 if __name__ == "__main__":
     unittest.main()

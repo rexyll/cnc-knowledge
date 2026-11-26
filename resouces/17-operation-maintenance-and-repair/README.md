@@ -301,3 +301,9 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 新增9项专项unittest；全库169个unittest通过；自检覆盖熔断open/half-open恢复和总预算耗尽，最终CI Run 45740530720两个Job success。
 - 新增ASSET-000068，14条熔断/舱壁/任务预算合成场景，状态PROPOSED_NOT_APPROVED / NOT_RUN。
 - 严格边界：熔断/舱壁只单Adapter实例/进程生效，不是分布式控制；未进行真实云、跨容器或生产容量测试。
+
+
+
+## 第二十四轮新增资源
+
+- `spare-parts-inventory-backup-provider-fair-scheduling-test-matrix-v1.csv`（ASSET-000069）：15项公平调度、租户并发配额、任务取消和deadline合成场景；全部PROPOSED_NOT_APPROVED / NOT_RUN，不构成生产调度验收。

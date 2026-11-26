@@ -132,3 +132,12 @@
 - **知识/资源最终同步：** [Run 45740530720](https://github.com/rexyll/cnc-knowledge/actions/runs/45740530720)，两个Job均completed/success；全库169个unittest通过，strict knowledge lint 0 errors；Provider Artifact `ch17-backup-storage-adapter-45740530720`，ID 15080399203。
 - **资源：** KNOW-000037、ASSET-000068；14条熔断/舱壁/预算测试场景均TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
 - **最终仓库：** main；17篇KNOW、67个登记实体、61项资源。无真实云账号/网络/凭据/密钥；控制器不跨Adapter实例/进程分布式共享；生产备份关闭。
+
+
+## CH17-T004 Provider公平调度与任务控制第二十四轮（2026-11-26）
+
+- 在 `scripts/spare_parts_backup_storage_adapter.py` 中新增 `ProviderTaskContext`、`ProviderFairBulkhead`、任务取消/截止时间终止异常和按操作域公平队列。
+- 调度规则：调用方显式传入优先级（数值越大越优先），同有效优先级FIFO；等待时间按老化间隔提升effective priority，降低长期任务饥饿风险。无默认恢复/备份/盘点业务优先级映射。
+- 新增每租户、每操作域的并发额度；加入排队期间取消、Provider边界取消/deadline及退避期间deadline检查。所有控制器本地单Adapter/进程生效。
+- 新增5项专项unittest；新增ASSET-000069，15项合成调度/取消/deadline测试场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- 代码、测试与知识/资源登记已纳入本次提交；CI状态待本提交触发后核实。未访问真实Provider/云账户/身份服务，不做跨进程或生产负载声称；生产备份维持关闭，企业治理门禁仍阻断。
