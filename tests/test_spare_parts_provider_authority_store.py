@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from scripts.spare_parts_provider_authority_store import (
+    DurableCoordinatorAuthorityBackend,
     AuthorityStoreCompare,
     AuthorityStoreDelete,
     AuthorityStoreOutcomeUnknownError,
@@ -130,6 +131,14 @@ class CoordinatorAuthorityStoreContract:
         self.assertEqual(noop.revision, removed.revision)
 
 
+    def test_sqlite_authority_service_satisfies_application_backend_port(self):
+        with tempfile.TemporaryDirectory() as folder:
+            from scripts.spare_parts_provider_admission_sqlite import SQLiteProviderAdmissionCoordinator
+            database = Path(folder) / "authority.sqlite3"
+            SQLiteProviderAdmissionCoordinator(database)
+            service = SQLiteDurableCoordinatorAuthority(database)
+            self.assertIsInstance(service, DurableCoordinatorAuthorityBackend)
+
 class SQLiteCoordinatorAuthorityStoreTests(CoordinatorAuthorityStoreContract, unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -236,3 +245,5 @@ class EtcdV3CoordinatorAuthorityStoreTests(CoordinatorAuthorityStoreContract, un
 
 if __name__ == "__main__":
     unittest.main()
+from scripts.spare_parts_provider_coordinator_authority import SQLiteDurableCoordinatorAuthority
+
