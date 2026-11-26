@@ -351,3 +351,6 @@
 - **测试：** 新增10个unittest方法；覆盖权限拒绝、审计元数据、租户隔离、multipart续传、分块完整性、abort边界、孤儿分类和prefix权限。
 - **资源：** 新增ASSET-000064～000066，分别为身份权限评估、孤儿回收审批、14条Provider可靠性合成测试矩阵。
 - **生产门禁：** 真实身份系统、MFA/工作负载身份、凭据托管、云审计、服务端版本/一致性、分块限制、保留/法律保全与清理审批均未验证；不执行实际回收。
+
+- **最终资源同步CI：** 资源列宽修正提交 `540ab361a59dd54a2eb078e58257da4d4d8238dd` 对应Run 45738063901，Knowledge structure and data quality与CH12 numerical resource tests两个Job均success；全库150个unittest通过、知识校验0 errors；Provider Artifact ID 15080002233。
+- **最终资源结构：** ASSET-000064空白身份/权限评估模板26列；ASSET-000065空白孤儿盘点/回收审批模板30列；ASSET-000066测试矩阵14条、11列，均PROPOSED_NOT_APPROVED / NOT_RUN。

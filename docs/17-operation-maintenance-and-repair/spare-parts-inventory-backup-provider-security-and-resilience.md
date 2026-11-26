@@ -85,3 +85,10 @@ Mock仅模拟强读后写一致性，不证明云服务/跨区复制/缓存层�
 最终CI Run \`45737732766\` 的两个Job均completed/success；全库150个unittest通过，strict knowledge lint为0 errors。以上结果不构成真实供应商、企业IAM、对象锁、云端审计、跨区耐久性、RPO/RTO或生产灾备验收。
 
 **严格状态：** 未使用真实账号/网络/凭据/密钥；没有加密或已完成对象删除；孤儿回收不可执行。企业身份权限、分块参数、保留政策和回收批准均待责任方签署；\`production_backup_enabled=false\`，\`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL\`，业务断言\`NOT_EVALUATED\`。
+
+
+### 最终验收记录
+
+- 适配器代码及新增用例在Run 45737732766中两个Job均通过，全库150个unittest通过；Artifact 15079009952。
+- 知识/资源同步和CSV格式修正后的最终Run 45738063901两个Job均通过；全库150个unittest通过，strict knowledge lint 0 errors；Artifact 15080002233。
+- 三份新增CSV资源格式经复核：26列空白身份权限表、30列空白孤儿治理表、11列/14条可靠性测试矩阵。

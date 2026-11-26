@@ -34,7 +34,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T10:30:00+08:00",
-  "updated_at": "2026-11-26T10:30:00+08:00",
+  "updated_at": "2026-11-26T11:30:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -75,7 +75,15 @@
     "test_status": "SYNTHETIC_MOCK_ONLY",
     "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
     "production_backup_enabled": false,
-    "business_rule_assertions": "NOT_EVALUATED"
+    "business_rule_assertions": "NOT_EVALUATED",
+    "unit_test_count": 150,
+    "provider_specific_unittest_count": 23,
+    "resource_scenario_definition_count": 14,
+    "latest_verified_ci_run": 45738063901,
+    "latest_adapter_report_artifact_id": 15080002233,
+    "orphan_reclamation_approval": "PROPOSED_NOT_APPROVED",
+    "orphan_reclamation_executable": false,
+    "latest_verification_scope": "LOCAL_FILESYSTEM_AND_IN_MEMORY_MOCK_ONLY"
   },
   "notes": "身份/动作/前缀授权、租户隔离和审计只在Mock命名空间中模拟；本地Provider仍依赖主机权限。分块续传仅验证合成字节；孤儿盘点仅返回元数据，回收为未批准建议，不存在已完成对象delete API或自动回收。真实IAM/MFA/云审计/版本一致性、保留政策和企业批准均未完成。"
 }

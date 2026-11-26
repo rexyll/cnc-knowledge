@@ -75,3 +75,13 @@
 - **测试：** 新增10个unittest方法；全库150个unittest通过。最终CI Run 45737732766两个Job success；strict knowledge lint 0 errors；Provider Artifact `ch17-backup-storage-adapter-45737732766`（ID 15079009952）。
 - **资源：** KNOW-000035、ASSET-000064～000066。身份/权限和孤儿回收模板为空白；14项可靠性测试矩阵全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **未完成：** 未接真实IAM/云账号/凭据/网络；未实现真实加密、KMS/HSM、对象锁、云端审计或已完成对象删除；未批准保留期/回收策略，生产备份保持关闭。
+
+
+### 第二十一轮最终CI与资源格式验收补记
+
+- **实现提交：** Provider ACL/multipart/只读盘点实现 `a958c95d7a25e149aa884f72528cc414b1fbed64`；新增10个专项测试的提交 `08adad0f35fd3528121b5bc9ca424d12c558f757`。
+- **实现CI：** [Run 45737732766](https://github.com/rexyll/cnc-knowledge/actions/runs/45737732766)，两个Job均completed/success；全库150个unittest通过；strict knowledge lint 0 errors；适配器Artifact `ch17-backup-storage-adapter-45737732766`，ID 15079009952。
+- **知识/资源提交：** 文档和实体登记 `d3049ce70e27369fd8bec8caeed47fd75d8d184b`；可靠性矩阵11列/14行修正 `540ab361a59dd54a2eb078e58257da4d4d8238dd`。
+- **最终记录CI：** [Run 45738063901](https://github.com/rexyll/cnc-knowledge/actions/runs/45738063901)，两个Job均completed/success；全库150个unittest通过，Knowledge Quality 0 errors；适配器Artifact ID 15080002233。
+- **资源格式复核：** 身份权限评估模板26列、孤儿盘点/回收审批模板30列、Provider可靠性测试矩阵11列/14条数据行，数据行列宽一致。
+- **最终边界：** 主分支main；15篇KNOW、63个实体、59项资源；孤儿回收候选均未批准且不可执行。无真实云/IAM/凭据/密钥/网络/加密/已完成对象删除，生产备份未启用。

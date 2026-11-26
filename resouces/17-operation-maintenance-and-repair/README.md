@@ -262,3 +262,5 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 新增 `spare-parts-inventory-backup-orphan-inventory-reclamation-review-template.csv`（ASSET-000065）：对象/分块只读盘点及受控回收审批记录。
 - 新增 `spare-parts-inventory-backup-provider-resilience-test-matrix-v1.csv`（ASSET-000066）：14条合成测试场景定义，状态PROPOSED_NOT_APPROVED / NOT_RUN。
 - 新增KNOW-000035；新增Provider ACL、Multipart、prefix inventory能力；不实现真实IAM/云凭据、已完成对象删除或自动回收。
+
+- 最终资源格式复核：ASSET-000064 26列空白模板、ASSET-000065 30列空白模板、ASSET-000066 11列/14条测试矩阵；CI Run 45738063901两个Job success，150个unittest通过，Artifact 15080002233。
