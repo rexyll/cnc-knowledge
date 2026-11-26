@@ -71,7 +71,15 @@
     "repository_unit_test_skipped": 5,
     "ch12_numerical_test_count": 143,
     "strict_knowledge_lint": "PASS_0_ERRORS",
-    "knowledge_structure_quality": "PASS_0_ERRORS_0_WARNINGS"
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "synthetic_fixture_validation": "PASS_0_ERRORS_5_EXPECTED_WARNINGS",
+    "synthetic_fixture_validation_warnings": [
+      "dataset status is DRAFT",
+      "no enterprise test environment is approved",
+      "no enterprise test level is approved",
+      "30 source test cases remain NOT_RUN",
+      "manifest content checksum is pending"
+    ]
   },
-  "notes": "全部30项正式场景目前PROPOSED_NOT_APPROVED / NOT_RUN。驱动映射单测使用fake gateway transport，不等于实时网络集成；5项集成测试需显式启动etcd v3.7.0三节点环境。不得将普通CI中的skip记为PASS。 Default CI Run 45832644686 passed with 499 tests completed (494 passed, 5 live-etcd integration tests skipped), CH12 143 tests and strict/structure quality checks; this does not execute any of the 30 formal scenarios or start the cluster."
+  "notes": "全部30项正式场景目前PROPOSED_NOT_APPROVED / NOT_RUN。驱动映射单测使用fake gateway transport，不等于实时网络集成；5项集成测试需显式启动etcd v3.7.0三节点环境。不得将普通CI中的skip记为PASS。 Default CI Run 45832644686 passed with 499 tests completed (494 passed, 5 live-etcd integration tests skipped), CH12 143 tests and strict knowledge lint and entity checks; separate fixture validator 0 errors/5 existing draft-and-approval warnings; this does not execute any of the 30 formal scenarios or start the cluster."
 }

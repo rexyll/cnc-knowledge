@@ -823,5 +823,5 @@
 - **Watch能力门禁：** etcd3gw高层Watch helper跳过created握手并只向回调交付event，未保留完整header/canceled/compact_revision/cancel_reason/fragment；驱动故意不声明Watch/WatchProgress能力。后续需原生gRPC或完整stream-envelope适配器。
 - **集成环境：** 新增etcd v3.7.0三成员Compose、独立named volume、健康检查、显式runner和说明文档。普通CI不启动Docker/etcd服务。
 - **测试/资源：** 新增10项fake gateway契约测试和5项opt-in live integration tests；新增KNOW-000061、SRC-000408/409、ASSET-000092（30项正式场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。
-- **CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job成功。全库499项测试完成，494通过、5项live etcd测试skip；CH12 143项通过；strict lint 0 errors，结构/质量检查0 errors/0 warnings。
+- **CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job成功。全库499项测试完成，494通过、5项live etcd测试skip；CH12 143项通过；strict knowledge lint 0 errors；独立的CH17合成夹具校验为0 errors、5 warnings。5项均为既有治理门禁提示：数据集仍为DRAFT、未批准企业测试环境、未批准企业测试级别、30项SPAT源测试案例仍NOT_RUN、manifest checksum pending；并非etcd驱动测试失败。
 - **边界：** 未启动真实三节点、未执行5项live集成测试；未验证mTLS/RBAC、Raft/quorum、多主机或生产吞吐；SQLite Coordinator业务服务未迁移，schema-v2仍是唯一生产权威；CH17-T004保持IN_PROGRESS。

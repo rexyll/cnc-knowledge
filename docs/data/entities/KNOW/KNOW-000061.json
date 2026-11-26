@@ -85,7 +85,15 @@
     "etcd_gateway_driver_test_methods": 10,
     "ch12_numerical_test_count": 143,
     "strict_knowledge_lint": "PASS_0_ERRORS",
-    "knowledge_structure_quality": "PASS_0_ERRORS_0_WARNINGS"
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "synthetic_fixture_validation": "PASS_0_ERRORS_5_EXPECTED_WARNINGS",
+    "synthetic_fixture_validation_warnings": [
+      "dataset status is DRAFT",
+      "no enterprise test environment is approved",
+      "no enterprise test level is approved",
+      "30 source test cases remain NOT_RUN",
+      "manifest content checksum is pending"
+    ]
   },
-  "notes": "Etcd3gw 2.7.0 is an OpenStack-maintained third-party etcd v3 gRPC-gateway client. The adapter implements Range/Txn/Lease only; read-only operations may try another configured endpoint after transport failure, while mutating operations are sent once to preserve unknown-outcome semantics. Ten fake-gateway contract unit tests are in default CI. Five live cluster tests are opt-in and were not run in this round. The Compose topology is plaintext local-only and not a production profile. Watch remains unavailable until a driver preserves the complete server response envelope. Existing SQLite business service is not migrated; schema-v2 remains sole production authority. Final code commit 871fe0d2673fb1b39502236568dc7dd57ad3bef0 passed both required jobs in CI Run 45832644686: 499 tests completed (494 passed, 5 opt-in live-etcd tests skipped), CH12 143 numerical tests passed, strict knowledge lint 0 errors, structure/data quality 0 errors and 0 warnings. No live etcd cluster was started; skipped tests are not integration evidence."
+  "notes": "Etcd3gw 2.7.0 is an OpenStack-maintained third-party etcd v3 gRPC-gateway client. The adapter implements Range/Txn/Lease only; read-only operations may try another configured endpoint after transport failure, while mutating operations are sent once to preserve unknown-outcome semantics. Ten fake-gateway contract unit tests are in default CI. Five live cluster tests are opt-in and were not run in this round. The Compose topology is plaintext local-only and not a production profile. Watch remains unavailable until a driver preserves the complete server response envelope. Existing SQLite business service is not migrated; schema-v2 remains sole production authority. Final code commit 871fe0d2673fb1b39502236568dc7dd57ad3bef0 passed both required jobs in CI Run 45832644686: 499 tests completed (494 passed, 5 opt-in live-etcd tests skipped), CH12 143 numerical tests passed, strict knowledge lint 0 errors, strict knowledge lint 0 errors; the separate CH17 synthetic fixture validator passed with 0 errors and 5 existing governance warnings (DRAFT dataset, no approved enterprise environment or level, 30 SPAT source cases NOT_RUN, and manifest checksum pending). No live etcd cluster was started; skipped tests are not integration evidence."
 }

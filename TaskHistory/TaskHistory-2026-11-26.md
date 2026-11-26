@@ -686,5 +686,12 @@
 - **Watch审查：** 当前etcd3gw Watch helper不暴露完整WatchResponse envelope，因此驱动不声明Watch/watch_progress；不能用简化event迭代器推动revision cursor或做compaction恢复。
 - **集成拓扑：** 新增etcd v3.7.0三成员Compose、runner与5项live integration tests（须显式ETCD_INTEGRATION=1）。
 - **文档/资源：** KNOW-000061；SRC-000408/409；ASSET-000092的30项正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
-- **最终CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success；全库499项unittest（494通过、5项live integration skip）；CH12 143项测试通过；strict lint 0 errors；结构/质量检查0 errors / 0 warnings。
+- **最终CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job均completed/success；全库499项unittest（494通过、5项live integration skip）；CH12 143项测试通过；strict knowledge lint 0 errors；独立CH17合成夹具校验为0 errors、5 warnings（DRAFT数据集、未批准企业测试环境/级别、30项SPAT案例NOT_RUN、manifest checksum pending），属于既有治理门禁，并非本轮etcd驱动失败。
 - **边界：** 未启动真实etcd集群；live integration仅skip、不记PASS；未验收mTLS/RBAC、Raft/quorum、多主机或生产延迟；SQLite Coordinator未迁移，schema-v2仍是唯一生产权威；CH17-T004继续IN_PROGRESS。
+
+
+### 第四十七轮文档同步CI验收（2026-11-26）
+
+- 文档索引、任务计划、TaskHistory、KNOW/ASSET实体及正文同步提交 `bcc65995205c40e5883fa842d48dbb12224af9ed`；[GitHub Actions Run 45833304411](https://github.com/rexyll/cnc-knowledge/actions/runs/45833304411)两个必需Job均completed/success，head SHA与文档提交一致。
+- 文档同步回归仍为全库499项unittest（494通过、5项live etcd集成测试skip）、CH12 143项数值测试通过、strict knowledge lint 0 errors。
+- 独立CH17合成夹具检查0 errors / 5 warnings：DRAFT数据集、未批准企业测试环境/级别、30项SPAT源场景NOT_RUN、manifest checksum pending；均为显式的非阻断治理门禁，不代表新etcd测试或生产验收。
