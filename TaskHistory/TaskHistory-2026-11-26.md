@@ -636,3 +636,12 @@
 - **Txn预算：** 保守操作数=Compare + max(success,failure)；canonical JSON长度仅是模型值，不是protobuf/gRPC wire bytes。70%为分析余量，不是服务端限制。16分区4grant模型58操作；64分区4grant模型106操作，超出当前参考预算。
 - **生产边界：** 不接入真实etcd、不执行schema迁移或生产切换；逻辑partition仍在同一etcd Raft集群，未证明吞吐线性扩展。真实quorum、多主机Dispatcher、Lease timing、partition remap和实际请求字节仍需后续验证。
 - **状态：** CH17-T004继续IN_PROGRESS；schema-v2仍是唯一生产权威，V3分片准入未启用。
+
+
+### 第四十五轮CI验收记录
+
+- **最终代码head：** `a035cdf1f82e6ea9274195b2872953e9f12e83ba`；main分支；[GitHub Actions Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)两个必需Job均completed/success。
+- **测试结果：** 全库462项unittest通过，其中本轮36项分片准入/事务预算模型测试；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有DRAFT合成夹具及企业审批/执行门禁。
+- **实现边界：** 纯内存global/tenant双slot、队列、公平调度、fencing token range及Txn预算参考模型；未连接真实etcd/native Lease、未执行真实多主机Dispatcher/Leader或Raft quorum测试，未测实际protobuf/gRPC wire bytes及吞吐。
+- **策略边界：** V3跨Tenant round-robin、Tenant内部priority+aging与V2全局priority-aging存在语义差异，未获企业批准前不可切换。分区token数值跨分区不代表真实发号时间顺序；partition failover丢弃未用range，允许跳号但禁止复用。
+- **状态：** KNOW-000059 / ASSET-000090已登记；54条正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威，V3分片准入未启用；CH17-T004继续IN_PROGRESS。

@@ -795,3 +795,11 @@
 - **测试/资源：** 新增36项纯内存参考模型测试，KNOW-000059、ASSET-000090和54项正式验收场景矩阵；新增SRC-000406记录etcd v3.7 Lease TTL key删除语义。
 - **边界：** 没有连接真实etcd、没有真实多主机Dispatcher/Leader测试、没有实测protobuf/gRPC请求字节或p95/p99；slot与queue模型不代表生产适配器。逻辑partition仍位于同一etcd集群，Raft提交路径并未被拆分。
 - **状态：** schema-v2仍是唯一生产权威；V3分片准入和V2→V3切换均未启用；公平策略变化待业务批准；CH17-T004继续IN_PROGRESS。
+
+
+### 第四十五轮CI验收补记（2026-11-26）
+
+- **最终代码head：** \`a035cdf1f82e6ea9274195b2872953e9f12e83ba\`；[GitHub Actions Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)两个必需Job均completed/success。
+- **质量结果：** 全库462项unittest通过（本轮新增36项分片准入/事务预算参考模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors，5项既有非阻断warning。
+- **验收边界：** 纯内存模型，不接真实etcd/native Lease/多主机Dispatcher，不测真实protobuf/gRPC请求字节、quorum或p95/p99。ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；V3公平策略变更待企业批准。
+- **状态：** schema-v2仍是唯一生产权威；无生产分片/切换；CH17-T004继续IN_PROGRESS。

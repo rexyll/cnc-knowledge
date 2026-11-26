@@ -550,3 +550,6 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 参考实现：scripts/spare_parts_provider_admission_partition_model.py；36项测试：tests/test_spare_parts_provider_admission_partition_model.py。
 - 新增正式场景矩阵：spare-parts-coordinator-v3-sharded-admission-transaction-matrix-v1.csv（ASSET-000090），54项均PROPOSED_NOT_APPROVED / NOT_RUN。
 - 新增来源SRC-000406记录etcd Lease到期或撤销时附着key被删除的语义。所有内容仍是纯内存/设计参考，未连接真实etcd或生产多主机Coordinator。
+
+
+第四十五轮分片准入与事务预算参考模型最终head \`a035cdf1f82e6ea9274195b2872953e9f12e83ba\`；[CI Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)两个必需Job均通过。全库462项unittest、CH12 143项数值资源测试通过；strict lint与结构质量均0 errors。本轮36项内存参考模型单测通过；ASSET-000090的54项正式场景仍待企业批准/执行，未连接真实etcd或多主机Dispatcher。

@@ -217,3 +217,11 @@ etcd v3.7官方配置文档列出的--max-txn-ops默认值为128，--max-request
 - SRC-000405：etcd v3.7 API，Txn Compare/Then/Else和同Txn原子修改约束。
 - SRC-000406：etcd v3.7 API Lease，Lease过期/撤销会删除附着key。
 - KNOW-000058：Archive Index与Coordinator Schema v3迁移/回滚设计。
+
+
+## 11. CI验收记录
+
+- **最终代码head：** \`a035cdf1f82e6ea9274195b2872953e9f12e83ba\`（main）。
+- **CI：** [GitHub Actions Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)，head SHA与代码提交一致，两个必需Job均completed/success。
+- **测试结果：** 全库462项unittest通过（含本轮36项分片准入与事务预算参考模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。另有5项既有合成fixture审批/执行状态warning，非本轮测试失败。
+- **验收边界：** 只验证内存状态机、并发模型和预算公式；不代表真实etcd事务、native Lease时序、多主机Dispatcher、Raft quorum或生产性能通过。ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；V3跨Tenant round-robin与V2全局priority-aging语义差异必须先经企业批准。

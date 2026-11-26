@@ -128,3 +128,5 @@
 | spare-parts-coordinator-archive-index-schema-v3-migration-matrix-v1.csv | CSV Coordinator Archive Index与Schema v3迁移/回滚正式验证矩阵 / ASSET-000089 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000058 | 47条场景覆盖索引回填、精确hit/miss、分片完整性、manifest追加、迁移冻结、candidate digest/floor parity、cutover和v3写入前后回滚；CI Run 45819520749中全库426项unittest（含46项本轮测试）通过，但正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。 |
 
 | spare-parts-coordinator-v3-sharded-admission-transaction-matrix-v1.csv | CSV Coordinator Schema v3分片准入与etcd事务预算正式验证矩阵 / ASSET-000090 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000059 | 54条场景覆盖global/tenant双slot、Lease TTL、Tenant轮转、fencing token block、Txn操作数/字节预算及partition migration；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
+
+| spare-parts-coordinator-v3-sharded-admission-transaction-matrix-v1.csv | CSV Coordinator Schema v3分片准入与etcd事务预算正式验证矩阵 / ASSET-000090 | 项目原创合成场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000059 | 54条场景覆盖global/tenant双slot、Lease TTL、Tenant轮转、fencing token block、Txn操作数/字节预算及partition migration；CI Run 45823628905中全库462项unittest（含36项本轮测试）通过，但正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。 |

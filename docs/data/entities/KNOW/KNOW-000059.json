@@ -57,7 +57,17 @@
     "real_multi_host_dispatcher_tested": false,
     "production_quota_slots_enabled": false,
     "formal_scenarios_approval": "PROPOSED_NOT_APPROVED",
-    "formal_scenarios_execution": "NOT_RUN"
+    "formal_scenarios_execution": "NOT_RUN",
+    "code_commit": "a035cdf1f82e6ea9274195b2872953e9f12e83ba",
+    "ci_run": 45823628905,
+    "ci_status": "completed/success",
+    "repository_unit_test_count": 462,
+    "admission_partition_test_methods": 36,
+    "ch12_numerical_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "existing_fixture_warnings": 5,
+    "fairness_policy_change_approved": false
   },
-  "notes": "36项纯内存模型测试覆盖双槽容量、请求幂等、轮转公平、Lease生命周期、分区Leader/token区间和Txn预算；正式场景矩阵54项全部PROPOSED_NOT_APPROVED / NOT_RUN。V3公平语义与V2跨所有waiter的全局priority-aging不完全等价，必须业务批准；没有真实etcd集群或生产切换。"
+  "notes": "36项纯内存模型测试覆盖双槽容量、请求幂等、轮转公平、Lease生命周期、分区Leader/token区间和Txn预算；正式场景矩阵54项全部PROPOSED_NOT_APPROVED / NOT_RUN。V3公平语义与V2跨所有waiter的全局priority-aging不完全等价，必须业务批准；没有真实etcd集群或生产切换。 最终代码head a035cdf1f82e6ea9274195b2872953e9f12e83ba在CI Run 45823628905通过；全库462项unittest（含36项本轮测试）、CH12 143项测试通过；strict lint与结构质量0 errors，5项既有非阻断warning。没有真实etcd、多主机Dispatcher或生产切换；公平语义变更待业务批准。"
 }

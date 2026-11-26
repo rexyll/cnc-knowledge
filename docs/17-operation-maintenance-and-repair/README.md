@@ -182,3 +182,6 @@ Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope
 
 
 Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinator Schema v3：分片准入、配额槽位与 etcd 分布式事务预算](spare-parts-inventory-backup-provider-coordinator-v3-sharded-admission-and-transaction-budget.md)（KNOW-000059）。提出global/tenant双slot原子占位、Tenant队列分片、跨Tenant轮转、分区fencing token区间和Txn预算模型；配套54条场景矩阵ASSET-000090。模型仅为内存参考，V2公平调度语义差异须企业批准，真实etcd/生产切换未完成。
+
+
+第四十五轮最终代码/测试head：`a035cdf1f82e6ea9274195b2872953e9f12e83ba`；[CI Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)两个必需Job均completed/success。全库462项unittest及CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项既有非阻断warning）。本轮36项分片准入/事务预算参考模型测试通过；ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。未连接真实etcd或多主机Dispatcher，schema-v2仍是唯一生产权威。
