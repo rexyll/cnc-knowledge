@@ -78,6 +78,16 @@ def _scope(value: Any) -> str:
     return text
 
 
+def _tenant_scope(value: Any, tenant_id: str) -> str:
+    scope = _scope(value)
+    tenant = _required_text(tenant_id, "tenant ID", maximum=128)
+    if not scope.startswith(f"tenants/{tenant}/"):
+        raise CoordinatorAuthorityError(
+            "Coordinator fencing scope must be namespaced below tenants/<tenant_id>/"
+        )
+    return scope
+
+
 def _timestamp(value: Any, name: str) -> float:
     if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
         raise CoordinatorAuthorityError(f"{name} must be a finite timestamp")
@@ -430,6 +440,7 @@ class SQLiteDurableCoordinatorAuthority:
     ) -> DurableAuthorityOperation:
         scope, idem = _scope(scope), _required_text(idempotency_key, "activation idempotency key", maximum=256)
         values = _lease_values(lease)
+        scope = _tenant_scope(scope, values["tenant_id"])
         digest = _digest({"scope": scope, "kind": "ACTIVATE", **values})
         now = self.clock_fn()
         with self._transaction("prepare_activation") as connection:
@@ -536,6 +547,7 @@ class SQLiteDurableCoordinatorAuthority:
     ) -> DurableAuthorityOperation:
         scope, idem = _scope(scope), _required_text(idempotency_key, "revocation idempotency key", maximum=256)
         values = _lease_values(lease)
+        scope = _tenant_scope(scope, values["tenant_id"])
         if not isinstance(fencing_token, int) or isinstance(fencing_token, bool) or fencing_token < 1:
             raise CoordinatorAuthorityError("revocation fencing token must be a positive integer")
         digest = _digest({
@@ -644,6 +656,7 @@ class SQLiteDurableCoordinatorAuthority:
     ) -> DurableAuthorityOperation:
         scope, idem = _scope(scope), _required_text(idempotency_key, "publish idempotency key", maximum=256)
         values = _lease_values(lease)
+        scope = _tenant_scope(scope, values["tenant_id"])
         key = _required_text(manifest_key, "manifest key", maximum=1024)
         digest = _sha256(manifest_sha256, "manifest SHA-256")
         if not key.startswith(scope + "/") or any(part in {".", ".."} for part in key.split("/")) or "\\" in key:

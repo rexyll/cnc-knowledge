@@ -16,6 +16,7 @@ from scripts.spare_parts_fencing_attestation import (
 from scripts.spare_parts_provider_admission_sqlite import SQLiteProviderAdmissionCoordinator
 from scripts.spare_parts_provider_coordinator_authority import (
     CoordinatorAuthorityConflictError,
+    CoordinatorAuthorityError,
     CoordinatorAuthorityStaleLeaderError,
     SQLiteDurableCoordinatorAuthority,
     sign_distributed_fencing_proof,
@@ -38,7 +39,7 @@ class MutableClock:
 
 
 class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
-    SCOPE = "cnc/ch17/spares/pkg-001"
+    SCOPE = "tenants/tenant-A/cnc/ch17/spares/pkg-001"
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -214,6 +215,16 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
             self.authority.prepare_activation(
                 self.leader, other_lease, scope=self.SCOPE, idempotency_key="activation-idem"
             )
+
+    def test_scope_must_be_tenant_scoped_to_prevent_cross_tenant_token_collisions(self):
+        lease = self.acquire("tenant-scope-guard")
+        with self.assertRaises(CoordinatorAuthorityError):
+            self.authority.prepare_activation(
+                self.leader, lease,
+                scope="tenants/tenant-B/cnc/ch17/spares/pkg-001",
+                idempotency_key="cross-tenant-scope",
+            )
+        self.assertEqual(self.authority.snapshot(self.SCOPE)["high_water_token"], 0)
 
     def test_revocation_stays_revoke_pending_until_provider_readback(self):
         lease = self.acquire("revoke-pending")
