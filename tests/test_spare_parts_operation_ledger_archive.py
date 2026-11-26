@@ -194,11 +194,10 @@ class OperationLedgerArchiveTests(unittest.TestCase):
     def test_unknown_coordinator_commit_response_never_rolls_back_archive(self):
         self.model.insert_or_replay(record("commit-unknown-unreadable"))
         self.model.lose_next_commit_response = True
-        original_read = self.model.scope_read_available
-        self.model.scope_read_available = False
+        self.model.disable_scope_read_after_next_commit = True
         with self.assertRaises(OperationArchiveOutcomeUnknownError):
             self.archive()
-        self.model.scope_read_available = original_read
+        self.model.scope_read_available = True
         self.assertEqual(self.model.snapshot(SCOPE_A)["archive_operation_count"], 1)
         self.assertEqual(self.model.lookup(SCOPE_A, "commit-unknown-unreadable")["state"], "COMMITTED")
 

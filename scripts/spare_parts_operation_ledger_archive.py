@@ -219,6 +219,7 @@ class OperationLedgerArchiveModel:
         self._scope_revisions: dict[str, int] = {}
         self.scope_read_available = True
         self.lose_next_commit_response = False
+        self.disable_scope_read_after_next_commit = False
 
     def create_scope(
         self,
@@ -612,6 +613,9 @@ class OperationLedgerArchiveModel:
             key = operation_index_key(scope, record["idempotency_key"])
             del self.hot_operations[key]
         self._scope_revisions[scope] += 1
+        if self.disable_scope_read_after_next_commit:
+            self.disable_scope_read_after_next_commit = False
+            self.scope_read_available = False
 
         reconciled = False
         if self.lose_next_commit_response:
