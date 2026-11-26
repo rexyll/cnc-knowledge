@@ -490,6 +490,281 @@ class SQLiteProviderAdmissionCoordinator:
                 "waiting_by_domain": waiting, **meta,
             }
 
+
+    @staticmethod
+    def _sha256_file(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    @classmethod
+    def validate_backup(cls, backup_path: str | os.PathLike[str]) -> dict[str, Any]:
+        """Validate a standalone SQLite snapshot without opening it for writes."""
+        path = Path(backup_path).expanduser().resolve()
+        if not path.is_file() or path.stat().st_size == 0:
+            raise BackupStorageError("SQLite coordinator backup is missing or empty")
+        connection = None
+        try:
+            connection = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=5.0)
+            connection.row_factory = sqlite3.Row
+            integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
+            if integrity != "ok":
+                raise BackupStorageError("SQLite coordinator backup failed integrity_check")
+            if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                raise BackupStorageError("SQLite coordinator backup failed foreign_key_check")
+            tables = {
+                row["name"] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            required = {"coordinator_meta", "admission_requests", "admission_waiters"}
+            if not required.issubset(tables):
+                raise BackupStorageError("SQLite coordinator backup is missing required tables")
+            meta = {
+                row["key"]: row["value"]
+                for row in connection.execute("SELECT key,value FROM coordinator_meta").fetchall()
+            }
+            if meta.get("schema_version") != "1":
+                raise BackupStorageError("SQLite coordinator backup schema version is unsupported")
+            policy_hash = meta.get("policy_hash", "")
+            if len(policy_hash) != 64 or any(ch not in "0123456789abcdef" for ch in policy_hash):
+                raise BackupStorageError("SQLite coordinator backup policy hash is malformed")
+            try:
+                next_fencing_token = int(meta["next_fencing_token"])
+                expired_leases = int(meta["expired_leases"])
+                issued_leases = int(meta["issued_leases"])
+                rejected_capacity = int(meta["rejected_capacity"])
+                rejected_queue = int(meta["rejected_queue"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise BackupStorageError("SQLite coordinator backup metadata is incomplete") from exc
+            if min(
+                next_fencing_token, expired_leases, issued_leases,
+                rejected_capacity, rejected_queue,
+            ) < 0:
+                raise BackupStorageError("SQLite coordinator backup contains a negative counter")
+            request_rows = connection.execute(
+                "SELECT COUNT(*) AS n, COALESCE(MAX(fencing_token),0) AS max_token "
+                "FROM admission_requests"
+            ).fetchone()
+            if next_fencing_token < int(request_rows["max_token"]):
+                raise BackupStorageError("SQLite coordinator fencing counter is behind an issued token")
+            active = int(connection.execute(
+                "SELECT COUNT(*) AS n FROM admission_requests WHERE state='ACTIVE'"
+            ).fetchone()["n"])
+            waiting = int(connection.execute(
+                "SELECT COUNT(*) AS n FROM admission_waiters"
+            ).fetchone()["n"])
+            return {
+                "result": "PASS",
+                "integrity_check": integrity,
+                "schema_version": int(meta["schema_version"]),
+                "policy_hash": policy_hash,
+                "next_fencing_token": next_fencing_token,
+                "request_records": int(request_rows["n"]),
+                "active_leases": active,
+                "waiting_requests": waiting,
+                "sha256": cls._sha256_file(path),
+            }
+        except BackupStorageError:
+            raise
+        except (sqlite3.Error, OSError) as exc:
+            raise BackupStorageError("SQLite coordinator backup cannot be read or validated") from exc
+        finally:
+            if connection is not None:
+                connection.close()
+
+    def backup_to(self, destination_path: str | os.PathLike[str]) -> dict[str, Any]:
+        """Create a consistent online snapshot; destination must be a new file."""
+        destination = Path(destination_path).expanduser().resolve()
+        if destination == self.database_path:
+            raise BackupStorageError("SQLite coordinator backup destination must differ from the live database")
+        if destination.exists():
+            raise BackupStorageError("SQLite coordinator backup destination already exists")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        staging = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.staging")
+        source_connection = target_connection = None
+        try:
+            source_connection = sqlite3.connect(
+                str(self.database_path), timeout=self.busy_timeout_seconds
+            )
+            source_connection.execute(
+                f"PRAGMA busy_timeout = {int(self.busy_timeout_seconds * 1000)}"
+            )
+            target_connection = sqlite3.connect(str(staging), timeout=self.busy_timeout_seconds)
+            source_connection.backup(target_connection, pages=256, sleep=0.05)
+            target_connection.commit()
+            target_connection.close()
+            target_connection = None
+            source_connection.close()
+            source_connection = None
+            report = self.validate_backup(staging)
+            with staging.open("rb") as stream:
+                os.fsync(stream.fileno())
+            # Refuse accidental overwrite. The caller must choose a new immutable path.
+            if destination.exists():
+                raise BackupStorageError("SQLite coordinator backup destination appeared during snapshot")
+            os.replace(staging, destination)
+            return {**report, "path": str(destination)}
+        except BackupStorageError:
+            raise
+        except (sqlite3.Error, OSError) as exc:
+            raise BackupStorageError("SQLite coordinator online backup failed") from exc
+        finally:
+            if target_connection is not None:
+                target_connection.close()
+            if source_connection is not None:
+                source_connection.close()
+            for suffix in ("", "-wal", "-shm"):
+                candidate = Path(str(staging) + suffix)
+                try:
+                    candidate.unlink(missing_ok=True)
+                except OSError:
+                    pass
+
+    def restore_to_new_database(
+        self,
+        backup_path: str | os.PathLike[str],
+        destination_path: str | os.PathLike[str],
+        *,
+        external_fencing_floor: int,
+        fencing_reconciliation_ref: str,
+    ) -> dict[str, Any]:
+        """Prepare a new DB from a validated backup without resurrecting old leases.
+
+        The caller must supply a trusted, independently obtained fencing high-water
+        mark and an evidence/approval reference. This method never overwrites the
+        current DB and does not perform client cutover.
+        """
+        backup = Path(backup_path).expanduser().resolve()
+        destination = Path(destination_path).expanduser().resolve()
+        if not isinstance(external_fencing_floor, int) or isinstance(external_fencing_floor, bool) or external_fencing_floor < 0:
+            raise BackupStorageError("restore requires a non-negative external fencing floor")
+        if (
+            not isinstance(fencing_reconciliation_ref, str)
+            or not fencing_reconciliation_ref.strip()
+            or len(fencing_reconciliation_ref.strip()) > 512
+        ):
+            raise BackupStorageError("restore requires a bounded fencing reconciliation evidence reference")
+        if backup == destination or destination == self.database_path:
+            raise BackupStorageError("restore destination must be a new database path")
+        if destination.exists():
+            raise BackupStorageError("restore destination already exists; in-place restore is prohibited")
+        report = self.validate_backup(backup)
+        if report["policy_hash"] != self._policy_hash:
+            raise BackupStorageError("backup policy differs from the active coordinator policy")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        staging = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.restore")
+        source_connection = target_connection = None
+        active_invalidated = 0
+        waiters_cleared = 0
+        seeded_fencing_floor = max(external_fencing_floor, report["next_fencing_token"])
+        try:
+            source_connection = sqlite3.connect(
+                backup.as_uri() + "?mode=ro", uri=True, timeout=self.busy_timeout_seconds
+            )
+            target_connection = sqlite3.connect(str(staging), timeout=self.busy_timeout_seconds)
+            source_connection.backup(target_connection, pages=256, sleep=0.05)
+            target_connection.close()
+            target_connection = None
+            source_connection.close()
+            source_connection = None
+
+            connection = sqlite3.connect(str(staging), timeout=self.busy_timeout_seconds, isolation_level=None)
+            try:
+                connection.execute("PRAGMA journal_mode=WAL")
+                connection.execute("BEGIN IMMEDIATE")
+                current_counter = int(connection.execute(
+                    "SELECT value FROM coordinator_meta WHERE key='next_fencing_token'"
+                ).fetchone()[0])
+                max_issued = int(connection.execute(
+                    "SELECT COALESCE(MAX(fencing_token),0) FROM admission_requests"
+                ).fetchone()[0])
+                active_invalidated = int(connection.execute(
+                    "SELECT COUNT(*) FROM admission_requests WHERE state='ACTIVE'"
+                ).fetchone()[0])
+                waiters_cleared = int(connection.execute(
+                    "SELECT COUNT(*) FROM admission_waiters"
+                ).fetchone()[0])
+                safe_floor = max(seeded_fencing_floor, current_counter, max_issued)
+                connection.execute(
+                    "UPDATE admission_requests SET state='EXPIRED' WHERE state='ACTIVE'"
+                )
+                connection.execute("DELETE FROM admission_waiters")
+                connection.execute(
+                    "UPDATE coordinator_meta SET value=? WHERE key='next_fencing_token'",
+                    (str(safe_floor),),
+                )
+                expired = int(connection.execute(
+                    "SELECT value FROM coordinator_meta WHERE key='expired_leases'"
+                ).fetchone()[0])
+                connection.execute(
+                    "UPDATE coordinator_meta SET value=? WHERE key='expired_leases'",
+                    (str(expired + active_invalidated),),
+                )
+                previous_generation = connection.execute(
+                    "SELECT value FROM coordinator_meta WHERE key='restore_generation'"
+                ).fetchone()
+                generation = int(previous_generation[0]) + 1 if previous_generation else 1
+                restore_meta = {
+                    "restore_generation": str(generation),
+                    "restore_source_sha256": report["sha256"],
+                    "restore_fencing_floor": str(safe_floor),
+                    "restore_reconciliation_ref": fencing_reconciliation_ref.strip(),
+                    "restored_at_unix": repr(float(self.clock_fn())),
+                }
+                for key, value in restore_meta.items():
+                    connection.execute(
+                        "INSERT INTO coordinator_meta(key,value) VALUES(?,?) "
+                        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                        (key, value),
+                    )
+                connection.commit()
+                connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                connection.execute("PRAGMA journal_mode=DELETE")
+            except Exception:
+                connection.rollback()
+                raise
+            finally:
+                connection.close()
+
+            restored_report = self.validate_backup(staging)
+            if restored_report["active_leases"] != 0 or restored_report["waiting_requests"] != 0:
+                raise BackupStorageError("restored coordinator still contains active leases or waiters")
+            if restored_report["next_fencing_token"] < external_fencing_floor:
+                raise BackupStorageError("restored coordinator fencing sequence is below external high-water")
+            if destination.exists():
+                raise BackupStorageError("restore destination appeared during staging")
+            os.replace(staging, destination)
+            return {
+                "result": "PREPARED_NEW_DATABASE",
+                "path": str(destination),
+                "source_sha256": report["sha256"],
+                "active_leases_invalidated": active_invalidated,
+                "waiters_cleared": waiters_cleared,
+                "external_fencing_floor": external_fencing_floor,
+                "seeded_next_fencing_token": restored_report["next_fencing_token"],
+                "restore_generation": generation,
+                "fencing_reconciliation_ref": fencing_reconciliation_ref.strip(),
+                "cutover_performed": False,
+            }
+        except BackupStorageError:
+            raise
+        except (sqlite3.Error, OSError) as exc:
+            raise BackupStorageError("SQLite restore preparation failed") from exc
+        finally:
+            if target_connection is not None:
+                target_connection.close()
+            if source_connection is not None:
+                source_connection.close()
+            for suffix in ("", "-wal", "-shm"):
+                candidate = Path(str(staging) + suffix)
+                try:
+                    candidate.unlink(missing_ok=True)
+                except OSError:
+                    pass
+
     def self_check(self) -> dict[str, Any]:
         task = ProviderTaskContext(task_id="sqlite-self-check", tenant_id="synthetic")
         first = self.acquire(
@@ -510,9 +785,38 @@ class SQLiteProviderAdmissionCoordinator:
         if second.fencing_token <= first.fencing_token:
             raise BackupStorageError("SQLite fencing sequence did not increase")
         self.release(second)
+        backup_path = self.database_path.with_name(self.database_path.name + ".self-check-backup")
+        restored_path = self.database_path.with_name(self.database_path.name + ".self-check-restored")
+        backup_report = self.backup_to(backup_path)
+        restore_report = self.restore_to_new_database(
+            backup_path, restored_path,
+            external_fencing_floor=second.fencing_token + 10,
+            fencing_reconciliation_ref="SELF-CHECK-SYNTHETIC-RECONCILIATION",
+        )
+        restored = SQLiteProviderAdmissionCoordinator(
+            restored_path,
+            global_limits=self.global_limits,
+            tenant_limits=self.tenant_limits,
+            max_waiters=self.max_waiters,
+            aging_interval_seconds=self.aging_interval_seconds,
+            busy_timeout_seconds=self.busy_timeout_seconds,
+            poll_interval_seconds=self.poll_interval_seconds,
+            clock_fn=self.clock_fn,
+        )
+        next_lease = restored.acquire(
+            task=ProviderTaskContext(task_id="sqlite-self-check-restored", tenant_id="synthetic"),
+            domain="read", owner_id="self-check", lease_ttl_seconds=10,
+            timeout_seconds=0, check_task=lambda _: None,
+            request_id="sqlite-self-check-restored-request",
+        )
+        if next_lease.fencing_token <= restore_report["external_fencing_floor"]:
+            raise BackupStorageError("SQLite restore did not preserve the external fencing high-water")
+        restored.release(next_lease)
         return {
             "result": "PASS", "backend": "SQLITE_LOCAL_FILE",
             "idempotent_replay": "PASS", "durable_fencing_sequence": "PASS",
+            "online_backup_validation": backup_report["integrity_check"],
+            "restore_external_fencing_floor": "PASS",
             "lease_lifecycle": "PASS", "scope": "same-host local file; not multi-host HA",
             "snapshot": self.snapshot(),
         }

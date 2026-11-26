@@ -1,5 +1,6 @@
 from __future__ import annotations
 import multiprocessing
+import sqlite3
 import tempfile
 import threading
 import time
@@ -282,6 +283,142 @@ class SQLiteProviderAdmissionCoordinatorTests(unittest.TestCase):
         )
         self.assertEqual(replay.fencing_token, 1)
         self.assertTrue(coordinator.release(replay))
+
+
+
+    def test_online_backup_is_consistent_and_validates_active_lease_snapshot(self):
+        lease = self.acquire(request_id="backup-active")
+        backup = Path(self.tmp.name) / "coordinator-online-backup.sqlite3"
+        report = self.coordinator.backup_to(backup)
+        self.assertEqual(report["result"], "PASS")
+        self.assertEqual(report["integrity_check"], "ok")
+        self.assertEqual(report["active_leases"], 1)
+        self.assertTrue(report["sha256"])
+        self.assertEqual(SQLiteProviderAdmissionCoordinator.validate_backup(backup)["active_leases"], 1)
+        self.assertTrue(self.coordinator.release(lease))
+        backup_coordinator = SQLiteProviderAdmissionCoordinator(backup, **self.policy)
+        self.assertTrue(backup_coordinator.validate(lease))
+        self.assertTrue(backup_coordinator.release(lease))
+
+    def test_corrupt_backup_is_rejected(self):
+        broken = Path(self.tmp.name) / "corrupt.sqlite3"
+        broken.write_bytes(b"not-a-sqlite-database")
+        with self.assertRaises(BackupStorageError):
+            SQLiteProviderAdmissionCoordinator.validate_backup(broken)
+
+    def test_backup_with_fencing_counter_behind_issued_token_is_rejected(self):
+        lease = self.acquire(request_id="counter-integrity")
+        backup = Path(self.tmp.name) / "counter-integrity.sqlite3"
+        self.coordinator.backup_to(backup)
+        with sqlite3.connect(backup) as connection:
+            connection.execute(
+                "UPDATE coordinator_meta SET value='0' WHERE key='next_fencing_token'"
+            )
+        with self.assertRaises(BackupStorageError):
+            SQLiteProviderAdmissionCoordinator.validate_backup(backup)
+        self.assertTrue(self.coordinator.release(lease))
+
+    def test_restore_invalidates_leases_clears_waiters_and_seeds_external_fencing_floor(self):
+        holder = self.acquire(request_id="restore-holder")
+        waiter_values, waiter_errors = [], []
+
+        def wait_for_capacity():
+            try:
+                lease = self.acquire(
+                    request_id="restore-waiter",
+                    task=self.task("restore-waiter", "tenant-B"),
+                    timeout=3,
+                )
+                waiter_values.append(lease)
+                self.coordinator.release(lease)
+            except Exception as exc:
+                waiter_errors.append(exc)
+
+        thread = threading.Thread(target=wait_for_capacity)
+        thread.start()
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            if self.coordinator.snapshot()["waiting_by_domain"]["read"] == 1:
+                break
+            time.sleep(0.01)
+        self.assertEqual(self.coordinator.snapshot()["waiting_by_domain"]["read"], 1)
+        backup = Path(self.tmp.name) / "restore-source.sqlite3"
+        self.coordinator.backup_to(backup)
+        self.assertTrue(self.coordinator.release(holder))
+        thread.join(timeout=4)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(waiter_errors, [])
+        self.assertEqual(len(waiter_values), 1)
+
+        destination = Path(self.tmp.name) / "restored-coordinator.sqlite3"
+        report = self.coordinator.restore_to_new_database(
+            backup, destination,
+            external_fencing_floor=90,
+            fencing_reconciliation_ref="SYNTHETIC-EXTERNAL-HIGH-WATER-RECORD-001",
+        )
+        self.assertEqual(report["result"], "PREPARED_NEW_DATABASE")
+        self.assertEqual(report["active_leases_invalidated"], 1)
+        self.assertEqual(report["waiters_cleared"], 1)
+        self.assertFalse(report["cutover_performed"])
+        restored = SQLiteProviderAdmissionCoordinator(destination, **self.policy)
+        self.assertEqual(restored.snapshot()["active_by_domain"]["read"], 0)
+        self.assertEqual(restored.snapshot()["waiting_by_domain"]["read"], 0)
+        self.assertFalse(restored.validate(holder))
+        with self.assertRaises(ProviderAdmissionRequestFinalizedError):
+            self.acquire(
+                coordinator=restored, request_id="restore-holder",
+                task=self.task("task-1", "tenant-A"),
+            )
+        next_lease = self.acquire(
+            coordinator=restored, request_id="after-restore",
+            task=self.task("after-restore", "tenant-A"),
+        )
+        self.assertGreater(next_lease.fencing_token, 90)
+        self.assertTrue(restored.release(next_lease))
+
+    def test_restore_requires_external_reconciliation_and_matching_policy(self):
+        backup = Path(self.tmp.name) / "restore-policy-source.sqlite3"
+        self.coordinator.backup_to(backup)
+        destination = Path(self.tmp.name) / "restore-no-floor.sqlite3"
+        with self.assertRaises(BackupStorageError):
+            self.coordinator.restore_to_new_database(
+                backup, destination, external_fencing_floor=None,
+                fencing_reconciliation_ref="SYNTHETIC-REF",
+            )
+        other_path = Path(self.tmp.name) / "other-policy.sqlite3"
+        other = SQLiteProviderAdmissionCoordinator(
+            other_path,
+            global_limits={"read": 2, "write": 1, "multipart": 1, "inventory": 1},
+            tenant_limits={"tenant-A": {"read": 1}}, max_waiters=8,
+        )
+        with self.assertRaises(BackupStorageError):
+            other.restore_to_new_database(
+                backup, Path(self.tmp.name) / "policy-mismatch-restore.sqlite3",
+                external_fencing_floor=0,
+                fencing_reconciliation_ref="SYNTHETIC-REF",
+            )
+
+    def test_backup_and_restore_never_overwrite_existing_or_live_database_paths(self):
+        with self.assertRaises(BackupStorageError):
+            self.coordinator.backup_to(self.database_path)
+        backup = Path(self.tmp.name) / "immutable-backup.sqlite3"
+        self.coordinator.backup_to(backup)
+        with self.assertRaises(BackupStorageError):
+            self.coordinator.backup_to(backup)
+        with self.assertRaises(BackupStorageError):
+            self.coordinator.restore_to_new_database(
+                backup, self.database_path,
+                external_fencing_floor=0,
+                fencing_reconciliation_ref="SYNTHETIC-REF",
+            )
+        existing = Path(self.tmp.name) / "preexisting.sqlite3"
+        existing.write_bytes(b"preexisting")
+        with self.assertRaises(BackupStorageError):
+            self.coordinator.restore_to_new_database(
+                backup, existing,
+                external_fencing_floor=0,
+                fencing_reconciliation_ref="SYNTHETIC-REF",
+            )
 
 
 if __name__ == "__main__":
