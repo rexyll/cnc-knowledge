@@ -128,3 +128,5 @@
 
 
 Coordinator 权威状态迁移基础见 [事务内有序读取与状态快照](spare-parts-inventory-backup-provider-coordinator-transactional-read-batches.md)（KNOW-000052）：新增Txn分支内精确键Get/Put/Delete有序读取契约；ASSET-000083包含16条待批准/未执行场景。现有SQLite业务状态机和Admission lease仍未迁移到通用Store，etcd仅为注入式driver适配器。
+
+第三十八轮文档同步CI Run 45772844275（提交 a1548dad6ad1c47d4645600a162a866076de6993）两个必需Job均completed/success：304项全库unittest、CH12 143项测试、strict lint 0 errors/5 warnings、知识结构质量0 errors。ASSET-000083场景仍待批准/未执行。

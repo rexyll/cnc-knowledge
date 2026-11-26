@@ -90,3 +90,8 @@ ASSET-000083列出16项事务读取/写入契约场景。该矩阵全部保持 `
 - SRC-000397：etcd v3 API guarantees与线性一致读取约束。
 - SRC-000398：etcd v3 KV Range、Txn和Lease API。
 - SRC-000391、SRC-000392：SQLite事务与WAL行为参考。
+
+
+### 文档同步CI验收
+
+文档同步提交 `a1548dad6ad1c47d4645600a162a866076de6993`；[GitHub Actions Run 45772844275](https://github.com/rexyll/cnc-knowledge/actions/runs/45772844275)两个必需Job均completed/success。全库304项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors / 5 warnings；知识结构与数据质量0 errors。该结果仍不改变ASSET-000083的16条场景 `PROPOSED_NOT_APPROVED / NOT_RUN` 状态。

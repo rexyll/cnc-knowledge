@@ -71,7 +71,11 @@
     "knowledge_structure_quality": "PASS_0_ERRORS",
     "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
     "production_backup_enabled": false,
-    "business_rule_assertions": "NOT_EVALUATED"
+    "business_rule_assertions": "NOT_EVALUATED",
+    "doc_sync_commit": "a1548dad6ad1c47d4645600a162a866076de6993",
+    "doc_sync_ci_run": 45772844275,
+    "doc_sync_ci_status": "completed/success",
+    "final_metadata_ci_pending": true
   },
-  "notes": "第三十八轮第一阶段补齐CoordinatorAuthorityStore在Txn分支内的有序Get/Put/Delete组合。Get结果只返回已选中的Txn分支，缺失键为None，reads仅收集Get并保持相对顺序；SQLite通过同一BEGIN IMMEDIATE事务处理，etcd通过同一Txn分支内request_range实现。新测试由SQLite和InMemoryEtcdV3Client分别运行，共新增4次适配器测试执行。原SQLiteDurableCoordinatorAuthority仍直接操作SQLite领域表；Admission lease仍由同一SQLite数据库中的admission_requests表进行事务校验，尚未迁移到通用Store。真实etcd、gRPC/JSON Gateway、mTLS/RBAC、quorum、多主机和Provider故障演练均未完成。ASSET-000083的16条场景均PROPOSED_NOT_APPROVED/NOT_RUN。"
+  "notes": "第三十八轮第一阶段补齐CoordinatorAuthorityStore在Txn分支内的有序Get/Put/Delete组合。Get结果只返回已选中的Txn分支，缺失键为None，reads仅收集Get并保持相对顺序；SQLite通过同一BEGIN IMMEDIATE事务处理，etcd通过同一Txn分支内request_range实现。新测试由SQLite和InMemoryEtcdV3Client分别运行，共新增4次适配器测试执行。原SQLiteDurableCoordinatorAuthority仍直接操作SQLite领域表；Admission lease仍由同一SQLite数据库中的admission_requests表进行事务校验，尚未迁移到通用Store。真实etcd、gRPC/JSON Gateway、mTLS/RBAC、quorum、多主机和Provider故障演练均未完成。ASSET-000083的16条场景均PROPOSED_NOT_APPROVED/NOT_RUN。 文档同步提交 a1548dad6ad1c47d4645600a162a866076de6993 的CI Run 45772844275 completed/success；两个必需Job均通过。最终验收元数据将在后续提交记录最终CI。"
 }

@@ -65,7 +65,10 @@
     "code_ci_run": 45772420144,
     "code_test_count": 304,
     "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
-    "knowledge_structure_quality": "PASS_0_ERRORS"
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "doc_sync_commit": "a1548dad6ad1c47d4645600a162a866076de6993",
+    "doc_sync_ci_run": 45772844275,
+    "doc_sync_ci_status": "completed/success"
   },
-  "notes": "16条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。仓库CI运行的是合成单元测试，不等同于矩阵执行，也不构成企业批准或真实etcd集群验收。当前SQLite领域状态机没有迁移到通用Store，Admission lease也没有通过同一KV/Txn数据源接入。"
+  "notes": "16条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。仓库CI运行的是合成单元测试，不等同于矩阵执行，也不构成企业批准或真实etcd集群验收。当前SQLite领域状态机没有迁移到通用Store，Admission lease也没有通过同一KV/Txn数据源接入。 文档同步提交 a1548dad6ad1c47d4645600a162a866076de6993 的CI Run 45772844275两个必需Job均completed/success；ASSET-000083的16条矩阵场景仍保持PROPOSED_NOT_APPROVED/NOT_RUN。"
 }

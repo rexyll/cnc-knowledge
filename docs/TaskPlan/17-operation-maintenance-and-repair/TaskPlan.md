@@ -635,3 +635,10 @@
 - **知识与资源：** KNOW-000052；ASSET-000083定义16条场景，均 `PROPOSED_NOT_APPROVED / NOT_RUN`；复用SRC-000397/398与SRC-000391/392。
 - **未完成边界：** `SQLiteDurableCoordinatorAuthority` 仍直接使用SQL领域表；Admission lease仍通过同库 `admission_requests` 表事务校验，未迁移到通用Store。etcd仍是注入式API driver，无真实集群、gRPC/JSON Gateway、mTLS/RBAC、quorum或多主机证据。后续必须先把Admission lease权威记录及续租/释放迁移到同一强一致Txn后端，再迁移Leader、scope和operation ledger；禁止将独立Admission Range与后续authority Txn组合成存在TOCTOU的流程。
 - **状态：** CH17-T004保持IN_PROGRESS；生产备份关闭、治理门禁和业务断言状态不变。
+
+
+### 第三十八轮文档同步CI验收补记
+
+- **文档提交：** `a1548dad6ad1c47d4645600a162a866076de6993`；[Run 45772844275](https://github.com/rexyll/cnc-knowledge/actions/runs/45772844275)两个必需Job均completed/success。
+- **质量结果：** 全库304项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors/5 warnings；知识结构与数据质量0 errors。
+- **状态：** ASSET-000083的16条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；领域状态机和Admission lease尚未迁移到CoordinatorAuthorityStore；生产备份关闭，治理门禁不变。
