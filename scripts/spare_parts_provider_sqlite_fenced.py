@@ -965,8 +965,22 @@ class SQLiteFencedObjectStorageProvider:
             return max(int(row["high_water"]) if row else 0, int(meta["value"]) if meta else 0)
 
     def diagnostics(self) -> dict[str, Any]:
+        # Probe using a real allowed prefix instead of a synthetic key outside ACL.
+        with self._transaction() as c:
+            principal = c.execute(
+                "SELECT tenant_id,allowed_prefixes_json,allowed_actions_json,enabled "
+                "FROM provider_principals WHERE principal_id=?",
+                (self.principal_id,),
+            ).fetchone()
+            if principal is None or not principal["enabled"]:
+                raise SQLiteProviderAuthorizationError("Provider principal is disabled or unknown")
+            prefixes = json.loads(principal["allowed_prefixes_json"])
+            actions = json.loads(principal["allowed_actions_json"])
+            if "object:list_prefix" not in actions or not prefixes:
+                raise SQLiteProviderAuthorizationError("Provider diagnostics are not authorized")
+            probe_prefix = prefixes[0]
         with self._authorized_transaction(
-            action="object:list_prefix", object_key="__diagnostics__"
+            action="object:list_prefix", object_key=probe_prefix
         ) as (c, tenant_id):
             scopes = c.execute(
                 "SELECT COUNT(*) AS n FROM fencing_scopes WHERE tenant_id=?", (tenant_id,)
@@ -980,6 +994,9 @@ class SQLiteFencedObjectStorageProvider:
             meta = c.execute(
                 "SELECT value FROM provider_meta WHERE key='minimum_fencing_token'"
             ).fetchone()
+            self._record_allow(
+                c, tenant_id=tenant_id, action="object:list_prefix", object_key=probe_prefix
+            )
             # Diagnostics is intentionally limited to local implementation metrics.
             return {
                 "backend": "SQLITE_LOCAL_FENCED_REFERENCE",

@@ -112,6 +112,13 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         self.assertTrue(self.provider.capabilities.tenant_isolation)
         self.assertEqual(self.provider.capabilities.provider_kind, "SQLITE_LOCAL_FENCED_REFERENCE")
 
+    def test_diagnostics_uses_authorized_prefix_and_reports_local_only_scope(self):
+        report = self.provider.diagnostics()
+        self.assertEqual(report["backend"], "SQLITE_LOCAL_FENCED_REFERENCE")
+        self.assertTrue(report["multi_process_same_host"])
+        self.assertFalse(report["multi_host_supported"])
+        self.assertEqual(report["tenant_id"], "tenant-a")
+
     def test_wrong_bearer_secret_is_rejected_before_provider_use(self):
         with self.assertRaises(SQLiteProviderAuthorizationError):
             SQLiteFencedObjectStorageProvider(
@@ -329,6 +336,11 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
 
     def test_online_backup_validation_and_restore_seed_external_fencing_floor(self):
         self.fenced_put("cnc/ch17/backup-reference-001/restore.bin", b"durable-data", 300, "restore-300")
+        pending_key = "cnc/ch17/backup-reference-001/pending.bin"
+        self.provider.begin_multipart_upload_fenced(
+            pending_key, "pending-restore-session", fencing_scope=SCOPE,
+            fencing_token=301, idempotency_key="pending-restore-begin",
+        )
         backup = self.base / "provider-backup.sqlite"
         snapshot = self.provider.backup_to(backup)
         self.assertEqual(snapshot["result"], "VALID")
@@ -345,12 +357,14 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         )
         self.assertEqual(restored.fencing_high_water(SCOPE), 450)
         self.assertEqual(restored.get_object("cnc/ch17/backup-reference-001/restore.bin").data, b"durable-data")
+        self.assertEqual(restored.list_multipart_uploads("cnc/ch17/backup-reference-001"), [])
+        self.assertEqual(prepared["invalidated_active_multipart_sessions"], 1)
         with self.assertRaises(StaleFencingTokenError):
             restored.put_if_absent_fenced(
                 "cnc/ch17/backup-reference-001/rollback-stale.bin", b"stale",
                 fencing_scope=SCOPE, fencing_token=449, idempotency_key="restore-stale",
             )
-        self.assertEqual(self.provider.fencing_high_water(SCOPE), 300)
+        self.assertEqual(self.provider.fencing_high_water(SCOPE), 301)
 
     def test_restore_requires_external_fencing_reconciliation_and_never_overwrites(self):
         backup = self.base / "backup.sqlite"
