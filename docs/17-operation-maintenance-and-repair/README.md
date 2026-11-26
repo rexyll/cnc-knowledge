@@ -210,3 +210,8 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 新增真实集成测试`tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py`：在一次性三成员etcd v3.7.0集群中停止etcd1，验证linearizable Range的失效endpoint failover、剩余2/3节点的Txn写入与读回，并恢复etcd1。最终[Live CI Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952)的6项集成测试全部通过（6/6），诊断Artifact 15127610627；[默认质量CI Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)的两个Job也全部成功。
 
 这只是一次性集成冒烟测试，不是企业生产验收。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；未覆盖双节点故障/失去quorum、长时间网络分区、性能、TLS/mTLS、RBAC或多主机；schema-v2仍是唯一生产权威。
+## CH17-T004 etcd 双成员故障与 quorum 恢复验证（第四十九轮）
+
+新增测试`tests/test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py`：在一次性三成员etcd v3.7.0集群中停止两个成员，验证唯一存活节点不能完成线性一致读写；恢复第二个成员后重新形成多数派，并检查无多数派期间的目标写入没有提交，恢复后新的CAS事务成功。[Live CI Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997)共7项集成测试全部通过（7/7）；[默认质量CI Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)的两个Job也全部成功。
+
+该测试是一次性集成验证，不等于任意网络分区或生产HA验收。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；未覆盖磁盘故障、非对称网络分区、延迟/吞吐、TLS/mTLS、RBAC或多主机；schema-v2仍是唯一生产权威。
