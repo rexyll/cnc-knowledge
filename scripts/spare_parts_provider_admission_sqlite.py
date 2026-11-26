@@ -94,8 +94,8 @@ class SQLiteProviderAdmissionCoordinator:
         self.clock_fn = clock_fn
         signer_parts = (attestation_issuer_id, attestation_key_id, attestation_secret)
         if attestation_signer is not None:
-            if any(value is not None for value in signer_parts):
-                raise BackupStorageError("configure either an Ed25519 signer or legacy HMAC fields, not both")
+            if attestation_secret is not None:
+                raise BackupStorageError("do not combine an Ed25519 signer with a legacy HMAC secret")
             if not isinstance(attestation_issuer_id, str) or not attestation_issuer_id.strip():
                 raise BackupStorageError("Coordinator attestation issuer ID is required with an Ed25519 signer")
             signer_key_id = getattr(attestation_signer, "key_id", None)
@@ -106,6 +106,8 @@ class SQLiteProviderAdmissionCoordinator:
                 or not callable(getattr(attestation_signer, "sign", None))
             ):
                 raise BackupStorageError("Coordinator attestation signer must expose ED25519 algorithm, key_id and sign()")
+            if attestation_key_id is not None and attestation_key_id != signer_key_id:
+                raise BackupStorageError("explicit Coordinator attestation key ID differs from signer key ID")
             if not isinstance(attestation_ttl_seconds, (int, float)) or isinstance(attestation_ttl_seconds, bool) or not math.isfinite(attestation_ttl_seconds) or not 0 < attestation_ttl_seconds <= 60:
                 raise BackupStorageError("coordinator attestation TTL must be in (0, 60] seconds")
             self._attestation_signer = attestation_signer
