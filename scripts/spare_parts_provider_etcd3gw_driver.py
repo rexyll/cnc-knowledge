@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """etcd v3 gRPC-gateway adapter backed by the OpenStack etcd3gw client.
 
-This adapter intentionally implements KV Range, Txn and Lease only. The
-etcd3gw Watch iterator exposes events but does not preserve the full
-WatchResponse envelope (created/canceled/compact_revision/fragment/header),
-so it is not advertised as EtcdV3WatchClient.
+KV Range, Txn and Lease use the pinned etcd3gw client. Watch uses its configured
+HTTP session directly because etcd3gw's convenience iterator drops control
+fields from WatchResponse. The raw server stream preserves the complete
+response envelope. The HTTP gateway path supports a server stream created by
+one request; it does not expose bidirectional WatchProgress/WatchCancel here.
 """
 from __future__ import annotations
 
 import base64
+import codecs
 import json
 import os
 import threading
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Iterator, Mapping, Sequence
 from urllib.parse import urlsplit
 
 
@@ -75,6 +77,166 @@ def _transport_error(exc: Exception) -> Exception:
     if name in {"ConnectionFailedError", "ConnectionError", "ConnectTimeout"}:
         return ConnectionError(str(exc))
     return exc
+
+
+
+def _iter_json_stream(response: Any) -> Iterator[Mapping[str, Any]]:
+    """Decode concatenated/line-delimited JSON documents from an HTTP stream.
+
+    HTTP chunk boundaries are not assumed to match JSON object boundaries.
+    """
+    utf8 = codecs.getincrementaldecoder("utf-8")()
+    parser = json.JSONDecoder()
+    buffer = ""
+
+    def extract(final: bool = False) -> Iterator[Mapping[str, Any]]:
+        nonlocal buffer
+        while True:
+            buffer = buffer.lstrip()
+            if not buffer:
+                return
+            try:
+                value, end = parser.raw_decode(buffer)
+            except json.JSONDecodeError as exc:
+                if final:
+                    raise Etcd3gwProtocolError(
+                        "etcd Watch stream ended with an incomplete JSON frame"
+                    ) from exc
+                return
+            if not isinstance(value, Mapping):
+                raise Etcd3gwProtocolError(
+                    "etcd Watch stream frame must be a JSON object"
+                )
+            buffer = buffer[end:]
+            yield value
+
+    try:
+        for chunk in response.iter_content(chunk_size=None, decode_unicode=False):
+            if not chunk:
+                continue
+            if isinstance(chunk, str):
+                buffer += chunk
+            else:
+                try:
+                    buffer += utf8.decode(bytes(chunk), final=False)
+                except UnicodeDecodeError as exc:
+                    raise Etcd3gwProtocolError(
+                        "etcd Watch stream contains invalid UTF-8"
+                    ) from exc
+            yield from extract()
+        try:
+            buffer += utf8.decode(b"", final=True)
+        except UnicodeDecodeError as exc:
+            raise Etcd3gwProtocolError(
+                "etcd Watch stream ends in an incomplete UTF-8 sequence"
+            ) from exc
+        yield from extract(final=True)
+    except Etcd3gwProtocolError:
+        raise
+    except Exception:
+        raise
+
+
+def _normalize_watch_response(envelope: Mapping[str, Any]) -> dict[str, Any]:
+    result = envelope.get("result")
+    if not isinstance(result, Mapping):
+        raise Etcd3gwProtocolError(
+            "etcd Watch stream frame is missing the result envelope"
+        )
+
+    raw_header = result.get("header")
+    if not isinstance(raw_header, Mapping):
+        raise Etcd3gwProtocolError(
+            "etcd Watch response is missing its response header"
+        )
+    revision = _field(raw_header, "revision")
+    if revision is None:
+        raise Etcd3gwProtocolError(
+            "etcd Watch response header is missing revision"
+        )
+    header = dict(raw_header)
+    header["revision"] = int(revision)
+
+    raw_events = result.get("events") or []
+    if not isinstance(raw_events, list):
+        raise Etcd3gwProtocolError("etcd Watch events must be an array")
+    events: list[dict[str, Any]] = []
+    for raw_event in raw_events:
+        if not isinstance(raw_event, Mapping):
+            raise Etcd3gwProtocolError("etcd Watch event is malformed")
+        event_type = raw_event.get("type")
+        if isinstance(event_type, int) and not isinstance(event_type, bool):
+            event_type = {0: "PUT", 1: "DELETE"}.get(event_type)
+        if isinstance(event_type, str):
+            event_type = event_type.upper()
+            if event_type.startswith("EVENT_TYPE_"):
+                event_type = event_type.removeprefix("EVENT_TYPE_")
+        if event_type not in {"PUT", "DELETE"}:
+            raise Etcd3gwProtocolError("etcd Watch event type is invalid")
+
+        raw_kv = raw_event.get("kv")
+        if not isinstance(raw_kv, Mapping):
+            raise Etcd3gwProtocolError("etcd Watch event is missing its KV")
+        event = dict(raw_event)
+        event["type"] = event_type
+        event["kv"] = _decode_kv(raw_kv)
+
+        raw_previous = raw_event.get("prev_kv", raw_event.get("prevKv"))
+        if raw_previous is not None:
+            if not isinstance(raw_previous, Mapping):
+                raise Etcd3gwProtocolError("etcd Watch previous KV is malformed")
+            event["prev_kv"] = _decode_kv(raw_previous)
+        events.append(event)
+
+    watch_id = _field(result, "watch_id", "watchId")
+    compact_revision = _field(result, "compact_revision", "compactRevision")
+    cancel_reason = _field(result, "cancel_reason", "cancelReason")
+    return {
+        "header": header,
+        "watch_id": int(watch_id or 0),
+        "created": bool(result.get("created", False)),
+        "canceled": bool(result.get("canceled", False)),
+        "compact_revision": int(compact_revision or 0),
+        "cancel_reason": str(cancel_reason or ""),
+        "fragment": bool(result.get("fragment", False)),
+        "events": events,
+    }
+
+
+class _Etcd3gwWatchStream:
+    """Closeable iterator over complete WatchResponse envelopes."""
+
+    def __init__(self, response: Any):
+        self._response = response
+        self._frames = _iter_json_stream(response)
+        self._closed = False
+
+    def __iter__(self) -> "_Etcd3gwWatchStream":
+        return self
+
+    def __next__(self) -> Mapping[str, Any]:
+        if self._closed:
+            raise StopIteration
+        try:
+            envelope = next(self._frames)
+            return _normalize_watch_response(envelope)
+        except StopIteration:
+            self.close()
+            raise
+        except Exception:
+            self.close()
+            raise
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        close_iterator = getattr(self._frames, "close", None)
+        if callable(close_iterator):
+            close_iterator()
+        close_response = getattr(self._response, "close", None)
+        if callable(close_response):
+            close_response()
 
 
 class Etcd3gwV3Client:
@@ -377,6 +539,106 @@ class Etcd3gwV3Client:
             "/kv/lease/revoke", {"ID": lease_id}, read_only=False
         )
         return {"id": lease_id, "response": dict(response)}
+
+    def watch(
+        self,
+        key: bytes,
+        *,
+        start_revision: int = 0,
+        progress_notify: bool = True,
+        filters: Sequence[str] | None = None,
+        prev_kv: bool = True,
+        range_end: bytes | None = None,
+        watch_id: int | None = None,
+        fragment: bool | None = None,
+    ) -> Iterator[Mapping[str, Any]]:
+        """Open an HTTP server-streaming Watch and preserve every response.
+
+        The stream is bound to the endpoint that accepted the request. A
+        transport failure after stream establishment is propagated; callers
+        must rebuild their snapshot with a linearizable Range and resume at
+        R+1 rather than silently restarting at the old cursor.
+        """
+        if not isinstance(key, bytes) or not key:
+            raise ValueError("Watch key must be non-empty bytes")
+        if (
+            not isinstance(start_revision, int)
+            or isinstance(start_revision, bool)
+            or start_revision < 0
+        ):
+            raise ValueError("Watch start_revision must be a non-negative integer")
+        if range_end is not None and not isinstance(range_end, bytes):
+            raise ValueError("Watch range_end must be bytes or None")
+        if watch_id is not None and (
+            not isinstance(watch_id, int)
+            or isinstance(watch_id, bool)
+            or watch_id < 0
+        ):
+            raise ValueError("Watch watch_id must be a non-negative integer or None")
+        if filters is not None and any(
+            item not in {"NOPUT", "NODELETE"} for item in filters
+        ):
+            raise ValueError("Watch filters may only contain NOPUT or NODELETE")
+
+        create_request: dict[str, Any] = {
+            "key": _encode_bytes(key),
+            "progress_notify": bool(progress_notify),
+            "prev_kv": bool(prev_kv),
+        }
+        if start_revision > 0:
+            create_request["start_revision"] = start_revision
+        if range_end is not None:
+            create_request["range_end"] = _encode_bytes(range_end)
+        if watch_id is not None:
+            create_request["watch_id"] = watch_id
+        if filters is not None:
+            create_request["filters"] = list(filters)
+        if fragment is not None:
+            create_request["fragment"] = bool(fragment)
+
+        payload = {"create_request": create_request}
+        start = self._take_start_index()
+        last_transport_error: Exception | None = None
+        for offset in range(len(self._clients)):
+            client = self._clients[(start + offset) % len(self._clients)]
+            try:
+                response = client.session.post(
+                    client.get_url("/watch"),
+                    json=payload,
+                    stream=True,
+                    timeout=(self.timeout, None),
+                )
+            except Exception as exc:
+                translated = _transport_error(exc)
+                if isinstance(translated, (TimeoutError, ConnectionError)):
+                    last_transport_error = translated
+                    continue
+                raise translated from exc
+
+            status = int(getattr(response, "status_code", 200))
+            if status >= 400:
+                detail = str(getattr(response, "text", ""))[:512]
+                close = getattr(response, "close", None)
+                if callable(close):
+                    close()
+                if status in {408, 504}:
+                    last_transport_error = TimeoutError(
+                        f"etcd Watch endpoint returned HTTP {status}"
+                    )
+                    continue
+                if status == 503:
+                    last_transport_error = ConnectionError(
+                        f"etcd Watch endpoint returned HTTP {status}"
+                    )
+                    continue
+                raise Etcd3gwProtocolError(
+                    f"etcd Watch endpoint returned HTTP {status}: {detail}"
+                )
+            return _Etcd3gwWatchStream(response)
+
+        if last_transport_error is not None:
+            raise last_transport_error
+        raise ConnectionError("no etcd endpoint accepted the Watch request")
 
     def members(self) -> list[Mapping[str, Any]]:
         response = self._post("/cluster/member/list", {}, read_only=True)
