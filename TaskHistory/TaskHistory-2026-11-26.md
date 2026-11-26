@@ -193,3 +193,15 @@
 - **资产/覆盖：** KNOW-000040；ASSET-000070共24条场景，全部PROPOSED_NOT_APPROVED / NOT_RUN；CH17统计20篇KNOW、70个实体、63项资源。
 - **最终分支与提交：** main，代码修复提交1a9a623e52475059872d8662fb64ee8956b973c2；未创建分支。
 - **限制：** 以上均为GitHub Actions中的同进程Mock/合成测试；没有真实协调服务、跨进程/主机、真实网络分区、自动心跳、下游fencing或生产备份验证。治理状态仍BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+## CH17-T004 Provider准入队列容量保护与恢复期背压第二十七轮（2026-11-26）
+
+- **分支：** main；未创建新分支。
+- **实现：** ProviderFairBulkhead与InMemoryProviderAdmissionCoordinator新增max_waiters；Adapter提供bulkhead_max_waiters参数。默认256仅为实现基线，0允许立即准入但不接受排队。
+- **失败关闭：** 队列满抛ProviderAdmissionQueueFullError（区分local_bulkhead/shared_coordinator），不移除已有等待者；共享协调器在等待循环内重新检查可用性，排队过程中失效时返回acquire阶段CoordinatorUnavailable并清理等待者。
+- **恢复：** 旧等待请求不会自动重放；恢复后需以原业务任务身份重新检查与提交。令牌桶burst可限制单次突发，但未实现jitter、预热、动态扩容或持久队列。
+- **测试：** 新增3项Provider专项unittest：本地队列超额拒绝、共享队列超额拒绝、排队中协调器故障清理与恢复；并补充负数/布尔队列配置校验。预期全库191项、Provider专项63项，等待CI验证。
+- **资源：** 新增KNOW-000041与ASSET-000071，7项场景全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
+- **限制：** 所有新增队列与故障测试为同进程合成测试；没有真实协调服务、跨进程/主机、网络分区、恢复风暴、生产容量或Provider验证。生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+- **代码/测试及CI：** 待提交与Actions验收后补记实际SHA、Run、Job、测试和strict lint结果。

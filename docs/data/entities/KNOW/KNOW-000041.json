@@ -1,0 +1,62 @@
+{
+  "entity_id": "KNOW-000041",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份 Provider 准入队列容量保护与恢复",
+  "english_name": "CNC spare-parts inventory backup provider admission queue bounds and recovery",
+  "aliases": [
+    "Provider公平队列上限",
+    "共享协调器等待者容量保护",
+    "备份Provider恢复期过载保护"
+  ],
+  "description": "为Adapter本地公平舱壁与共享准入协调器分别增加最大等待者数量，定义队列满快速拒绝、等待期间协调器不可用时清理请求，以及恢复后全新准入的失败关闭行为。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "备份Provider准入队列容量保护"
+  ],
+  "tags": [
+    "CH17",
+    "Provider Coordination",
+    "Admission Queue",
+    "Bulkhead",
+    "Backpressure",
+    "Recovery"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T11:10:00+08:00",
+  "updated_at": "2026-11-26T03:10:00Z",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-admission-queue-bounds-and-recovery.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-26",
+    "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "test_file": "tests/test_spare_parts_backup_storage_adapter.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-admission-queue-bound-test-matrix-v1.csv",
+    "scenario_definition_count": 7,
+    "added_provider_unittest_methods": 3,
+    "local_queue_limit_parameter": "BackupStorageAdapter.bulkhead_max_waiters",
+    "shared_queue_limit_parameter": "InMemoryProviderAdmissionCoordinator.max_waiters",
+    "queue_limit_semantics": "MAX_WAITING_REQUESTS_EXCLUDING_ACTIVE_ADMISSIONS",
+    "zero_waiters_semantics": "IMMEDIATE_ADMISSION_ALLOWED_NO_WAITING",
+    "queue_overflow_error": "ProviderAdmissionQueueFullError",
+    "coordinator_outage_while_waiting": "FAIL_CLOSED_REMOVE_WAITER_NO_PROVIDER_CALL",
+    "test_status": "SYNTHETIC_IN_PROCESS_ONLY",
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED"
+  },
+  "notes": "最大等待者默认值256为代码实现基线，不是生产容量建议。队列上限只保护进程内等待者数量，不控制活动并发，也不提供持久化任务排队、跨进程共享、jitter、恢复预热或分布式恢复风暴治理。新增7条矩阵场景全部PROPOSED_NOT_APPROVED/NOT_RUN；生产备份仍关闭。"
+}

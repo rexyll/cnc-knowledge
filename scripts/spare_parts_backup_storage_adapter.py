@@ -69,6 +69,14 @@ class ProviderBulkheadFullError(BackupStorageError):
     """A provider operation domain has no available concurrency slot."""
 
 
+class ProviderAdmissionQueueFullError(ProviderBulkheadFullError):
+    """A bounded provider admission queue has no waiting capacity."""
+
+    def __init__(self, message: str, *, scope: str):
+        super().__init__(message)
+        self.scope = scope
+
+
 class ProviderTaskCancelledError(BackupStorageError):
     """A backup task was cooperatively cancelled before another provider step."""
 
@@ -168,10 +176,13 @@ class ProviderFairBulkhead:
         tenant_limits: dict[str, int] | None = None,
         default_tenant_limit: int | None = None,
         aging_interval_seconds: float = 1.0,
+        max_waiters: int = 256,
         clock_fn: Callable[[], float] = time.monotonic,
     ):
         if capacity < 1 or aging_interval_seconds <= 0:
             raise BackupStorageError("fair bulkhead capacity and aging interval must be positive")
+        if not isinstance(max_waiters, int) or isinstance(max_waiters, bool) or max_waiters < 0:
+            raise BackupStorageError("fair bulkhead maximum waiters must be a non-negative integer")
         if default_tenant_limit is not None and (
             not isinstance(default_tenant_limit, int) or isinstance(default_tenant_limit, bool)
             or default_tenant_limit < 1
@@ -188,12 +199,14 @@ class ProviderFairBulkhead:
         self.tenant_limits = limits
         self.default_tenant_limit = default_tenant_limit
         self.aging_interval_seconds = float(aging_interval_seconds)
+        self.max_waiters = max_waiters
         self.clock_fn = clock_fn
         self._condition = threading.Condition()
         self._active_count = 0
         self._active_by_tenant: dict[str, int] = {}
         self._waiters: list[_AdmissionWaiter] = []
         self._next_sequence = 0
+        self._rejected_queue_count = 0
 
     def _tenant_limit(self, tenant_id: str) -> int:
         return self.tenant_limits.get(
@@ -228,9 +241,26 @@ class ProviderFairBulkhead:
     ) -> None:
         started = time.monotonic()
         with self._condition:
+            check_task(task)
             self._next_sequence += 1
             waiter = _AdmissionWaiter(self._next_sequence, task, self.clock_fn())
+            queue_at_capacity = len(self._waiters) >= self.max_waiters
             self._waiters.append(waiter)
+            if queue_at_capacity:
+                tenant_active = self._active_by_tenant.get(task.tenant_id, 0)
+                can_admit_without_waiting = (
+                    self._active_count < self.capacity
+                    and tenant_active < self._tenant_limit(task.tenant_id)
+                    and self._select_waiter() is waiter
+                )
+                if not can_admit_without_waiting:
+                    self._waiters.remove(waiter)
+                    self._rejected_queue_count += 1
+                    self._condition.notify_all()
+                    raise ProviderAdmissionQueueFullError(
+                        "provider fair bulkhead waiting queue is full",
+                        scope="local_bulkhead",
+                    )
             try:
                 while True:
                     check_task(task)
@@ -272,8 +302,10 @@ class ProviderFairBulkhead:
             tenants = sorted({item.task.tenant_id for item in self._waiters})
             return {
                 "capacity": self.capacity,
+                "max_waiters": self.max_waiters,
                 "active_count": self._active_count,
                 "waiting_count": len(self._waiters),
+                "rejected_queue": self._rejected_queue_count,
                 "active_by_tenant": dict(self._active_by_tenant),
                 "waiting_by_tenant": {
                     tenant: sum(1 for item in self._waiters if item.task.tenant_id == tenant)
@@ -344,8 +376,11 @@ class InMemoryProviderAdmissionCoordinator:
         rate_limits_per_second: dict[str, float] | None = None,
         rate_bursts: dict[str, int] | None = None,
         aging_interval_seconds: float = 1.0,
+        max_waiters: int = 256,
         clock_fn: Callable[[], float] = time.monotonic,
     ):
+        if not isinstance(max_waiters, int) or isinstance(max_waiters, bool) or max_waiters < 0:
+            raise BackupStorageError("shared coordinator maximum waiters must be a non-negative integer")
         limits = {"read": 4, "write": 2, "multipart": 2, "inventory": 1}
         if global_limits is not None:
             unknown = set(global_limits) - set(limits)
@@ -390,6 +425,7 @@ class InMemoryProviderAdmissionCoordinator:
             domain: bursts.get(domain, 1) for domain in rates
         }
         self.aging_interval_seconds = float(aging_interval_seconds)
+        self.max_waiters = max_waiters
         self.clock_fn = clock_fn
         self._condition = threading.Condition()
         self._leases: dict[str, ProviderAdmissionLease] = {}
@@ -404,6 +440,7 @@ class InMemoryProviderAdmissionCoordinator:
         self._expired_lease_count = 0
         self._issued_lease_count = 0
         self._rejected_capacity_count = 0
+        self._rejected_queue_count = 0
         self._rate_limited_count = 0
         self._available = True
         self._injected_failures: dict[str, int] = {}
@@ -521,12 +558,47 @@ class InMemoryProviderAdmissionCoordinator:
             raise BackupStorageError("shared coordinator lease TTL must be finite and positive")
         started = time.monotonic()
         with self._condition:
+            self._check_availability_locked("acquire")
+            check_task(task)
             self._next_sequence += 1
             waiter = _CoordinatorWaiter(self._next_sequence, task, domain, self.clock_fn())
-            self._check_availability_locked("acquire")
+            queue_at_capacity = len(self._waiters) >= self.max_waiters
             self._waiters.append(waiter)
+            if queue_at_capacity:
+                now = self.clock_fn()
+                active = self._active_count_locked(domain)
+                tenant_active = self._tenant_active_locked(task.tenant_id, domain)
+                selected = self._select_waiter_locked(domain, now)
+                rate_delay = self._rate_delay_locked(domain, now, consume=False)
+                can_admit_without_waiting = (
+                    active < self.global_limits[domain]
+                    and tenant_active < self._tenant_limit(task.tenant_id, domain)
+                    and selected is waiter
+                    and rate_delay <= 0
+                )
+                if not can_admit_without_waiting:
+                    self._waiters.remove(waiter)
+                    if (
+                        rate_delay > 0
+                        and active < self.global_limits[domain]
+                        and tenant_active < self._tenant_limit(task.tenant_id, domain)
+                        and selected is waiter
+                    ):
+                        self._rate_limited_count += 1
+                        self._condition.notify_all()
+                        raise ProviderRateLimitExceededError(
+                            f"shared {domain} request rate limit is exhausted",
+                            retry_after_seconds=rate_delay,
+                        )
+                    self._rejected_queue_count += 1
+                    self._condition.notify_all()
+                    raise ProviderAdmissionQueueFullError(
+                        f"shared {domain} admission waiting queue is full",
+                        scope="shared_coordinator",
+                    )
             try:
                 while True:
+                    self._check_availability_locked("acquire")
                     check_task(task)
                     now = self.clock_fn()
                     self._expire_locked(now)
@@ -633,6 +705,8 @@ class InMemoryProviderAdmissionCoordinator:
             return {
                 "coordinator_available": self._available,
                 "coordinator_failures": self._coordinator_failure_count,
+                "max_waiters": self.max_waiters,
+                "rejected_queue": self._rejected_queue_count,
                 "global_limits": dict(self.global_limits),
                 "active_by_domain": {
                     domain: self._active_count_locked(domain) for domain in self.global_limits
@@ -1261,6 +1335,7 @@ class BackupStorageAdapter:
         circuit_half_open_max_probes: int = 1,
         bulkhead_limits: dict[str, int] | None = None,
         bulkhead_acquire_timeout_seconds: float = 0.0,
+        bulkhead_max_waiters: int = 256,
         tenant_bulkhead_limits: dict[str, int] | None = None,
         tenant_bulkhead_default_limit: int | None = None,
         priority_aging_interval_seconds: float = 1.0,
@@ -1278,6 +1353,12 @@ class BackupStorageAdapter:
             raise BackupStorageError("retry budget and bulkhead wait cannot be negative")
         if not math.isfinite(bulkhead_acquire_timeout_seconds):
             raise BackupStorageError("bulkhead wait timeout must be finite")
+        if (
+            not isinstance(bulkhead_max_waiters, int)
+            or isinstance(bulkhead_max_waiters, bool)
+            or bulkhead_max_waiters < 0
+        ):
+            raise BackupStorageError("bulkhead maximum waiters must be a non-negative integer")
         if not math.isfinite(priority_aging_interval_seconds) or priority_aging_interval_seconds <= 0:
             raise BackupStorageError("priority aging interval must be finite and positive")
         if not math.isfinite(coordinator_lease_ttl_seconds) or coordinator_lease_ttl_seconds <= 0:
@@ -1336,6 +1417,7 @@ class BackupStorageAdapter:
                 tenant_limits=tenant_limits,
                 default_tenant_limit=tenant_bulkhead_default_limit,
                 aging_interval_seconds=priority_aging_interval_seconds,
+                max_waiters=bulkhead_max_waiters,
                 clock_fn=clock_fn,
             )
             for domain, limit in defaults.items()

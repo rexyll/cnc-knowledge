@@ -17,6 +17,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     ProviderCircuitBreaker,
     ProviderCircuitOpenError,
     ProviderBulkheadFullError,
+    ProviderAdmissionQueueFullError,
     ProviderAdmissionLeaseLostError,
     ProviderCoordinatorUnavailableError,
     ProviderCoordinatorStateUnknownError,
@@ -769,6 +770,14 @@ class BackupStorageAdapterTests(unittest.TestCase):
             BackupStorageAdapter(MockObjectStorageProvider(), tenant_bulkhead_limits={"": 1})
         with self.assertRaises(BackupStorageError):
             BackupStorageAdapter(MockObjectStorageProvider(), priority_aging_interval_seconds=0)
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), bulkhead_max_waiters=-1)
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), bulkhead_max_waiters=True)
+        with self.assertRaises(BackupStorageError):
+            InMemoryProviderAdmissionCoordinator(max_waiters=-1)
+        with self.assertRaises(BackupStorageError):
+            InMemoryProviderAdmissionCoordinator(max_waiters=True)
 
 
     def _wait_for_bulkhead_queue(self, adapter, expected, domain="read"):
@@ -778,6 +787,65 @@ class BackupStorageAdapterTests(unittest.TestCase):
                 return
             time.sleep(0.005)
         self.fail(f"expected {expected} queued provider task(s)")
+
+    def _wait_for_coordinator_queue(self, coordinator, expected, domain="read"):
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            if coordinator.snapshot()["waiting_by_domain"][domain] >= expected:
+                return
+            time.sleep(0.005)
+        self.fail(f"expected {expected} shared coordinator waiter(s)")
+
+    def test_local_bulkhead_rejects_queue_overflow_without_evicting_existing_waiter(self):
+        adapter = BackupStorageAdapter(
+            MockObjectStorageProvider(),
+            bulkhead_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            bulkhead_acquire_timeout_seconds=2,
+            bulkhead_max_waiters=1,
+        )
+        entered, release = threading.Event(), threading.Event()
+        errors, results = [], []
+
+        def blocker():
+            entered.set()
+            if not release.wait(timeout=3):
+                raise AssertionError("local queue holder was not released")
+            return "holder"
+
+        def run_holder():
+            try:
+                with adapter.task_context(task_id="local-holder", tenant_id="tenant-holder"):
+                    adapter._provider_call("get_payload", blocker)
+            except Exception as exc:
+                errors.append(exc)
+
+        def run_waiter():
+            try:
+                with adapter.task_context(task_id="local-waiter", tenant_id="tenant-waiter"):
+                    results.append(adapter._provider_call("get_payload", lambda: "waiter"))
+            except Exception as exc:
+                errors.append(exc)
+
+        holder = threading.Thread(target=run_holder)
+        waiter = threading.Thread(target=run_waiter)
+        holder.start()
+        self.assertTrue(entered.wait(timeout=2))
+        waiter.start()
+        self._wait_for_bulkhead_queue(adapter, 1)
+        with adapter.task_context(task_id="local-overflow", tenant_id="tenant-overflow"):
+            with self.assertRaises(ProviderAdmissionQueueFullError) as caught:
+                adapter._provider_call("get_payload", lambda: "must-not-run")
+        self.assertEqual(caught.exception.scope, "local_bulkhead")
+        snapshot = adapter.bulkhead_snapshot("read")
+        self.assertEqual(snapshot["waiting_count"], 1)
+        self.assertEqual(snapshot["rejected_queue"], 1)
+        release.set()
+        for thread in (holder, waiter):
+            thread.join(timeout=3)
+        self.assertFalse(holder.is_alive())
+        self.assertFalse(waiter.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(results, ["waiter"])
 
     def test_priority_waiter_runs_before_normal_waiter(self):
         adapter = BackupStorageAdapter(
@@ -1232,6 +1300,91 @@ class BackupStorageAdapterTests(unittest.TestCase):
                 self.assertEqual(calls, ["attempt"])
                 self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 0)
 
+
+    def test_shared_coordinator_rejects_queue_overflow_without_evicting_existing_waiter(self):
+        coordinator = InMemoryProviderAdmissionCoordinator(
+            global_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            max_waiters=1,
+        )
+        holder_lease = coordinator.acquire(
+            task=ProviderTaskContext(task_id="shared-holder", tenant_id="tenant-holder"),
+            domain="read", owner_id="holder", lease_ttl_seconds=20,
+            timeout_seconds=0, check_task=lambda _: None,
+        )
+        acquired, errors = [], []
+
+        def wait_for_lease():
+            try:
+                acquired.append(coordinator.acquire(
+                    task=ProviderTaskContext(task_id="shared-waiter", tenant_id="tenant-waiter"),
+                    domain="read", owner_id="waiter", lease_ttl_seconds=20,
+                    timeout_seconds=3, check_task=lambda _: None,
+                ))
+            except Exception as exc:
+                errors.append(exc)
+
+        worker = threading.Thread(target=wait_for_lease)
+        worker.start()
+        self._wait_for_coordinator_queue(coordinator, 1)
+        with self.assertRaises(ProviderAdmissionQueueFullError) as caught:
+            coordinator.acquire(
+                task=ProviderTaskContext(task_id="shared-overflow", tenant_id="tenant-overflow"),
+                domain="read", owner_id="overflow", lease_ttl_seconds=20,
+                timeout_seconds=0, check_task=lambda _: None,
+            )
+        self.assertEqual(caught.exception.scope, "shared_coordinator")
+        snapshot = coordinator.snapshot()
+        self.assertEqual(snapshot["waiting_by_domain"]["read"], 1)
+        self.assertEqual(snapshot["rejected_queue"], 1)
+        self.assertTrue(coordinator.release(holder_lease))
+        worker.join(timeout=3)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(len(acquired), 1)
+        self.assertTrue(coordinator.release(acquired[0]))
+        self.assertEqual(coordinator.snapshot()["waiting_by_domain"]["read"], 0)
+
+    def test_coordinator_outage_while_waiting_cleans_waiter_and_recovers(self):
+        coordinator = InMemoryProviderAdmissionCoordinator(
+            global_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+            max_waiters=2,
+        )
+        holder_lease = coordinator.acquire(
+            task=ProviderTaskContext(task_id="outage-holder", tenant_id="tenant-holder"),
+            domain="read", owner_id="holder", lease_ttl_seconds=20,
+            timeout_seconds=0, check_task=lambda _: None,
+        )
+        errors, acquired = [], []
+
+        def waiting_request():
+            try:
+                acquired.append(coordinator.acquire(
+                    task=ProviderTaskContext(task_id="outage-waiter", tenant_id="tenant-waiter"),
+                    domain="read", owner_id="waiter", lease_ttl_seconds=20,
+                    timeout_seconds=3, check_task=lambda _: None,
+                ))
+            except Exception as exc:
+                errors.append(exc)
+
+        worker = threading.Thread(target=waiting_request)
+        worker.start()
+        self._wait_for_coordinator_queue(coordinator, 1)
+        coordinator.set_available(False)
+        worker.join(timeout=2)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(acquired, [])
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], ProviderCoordinatorUnavailableError)
+        self.assertEqual(errors[0].phase, "acquire")
+        coordinator.set_available(True)
+        self.assertEqual(coordinator.snapshot()["waiting_by_domain"]["read"], 0)
+        self.assertTrue(coordinator.release(holder_lease))
+        recovered = coordinator.acquire(
+            task=ProviderTaskContext(task_id="after-outage", tenant_id="tenant-after"),
+            domain="read", owner_id="recovered", lease_ttl_seconds=20,
+            timeout_seconds=0, check_task=lambda _: None,
+        )
+        self.assertTrue(coordinator.release(recovered))
 
     def test_coordinator_outage_fails_closed_before_provider_callback_and_recovers(self):
         coordinator = InMemoryProviderAdmissionCoordinator()

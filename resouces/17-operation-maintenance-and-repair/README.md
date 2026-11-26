@@ -327,3 +327,9 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 全库188个unittest通过；knowledge_lint.py --strict为PASS（0 errors）。
 - Provider Mock self-check PASS，Artifact ID 15083022622；备份治理readiness Artifact ID 15082588660，生产备份仍关闭。
 - 本轮仅验证同进程Mock协调故障合同；ASSET-000070的24条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 Provider准入队列容量保护第二十七轮
+
+- 新增 `spare-parts-inventory-backup-provider-admission-queue-bound-test-matrix-v1.csv`（ASSET-000071）：7条队列容量、协调器等待中失效与恢复后重新准入合成场景；全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
+- 新增KNOW-000041：本地与共享准入队列的最大等待者上限；0允许无等待的即时准入。默认256是实现基线，不是生产容量建议。

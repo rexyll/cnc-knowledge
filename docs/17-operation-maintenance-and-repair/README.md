@@ -92,3 +92,6 @@
 
 
 - [备份Provider协调器故障注入、失败关闭与恢复](spare-parts-inventory-backup-provider-shared-coordination-and-lease-recovery.md)（KNOW-000040）；与KNOW-000039共用ASSET-000070矩阵，覆盖协调器不可用、响应丢失、租约校验/释放失败及恢复路径；全部合成场景NOT_RUN。
+
+
+- [备份 Provider 准入队列容量保护与恢复](spare-parts-inventory-backup-provider-admission-queue-bounds-and-recovery.md)（KNOW-000041）；新增7项本地/共享队列上限、故障中断和恢复后重新准入合成场景（ASSET-000071），全部NOT_RUN。

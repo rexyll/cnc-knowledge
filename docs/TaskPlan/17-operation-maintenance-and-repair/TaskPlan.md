@@ -434,3 +434,13 @@
 
 - **CI失败修复记录：** 首轮提交fdac7308f23f4e4ab656174be92f57b987d559fc触发Run 45745264278失败，原因是acquire故障检查错误插入本地ProviderFairBulkhead；修复提交1a9a623e52475059872d8662fb64ee8956b973c2将检查移至共享协调器。最终Run 45745399203通过。
 - **治理边界：** 24条故障矩阵全部PROPOSED_NOT_APPROVED / NOT_RUN；生产备份仍关闭，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED。
+
+
+## CH17-T004 第二十七轮：Provider准入队列容量保护与恢复期背压
+
+- **实现：** ProviderFairBulkhead与InMemoryProviderAdmissionCoordinator分别新增max_waiters；BackupStorageAdapter暴露bulkhead_max_waiters。默认256仅是实现基线，非生产容量建议；0表示禁止等待但允许立即准入。
+- **失败语义：** 队列满抛ProviderAdmissionQueueFullError，并区分local_bulkhead/shared_coordinator；不驱逐既有等待者。协调器在每次等待循环醒来后重新检查可用性，排队期间故障则清理等待者并fail-closed。
+- **恢复语义：** 旧等待任务不会自动重放；协调器恢复后需按原任务身份重新查询/提交。令牌桶burst可作为限速边界，但未实现随机jitter、恢复预热/速率斜坡或持久队列。
+- **交付：** 新增KNOW-000041和ASSET-000071（7条合成场景）；新增3项Provider专项unittest，并补充配置边界检查。
+- **验收目标：** 全库191个unittest、Provider专项63项；实际结果以CI为准。strict lint需为PASS（0 errors）。
+- **限制：** 仍仅同进程Mock；无跨进程/主机协调、真实网络故障、生产容量和恢复风暴证据。生产备份保持关闭，CH17-T004继续IN_PROGRESS。
