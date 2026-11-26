@@ -9,7 +9,7 @@ on:
       - "scripts/spare_parts_provider_etcd3gw_driver.py"
       - "scripts/spare_parts_provider_authority_store.py"
       - "scripts/etcd-integration/**"
-      - "tests/test_spare_parts_provider_authority_store_etcd_integration.py"
+      - "tests/test_*etcd_integration.py"
       - "requirements-ch17-etcd-integration.txt"
   workflow_dispatch:
 
