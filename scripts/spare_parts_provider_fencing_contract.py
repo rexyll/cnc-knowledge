@@ -10,20 +10,10 @@ from typing import Protocol
 from scripts.spare_parts_backup_storage_adapter import BackupStorageError
 
 
-class FencingContractError(BackupStorageError):
-    """A downstream fencing contract was violated."""
-
-
-class FencingNotSupportedError(FencingContractError):
-    """The target provider cannot prove atomic downstream fencing."""
-
-
-class StaleFencingTokenError(FencingContractError):
-    """The target rejected a writer whose token is below its high-water mark."""
-
-
-class FencingTokenConflictError(FencingContractError):
-    """A token was reused for a different logical write."""
+from scripts.spare_parts_backup_storage_adapter import (
+    BackupStorageError, FencingContractError, FencingNotSupportedError,
+    StaleFencingTokenError, FencingTokenConflictError,
+)
 
 
 @dataclass(frozen=True)

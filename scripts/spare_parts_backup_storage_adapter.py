@@ -48,6 +48,24 @@ class BackupStorageConflict(BackupStorageError):
     """An immutable object key already contains different content."""
 
 
+class FencingContractError(BackupStorageError):
+    """A downstream fencing contract was violated."""
+
+
+class FencingNotSupportedError(FencingContractError):
+    """The target Provider cannot prove atomic downstream fencing."""
+
+
+class StaleFencingTokenError(FencingContractError):
+    """The target rejected a writer whose token is below its resource high-water."""
+
+
+class FencingTokenConflictError(FencingContractError):
+    """A fencing token or idempotency key was reused for a different operation."""
+
+
+
+
 class ProviderTransientError(BackupStorageError):
     """Retryable provider error; outcome_unknown means the server may have committed."""
 
@@ -1711,11 +1729,11 @@ class BackupStorageAdapter:
             raise BackupStorageError("require_provider_fencing must be a boolean")
         if require_provider_fencing:
             if admission_coordinator is None:
-                raise BackupStorageError(
+                raise FencingNotSupportedError(
                     "provider fencing requires an admission coordinator that issues fencing tokens"
                 )
             if getattr(provider, "supports_fencing", False) is not True:
-                raise BackupStorageError(
+                raise FencingNotSupportedError(
                     "provider fencing requested but Provider does not declare supports_fencing=True"
                 )
             required_fenced_methods = ["put_if_absent_fenced"]
@@ -1730,7 +1748,7 @@ class BackupStorageAdapter:
                 if not callable(getattr(provider, name, None))
             ]
             if missing:
-                raise BackupStorageError(
+                raise FencingNotSupportedError(
                     "Provider fencing capability is incomplete: " + ", ".join(missing)
                 )
         self.require_provider_fencing = require_provider_fencing
@@ -1984,7 +2002,7 @@ class BackupStorageAdapter:
             }
             and fenced_callback is None
         ):
-            raise BackupStorageError(
+            raise FencingNotSupportedError(
                 f"provider fencing is enabled but {operation} has no fenced callback"
             )
         domain = self._operation_domain(operation)
@@ -1999,7 +2017,7 @@ class BackupStorageAdapter:
                 try:
                     if fenced_callback is not None:
                         if lease is None:
-                            raise BackupStorageError(
+                            raise FencingNotSupportedError(
                                 "fenced Provider write has no admission lease/token"
                             )
                         result = fenced_callback(lease)
