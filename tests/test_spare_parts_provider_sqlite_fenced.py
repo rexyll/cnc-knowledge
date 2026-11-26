@@ -13,6 +13,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageConflict,
     BackupStorageError,
     FencingTokenConflictError,
+    FencingNotSupportedError,
     ProviderTransientError,
     StaleFencingTokenError,
     _synthetic_ledger,
@@ -158,13 +159,13 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         )
         writer_a.put_if_absent_fenced(
             "cnc/ch17/shared-key.bin", b"tenant-a",
-            fencing_scope=SCOPE, fencing_token=11, idempotency_key="tenant-a-write",
+            fencing_scope="cnc/ch17", fencing_token=11, idempotency_key="tenant-a-write",
         )
         with self.assertRaises(SQLiteProviderObjectNotFoundError):
             writer_b.get_object("cnc/ch17/shared-key.bin")
         writer_b.put_if_absent_fenced(
             "cnc/ch17/shared-key.bin", b"tenant-b",
-            fencing_scope=SCOPE, fencing_token=4, idempotency_key="tenant-b-write",
+            fencing_scope="cnc/ch17", fencing_token=4, idempotency_key="tenant-b-write",
         )
         self.assertEqual(writer_a.get_object("cnc/ch17/shared-key.bin").data, b"tenant-a")
         self.assertEqual(writer_b.get_object("cnc/ch17/shared-key.bin").data, b"tenant-b")
