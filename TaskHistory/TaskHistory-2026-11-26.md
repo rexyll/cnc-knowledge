@@ -160,3 +160,11 @@
 - 新增7项专项unittest；ASSET-000070定义16个合成多实例/租户/限流/租约场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **限制：** 该Mock仅同一Python进程共享，不是跨进程/跨机器协调服务；无持久化、自动心跳、网络分区/主备/quorum/下游fencing。远端请求可能在本地租约过期后仍生效，必须以Provider硬超时、幂等对象键和提交状态盘点处理。
 - 所有工作仅改动main；不连接真实云、身份系统或企业存储。生产备份维持关闭，治理门禁仍BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。
+
+
+## 第二十五轮首轮CI问题与租约异常路径加固（2026-11-26）
+
+- 首轮Run 45743739362中，新增181个全库unittest有2个错误：测试模块未导入 `ProviderTaskContext`，导致两个直接协调器租约测试在NameError处停止；其他共享准入测试已通过。
+- 同时复核发现Provider callback抛出异常时，context manager原先会跳过退出前的租约有效性检查。已加固为成功/异常退出路径均检查租约；若租约已失效，统一抛 `ProviderAdmissionLeaseLostError`，避免瞬态错误路径继续自动重试。
+- 新增回归测试验证租约到期时，Provider永久异常和瞬态/outcome_unknown异常均不触发第二次尝试；测试import补齐 `ProviderTaskContext`。
+- 测试规格ASSET-000070扩为17条；总测试预期182项，Provider专项54项。修复后CI待重新执行。

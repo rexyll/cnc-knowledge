@@ -20,6 +20,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     ProviderAdmissionLeaseLostError,
     InMemoryProviderAdmissionCoordinator,
     ProviderRateLimitExceededError,
+    ProviderTaskContext,
     ProviderTaskCancelledError,
     ProviderTaskDeadlineExceededError,
     RetryBudgetExceededError,
@@ -1187,6 +1188,47 @@ class BackupStorageAdapterTests(unittest.TestCase):
             InMemoryProviderAdmissionCoordinator(rate_bursts={"read": 2})
         with self.assertRaises(BackupStorageError):
             BackupStorageAdapter(MockObjectStorageProvider(), coordinator_lease_ttl_seconds=0)
+
+
+
+    def test_expired_lease_overrides_provider_error_and_prevents_retry(self):
+        class FakeClock:
+            now = 0.0
+            def __call__(self):
+                return self.now
+            def advance(self, seconds):
+                self.now += seconds
+
+        for failure in ("permanent", "transient"):
+            with self.subTest(failure=failure):
+                clock = FakeClock()
+                coordinator = InMemoryProviderAdmissionCoordinator(
+                    global_limits={"read": 1, "write": 1, "multipart": 1, "inventory": 1},
+                    clock_fn=clock,
+                )
+                adapter = BackupStorageAdapter(
+                    MockObjectStorageProvider(),
+                    admission_coordinator=coordinator,
+                    coordinator_lease_ttl_seconds=1,
+                    retry_max_attempts=3,
+                    clock_fn=clock,
+                    retry_base_delay_seconds=0,
+                    sleep_fn=lambda _: None,
+                )
+                calls = []
+
+                def failing_callback():
+                    calls.append("attempt")
+                    clock.advance(1.1)
+                    if failure == "transient":
+                        raise ProviderTransientError("response lost", outcome_unknown=True)
+                    raise BackupStorageError("provider callback failed")
+
+                with adapter.task_context(task_id="lost-lease-error", tenant_id="tenant-A"):
+                    with self.assertRaises(ProviderAdmissionLeaseLostError):
+                        adapter._provider_call("get_payload", failing_callback)
+                self.assertEqual(calls, ["attempt"])
+                self.assertEqual(coordinator.snapshot()["active_by_domain"]["read"], 0)
 
 
 if __name__ == "__main__":

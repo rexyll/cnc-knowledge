@@ -33,7 +33,7 @@
 
 `renew()` 提供显式租约续期契约；当前同步Adapter调用不启动心跳线程，也不会自动续期。调用方必须将 `coordinator_lease_ttl_seconds` 设为明显大于真实Provider单次调用的硬超时，并由实际Provider adapter实施连接/读写超时。当前Provider Protocol不强制传递fencing token给底层服务，所以本地lease expiry不能证明远端副作用被阻止。
 
-若同步Provider callback返回时共享租约已丢失，Adapter抛出 `ProviderAdmissionLeaseLostError`，其 `outcome_unknown=True`：不得将其解释为操作未发生，也不得自动使用新backup ID重做；应以原对象键/backup ID执行盘点、幂等验证或恢复流程。fencing token只有在下游存储服务也验证并拒绝旧token时，才能成为真正的陈旧写入保护。
+若Provider callback无论正常返回还是抛出异常时共享租约已丢失，Adapter抛出 `ProviderAdmissionLeaseLostError`，其 `outcome_unknown=True`：不得将其解释为操作未发生，也不得自动使用新backup ID重做；应以原对象键/backup ID执行盘点、幂等验证或恢复流程。fencing token只有在下游存储服务也验证并拒绝旧token时，才能成为真正的陈旧写入保护。
 
 ## 5. 诊断计数
 
@@ -41,7 +41,7 @@
 
 ## 6. 自动化测试与验收范围
 
-新增7项专项unittest：
+新增8项专项unittest：
 - 两个Adapter共享同一协调器时遵守跨实例域并发上限；
 - 租户配额跨Adapter生效，其他租户可使用全局剩余槽位；
 - 租约过期后回收名额，旧fencing token不能释放新租约；

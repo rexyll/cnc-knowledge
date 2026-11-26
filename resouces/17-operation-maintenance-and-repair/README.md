@@ -311,4 +311,4 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 ## 第二十五轮新增资源
 
-- `spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv`（ASSET-000070）：16项同进程多Adapter共享配额、令牌桶和租约恢复场景；全部PROPOSED_NOT_APPROVED / NOT_RUN，不构成跨进程或生产分布式协调验收。
+- `spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv`（ASSET-000070）：17项同进程多Adapter共享配额、令牌桶、租约恢复和异常路径结果未知场景；全部PROPOSED_NOT_APPROVED / NOT_RUN，不构成跨进程或生产分布式协调验收。

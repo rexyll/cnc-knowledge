@@ -1394,11 +1394,19 @@ class BackupStorageAdapter:
                     timeout_seconds=self.bulkhead_acquire_timeout_seconds,
                     check_task=self._check_task_context,
                 )
-            yield
-            if lease is not None and not self.admission_coordinator.validate(lease):
-                raise ProviderAdmissionLeaseLostError(
-                    f"shared {domain} admission lease expired during provider operation; outcome may be unknown"
-                )
+            try:
+                yield
+            except Exception as exc:
+                if lease is not None and not self.admission_coordinator.validate(lease):
+                    raise ProviderAdmissionLeaseLostError(
+                        f"shared {domain} admission lease expired during provider operation; outcome may be unknown"
+                    ) from exc
+                raise
+            else:
+                if lease is not None and not self.admission_coordinator.validate(lease):
+                    raise ProviderAdmissionLeaseLostError(
+                        f"shared {domain} admission lease expired during provider operation; outcome may be unknown"
+                    )
         finally:
             if lease is not None:
                 self.admission_coordinator.release(lease)

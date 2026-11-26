@@ -46,8 +46,8 @@
     "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
     "test_file": "tests/test_spare_parts_backup_storage_adapter.py",
     "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-shared-coordination-test-matrix-v1.csv",
-    "scenario_definition_count": 16,
-    "added_provider_unittest_methods": 7,
+    "scenario_definition_count": 17,
+    "added_provider_unittest_methods": 8,
     "coordinator_contract": "ProviderAdmissionCoordinator",
     "coordinator_implementation": "InMemoryProviderAdmissionCoordinator",
     "coordinator_scope": "SHARED_OBJECT_BETWEEN_ADAPTERS_IN_ONE_PYTHON_PROCESS",
@@ -71,5 +71,5 @@
     "production_backup_enabled": false,
     "business_rule_assertions": "NOT_EVALUATED"
   },
-  "notes": "同一InMemoryProviderAdmissionCoordinator对象可被多个Adapter共享，但不跨进程/主机、不持久化。租约过期不终止远端同步请求；没有自动心跳或下游fencing enforcement，必须将lease TTL设为大于Provider硬超时并对未知结果按原对象键恢复。16项资源场景全部NOT_RUN。"
+  "notes": "同一InMemoryProviderAdmissionCoordinator对象可被多个Adapter共享，但不跨进程/主机、不持久化。租约过期不终止远端同步请求；没有自动心跳或下游fencing enforcement，必须将lease TTL设为大于Provider硬超时并对未知结果按原对象键恢复。17项资源场景全部NOT_RUN。"
 }
