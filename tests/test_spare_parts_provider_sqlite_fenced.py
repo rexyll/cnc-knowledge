@@ -325,7 +325,8 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
     def test_wrong_bearer_secret_is_rejected_before_provider_use(self):
         with self.assertRaises(SQLiteProviderAuthorizationError):
             SQLiteFencedObjectStorageProvider(
-                self.database, principal_id="writer-a", principal_secret="wrong-secret-value-000"
+                self.database, principal_id="writer-a", principal_secret="wrong-secret-value-000",
+                trusted_attestation_keys={KEY_ID: ATTESTATION_SECRET},
             )
 
     def test_action_and_prefix_denial_is_fail_closed_and_audited(self):
@@ -361,12 +362,8 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
     def test_tenant_namespace_isolation(self):
         database = self.base / "two-tenants.sqlite"
         _provision(database, two_tenants=True)
-        writer_a = SQLiteFencedObjectStorageProvider(
-            database, principal_id="writer-a", principal_secret=SECRET_A
-        )
-        writer_b = SQLiteFencedObjectStorageProvider(
-            database, principal_id="writer-b", principal_secret=SECRET_B
-        )
+        writer_a = _new_provider(database, principal_id="writer-a", secret=SECRET_A)
+        writer_b = _new_provider(database, principal_id="writer-b", secret=SECRET_B)
         writer_a.put_if_absent_fenced(
             "cnc/ch17/shared-key.bin", b"tenant-a",
             fencing_scope="cnc/ch17", fencing_token=11, idempotency_key="tenant-a-write",
@@ -439,9 +436,7 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         self.assertEqual(provider.fencing_high_water(SCOPE), 0)
         with self.assertRaises(SQLiteProviderObjectNotFoundError):
             provider.get_object(key)
-        clean = SQLiteFencedObjectStorageProvider(
-            self.database, principal_id="writer-a", principal_secret=SECRET_A
-        )
+        clean = _new_provider(self.database)
         clean.put_if_absent_fenced(
             key, b"rollback", fencing_scope=SCOPE, fencing_token=140,
             idempotency_key="rollback-140",
@@ -551,9 +546,7 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
         )
         self.assertEqual(prepared["result"], "PREPARED_NEW_DATABASE_NOT_CUTOVER")
         self.assertFalse(prepared["cutover_performed"])
-        restored = SQLiteFencedObjectStorageProvider(
-            prepared_path, principal_id="writer-a", principal_secret=SECRET_A
-        )
+        restored = _new_provider(prepared_path)
         self.assertEqual(restored.fencing_high_water(SCOPE), 450)
         self.assertEqual(restored.get_object("cnc/ch17/backup-reference-001/restore.bin").data, b"durable-data")
         self.assertEqual(restored.list_multipart_uploads("cnc/ch17/backup-reference-001"), [])
