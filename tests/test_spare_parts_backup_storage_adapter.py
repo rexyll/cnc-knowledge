@@ -321,5 +321,152 @@ class BackupStorageAdapterTests(unittest.TestCase):
             self.assertEqual(rows[0].size_bytes, 5)
             self.assertFalse(hasattr(rows[0], "data"))
 
+
+    def test_retry_uses_bounded_exponential_backoff_for_transient_throttling(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            delays = []
+            provider = MockObjectStorageProvider(transient_failures={"get": 2})
+            adapter = BackupStorageAdapter(
+                provider,
+                retry_max_attempts=4,
+                retry_base_delay_seconds=0.25,
+                retry_max_delay_seconds=0.5,
+                sleep_fn=delays.append,
+            )
+            result = adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertEqual(result["result"], "PUBLISHED")
+            self.assertEqual(delays[:2], [0.25, 0.5])
+
+    def test_put_response_timeout_after_server_commit_is_idempotently_retried(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider(timeout_after_put_number=5)
+            adapter = BackupStorageAdapter(
+                provider, retry_base_delay_seconds=0, sleep_fn=lambda _: None
+            )
+            result = adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertEqual(result["result"], "PUBLISHED")
+            receipt_key = "cnc/ch17/backup-adapter-test-001/" + RECEIPT_NAME
+            self.assertEqual(provider.get_object(receipt_key).data, provider._objects[receipt_key].data)
+            self.assertEqual(provider._successful_puts, 5)
+            self.assertEqual(adapter.verify_stored_backup(prefix="cnc/ch17", backup_id="adapter-test-001")["result"], "VERIFIED")
+
+    def test_read_after_write_visibility_delay_is_retried(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider(visibility_delay_reads=1)
+            adapter = BackupStorageAdapter(
+                provider, retry_max_attempts=2,
+                retry_base_delay_seconds=0, sleep_fn=lambda _: None,
+            )
+            result = adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertEqual(result["result"], "PUBLISHED")
+            self.assertGreaterEqual(sum(provider._reads_by_key.values()), 5)
+
+    def test_read_after_write_delay_exhaustion_fails_closed_then_can_verify_later(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider(visibility_delay_reads=10)
+            adapter = BackupStorageAdapter(
+                provider, retry_max_attempts=2,
+                retry_base_delay_seconds=0, sleep_fn=lambda _: None,
+            )
+            with self.assertRaises(BackupStorageError):
+                adapter.publish_backup(backup, prefix="cnc/ch17")
+            receipt_key = "cnc/ch17/backup-adapter-test-001/" + RECEIPT_NAME
+            self.assertIn(receipt_key, provider._objects)
+            provider.visibility_delay_reads = 0
+            self.assertEqual(
+                adapter.verify_stored_backup(prefix="cnc/ch17", backup_id="adapter-test-001")["result"],
+                "VERIFIED",
+            )
+
+    def test_pinned_backup_version_survives_newer_current_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider(object_versioning=True)
+            adapter = BackupStorageAdapter(provider)
+            adapter.publish_backup(backup, prefix="cnc/ch17")
+            receipt_key = "cnc/ch17/backup-adapter-test-001/" + RECEIPT_NAME
+            receipt = json.loads(provider.get_object(receipt_key).data)
+            ledger_row = next(row for row in receipt["payload_objects"] if row["file_name"] == "ledger.json")
+            old_version = ledger_row["version_id"]
+            provider.inject_new_version_for_test(ledger_row["object_key"], b"external-newer-version")
+            current = provider.get_object(ledger_row["object_key"])
+            self.assertNotEqual(current.version_id, old_version)
+            verified = adapter.verify_stored_backup(prefix="cnc/ch17", backup_id="adapter-test-001")
+            self.assertEqual(verified["result"], "VERIFIED")
+
+    def test_missing_pinned_backup_version_is_not_replaced_with_latest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider(object_versioning=True)
+            adapter = BackupStorageAdapter(provider)
+            adapter.publish_backup(backup, prefix="cnc/ch17")
+            receipt_key = "cnc/ch17/backup-adapter-test-001/" + RECEIPT_NAME
+            receipt = json.loads(provider.get_object(receipt_key).data)
+            ledger_row = next(row for row in receipt["payload_objects"] if row["file_name"] == "ledger.json")
+            old_version = ledger_row["version_id"]
+            provider.inject_new_version_for_test(ledger_row["object_key"], b"external-newer-version")
+            provider.remove_version_for_test(ledger_row["object_key"], old_version)
+            with self.assertRaises(BackupStorageError):
+                adapter.verify_stored_backup(prefix="cnc/ch17", backup_id="adapter-test-001")
+
+    def test_multipart_part_commit_timeout_retries_same_part(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider(timeout_after_part_number=1)
+            adapter = BackupStorageAdapter(
+                provider,
+                multipart_threshold_bytes=1,
+                multipart_part_size_bytes=128,
+                retry_base_delay_seconds=0,
+                sleep_fn=lambda _: None,
+            )
+            result = adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertEqual(result["result"], "PUBLISHED")
+            self.assertEqual(provider._multipart, {})
+            self.assertEqual(adapter.verify_stored_backup(prefix="cnc/ch17", backup_id="adapter-test-001")["result"], "VERIFIED")
+
+    def test_multipart_complete_response_loss_recovers_committed_object(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = MockObjectStorageProvider(timeout_after_complete_commit=True)
+            adapter = BackupStorageAdapter(
+                provider,
+                multipart_threshold_bytes=1,
+                multipart_part_size_bytes=128,
+                retry_base_delay_seconds=0,
+                sleep_fn=lambda _: None,
+            )
+            result = adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertEqual(result["result"], "PUBLISHED")
+            self.assertEqual(provider._multipart, {})
+            self.assertEqual(len(provider._objects), 5)
+
+    def test_permanent_provider_error_is_not_retried(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            delays = []
+            provider = MockObjectStorageProvider(fail_after_puts=0)
+            adapter = BackupStorageAdapter(
+                provider, retry_max_attempts=5,
+                retry_base_delay_seconds=1, sleep_fn=delays.append,
+            )
+            with self.assertRaises(BackupStorageError):
+                adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertEqual(delays, [])
+            self.assertEqual(provider._objects, {})
+
 if __name__ == "__main__":
     unittest.main()
