@@ -285,10 +285,6 @@ class SQLiteUnifiedAdmissionTests(StoreBackedAdmissionSchedulerContract, unittes
         return self._store
 
     def fresh_store(self):
-        client = InMemoryEtcdV3Client(clock_fn=self.clock)
-        return EtcdV3CoordinatorAuthorityStore(client)
-
-    def fresh_store(self):
         return SQLiteCoordinatorAuthorityStore(
             Path(self.tmp.name) / "variant.sqlite3", clock_fn=self.clock
         )
@@ -314,3 +310,7 @@ class EtcdUnifiedAdmissionTests(StoreBackedAdmissionSchedulerContract, unittest.
 
     def store(self):
         return self._store
+
+    def fresh_store(self):
+        client = InMemoryEtcdV3Client(clock_fn=self.clock)
+        return EtcdV3CoordinatorAuthorityStore(client)
