@@ -1476,7 +1476,8 @@ class SQLiteFencedObjectStorageProvider:
             if not rejected:
                 raise AssertionError("stale/same token writer was not rejected")
             persisted = SQLiteFencedObjectStorageProvider(
-                database, principal_id="ci-writer", principal_secret=secret
+                database, principal_id="ci-writer", principal_secret=secret,
+                trusted_attestation_keys={"ci-key": "ci-fencing-attestation-key-000000000001"},
             )
             if persisted.fencing_high_water("cnc/ch17/backup-selfcheck") != 1:
                 raise AssertionError("fencing high-water did not persist across provider instances")
