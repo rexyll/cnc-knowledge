@@ -309,6 +309,23 @@ class StoreBackedCoordinatorAuthorityContract:
                 external_operation_sequence=7,
                 reconciliation_ref="below-floor",
             )
+        # An explicit new activation may proceed only above the externally
+        # reconciled fencing floor; it is not auto-promoted to ACTIVE.
+        replacement_lease = self.acquire("restore-new-activation")
+        replacement = self.authority.prepare_activation(
+            self.leader,
+            replacement_lease,
+            scope=self.SCOPE,
+            idempotency_key="activate-after-restore-review",
+        )
+        self.assertEqual(
+            replacement.fencing_token, pending_activation.fencing_token + 6
+        )
+        self.assertEqual(replacement.state, "PENDING_ACTIVATION")
+        self.assertEqual(
+            self.authority.snapshot(self.SCOPE)["lease_state"],
+            "PENDING_ACTIVATION",
+        )
 
     def test_leadership_recovery_floor_must_exceed_persisted_epoch(self):
         current = self.authority.leader_snapshot()
