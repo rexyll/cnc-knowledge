@@ -149,6 +149,19 @@ jobs:
           path: ${{ runner.temp }}/ch17-spare-parts-offline-simulation-report.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Validate CH17 backup governance schemas and approval gates
+        run: >-
+          python scripts/spare_parts_backup_governance_validator.py
+          --root .
+          --report-json "$RUNNER_TEMP/ch17-backup-governance-readiness.json"
+      - name: Upload CH17 backup governance readiness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch17-backup-governance-readiness-${{ github.run_id }}
+          path: ${{ runner.temp }}/ch17-backup-governance-readiness.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Run repository knowledge lint
         run: python scripts/knowledge_lint.py --strict
 
