@@ -390,3 +390,15 @@
 - **Artifacts：** Provider fenced 15091340011；Admission Coordinator 15090661225；BackupStorageAdapter 15090885721；Backup governance readiness 15089609979；CH12 S-curve synthetic 15090308493。
 - **本轮结论：** 实现和仓库质量门禁通过；ASSET-000079的12条形式化验收场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。CI测试只覆盖仓库合成代码路径，不等于企业批准、真实KMS/HSM、真实对象存储/Provider、多主机或灾备测试。
 - **状态：** CH17-T004仍IN_PROGRESS；生产备份维持关闭；governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+## CH17-T004 远程Coordinator与对象存储Provider分布式fencing第三十五轮（2026-11-26）
+
+- **目标：** 定义从本机SQLite事务走向远程Coordinator和对象存储Provider的fencing提交协议，避免“先查Coordinator lease、再无条件PUT”的TOCTOU。
+- **协议：** 每个tenant+scope使用一个权威control object。control record包含单调high-water token、lease ACTIVE/REVOKED、最新operation sequence、有限receipt及current manifest pointer。大型payload/manifest先写到token及operation专属immutable staging key；staging上传不代表备份已发布。
+- **线性化点：** lease activation、manifest publish、lease revoke均以同一个control object的ETag/generation CAS为线性化点。Coordinator只有在activation CAS确认后才能把lease标为ACTIVE；只有revoke CAS确认后才能向调用者报告release完成。Gateway是control object唯一写者，读者只认current manifest pointer。
+- **幂等和未知结果：** proof增加operation_sequence、manifest key和manifest SHA-256绑定；近期receipt按sequence/idempotency/operation hash匹配；超出receipt保留窗口的旧请求返回OUTCOME_UNKNOWN，不允许盲目重放。CAS响应丢失后通过强一致重读恢复。
+- **实现：** 新增scripts/spare_parts_provider_distributed_fencing.py；实现ConditionalObjectControlStore接口、InMemoryConditionalObjectControlStore合成CAS模型、Ed25519 proof校验、activate/revoke/publish状态机、monotonic token/sequence、receipt窗口和失败关闭。新增tests/test_spare_parts_provider_distributed_fencing.py，覆盖14项场景，包括并发新epoch激活击败旧writer。
+- **来源与知识：** 新增SRC-000393～SRC-000396（AWS S3、Google Cloud Storage、Azure Blob官方条件写/并发控制资料），KNOW-000049，ASSET-000080（20条形式化参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。
+- **CI：** Commit 430816f0b466a6040cd0a48e4bf1730c7f4afb4c；Run 45767324560两个必需Job success；全库268项unittest通过，CH12 143项通过，strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。
+- **没有完成的集成：** 本轮没有AWS/GCS/Azure SDK、远程Coordinator API、KMS/HSM、IAM策略或多主机服务。现有Coordinator API尚未提供fencing:activate/revoke/publish proof签发和持久operation_sequence。单进程内存CAS模型不构成真实对象存储或分布式线性一致性验收。
+- **状态：** CH17-T004仍IN_PROGRESS；生产备份仍关闭；governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL；business_rule_assertions=NOT_EVALUATED。

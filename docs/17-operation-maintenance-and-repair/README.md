@@ -112,3 +112,4 @@
 
 - [Provider Ed25519 公钥验签、KMS 签名回调与在线租约状态检查](spare-parts-inventory-backup-provider-ed25519-and-online-revocation.md)（KNOW-000047）；Ed25519 v2签名与本地Coordinator在线lease状态检查已实现，在线检查不可用时fail-closed；跨数据库status check到Provider commit仍有TOCTOU竞态。ASSET-000078定义22条参考验收场景，均未批准/未执行。
 - [SQLite 同库原子 lease 撤销与 Provider 写入顺序](spare-parts-inventory-backup-provider-atomic-lease-revocation.md)（KNOW-000048）；可选同库事务模式复用Provider BEGIN IMMEDIATE连接校验lease，使Coordinator release与对象/multipart写入串行化；要求同一主机、本地SQLite文件。ASSET-000079定义12条形式化场景，均未批准/未执行。代码CI Run 45762883991与文档同步Run 45762994591均两个必需Job success，全库254项和CH12 143项测试通过，strict lint 0 errors/5 warnings。
+- [远程 Coordinator 与对象存储 Provider 的分布式 fencing 提交协议](spare-parts-inventory-backup-provider-distributed-fencing.md)（KNOW-000049）；以同一个scope control object的ETag/generation CAS作为activation、revoke和manifest publish线性化点；payload先不可变staging，最终通过manifest pointer发布。ASSET-000080定义20条参考场景，均未批准/未执行。当前仅有内存CAS模型，未接入真实云SDK或远程Coordinator。

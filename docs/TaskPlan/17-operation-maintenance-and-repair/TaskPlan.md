@@ -561,3 +561,15 @@
 - **Artifacts：** Provider fenced self-check 15091340011；Admission Coordinator self-check 15090661225；BackupStorageAdapter self-check 15090885721；Backup governance readiness 15089609979；CH12 S-curve资源 15090308493。
 - **登记：** CH17更新为28篇KNOW、79个登记实体、72项资源、11条去重来源。ASSET-000079的12条形式化场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；CI单测通过不等于矩阵场景获批或执行。
 - **安全边界：** 同库原子模式仅同一主机、同一SQLite文件及受支持的本地文件系统；分库在线检查仍有TOCTOU；WAL不支持网络文件系统/多主机。真实KMS/HSM、远程Provider、企业灾备和生产备份启用仍未完成。
+
+## CH17-T004 第三十五轮：远程 Coordinator 与对象存储 Provider 分布式 fencing 提交协议
+
+- **目标：** 将第三十四轮同机SQLite原子租约检查提升为厂商中立的远程对象存储协议参考；明确多对象payload与单对象提交指针之间的事务边界。
+- **关键设计：** 每个tenant+fencing scope维护唯一control object，包含monotonic high-water token、活动lease状态、latest operation sequence、近期receipt和current manifest pointer。大型payload先写入token/operation专属immutable staging key；只有control object使用ETag/generation条件替换成功，manifest才成为可见已提交备份。
+- **激活/撤销：** Coordinator先分配高于历史值的token并签发Ed25519 activation proof；Provider对control object执行CAS，将lease推进ACTIVE。撤销同样通过该对象CAS从ACTIVE改REVOKED；只有撤销CAS确认后，Coordinator才能报告release成功。control object CAS分别构成lease激活/撤销/manifest发布的线性化点。
+- **写入和恢复：** publish proof额外绑定manifest key、manifest SHA-256和Coordinator分配的operation_sequence；相同sequence/idempotency和operation hash返回原receipt；回执超窗时OUTCOME_UNKNOWN，绝不盲目重放。CAS响应丢失后要求强一致重读并按幂等状态收敛。
+- **参考实现：** 新增scripts/spare_parts_provider_distributed_fencing.py，定义ConditionalObjectControlStore、单对象CAS控制面、Ed25519 claims校验、activate/revoke/publish状态机、有限receipt和单进程InMemoryConditionalObjectControlStore合成模型；新增tests/test_spare_parts_provider_distributed_fencing.py（14项测试）。
+- **厂商映射：** 新增SRC-000393 S3 Conditional Writes、SRC-000394 GCS Request Preconditions、SRC-000395 Azure Blob ETag/Lease并发控制、SRC-000396 Azure Blob无跨Blob事务说明。未创建AWS/GCS/Azure SDK或网络适配器。
+- **新增知识和资源：** KNOW-000049；ASSET-000080（20条参考场景，均PROPOSED_NOT_APPROVED / NOT_RUN）；新增分布式fencing技术正文和资源索引。
+- **代码验收：** Commit 430816f0b466a6040cd0a48e4bf1730c7f4afb4c；[Run 45767324560](https://github.com/rexyll/cnc-knowledge/actions/runs/45767324560)两个必需Job均completed/success；全库268项unittest、CH12数值资源143项通过；strict lint 0 errors / 5 warnings；知识结构与数据质量0 errors。
+- **生产边界：** InMemoryConditionalObjectControlStore只模拟单进程CAS，不是多主机服务。现有Coordinator尚未实现fencing:activate/revoke/publish操作proof远程端点，也尚未分配持久operation_sequence；无真实KMS/HSM、IAM/RBAC策略、远程HTTP/gRPC、S3/GCS/Azure SDK和对象存储集成。生产备份继续关闭，治理门禁 BLOCKED_PENDING_ENTERPRISE_APPROVAL。

@@ -34,7 +34,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T13:40:00+08:00",
-  "updated_at": "2026-11-26T13:40:08+08:00",
+  "updated_at": "2026-11-26T14:20:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -81,7 +81,10 @@
     "provider_self_check_artifact_id": 15091340011,
     "admission_self_check_artifact_id": 15090661225,
     "adapter_self_check_artifact_id": 15090885721,
-    "governance_readiness_artifact_id": 15089609979
+    "governance_readiness_artifact_id": 15089609979,
+    "distributed_fencing_article": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-distributed-fencing.md",
+    "distributed_fencing_reference_module": "scripts/spare_parts_provider_distributed_fencing.py",
+    "distributed_fencing_scope": "REMOTE_OBJECT_STORE_NOT_IMPLEMENTED"
   },
-  "notes": "原子模式要求Coordinator和Provider使用同一个真实本地SQLite数据库文件，Provider在BEGIN IMMEDIATE写事务中通过同一个connection检查lease，再提交对象/multipart、fencing high-water、幂等receipt和审计。Coordinator release也使用该数据库写事务，因此两者只能按先后顺序提交；Provider先获得写事务则写入在release前完成，release先完成则Provider读取RELEASED并拒绝。独立数据库模式仍保留，但TOCTOU限制持续有效。SQLite WAL仅支持同机共享内存和本地文件系统，不支持网络文件系统/多主机。此为本地参考实现，不代表生产分布式线性一致性、真实云KMS/Provider或企业备份批准。 本轮代码与文档同步CI均通过：Run 45762883991 / 45762994591；全库254项、CH12 143项测试通过，strict lint 0 errors/5 warnings。ASSET-000079的12项场景仍为PROPOSED_NOT_APPROVED/NOT_RUN；生产备份仍关闭。"
+  "notes": "原子模式要求Coordinator和Provider使用同一个真实本地SQLite数据库文件，Provider在BEGIN IMMEDIATE写事务中通过同一个connection检查lease，再提交对象/multipart、fencing high-water、幂等receipt和审计。Coordinator release也使用该数据库写事务，因此两者只能按先后顺序提交；Provider先获得写事务则写入在release前完成，release先完成则Provider读取RELEASED并拒绝。独立数据库模式仍保留，但TOCTOU限制持续有效。SQLite WAL仅支持同机共享内存和本地文件系统，不支持网络文件系统/多主机。此为本地参考实现，不代表生产分布式线性一致性、真实云KMS/Provider或企业备份批准。 本轮代码与文档同步CI均通过：Run 45762883991 / 45762994591；全库254项、CH12 143项测试通过，strict lint 0 errors/5 warnings。ASSET-000079的12项场景仍为PROPOSED_NOT_APPROVED/NOT_RUN；生产备份仍关闭。 第三十五轮新增KNOW-000049，研究远程对象存储分布式fencing；当前KNOW-000048本地SQLite同库原子模式不适用于多主机，远程模式的线性化点改为同一control object CAS，详见KNOW-000049。"
 }

@@ -422,3 +422,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 全库254项unittest、CH12数值资源143项通过；strict knowledge lint 0 errors/5 warnings；知识结构与数据质量检查0 errors。
 - Provider fenced Artifact 15091340011；Admission Coordinator Artifact 15090661225；Adapter Artifact 15090885721；治理readiness Artifact 15089609979。
 - 仍属本机合成参考实现；ASSET-000079的12条形式化场景未批准/未执行，生产备份继续关闭。
+
+## CH17-T004 远程Coordinator与对象存储Provider分布式fencing第三十五轮（2026-11-26）
+
+- 新增KNOW-000049：一个scope control object保存monotonic fencing high-water、lease状态、operation sequence、receipt和当前manifest指针。
+- payload先写入token/operation专属immutable staging key；只有control object通过ETag/generation CAS更新current manifest pointer才构成已发布备份。
+- activation、revoke、manifest publish使用同一个control object CAS排序；CAS结果未知时强一致重读并按idempotency/receipt恢复。
+- 新增ASSET-000080：20条形式化参考场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- SRC-000393～SRC-000396分别登记S3 Conditional Writes、GCS Request Preconditions、Azure Blob ETag concurrency及跨Blob事务边界官方资料。
+- 本轮仅有单进程InMemoryConditionalObjectControlStore参考模型；无真实AWS/GCS/Azure SDK、远程Coordinator、KMS/HSM或多主机验证。

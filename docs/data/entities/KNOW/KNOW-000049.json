@@ -34,7 +34,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T14:20:00+08:00",
-  "updated_at": "2026-11-26T06:20:00Z",
+  "updated_at": "2026-11-26T14:20:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -73,7 +73,14 @@
     "kms_hsm_integrated": false,
     "production_provider_integrated": false,
     "production_backup_enabled": false,
-    "code_ci_status": "PENDING"
+    "code_ci_status": "PASS",
+    "repository_unit_test_count": 268,
+    "ch12_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
+    "latest_verified_code_commit": "430816f0b466a6040cd0a48e4bf1730c7f4afb4c",
+    "latest_verified_ci_run": 45767324560,
+    "latest_verified_ci_status": "completed/success",
+    "knowledge_structure_quality": "PASS_0_ERRORS"
   },
-  "notes": "该知识条目仅定义厂商中立协议和合成CAS状态机。现有Coordinator接口尚未实现fencing:activate/revoke/publish远程proof签发端点，也未分配生产分布式operation_sequence；对象存储SDK、IAM策略、网络服务、KMS/HSM均未接入。协议依赖单scope control object的强一致读取与ETag/generation条件替换，并要求Gateway独占control key写权限；payload与control object不构成跨对象事务。InMemoryConditionalObjectControlStore仅单进程测试，不能作为真实多主机证据。"
+  "notes": "该知识条目仅定义厂商中立协议和合成CAS状态机。现有Coordinator接口尚未实现fencing:activate/revoke/publish远程proof签发端点，也未分配生产分布式operation_sequence；对象存储SDK、IAM策略、网络服务、KMS/HSM均未接入。协议依赖单scope control object的强一致读取与ETag/generation条件替换，并要求Gateway独占control key写权限；payload与control object不构成跨对象事务。InMemoryConditionalObjectControlStore仅单进程测试，不能作为真实多主机证据。 代码/测试CI Run 45767324560已通过：全库268项unittest、CH12 143项、strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。ASSET-000080的20条参考场景仍PROPOSED_NOT_APPROVED/NOT_RUN。该CI只执行单进程内存CAS合成模型，无真实对象存储/远程Coordinator验证。"
 }
