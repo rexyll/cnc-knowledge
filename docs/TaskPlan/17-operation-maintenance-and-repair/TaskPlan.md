@@ -841,3 +841,12 @@
 - **测试/资源：** 新增10项fake gateway契约测试和5项opt-in live integration tests；新增KNOW-000061、SRC-000408/409、ASSET-000092（30项正式场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。
 - **CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job成功。全库499项测试完成，494通过、5项live etcd测试skip；CH12 143项通过；strict knowledge lint 0 errors；独立的CH17合成夹具校验为0 errors、5 warnings。5项均为既有治理门禁提示：数据集仍为DRAFT、未批准企业测试环境、未批准企业测试级别、30项SPAT源测试案例仍NOT_RUN、manifest checksum pending；并非etcd驱动测试失败。
 - **边界：** 未启动真实三节点、未执行5项live集成测试；未验证mTLS/RBAC、Raft/quorum、多主机或生产吞吐；SQLite Coordinator业务服务未迁移，schema-v2仍是唯一生产权威；CH17-T004保持IN_PROGRESS。
+
+## 6.20 CH17-T004 真实 etcd 单成员故障与多数派读写验证（第四十八轮，2026-11-26）
+
+- **依赖：** 复用第四十七轮etcd3gw 2.7.0、`Etcd3gwV3Client`、三成员etcd v3.7.0 Compose；不重建KV/Txn/Lease适配层。
+- **新增文件：** `tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py`，增加第6项 opt-in live integration test；runner及工作流path过滤已扩展，可自动纳入所有`test_*etcd_integration.py`。
+- **故障步骤：** 停止etcd1；让linearizable Range从失效首endpoint切换至etcd2；等待存活成员选出Leader；在剩余2/3多数派上完成Txn Compare/Put和线性一致读回；最后启动etcd1并确认三成员恢复。
+- **最终实测：** [Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952)真实etcd v3.7.0三成员一次性集群，6/6 PASS、0失败、0跳过；清理成功。诊断Artifact 15127610627，SHA-256 `74b04904535cce72b7a08fdf6265020bcb9086b43003106ab4eb4271847869f2`。
+- **默认CI回归：** [Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)两个Job成功；全库500项unittest（494通过，6项opt-in live测试按设计skip），CH12 143项数值测试通过；strict lint 0 errors；fixture validator 0 errors/5项既有DRAFT与审批warning。
+- **边界：** 这是一组Disposable CI smoke/integration test，不等于企业正式验收；ASSET-000092的30条正式场景全部继续PROPOSED_NOT_APPROVED / NOT_RUN。没有测试2成员失去quorum、网络分区、数据损坏、性能、mTLS/RBAC或真实多主机Coordinator；SQLite业务状态机没有迁移，schema-v2仍是生产唯一权威。CH17-T004保持IN_PROGRESS。

@@ -695,3 +695,14 @@
 - 文档索引、任务计划、TaskHistory、KNOW/ASSET实体及正文同步提交 `bcc65995205c40e5883fa842d48dbb12224af9ed`；[GitHub Actions Run 45833304411](https://github.com/rexyll/cnc-knowledge/actions/runs/45833304411)两个必需Job均completed/success，head SHA与文档提交一致。
 - 文档同步回归仍为全库499项unittest（494通过、5项live etcd集成测试skip）、CH12 143项数值测试通过、strict knowledge lint 0 errors。
 - 独立CH17合成夹具检查0 errors / 5 warnings：DRAFT数据集、未批准企业测试环境/级别、30项SPAT源场景NOT_RUN、manifest checksum pending；均为显式的非阻断治理门禁，不代表新etcd测试或生产验收。
+
+## CH17-T004 真实 etcd 单成员故障与多数派读写验证（第四十八轮，全局第四十八轮，2026-11-26）
+
+- **实际完成时间：** 2026-11-26T22:30:00+08:00（Asia/Shanghai）。
+- **分支：** main；未创建其他分支。
+- **代码提交：** `85348dbf6594564db8eb92ad77eb7f4ac9f1c1cd`；新增`tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py`，并放宽独立live CI的测试文件路径匹配。
+- **执行步骤：** 在etcd v3.7.0 disposable三成员Compose环境中停止etcd1；验证线性一致Range从停止的首endpoint failover到存活节点；等待Leader在剩余成员中就绪；通过健康endpoint提交一次Compare/Put事务并线性一致读回；重启etcd1并确认3成员恢复。
+- **真实集成结果：** [GitHub Actions Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952) completed/success，READY确认初始3成员；6项live integration测试全部PASS（6/6，0 failures，0 skips）；清理容器、数据卷和网络成功。诊断Artifact ID 15127610627，SHA-256 `74b04904535cce72b7a08fdf6265020bcb9086b43003106ab4eb4271847869f2`。
+- **默认回归：** [Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)两个必需Job均completed/success；全库500项unittest、494项通过/6项opt-in live测试按默认策略skip；CH12 143项数值测试通过；strict knowledge lint 0 errors；CH17 fixture validator 0 errors/5项既有审批/DRAFT warning。
+- **结论：** 在限定的etcd v3.7.0三成员临时集群中，单成员停机期间剩余2/3多数派支持本轮验证的线性一致读写，节点重启后恢复三成员。测试不测量选举时间/性能，不覆盖2成员同时故障、失去quorum、长时间分区、TLS/mTLS、RBAC或多主机。
+- **资产/门禁：** 更新KNOW-000061与ASSET-000092的Supporting Live CI信息；ASSET-000092的30项正式场景继续PROPOSED_NOT_APPROVED / NOT_RUN；production_backup_enabled=false，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED；schema-v2仍为唯一生产权威。

@@ -825,3 +825,13 @@
 - **测试/资源：** 新增10项fake gateway契约测试和5项opt-in live integration tests；新增KNOW-000061、SRC-000408/409、ASSET-000092（30项正式场景，全部PROPOSED_NOT_APPROVED / NOT_RUN）。
 - **CI：** `871fe0d2673fb1b39502236568dc7dd57ad3bef0`；[Run 45832644686](https://github.com/rexyll/cnc-knowledge/actions/runs/45832644686)两个必需Job成功。全库499项测试完成，494通过、5项live etcd测试skip；CH12 143项通过；strict knowledge lint 0 errors；独立的CH17合成夹具校验为0 errors、5 warnings。5项均为既有治理门禁提示：数据集仍为DRAFT、未批准企业测试环境、未批准企业测试级别、30项SPAT源测试案例仍NOT_RUN、manifest checksum pending；并非etcd驱动测试失败。
 - **边界：** 未启动真实三节点、未执行5项live集成测试；未验证mTLS/RBAC、Raft/quorum、多主机或生产吞吐；SQLite Coordinator业务服务未迁移，schema-v2仍是唯一生产权威；CH17-T004保持IN_PROGRESS。
+
+## CH17-T004 第二十五轮：真实 etcd 单成员故障与多数派读写验证（全局第四十八轮，2026-11-26）
+
+- **目标：** 在已有真实 etcd3gw Gateway 与三节点集成环境上，验证单成员停机期间剩余多数派是否仍能完成线性一致读写，并在测试结束时恢复成员。
+- **新增测试：** `tests/test_spare_parts_provider_authority_store_member_outage_etcd_integration.py`；停止一次性Compose集群中的etcd1，使用不可达首endpoint + 健康第二endpoint执行linearizable Range，等待剩余成员选出Leader后从健康endpoint执行Txn Compare/Put及线性一致读回，最后重启etcd1并验证三成员恢复。
+- **驱动/生产语义：** Range仍保持`serializable=false`；写Txn仍只发送一次，不跨endpoint自动重试。测试等待Leader可用后才发起单次写操作，避免把未知写结果误包装成安全重试。
+- **路径/CI：** 独立工作流的push path扩展为`tests/test_*etcd_integration.py`，新测试纳入可选live suite；默认知识库CI仍不启动Docker/etcd。
+- **真实集成验收：** [Run 45839556952](https://github.com/rexyll/cnc-knowledge/actions/runs/45839556952) completed/success；READY确认初始三成员；6项集成测试全部PASS（6/6，0 failures，0 skips）；清理容器、数据卷和网络成功。诊断Artifact 15127610627，SHA-256 `74b04904535cce72b7a08fdf6265020bcb9086b43003106ab4eb4271847869f2`。
+- **默认回归：** [Run 45839557095](https://github.com/rexyll/cnc-knowledge/actions/runs/45839557095)两个Job均completed/success；全库500项unittest，494通过、6项opt-in live测试在默认作业中按设计skip；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；合成夹具校验0 errors/5项既有审批与DRAFT warning。
+- **状态边界：** 6项实时测试是一次性本地Compose/CI冒烟集成，不是企业正式验收。ASSET-000092的30项正式场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN；未验证2成员失去多数派、长时间网络分区、磁盘损坏、延迟/吞吐、TLS/mTLS、RBAC或多主机Coordinator。Coordinator业务状态机仍未迁出SQLite，schema-v2仍为唯一生产权威。
