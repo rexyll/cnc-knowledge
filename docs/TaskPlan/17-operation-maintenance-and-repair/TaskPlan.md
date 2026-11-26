@@ -365,6 +365,9 @@
 - **模糊提交恢复：** Mock能在对象/分块/完成对象已实际写入后丢失响应并返回outcome_unknown；相同key/session/part/content重试必须幂等。
 - **读后写一致性：** Mock可以延迟若干次读取才显示对象；预算内可重试，预算耗尽不返回成功，后续以原backup ID重新盘点/验证。
 - **版本切换：** 模拟对象最新版本变化及历史版本不可用；验证按receipt固定历史version ID，版本缺失则失败关闭。
-- **测试：** 新增9项专项unittest，覆盖退避、限流、写响应丢失、延迟可见/重试耗尽、版本固定/缺失、multipart part/complete响应丢失、永久错误不重试。实现提交全库150个unittest通过；故障测试提交全库159个unittest通过，CI Run 45738812474两个Job均success。扩展self-check CI待最终确认。
+- **测试：** 新增10项专项unittest，覆盖退避、限流、写响应丢失、延迟可见/重试耗尽、版本固定/缺失、multipart part/complete响应丢失、永久错误不重试。实现提交全库150个unittest通过；故障测试提交全库160个unittest通过，CI Run 45738812474两个Job均success。扩展self-check CI待最终确认。
 - **资源：** 新增ASSET-000067，12条Provider瞬态故障与一致性测试场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **生产门禁：** 无真实429/5xx/SDK超时/云端延迟可见性/版本生命周期/跨区一致性实测；无真实账户/凭据/网络/KMS/HSM/加密/对象锁/删除。生产备份继续关闭。
+
+- **代码/自检CI：** 代码及新增故障测试Run 45739249726两个Job均completed/success，全库160个unittest通过；扩展Mock自检Run 45738938023两个Job均completed/success，Artifact `ch17-backup-storage-adapter-45738938023`（ID 15079098689），自检结果PASS且无网络/凭据/删除。
+- **资源列顺序修复：** 三份Provider适配器矩阵（ASSET-000063、000066、000067）统一为 `synthetic_only=TRUE`、`approval_status=PROPOSED_NOT_APPROVED`、`execution_status=NOT_RUN`、`notes`最后列；修复CI Run 45739179773两个Job均success。

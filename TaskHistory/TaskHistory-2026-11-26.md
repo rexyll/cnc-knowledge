@@ -104,3 +104,11 @@
 - 新增Retry-After处理测试：Provider提示10秒时，以配置的2秒最大延迟封顶；Provider专项unittest由31增至32，全库由159增至160。
 - ASSET-000067由12条扩展为13条场景，新增PRC-013（Retry-After提示与本地延迟上限）。所有场景仍为PROPOSED_NOT_APPROVED / NOT_RUN。
 - 第二十一轮和第二十二轮三个Provider测试矩阵已修复状态列顺序：synthetic_only=TRUE、approval_status=PROPOSED_NOT_APPROVED、execution_status=NOT_RUN、notes最后列。
+
+
+### 第二十二轮最终代码与故障自检CI验收补记
+
+- **代码/测试：** [Run 45739249726](https://github.com/rexyll/cnc-knowledge/actions/runs/45739249726)，Knowledge structure and data quality与CH12 numerical resource tests两个Job均completed/success；全库160个unittest通过，新增10项Provider专项测试，适配器专项合计32项。
+- **组合自检：** [Run 45738938023](https://github.com/rexyll/cnc-knowledge/actions/runs/45738938023)，两个Job均completed/success；Mock self-check中的普通对象/回执提交、写成功响应超时恢复、读可见性/瞬态GET重试、历史版本切换后的固定版本验证及隔离恢复均PASS；Artifact `ch17-backup-storage-adapter-45738938023`，ID 15079098689。
+- **矩阵列顺序修复：** [Run 45739179773](https://github.com/rexyll/cnc-knowledge/actions/runs/45739179773)两个Job均success。ASSET-000063/066/067均已复核状态字段列顺序及行宽，13条本轮场景均为TRUE / PROPOSED_NOT_APPROVED / NOT_RUN。
+- **参数边界：** 默认retry_max_attempts=4、base=0.1s、max=2s是代码默认而非生产推荐；Retry-After 10s的Mock用例按本地cap 2s封顶。当前无随机jitter；生产接入需重新评审限流语义、jitter、deadline与全局重试预算。

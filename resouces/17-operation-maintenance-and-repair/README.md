@@ -272,7 +272,7 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - `BackupStorageAdapter`新增可配置最大尝试次数、基础/最大延迟及sleep注入，采用有界指数退避并合并Provider Retry-After提示；当前Mock不使用随机抖动。
 - Mock故障注入包括写入成功但响应超时、分块写后响应超时、分块完成后响应超时、读取可见性延迟、瞬态读故障和历史版本切换/缺失。
 - 对象写入、回执写入、分块和读取均以原key/backup ID/upload ID/part number和相同内容幂等重试；重试耗尽不得标记成功。
-- 自检覆盖提交超时、延迟可见、瞬态读取、当前版本切换和固定历史版本隔离恢复；全库159个unittest通过。
+- 自检覆盖提交超时、延迟可见、瞬态读取、当前版本切换和固定历史版本隔离恢复；全库160个unittest通过。
 
 
 ## CH17-T004 Provider重试与一致性第二十二轮（2026-11-26）

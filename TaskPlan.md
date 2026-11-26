@@ -800,5 +800,5 @@
 - 新增瞬态错误显式类型与提交结果未知标记；只对ProviderTransientError执行有界指数退避，永久错误立即失败。
 - 对普通对象、receipt、multipart parts、multipart complete和读取使用相同ID/键/内容重试，覆盖服务端已提交但客户端超时的恢复。
 - Mock支持对象延迟可见、Retry-After提示、当前对象版本切换和历史版本移除；验证/恢复必须使用receipt固定版本，历史版本不可用即失败关闭。
-- 新增8/9项故障测试（最终按unittest实际统计），并将关键组合路径加入CI自检。全库160个unittest通过，后续最终CI补记。
+- 新增10项专项unittest（含Retry-After上限场景），并将关键组合路径加入CI自检。全库160个unittest通过；代码/测试Run 45739249726两个Job均success，扩展Mock自检Run 45738938023两个Job均success，Artifact 15079098689。
 - 新增KNOW-000036、ASSET-000067；没有真实云访问、凭据或生产行为。
