@@ -603,3 +603,14 @@
 - **结果：** 全库380项unittest通过（其中24项为新增Operation Ledger archive参考模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有合成夹具数据集DRAFT/企业环境未批准等状态。
 - **CI修正：** Run 45816870459发现lost-commit-response测试在归档开始前禁用了scope读取；提交 f8e373411c3612b733d525b475cf64dcd79ed699 将读故障注入移动到权威指针/热索引切换之后。Run 45817037091随后发现测试断言用了错误的统计字段名；提交 4ed91a04138e30ecf2275c07bb947ecc872fadd2 修正。第三次完整CI通过。
 - **最终限制：** 纯内存参考模型，不接入当前StoreBackedCoordinatorAuthority，不连接真实etcd、生产SQLite或云对象存储；25条ASSET-000088正式场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。未启用生产归档、保留策略或schema迁移；CH17-T004继续IN_PROGRESS。
+
+
+## CH17-T004 Archive Index精确幂等查询与Schema v3迁移/回滚（第四十四轮）
+
+- **日期：** 2026-11-26（Asia/Shanghai）；分支main，未创建新分支。
+- **新增知识/资源：** KNOW-000058、ASSET-000089；正文为Archive Index与Schema v3迁移/回滚设计；CSV正式场景矩阵47项，全部PROPOSED_NOT_APPROVED / NOT_RUN；来源沿用SRC-000403～SRC-000405。
+- **新增实现：** scripts/spare_parts_operation_archive_index.py（SHA-256精确分片索引、回填/增量、root/shard/batch校验、full-chain audit）；scripts/spare_parts_coordinator_schema_migration.py（v2 freeze、candidate build/verify、fencing/sequence floor guard、cutover、pre-write rollback及rehydrated reverse migration）。
+- **新增测试：** tests/test_spare_parts_operation_archive_index.py（21项）；tests/test_spare_parts_coordinator_schema_migration.py（25项）；合计46项参考模型单测。
+- **设计原则：** Exact miss必须由完整root/桶索引与Coordinator权威archived count共同证明；v3事务围绕本次scope和operation key，不能按全局active lease数量线性增加Compare；迁移使用冻结写入和控制指针CAS；V3有任何mutation后禁止指向旧v2快照，反向迁移须全量rehydrate并核对容量/floors。
+- **范围边界：** 不修改StoreBackedCoordinatorAuthority生产schema-v2；不连接真实etcd/对象存储/SQLite；不执行迁移或cutover；ASSET-000089所有正式场景待批准/未执行。
+- **验收：** 自动化CI待本轮提交触发后确认；CH17-T004继续IN_PROGRESS。

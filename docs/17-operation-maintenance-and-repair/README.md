@@ -171,3 +171,8 @@ Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope
 
 
 第四十三轮归档协议参考模型及CI验收：最终测试head提交 4ed91a04138e30ecf2275c07bb947ecc872fadd2；CI Run 45817146500 两个必需Job均completed/success。全库380项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；结构与数据质量0 errors。新增24个归档参考模型测试全部通过；ASSET-000088的25条正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN，未接入真实etcd/对象存储或生产Coordinator。
+
+
+## CH17-T004 Archive Index精确幂等查询与Schema v3迁移/回滚（第四十四轮）
+
+新增 [Archive Index精确幂等查询与Coordinator Schema v3迁移/回滚设计](spare-parts-inventory-backup-provider-archive-index-and-schema-v3-migration.md)（KNOW-000058），包含16/256/4096桶的不可变精确分片索引、旧manifest链回填、增量更新、authoritative count绑定和完整链审计；另定义V2写冻结、候选V3对象构造、source/Leader/fencing floor校验、控制指针CAS，以及V3写入前后不同回滚路径。配套ASSET-000089含47项正式待批准/未执行场景。两个脚本均为纯内存参考模型，未接入生产Coordinator、真实etcd或对象存储。

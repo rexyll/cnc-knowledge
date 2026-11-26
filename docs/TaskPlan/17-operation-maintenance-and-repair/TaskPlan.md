@@ -764,3 +764,14 @@
 - **质量结果：** 全库380项unittest通过（新增24项归档参考模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有合成夹具治理检查。
 - **修正记录：** 首次CI发现未知提交响应测试的故障注入发生在归档准备前；提交 f8e373411c3612b733d525b475cf64dcd79ed699 修正。第二次CI发现测试断言字段名不一致；提交 4ed91a04138e30ecf2275c07bb947ecc872fadd2 修正，最终Run通过。
 - **状态：** KNOW-000057 / ASSET-000088已同步CI证据；25项正式归档场景依旧PROPOSED_NOT_APPROVED / NOT_RUN。参考模型没有连接真实etcd、SQLite生产库或对象存储，CH17-T004继续IN_PROGRESS。
+
+
+## 6.16 CH17-T004 Archive Index与Schema v3迁移/回滚（第四十四轮，2026-11-26）
+
+- **目标：** 将历史幂等查询从全manifest链线性扫描优化为可验证的精确分片索引，并定义单权威、冻结写入、对象先建后切换的schema-v2到v3迁移协议。
+- **Archive Index：** 新增 scripts/spare_parts_operation_archive_index.py，支持16/256/4096桶，提供manifest链全量回填、按触及bucket增量更新、root/shard/batch三层摘要验证、精确hit/miss和full-chain audit。查询必须带入从Coordinator scope独立读取的archived_operation_count；不能用Bloom Filter代替精确negative判定。
+- **Schema Migration：** 新增 scripts/spare_parts_coordinator_schema_migration.py；冻结v2写入，捕获source revision/digest，构造分离scheduler、Leader、scope、hot-operation与archive-index-pointer对象，校验operation数量/键集合/fencing和sequence floors，再通过单控制指针CAS切换。
+- **Rollback：** V3尚未接受mutation时可在冻结窗口切回未变化的v2快照；V3接受第一笔mutation后禁止直接回指旧快照。若需反向迁移，必须冻结V3、完整重建archive历史和v2 shadow、验证所有操作/外部floor及v2容量后再切换，否则向前修复。
+- **测试/资源：** 新增2个实现文件与2个测试文件，共46个自动化测试方法；新增KNOW-000058、ASSET-000089和47项企业正式场景矩阵；来源沿用SRC-000403～SRC-000405。
+- **范围：** 两个脚本均为纯内存参考模型；不修改StoreBackedCoordinatorAuthority生产schema-v2，不接入真实etcd/对象存储，不执行迁移/cutover/回滚。ASSET-000089保持PROPOSED_NOT_APPROVED / NOT_RUN。
+- **状态：** CH17-T004继续IN_PROGRESS；schema-v2仍是唯一生产权威，生产归档与Schema v3均未启用。

@@ -1,0 +1,48 @@
+scenario_id,category,purpose,precondition,action,expected_result,approval_status,execution_status
+IDX-001,index-backfill,build exact index from legacy full archive chain,valid one-batch chain,backfill index,root and all bucket shards verify,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-002,index-backfill,empty archive chain count baseline,scope has no archive pointer,build index,empty pointer and zero bucket map verify,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-003,index-backfill,verify multiple manifest generations,chain contains three sequential batches,backfill index,generation and previous pointers are continuous,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-004,index-sharding,small prefix bucket count,16 buckets configured,build and lookup,index hit/miss stays scope-isolated,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-005,index-sharding,default reference bucket count,256 buckets configured,build and lookup,root and bucket shard checks pass,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-006,index-sharding,larger prefix bucket count,4096 buckets configured,build and lookup,root and bucket shard checks pass,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-007,index-lookup,exact positive lookup,operation exists in archive,lookup idempotency key,original complete record returned,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-008,index-lookup,exact negative lookup absent bucket,operation does not exist and bucket absent,lookup idempotency key,return not-found only after root/count validation,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-009,index-lookup,exact negative lookup present bucket,operation absent but same bucket populated,lookup idempotency key,sorted exact search returns not-found,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-010,index-lookup,authoritative count mismatch,index pointer count differs from scope archived count,lookup idempotency key,fail-closed and never return not-found,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-011,index-integrity,corrupt root object,root bytes modified after pointer commit,lookup operation,content digest failure,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-012,index-integrity,corrupt bucket shard,shard bytes modified after root commit,lookup operation,content digest failure,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-013,index-integrity,missing target archive batch,index points to unavailable manifest,lookup indexed operation,fail-closed and never return partial record,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-014,index-integrity,record digest mismatch,index entry points to altered record,lookup indexed operation,record SHA-256 mismatch rejected,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-015,index-integrity,wrong scope root,caller supplies another scope identifier,lookup key,scope mismatch rejected,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-016,index-integrity,generation mismatch,index generation differs from archive generation,lookup key,root/pointer mismatch rejected,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-017,index-append,append next valid generation,archive batch extends current head,prepare new index root,only touched shards replaced and root generation increments,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-018,index-append,stale archive batch reused,previous generation passed as next batch,append batch,reject generation mismatch,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-019,index-append,duplicate idempotency key in new batch,new batch repeats existing exact operation key,append batch,reject duplicate key before pointer switch,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-020,index-append,archive head CAS race,another leader advances archive pointer,attempt index pointer switch,stale CAS rejected and orphan objects retained,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-021,index-append,immutable object put response lost,object may have been stored,read object by content address,continue only after byte-exact verification,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-022,index-append,read-back mismatch,object storage returns altered bytes,prepare root,do not publish pointer,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-023,index-audit,full manifest/index equality,complete archive chain and index exist,run full audit,exact key and record target sets match,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-024,index-audit,missing index entry,root/shard omits archived key,run full audit,detect missing key against manifest chain,PROPOSED_NOT_APPROVED,NOT_RUN
+IDX-025,index-audit,orphan index objects,object exists but no committed Coordinator pointer,run audit,orphan is not authoritative and is not deleted automatically,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-001,migration-preflight,freeze v2 writes under current Leader,valid Leader epoch and v2 source,begin migration,write gate closed and source revision/digest captured,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-002,migration-preflight,stale Leader cannot start migration,caller epoch behind current epoch,begin migration,reject migration start,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-003,migration-build,split v2 source into v3 logical objects,stable frozen v2 snapshot,build candidate,scheduler Leader scopes hot operations and index pointers are separated,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-004,migration-build,preserve per-scope archive index pointers,verified scope archive pointers supplied,build candidate,all pointer metadata is copied without mutation,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-005,migration-verify,object read-back/checksum,one candidate object is altered,verify candidate,verify fails before cutover,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-006,migration-verify,operation/scope count parity,v3 candidate count differs from source,verify candidate,detect mismatch,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-007,migration-verify,fencing and sequence floor parity,candidate lowers one scope floor,verify candidate,reject migration candidate,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-008,migration-cutover,source revision CAS,v2 revision advanced or expected revision stale,cutover,abort without moving active pointer,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-009,migration-cutover,Leader epoch CAS,Leader changed during migration,cutover,abort without moving active pointer,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-010,migration-cutover,external fencing floor too low,external provider token below v2 source,cutover,reject cutover,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-011,migration-cutover,external operation sequence too low,external sequence below v2 source,cutover,reject cutover,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-012,migration-cutover,lost control-pointer response,control pointer may have committed,read back exact schema epoch migration and root,resolve only exact match otherwise outcome unknown,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-013,migration-gate,v3 remains frozen after pointer switch,cutover committed,attempt write before explicit resume,reject write,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-014,migration-rollback,pre-write pointer rollback,v3 pointer committed but no v3 mutation accepted,rollback before resume,restore v2 pointer under higher control epoch,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-015,migration-rollback,stale v2 snapshot rollback after v3 write,v3 has accepted a mutation,attempt pointer rollback,reject stale v2 rollback,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-016,migration-rollback,reverse migration requires archive completeness,archive lookup/index audit incomplete,reverse migrate,fail-closed and keep v3 frozen,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-017,migration-rollback,reverse migration requires every v3 operation,rehydrated v2 omits a v3 operation,reverse migrate,reject reverse candidate,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-018,migration-rollback,preserve v3 external fencing floors,rehydrated v2 has lower token or sequence,reverse migrate,reject reverse candidate,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-019,migration-rollback,v2 rehydration size exceeds capacity,rehydrated state over approved ceiling,reverse migrate,reject reverse candidate,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-020,migration-rollback,successful rehydrated reverse migration,all records exact and capacity/floors pass,build and switch reverse candidate,restore v2 from v3 plus archive and never from stale snapshot,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-021,migration-concurrency,old v2 client after cutover,active schema is v3,old generation write arrives,reject stale client write,PROPOSED_NOT_APPROVED,NOT_RUN
+MIG-022,migration-capacity,transaction operation ceiling,archive batch delete count approaches configured max txn ops,prepare archive batch,reject or reduce batch before request exceeds verified server limit,PROPOSED_NOT_APPROVED,NOT_RUN

@@ -1,0 +1,67 @@
+{
+  "entity_id": "ASSET-000089",
+  "entity_type": "asset_file",
+  "canonical_name": "Coordinator Archive Index与Schema v3迁移/回滚正式验证矩阵v1",
+  "english_name": "Coordinator archive index and schema-v3 migration and rollback formal validation matrix v1",
+  "aliases": [
+    "Archive Index conformance matrix",
+    "Schema v3 migration rollback matrix",
+    "ASSET-000089"
+  ],
+  "description": "47条待企业批准/执行的Archive Index与Schema v2/v3迁移回滚场景，覆盖精确hit/miss、分片/完整性、manifest回填/增量、source/Leader/fencing保护、cutover及v3写入前后回滚。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Archive Index",
+    "Schema v3",
+    "Migration",
+    "Rollback",
+    "ASSET-000089"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T22:10:00+08:00",
+  "updated_at": "2026-11-26T22:10:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000403",
+    "SRC-000404",
+    "SRC-000405"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-archive-index-schema-v3-migration-matrix-v1.csv",
+    "file_name": "spare-parts-coordinator-archive-index-schema-v3-migration-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000058",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored schema migration and exact-index conformance scenarios",
+    "scenario_count": 47,
+    "approval_status": "PROPOSED_NOT_APPROVED",
+    "execution_status": "NOT_RUN",
+    "synthetic_only": true,
+    "real_etcd_connected": false,
+    "real_archive_store_connected": false,
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "正式矩阵不包含执行结果；自动化内存模型测试通过不等于企业批准、真实etcd集群迁移或生产回滚验收。"
+}

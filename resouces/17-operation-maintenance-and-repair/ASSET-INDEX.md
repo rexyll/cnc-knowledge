@@ -122,3 +122,5 @@
 | spare-parts-coordinator-operation-ledger-archive-test-matrix-v1.csv | CSV Coordinator Operation Ledger安全归档测试矩阵 / ASSET-000088 | 项目原创合成参考场景 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000057 | 25条场景，覆盖终态准入、未决操作保护、immutable archive put/read-back、scope pointer CAS、跨归档幂等、manifest链完整性、恢复和物理删除审批；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
 
 | spare-parts-coordinator-operation-ledger-archive-test-matrix-v1.csv | CSV Coordinator Operation Ledger安全归档测试矩阵 / ASSET-000088 | 项目原创合成参考场景 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000057 | 25条场景覆盖终态准入、pending保护、immutable put/read-back、scope pointer CAS、幂等、manifest链、恢复和物理删除审批；CI Run 45817146500中24项内存参考模型unittest通过，但25项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。 |
+
+| spare-parts-coordinator-archive-index-schema-v3-migration-matrix-v1.csv | CSV Coordinator Archive Index与Schema v3迁移/回滚正式验证矩阵 / ASSET-000089 | 项目原创合成验证场景 | 2026-11-26 | 项目原创，待企业批准 | CH17-T004 / KNOW-000058 | 47条场景覆盖索引回填、精确hit/miss、分片完整性、manifest追加、迁移冻结、candidate digest/floor parity、cutover和v3写入前后回滚；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
