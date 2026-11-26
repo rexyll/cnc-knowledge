@@ -99,6 +99,7 @@ class SQLiteFencedObjectStorageProvider:
         trusted_ed25519_public_keys: dict[str, Any] | None = None,
         attestation_status_checker: Any | None = None,
         require_online_attestation_status: bool = False,
+        require_atomic_online_attestation_status: bool = False,
         busy_timeout_seconds: float = 5.0,
         fault_hook: Callable[[str], None] | None = None,
     ):
@@ -150,12 +151,26 @@ class SQLiteFencedObjectStorageProvider:
             self._trusted_ed25519_public_keys[key_id] = _load_ed25519_public_key(public_key)
         if not isinstance(require_online_attestation_status, bool):
             raise BackupStorageError("require_online_attestation_status must be boolean")
+        if not isinstance(require_atomic_online_attestation_status, bool):
+            raise BackupStorageError("require_atomic_online_attestation_status must be boolean")
         if require_online_attestation_status and not callable(
             getattr(attestation_status_checker, "is_attestation_active", None)
         ):
             raise BackupStorageError("online attestation status is required but no status checker is configured")
+        if require_atomic_online_attestation_status:
+            checker_path = getattr(attestation_status_checker, "database_path", None)
+            if (
+                not require_online_attestation_status
+                or not callable(getattr(attestation_status_checker, "is_attestation_active_in_transaction", None))
+                or not isinstance(checker_path, (str, os.PathLike))
+                or Path(checker_path).expanduser().resolve() != self.database_path
+            ):
+                raise BackupStorageError(
+                    "atomic online status requires an online checker sharing the exact Provider SQLite database"
+                )
         self.attestation_status_checker = attestation_status_checker
         self.require_online_attestation_status = require_online_attestation_status
+        self.require_atomic_online_attestation_status = require_atomic_online_attestation_status
         self.busy_timeout_seconds = float(busy_timeout_seconds)
         self.fault_hook = fault_hook
         self._ensure_ed25519_registry_schema()
@@ -1012,7 +1027,15 @@ class SQLiteFencedObjectStorageProvider:
             )
         if self.require_online_attestation_status:
             try:
-                active = bool(self.attestation_status_checker.is_attestation_active(claims))
+                if self.require_atomic_online_attestation_status:
+                    active = bool(
+                        self.attestation_status_checker.is_attestation_active_in_transaction(c, claims)
+                    )
+                    if active:
+                        # Test-only synchronization point; no-op unless a fault hook is injected.
+                        self._inject("after_atomic_online_attestation_status_check")
+                else:
+                    active = bool(self.attestation_status_checker.is_attestation_active(claims))
             except Exception as exc:
                 raise FencingAttestationStatusUnavailableError(
                     "Coordinator online attestation status is unavailable; Provider write refused"
