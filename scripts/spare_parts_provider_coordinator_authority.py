@@ -706,12 +706,16 @@ class SQLiteDurableCoordinatorAuthority:
         observed_fencing_token: int,
         observed_operation_sequence: int,
         observed_idempotency_key: str,
+        observed_manifest_key: str,
+        observed_manifest_sha256: str,
         provider_generation: str,
     ) -> DurableAuthorityOperation:
         scope, idem = _scope(scope), _required_text(idempotency_key, "publish idempotency key", maximum=256)
         generation = _required_text(provider_generation, "Provider generation", maximum=256)
         if observed_provider_state != "ACTIVE" or observed_idempotency_key != idem:
             raise CoordinatorAuthorityConflictError("Provider receipt does not identify the requested publish")
+        observed_key = _required_text(observed_manifest_key, "observed Provider manifest key", maximum=1024)
+        observed_digest = _sha256(observed_manifest_sha256, "observed Provider manifest SHA-256")
         now = self.clock_fn()
         with self._transaction("confirm_publish") as connection:
             self._assert_leader(connection, leadership)
@@ -724,8 +728,12 @@ class SQLiteDurableCoordinatorAuthority:
             if (
                 int(row["fencing_token"]) != observed_fencing_token
                 or int(row["operation_sequence"]) != observed_operation_sequence
+                or row["manifest_key"] != observed_key
+                or row["manifest_sha256"] != observed_digest
             ):
-                raise CoordinatorAuthorityConflictError("Provider receipt token/sequence differs from Coordinator allocation")
+                raise CoordinatorAuthorityConflictError(
+                    "Provider receipt token/sequence/manifest differs from Coordinator allocation"
+                )
             if row["state"] == "COMMITTED":
                 if row["provider_generation"] != generation:
                     raise CoordinatorAuthorityConflictError("publish was already confirmed at another Provider generation")
@@ -750,6 +758,50 @@ class SQLiteDurableCoordinatorAuthority:
                 (scope, idem),
             ).fetchone()
             return self._operation_from_row(updated)
+
+    def authorize_operation_signing(
+        self,
+        leadership: CoordinatorLeadershipLease,
+        operation: DurableAuthorityOperation,
+    ) -> None:
+        """Allow proof signing only for a durable pending operation under the current Leader epoch.
+
+        A restarted/new Leader may re-sign an unresolved operation after observing
+        its durable row. A stale process cannot use a cached operation object to
+        mint a fresh proof after takeover.
+        """
+        if not isinstance(operation, DurableAuthorityOperation):
+            raise CoordinatorAuthorityError("a durable Coordinator operation is required")
+        expected_state = {
+            "ACTIVATE": "PENDING_ACTIVATION",
+            "REVOKE": "REVOKING",
+            "PUBLISH": "PENDING_PUBLISH",
+        }.get(operation.kind)
+        if expected_state is None:
+            raise CoordinatorAuthorityError("unsupported distributed fencing operation kind")
+        with self._transaction("authorize_operation_signing") as connection:
+            self._assert_leader(connection, leadership)
+            row = connection.execute(
+                "SELECT * FROM coordinator_authority_operations WHERE scope=? AND idempotency_key=?",
+                (operation.scope, operation.idempotency_key),
+            ).fetchone()
+            if (
+                row is None
+                or row["kind"] != operation.kind
+                or row["request_sha256"] != operation.request_sha256
+                or int(row["fencing_token"]) != operation.fencing_token
+                or row["lease_id"] != operation.lease_id
+                or row["state"] != expected_state
+                or (
+                    None if row["operation_sequence"] is None
+                    else int(row["operation_sequence"])
+                ) != operation.operation_sequence
+                or row["manifest_key"] != operation.manifest_key
+                or row["manifest_sha256"] != operation.manifest_sha256
+            ):
+                raise CoordinatorAuthorityStaleLeaderError(
+                    "operation is not pending in the durable Coordinator state"
+                )
 
     def list_pending_operations(
         self, leadership: CoordinatorLeadershipLease, *, scope: str | None = None
@@ -838,6 +890,8 @@ class SQLiteDurableCoordinatorAuthority:
 
 
 def sign_distributed_fencing_proof(
+    authority: SQLiteDurableCoordinatorAuthority,
+    leadership: CoordinatorLeadershipLease,
     operation: DurableAuthorityOperation,
     lease: Any,
     *,
@@ -847,8 +901,11 @@ def sign_distributed_fencing_proof(
     clock_fn: Callable[[], float] = time.time,
 ) -> str:
     """Sign an Ed25519 proof after the operation allocation is durably committed."""
+    if not isinstance(authority, SQLiteDurableCoordinatorAuthority):
+        raise CoordinatorAuthorityError("a durable SQLite Coordinator authority is required")
     if not isinstance(operation, DurableAuthorityOperation):
         raise CoordinatorAuthorityError("a durable Coordinator operation is required")
+    authority.authorize_operation_signing(leadership, operation)
     if getattr(signer, "algorithm", None) != "ED25519" or not callable(getattr(signer, "sign", None)):
         raise CoordinatorAuthorityError("distributed fencing requires an Ed25519 signer")
     key_id = _required_text(getattr(signer, "key_id", None), "signing key ID", maximum=64)

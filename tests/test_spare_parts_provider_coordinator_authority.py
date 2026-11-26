@@ -84,7 +84,7 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
             self.leader, lease, scope=self.SCOPE, idempotency_key=idem
         )
         proof = sign_distributed_fencing_proof(
-            operation, lease, issuer_id="test-coordinator", signer=self.signer,
+            self.authority, self.leader, operation, lease, issuer_id="test-coordinator", signer=self.signer,
             clock_fn=self.clock,
         )
         provider_record = self.provider.activate_lease(
@@ -116,7 +116,7 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
         )
         self.assertEqual(publish.operation_sequence, 1)
         proof = sign_distributed_fencing_proof(
-            publish, lease, issuer_id="test-coordinator", signer=self.signer,
+            self.authority, self.leader, publish, lease, issuer_id="test-coordinator", signer=self.signer,
             clock_fn=self.clock,
         )
         receipt = self.provider.publish_commit(self.SCOPE, fencing_attestation=proof)
@@ -127,6 +127,8 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
             observed_fencing_token=receipt.fencing_token,
             observed_operation_sequence=receipt.operation_sequence,
             observed_idempotency_key=receipt.idempotency_key,
+            observed_manifest_key=receipt.manifest_key,
+            observed_manifest_sha256=receipt.manifest_sha256,
             provider_generation=generation,
         )
         self.assertEqual(committed.state, "COMMITTED")
@@ -137,7 +139,7 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
         )
         self.assertEqual(revoke.state, "REVOKING")
         revoke_proof = sign_distributed_fencing_proof(
-            revoke, lease, issuer_id="test-coordinator", signer=self.signer,
+            self.authority, self.leader, revoke, lease, issuer_id="test-coordinator", signer=self.signer,
             clock_fn=self.clock,
         )
         revoked_record = self.provider.revoke_lease(
@@ -293,7 +295,7 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
             self.leader, lease, scope=self.SCOPE, idempotency_key="crash-before-confirm"
         )
         proof = sign_distributed_fencing_proof(
-            operation, lease, issuer_id="test-coordinator", signer=self.signer,
+            self.authority, self.leader, operation, lease, issuer_id="test-coordinator", signer=self.signer,
             clock_fn=self.clock,
         )
         self.provider.activate_lease(self.SCOPE, fencing_attestation=proof)
@@ -330,6 +332,27 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
                 observed_high_water_token=pending.fencing_token,
                 observed_lease_id=lease.lease_id, provider_generation="provider-gen",
             )
+        with self.assertRaises(CoordinatorAuthorityStaleLeaderError):
+            sign_distributed_fencing_proof(
+                self.authority, self.leader, pending, lease,
+                issuer_id="test-coordinator", signer=self.signer, clock_fn=self.clock,
+            )
+        recovered_proof = sign_distributed_fencing_proof(
+            reopened, new_leader, pending, lease,
+            issuer_id="test-coordinator", signer=self.signer, clock_fn=self.clock,
+        )
+        provider_record = self.provider.activate_lease(
+            self.SCOPE, fencing_attestation=recovered_proof
+        )
+        generation = self.store.read_control(self.SCOPE)[0]
+        self.assertEqual(provider_record["lease_state"], "ACTIVE")
+        confirmed = reopened.confirm_activation(
+            new_leader, scope=self.SCOPE, fencing_token=pending.fencing_token,
+            idempotency_key="old-confirm", observed_provider_state="ACTIVE",
+            observed_high_water_token=pending.fencing_token,
+            observed_lease_id=lease.lease_id, provider_generation=generation,
+        )
+        self.assertEqual(confirmed.state, "ACTIVE")
         self.assertEqual(new_leader.epoch, self.leader.epoch + 1)
 
     def test_restore_reconciliation_raises_token_and_sequence_floors_and_blocks_old_lease(self):
@@ -393,7 +416,7 @@ class SQLiteDurableCoordinatorAuthorityTests(unittest.TestCase):
             manifest_key=f"{self.SCOPE}/manifest-proof.json", manifest_sha256="8" * 64,
         )
         proof = sign_distributed_fencing_proof(
-            operation, lease, issuer_id="test-coordinator", signer=self.signer,
+            self.authority, self.leader, operation, lease, issuer_id="test-coordinator", signer=self.signer,
             clock_fn=self.clock,
         )
         claims, key_id = verify_fencing_attestation_signature(
