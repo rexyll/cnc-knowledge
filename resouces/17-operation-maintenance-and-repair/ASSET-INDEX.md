@@ -108,3 +108,5 @@
 | spare-parts-inventory-backup-provider-coordinator-authority-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000081 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-coordinator-durable-authority-and-recovery.md / KNOW-000050 | 16条Coordinator持久权威与故障恢复合成场景，覆盖tenant-qualified scope、单调token/sequence、幂等、两阶段Provider确认、完整receipt、Leader epoch接管、旧Leader proof签发拒绝与外部恢复高水位；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
 
 | spare-parts-inventory-backup-provider-coordinator-backend-conformance-matrix-v1.csv | CSV测试矩阵 / ASSET-000082 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-coordinator-backend-contract-and-etcd-v3.md / KNOW-000051 | 20条后端一致性参考场景，覆盖linearizable Range、Txn CAS与多键原子更新、Lease/LeaderKey revision fencing、quorum/Watch/响应丢失、RBAC及Provider CAS；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
+
+| spare-parts-inventory-backup-provider-coordinator-transactional-read-matrix-v1.csv | CSV存储Txn有序读取场景矩阵 / ASSET-000083 | 项目原创 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000052 | 16条场景，覆盖Txn分支内Get/Put/Delete顺序、Failure分支快照、etcd响应对齐、revision、Lease及OUTCOME_UNKNOWN；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |

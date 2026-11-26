@@ -625,3 +625,13 @@
 - **测试与质量：** 两次最终CI均全库300项unittest、CH12数值资源143项通过；strict lint 0 errors/5 warnings；知识结构与数据质量0 errors。
 - **覆盖：** 新增KNOW-000051、ASSET-000082及SRC-000397～SRC-000401；CH17为31篇KNOW、85个登记实体、76项资源、20条去重来源。ASSET-000082的20条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **集成边界：** SQLite业务服务仍SQL专用；etcd v3仅底层注入式客户端适配器设计，未连接真实etcd server、mTLS/RBAC或多主机集群。未做quorum、网络分区、Leader failover或云Provider故障演练。
+
+
+## 6.10 CH17-T004 第三十八轮：Coordinator事务内有序读取基础（2026-11-26）
+
+- **目标：** 为Coordinator状态机向通用KV/Txn端口迁移补齐事务分支内读取能力，避免读取与CAS写被拆成不同一致性时点。
+- **实现：** `CoordinatorAuthorityStore.transact` 的Success/Failure分支现在支持 `AuthorityStoreGet`、Put和Delete按列表顺序执行；结果增加按Get顺序排列的 `reads` 元组。SQLite在同一个 `BEGIN IMMEDIATE` 中完成；etcd将Get映射为同一个Txn分支内的 `request_range`。
+- **测试：** 新增分支内写前/写后读取及Compare失败后Failure分支快照测试。SQLite与InMemoryEtcdV3Client两种适配器各运行两项新增测试，共4次执行。代码CI Run 45772420144通过：全库304项unittest、CH12 143项测试，strict lint 0 errors/5 warnings，结构质量0 errors。
+- **知识与资源：** KNOW-000052；ASSET-000083定义16条场景，均 `PROPOSED_NOT_APPROVED / NOT_RUN`；复用SRC-000397/398与SRC-000391/392。
+- **未完成边界：** `SQLiteDurableCoordinatorAuthority` 仍直接使用SQL领域表；Admission lease仍通过同库 `admission_requests` 表事务校验，未迁移到通用Store。etcd仍是注入式API driver，无真实集群、gRPC/JSON Gateway、mTLS/RBAC、quorum或多主机证据。后续必须先把Admission lease权威记录及续租/释放迁移到同一强一致Txn后端，再迁移Leader、scope和operation ledger；禁止将独立Admission Range与后续authority Txn组合成存在TOCTOU的流程。
+- **状态：** CH17-T004保持IN_PROGRESS；生产备份关闭、治理门禁和业务断言状态不变。

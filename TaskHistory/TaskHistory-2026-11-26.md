@@ -450,3 +450,15 @@
 - **资源统计：** CH17更新为31篇KNOW、85个登记实体、76项资源、20条去重来源；新增KNOW-000051、ASSET-000082及SRC-000397～SRC-000401。ASSET-000082的20条场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **验收边界：** 新增SQLite参考存储与InMemoryEtcdV3Client API替身；EtcdV3Client是注入式客户端协议，无真实etcd server/gRPC/JSON Gateway/mTLS/RBAC/quorum/多主机集群。SQLite领域服务仍直接使用SQL，尚未迁移到通用Store port。没有生产Provider、灾备或企业验收。
 - **生产状态：** production_backup_enabled=false；governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL；business_rule_assertions=NOT_EVALUATED。
+
+
+## CH17-T004 Coordinator事务内有序读取第三十八轮（2026-11-26）
+
+- **目标：** 补齐KNOW-000051的低层Coordinator存储端口，使CAS事务能在已选中的Success/Failure分支内按顺序执行精确键读取与写入。
+- **代码：** `scripts/spare_parts_provider_authority_store.py` 新增 `AuthorityStoreGet` / `AuthorityStoreTxnOperation`，`AuthorityStoreTxnResult` 新增 `reads`；SQLite适配器在一个 `BEGIN IMMEDIATE` 事务中处理Get/Put/Delete，etcd适配器把Get编码为事务分支内的 `request_range`，不拆成事务外Range。
+- **一致性语义：** Get严格遵循事务操作顺序，写前Get读旧值、写后Get读本次Txn的暂存新值；reads只收集Get并按相对顺序返回，缺失键为None；Compare决定Success/Failure分支后只执行一个分支。响应列表缺项或Get响应类型不符时失败关闭。
+- **测试：** `tests/test_spare_parts_provider_authority_store.py` 新增2个跨适配器契约测试方法（SQLite、InMemoryEtcdV3Client各运行一次，共4次适配器测试执行），覆盖写前/写后快照和Compare失败后的Failure读取。
+- **知识与资源：** 新增KNOW-000052；新增ASSET-000083矩阵16条场景，全部PROPOSED_NOT_APPROVED / NOT_RUN；复用SRC-000397/398（etcd）与SRC-000391/392（SQLite）。
+- **代码CI：** Commit `fec104016db56bcd1d841b134d2000f3d9838d4a`；[Run 45772420144](https://github.com/rexyll/cnc-knowledge/actions/runs/45772420144)两个必需Job均completed/success；全库304项unittest、CH12数值资源143项通过；strict lint 0 errors/5 warnings；知识结构与数据质量0 errors。
+- **重要限制：** 这是存储原语扩展，并未把 `SQLiteDurableCoordinatorAuthority` 领域状态机迁移到 `CoordinatorAuthorityStore`。现有Admission lease仍由同一SQLite数据库的 `admission_requests` 表校验；未来etcd迁移必须把Admission lease生产/续租/释放也迁入同一Txn权威源，保证lease比较和authority变更在单个Txn内原子完成。不得采用独立Range后接独立Txn的TOCTOU流程。真实etcd、gRPC/JSON Gateway、mTLS/RBAC、quorum、多主机和Provider故障演练均未接入或执行。
+- **生产状态：** `production_backup_enabled=false`；`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`；`business_rule_assertions=NOT_EVALUATED`。

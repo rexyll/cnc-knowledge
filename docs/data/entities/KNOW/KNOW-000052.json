@@ -1,0 +1,77 @@
+{
+  "entity_id": "KNOW-000052",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存备份 Coordinator 事务内有序读取与状态快照",
+  "english_name": "CNC spare-parts backup Coordinator ordered transactional reads and state snapshots",
+  "aliases": [
+    "AuthorityStoreGet",
+    "Coordinator transaction read batch",
+    "transactional range read",
+    "ordered Txn reads"
+  ],
+  "description": "为CoordinatorAuthorityStore增加事务分支内有序精确键读取，SQLite与etcd适配器统一返回读快照；作为领域状态机迁移基础，不代表业务状态机已迁移。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Coordinator权威存储后端与事务内读取"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "etcd v3",
+    "SQLite WAL",
+    "Transaction",
+    "Read Snapshot",
+    "Compare-and-Swap",
+    "OUTCOME_UNKNOWN"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T15:20:00+08:00",
+  "updated_at": "2026-11-26T15:20:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000397",
+    "SRC-000398",
+    "SRC-000391",
+    "SRC-000392"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-transactional-read-batches.md",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-transactional-read-matrix-v1.csv",
+    "implementation_module": "scripts/spare_parts_provider_authority_store.py",
+    "implementation_test": "tests/test_spare_parts_provider_authority_store.py",
+    "new_operation": "AuthorityStoreGet",
+    "transaction_result_reads": "ordered tuple of exact-key read results from selected branch",
+    "sqlite_adapter_transactional_reads": true,
+    "etcd_adapter_transactional_range": true,
+    "in_memory_etcd_is_test_double": true,
+    "real_etcd_server_connected": false,
+    "sqlite_domain_service_migrated_to_store": false,
+    "admission_lease_source_migrated_to_same_store": false,
+    "real_multihost_tests_run": false,
+    "unit_test_methods_added": 2,
+    "adapter_test_executions_added": 4,
+    "code_ci_run": 45772420144,
+    "code_ci_commit": "fec104016db56bcd1d841b134d2000f3d9838d4a",
+    "code_ci_status": "completed/success",
+    "repository_unit_test_count": 304,
+    "ch12_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS_5_WARNINGS",
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED"
+  },
+  "notes": "第三十八轮第一阶段补齐CoordinatorAuthorityStore在Txn分支内的有序Get/Put/Delete组合。Get结果只返回已选中的Txn分支，缺失键为None，reads仅收集Get并保持相对顺序；SQLite通过同一BEGIN IMMEDIATE事务处理，etcd通过同一Txn分支内request_range实现。新测试由SQLite和InMemoryEtcdV3Client分别运行，共新增4次适配器测试执行。原SQLiteDurableCoordinatorAuthority仍直接操作SQLite领域表；Admission lease仍由同一SQLite数据库中的admission_requests表进行事务校验，尚未迁移到通用Store。真实etcd、gRPC/JSON Gateway、mTLS/RBAC、quorum、多主机和Provider故障演练均未完成。ASSET-000083的16条场景均PROPOSED_NOT_APPROVED/NOT_RUN。"
+}

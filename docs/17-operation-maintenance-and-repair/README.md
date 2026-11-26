@@ -125,3 +125,6 @@
 
 
 - 第三十七轮新增 [Coordinator 权威存储后端契约与 etcd v3 适配设计](spare-parts-inventory-backup-provider-coordinator-backend-contract-and-etcd-v3.md)（KNOW-000051）。代码Run 45770717942与文档Run 45770955018均通过（全库300项、CH12 143项）；但etcd仅为注入式driver适配器，无真实集群连接。ASSET-000082的20条场景仍未批准/未执行。
+
+
+Coordinator 权威状态迁移基础见 [事务内有序读取与状态快照](spare-parts-inventory-backup-provider-coordinator-transactional-read-batches.md)（KNOW-000052）：新增Txn分支内精确键Get/Put/Delete有序读取契约；ASSET-000083包含16条待批准/未执行场景。现有SQLite业务状态机和Admission lease仍未迁移到通用Store，etcd仅为注入式driver适配器。

@@ -85,7 +85,9 @@
     "backend_conformance_tests_run": 16,
     "etcd_cluster_tests_run": false,
     "real_multihost_tests_run": false,
-    "application_service_migrated_to_store_port": false
+    "application_service_migrated_to_store_port": false,
+    "transactional_read_extension": "KNOW-000052",
+    "transactional_read_matrix": "ASSET-000083"
   },
-  "notes": "第三十七轮建立Coordinator服务端口和底层原子KV/Txn/Lease存储端口，新增SQLite参考适配器及基于EtcdV3Client注入契约的etcd v3适配器。Etcd adapter没有创建真实网络连接；InMemoryEtcdV3Client为单进程API测试替身，不构成Raft/quorum/多主机证据。当前SQLiteDurableCoordinatorAuthority已满足应用服务Protocol，但其业务状态仍直接使用SQLite SQL；领域逻辑尚未重构为通过CoordinatorAuthorityStore执行。真实etcd gRPC/JSON Gateway client、mTLS/RBAC、网络分区和云Provider未集成。ASSET-000082的20条场景均PROPOSED_NOT_APPROVED/NOT_RUN。 最终代码Run 45770717942与文档同步Run 45770955018均通过；全库300项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，结构质量0 errors。ASSET-000082仍20项PROPOSED_NOT_APPROVED/NOT_RUN。"
+  "notes": "第三十七轮建立Coordinator服务端口和底层原子KV/Txn/Lease存储端口，新增SQLite参考适配器及基于EtcdV3Client注入契约的etcd v3适配器。Etcd adapter没有创建真实网络连接；InMemoryEtcdV3Client为单进程API测试替身，不构成Raft/quorum/多主机证据。当前SQLiteDurableCoordinatorAuthority已满足应用服务Protocol，但其业务状态仍直接使用SQLite SQL；领域逻辑尚未重构为通过CoordinatorAuthorityStore执行。真实etcd gRPC/JSON Gateway client、mTLS/RBAC、网络分区和云Provider未集成。ASSET-000082的20条场景均PROPOSED_NOT_APPROVED/NOT_RUN。 最终代码Run 45770717942与文档同步Run 45770955018均通过；全库300项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，结构质量0 errors。ASSET-000082仍20项PROPOSED_NOT_APPROVED/NOT_RUN。 第三十八轮在底层Store Txn中增加按序Get/Put/Delete组合与reads结果，用于后续领域状态机迁移；SQLiteDurableCoordinatorAuthority仍未依赖CoordinatorAuthorityStore，Admission lease仍未迁移到同一KV权威源。代码Run 45772420144通过，全库304项unittest、CH12 143项测试通过；ASSET-000083 16条场景仍PROPOSED_NOT_APPROVED/NOT_RUN。"
 }

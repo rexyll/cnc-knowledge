@@ -457,3 +457,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 - 第三十七轮最终代码/文档CI Run 45770717942 / 45770955018均通过：全库300项unittest、CH12 143项数值资源测试通过，strict lint 0 errors/5 warnings，知识结构质量0 errors。ASSET-000082矩阵20条场景仍PROPOSED_NOT_APPROVED / NOT_RUN；没有真实etcd、多主机/quorum或云Provider证据。
+
+
+## CH17-T004 Coordinator 事务内有序读取（第三十八轮）
+
+- `spare-parts-inventory-backup-provider-coordinator-transactional-read-matrix-v1.csv`（ASSET-000083）：16条合成契约场景，覆盖Txn分支内Get/Put/Delete顺序、失败分支读取、etcd Txn响应对齐、revision、Lease和OUTCOME_UNKNOWN；全部 `PROPOSED_NOT_APPROVED / NOT_RUN`。
+- 代码位于 `scripts/spare_parts_provider_authority_store.py`，专项测试位于 `tests/test_spare_parts_provider_authority_store.py`。新增2个测试方法并分别在SQLite与内存etcd test double上执行，共4次适配器测试执行。
+- 关联正文KNOW-000052；复用SRC-000397/398（etcd API）与SRC-000391/392（SQLite Transaction/WAL）。该轮未连接真实etcd集群，未迁移SQLite领域状态机及Admission lease数据源。
