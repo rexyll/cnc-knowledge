@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import sqlite3
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -136,7 +137,7 @@ def _new_provider(
     database: Path, *, principal_id: str = "writer-a", secret: str = SECRET_A,
     fault_hook=None, trusted_ed25519_public_keys=None,
     attestation_status_checker=None, require_online_attestation_status=False,
-    trusted_hmac_keys=None,
+    require_atomic_online_attestation_status=False, trusted_hmac_keys=None,
 ):
     provider = SQLiteFencedObjectStorageProvider(
         database, principal_id=principal_id, principal_secret=secret,
@@ -149,6 +150,7 @@ def _new_provider(
         trusted_ed25519_public_keys=trusted_ed25519_public_keys,
         attestation_status_checker=attestation_status_checker,
         require_online_attestation_status=require_online_attestation_status,
+        require_atomic_online_attestation_status=require_atomic_online_attestation_status,
         fault_hook=fault_hook,
     )
     return _wrap_test_attestations(provider)
@@ -763,6 +765,141 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
             )
         with self.assertRaises(SQLiteProviderObjectNotFoundError):
             provider.get_object(outage_key)
+
+    def test_atomic_online_status_requires_same_database_and_online_mode(self):
+        provider_db = self.base / "atomic-provider.sqlite"
+        coordinator_db = self.base / "separate-coordinator.sqlite"
+        _provision(provider_db)
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            coordinator_db,
+            attestation_issuer_id=ISSUER_ID,
+            attestation_key_id=KEY_ID,
+            attestation_secret=ATTESTATION_SECRET,
+        )
+        with self.assertRaisesRegex(BackupStorageError, "sharing the exact Provider SQLite database"):
+            _new_provider(
+                provider_db,
+                attestation_status_checker=coordinator,
+                require_online_attestation_status=True,
+                require_atomic_online_attestation_status=True,
+            )
+        same_db_coordinator = SQLiteProviderAdmissionCoordinator(
+            provider_db,
+            attestation_issuer_id=ISSUER_ID,
+            attestation_key_id=KEY_ID,
+            attestation_secret=ATTESTATION_SECRET,
+        )
+        with self.assertRaisesRegex(BackupStorageError, "sharing the exact Provider SQLite database"):
+            _new_provider(
+                provider_db,
+                attestation_status_checker=same_db_coordinator,
+                require_online_attestation_status=False,
+                require_atomic_online_attestation_status=True,
+            )
+
+    def test_atomic_online_status_serializes_provider_commit_before_lease_release(self):
+        database = self.base / "atomic-shared.sqlite"
+        _provision(database)
+        coordinator = SQLiteProviderAdmissionCoordinator(
+            database,
+            attestation_issuer_id=ISSUER_ID,
+            attestation_key_id=KEY_ID,
+            attestation_secret=ATTESTATION_SECRET,
+        )
+        task = __import__(
+            "scripts.spare_parts_backup_storage_adapter", fromlist=["ProviderTaskContext"]
+        ).ProviderTaskContext("atomic-online-task", "tenant-a")
+        lease = coordinator.acquire(
+            task=task, domain="write", owner_id="atomic-online-owner",
+            lease_ttl_seconds=30, timeout_seconds=0,
+            check_task=lambda _: None, request_id="atomic-online-request",
+        )
+        key = "cnc/ch17/backup-reference-001/atomic-online.bin"
+        proof = coordinator.issue_fencing_attestation(
+            lease, fencing_scope=SCOPE, resource_key=key,
+            operation="object:put_if_absent", idempotency_key="atomic-online-put",
+        )
+
+        status_checked = threading.Event()
+        allow_provider_commit = threading.Event()
+        release_connection_opened = threading.Event()
+        release_done = threading.Event()
+        hook_state = {"paused": False}
+        release_results = []
+        write_results = []
+        write_errors = []
+
+        def pause_after_atomic_status(phase: str) -> None:
+            if phase == "after_atomic_online_attestation_status_check" and not hook_state["paused"]:
+                hook_state["paused"] = True
+                status_checked.set()
+                if not allow_provider_commit.wait(timeout=4):
+                    raise RuntimeError("timed out waiting to finish the atomic Provider transaction")
+
+        provider = _new_provider(
+            database,
+            attestation_status_checker=coordinator,
+            require_online_attestation_status=True,
+            require_atomic_online_attestation_status=True,
+            fault_hook=pause_after_atomic_status,
+        )
+        original_connect = coordinator._connect
+
+        def observe_release_connection():
+            if threading.current_thread().name == "coordinator-release":
+                release_connection_opened.set()
+            return original_connect()
+
+        coordinator._connect = observe_release_connection
+
+        def write_object():
+            try:
+                write_results.append(provider.put_if_absent_fenced(
+                    key, b"atomic-commit-before-release",
+                    fencing_scope=SCOPE, fencing_token=lease.fencing_token,
+                    idempotency_key="atomic-online-put", fencing_attestation=proof,
+                ))
+            except Exception as exc:
+                write_errors.append(exc)
+
+        def release_lease():
+            try:
+                release_results.append(coordinator.release(lease))
+            except Exception as exc:
+                release_results.append(exc)
+            finally:
+                release_done.set()
+
+        writer = threading.Thread(target=write_object, name="provider-writer")
+        writer.start()
+        self.assertTrue(status_checked.wait(timeout=2), "Provider did not reach its in-transaction status check")
+        releaser = threading.Thread(target=release_lease, name="coordinator-release")
+        releaser.start()
+        try:
+            self.assertTrue(release_connection_opened.wait(timeout=2), "release did not open its SQLite connection")
+            self.assertFalse(
+                release_done.wait(timeout=0.15),
+                "lease release must wait while the Provider holds the shared write transaction",
+            )
+        finally:
+            allow_provider_commit.set()
+        writer.join(timeout=4)
+        releaser.join(timeout=4)
+        self.assertFalse(writer.is_alive(), "Provider writer thread did not finish")
+        self.assertFalse(releaser.is_alive(), "Coordinator release thread did not finish")
+        self.assertEqual(write_errors, [])
+        self.assertEqual(len(write_results), 1)
+        self.assertEqual(write_results[0].data, b"atomic-commit-before-release")
+        self.assertEqual(release_results, [True])
+        self.assertTrue(release_done.is_set())
+
+        with self.assertRaises(FencingAttestationRejectedError):
+            provider.put_if_absent_fenced(
+                key, b"must-not-replay-after-release",
+                fencing_scope=SCOPE, fencing_token=lease.fencing_token,
+                idempotency_key="atomic-online-put", fencing_attestation=proof,
+            )
+        self.assertEqual(provider.get_object(key).data, b"atomic-commit-before-release")
 
     def test_provider_refuses_legacy_unfenced_write_methods(self):
         with self.assertRaises(FencingNotSupportedError):
