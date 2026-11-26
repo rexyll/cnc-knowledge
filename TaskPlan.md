@@ -852,3 +852,11 @@
 - **控制边界：** Watch创建请求支持start_revision/progress_notify/filters/prev_kv/range_end/watch_id/fragment；若HTTP Gateway映射不能在同一流上发送WatchProgress/Cancel双向消息，则只通过关闭HTTP响应释放流，不声明WatchProgress能力，不伪造cancel ack。
 - **验收：** Fake stream覆盖跨HTTP chunk JSON拆分、created/PUT/DELETE/prev_kv/fragment/canceled/compact_revision/header、无效帧、断线及close资源释放；真实三节点etcd集成验证创建响应、PUT/DELETE事件、字段保真和断开释放。默认CI不启动etcd。
 - **状态边界：** 不以Watch事件作授权判断；事件游标推进仍遵循已有store协议，fragment未结束不得推进；compaction/断线后先linearizable Range，再从R+1恢复。mTLS/RBAC、背压与长期压力测试单独跟踪；schema-v2保持唯一生产权威。
+
+### 第五十轮最终验收补记（2026-11-26）
+
+- 实现提交：驱动 `c616a66ede7259cb8cd198aa267e2afab51c8517`；Fake stream 契约 `ade408a56c9d6d1fe6d3988f69cb14b818372f00`；真实 Watch 集成 `0a573bfde6bf4328b879df7f5a2b621f3f53aa72`；proto3 默认 PUT 枚举修正 `dc089d8eb601ecaeb11d50e914c9aec5b109a2d6`。
+- 真实集成：[Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310)在一次性三成员 etcd v3.7.0 集群 8/8 PASS、0 failures、0 skips；覆盖 Watch created 握手、PUT、DELETE、prev_kv 和流关闭，既有单/双成员故障测试仍通过。诊断 Artifact 15128407498，SHA-256 `9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9`。
+- 默认 CI：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个 Job completed/success；全库 505 项 unittest，497 通过、8 项 opt-in live 测试按设计 skip；CH12 143 项数值资源测试通过；strict knowledge lint 0 errors；结构/数据校验 0 errors，5 项既有审批/DRAFT warning。
+- Watch 能力边界：直接消费 HTTP server-streaming Watch 响应，完整保留 header revision、watch_id、created/canceled、compact_revision、cancel_reason、fragment、events 和 KV/prev_kv；跨 chunk JSON 拼接及默认 PUT 枚举省略均有测试。WatchCreate 支持 progress_notify，但不提供双向 WatchProgress/WatchCancel 消息；主动取消仅关闭 HTTP 响应，不伪造服务端 cancel 确认。流建立后断线不自动重放，须由上层 linearizable Range + R+1 恢复。
+- 状态边界：Watch 仅用于通知，不作为 Coordinator 授权判据；mTLS 握手、RBAC、双向 Watch 控制、长期背压/压力测试仍待验证。ASSET-000092 的 30 项正式场景继续 PROPOSED_NOT_APPROVED / NOT_RUN；SQLite Coordinator 未迁移，schema-v2 仍是唯一生产权威；CH17-T004 保持 IN_PROGRESS。

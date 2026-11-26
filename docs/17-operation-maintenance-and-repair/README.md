@@ -215,3 +215,6 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 新增测试`tests/test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py`：在一次性三成员etcd v3.7.0集群中停止两个成员，验证唯一存活节点不能完成线性一致读写；恢复第二个成员后重新形成多数派，并检查无多数派期间的目标写入没有提交，恢复后新的CAS事务成功。[Live CI Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997)共7项集成测试全部通过（7/7）；[默认质量CI Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)的两个Job也全部成功。
 
 该测试是一次性集成验证，不等于任意网络分区或生产HA验收。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；未覆盖磁盘故障、非对称网络分区、延迟/吞吐、TLS/mTLS、RBAC或多主机；schema-v2仍是唯一生产权威。
+## CH17-T004 etcd Watch Gateway 流式包络保真（第五十轮）
+
+更新 KNOW-000061：驱动现已增加低层 HTTP server-streaming Watch 支持，完整保留 created/canceled/compact_revision/cancel_reason/fragment/header 和事件 KV/prev_kv；HTTP 双向 WatchProgress/Cancel 仍不支持，主动取消通过关闭 HTTP 流。真实三节点 CI [Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310) 8/8 通过；默认质量 CI [Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156) 两个 Job 成功（505 项测试，497 通过、8 项 opt-in skip；CH12 143 项通过；strict lint 0 errors）。ASSET-000092 正式 30 项场景仍 PROPOSED_NOT_APPROVED / NOT_RUN。

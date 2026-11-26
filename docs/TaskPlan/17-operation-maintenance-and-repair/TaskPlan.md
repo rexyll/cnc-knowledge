@@ -868,3 +868,13 @@
 - **测试：** 默认Fake gateway contract覆盖任意chunk边界、完整字段、PUT/DELETE/prev_kv、fragment/compaction与断线；opt-in真实etcd集成覆盖created、变更事件和连接关闭。
 - **安全和一致性：** Watch仅提供通知；安全状态仍来自linearizable Range/Txn；created/fragment不能错误推进cursor；流断线/compaction由上层Range snapshot + R+1恢复；写Txn仍一次发送并保留OUTCOME_UNKNOWN。
 - **状态：** CH17-T004保持IN_PROGRESS；ASSET-000092正式矩阵未批准前不改写执行状态；schema-v2仍为唯一生产权威。
+
+### 第五十轮 CI 验收补记（2026-11-26）
+
+- 驱动 `scripts/spare_parts_provider_etcd3gw_driver.py` 新增可关闭的 `_Etcd3gwWatchStream`，使用已配置的 HTTP session 发送 `/v3/watch` create_request，并以增量 UTF-8/JSON 解析器恢复完整 server-streaming 响应帧。
+- 规范化 header revision、watch_id、created、canceled、compact_revision、cancel_reason、fragment、events 及 KV/prev_kv；处理 proto3 默认 PUT 枚举省略时的默认值。WatchCreate 支持 start_revision、progress_notify、filters、prev_kv、range_end、watch_id 和 fragment。
+- HTTP 接口未实现后续双向 WatchProgress/WatchCancel 请求；本驱动不暴露 watch_progress，close 只关闭底层响应流，不声称服务端 cancel ack。已建立流断线显式传播，上层通过线性一致 Range 和 R+1 恢复。
+- Fake Gateway 新增任意 chunk 边界、完整包络、PUT/DELETE/prev_kv、流建立 failover、断线传播和 close 资源释放测试；driver 契约测试现 13 项。
+- 真实服务端测试：[Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310)在三成员 etcd v3.7.0 临时集群执行 8/8 live 测试全通过；诊断 Artifact 15128407498，SHA-256 `9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9`。
+- 完整回归：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个 Job 成功；全库 505 项（497 passed、8 live opt-in skipped）；CH12 143 项通过；strict knowledge lint 0 errors；fixture validator 0 errors、5 项既有治理 warning。
+- 限制：这证明指定版本/临时 Compose 环境的 server-streaming 字段解析和简单 PUT/DELETE 事件链路，不证明双向 WatchProgress/Cancel、生产断线压测、TLS/mTLS、RBAC 或多主机 Coordinator；30 项正式 ASSET-000092 场景仍未批准/未执行。CH17-T004 继续 IN_PROGRESS。

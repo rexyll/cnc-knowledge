@@ -716,3 +716,15 @@
 - **真实集成CI：** [Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997) completed/success；7项live测试全部PASS（7/7，0 failures，0 skips），清理容器、数据卷和network成功。Artifact ID 15128755397，SHA-256 `d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8`。
 - **默认回归：** [Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)两个Job均completed/success；全库501项unittest，494通过/7项live测试按默认策略skip；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；fixture validator 0 errors/5项既有warning。
 - **结论边界：** 本次验证覆盖一次性etcd v3.7.0集群中的2/3节点同时停机，不代表任意网络分区/存储故障行为或生产HA保证；未测试性能、TLS/mTLS、RBAC或多主机Coordinator。ASSET-000092的30项正式场景继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威。
+
+## CH17-T004 etcd Watch Gateway 流式响应包络保真（第五十轮，全局第五十轮，2026-11-26）
+
+- 实际完成时间：2026-11-26T22:47:49+08:00（Asia/Shanghai）。
+- 分支：main；未创建新分支。
+- 实现与测试提交：驱动 `c616a66ede7259cb8cd198aa267e2afab51c8517`；Fake stream 契约 `ade408a56c9d6d1fe6d3988f69cb14b818372f00`；真实 Watch 测试 `0a573bfde6bf4328b879df7f5a2b621f3f53aa72`；proto3 默认 PUT 枚举修正 `dc089d8eb601ecaeb11d50e914c9aec5b109a2d6`。
+- 实现：不使用 etcd3gw 高层 Watcher 的事件回调，而是通过已配置的 HTTP session 访问 `/v3/watch` server-streaming endpoint；响应按任意 HTTP chunk 边界增量解码为完整 JSON 帧，保留 header revision、watch_id、created/canceled、compact_revision、cancel_reason、fragment、events 与 KV/prev_kv 字节。启动连接阶段可按传输失败尝试下一 endpoint，流建立后断线显式传播，不自动重放。
+- Watch 控制边界：WatchCreate 支持 start_revision、progress_notify、filters、prev_kv、range_end、watch_id 及 fragment。HTTP server-streaming 适配没有实现后续双向 WatchProgress/WatchCancel 消息；不暴露 watch_progress，取消仅关闭 HTTP 响应，不宣称获得服务端 cancel ack。流重建由上层 linearizable Range snapshot + R+1 执行。
+- 故障修正：首次真实 Watch CI 发现 etcd protobuf JSON 可能省略 proto3 零值 event type；修正为缺失/0 默认 PUT，非默认未知类型仍失败关闭。
+- 真实集成结果：[Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310)在三成员 etcd v3.7.0 临时集群 8 项 live 测试全部 PASS（8/8，0 failures，0 skips），新增 Watch created/PUT/DELETE/prev_kv/stream-close 实测；Artifact ID 15128407498，SHA-256 `9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9`。临时容器、数据卷与网络清理成功。
+- 默认 CI：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个必需 Job 均 completed/success；全库 505 项 unittest，497 通过、8 项 opt-in live 测试按默认策略 skip；CH12 143 项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量 0 errors、5 项既有 DRAFT/审批 warning。
+- 边界：没有实现 HTTP 双向 WatchProgress/Cancel、服务端 cancel 确认、mTLS 握手、RBAC；没有执行长期流压力/背压、网络分区和多主机测试；Watch 仅为通知，不作为授权判据。ASSET-000092 的 30 项正式场景保持 PROPOSED_NOT_APPROVED / NOT_RUN；production_backup_enabled=false，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED；schema-v2 仍为唯一生产权威。

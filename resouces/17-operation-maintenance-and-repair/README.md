@@ -598,3 +598,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - [Live CI Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997)：7/7真实集成测试PASS，0 failures、0 skips；容器、volume、network清理成功。诊断Artifact [15128755397](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997/artifacts/15128755397)，SHA-256 `d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8`。
 - 默认回归[Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)：全库501项unittest（494通过、7项opt-in live测试按默认策略skip），CH12 143项数值测试通过，strict lint 0 errors，fixture validator 0 errors/5项既有warning。
 - 边界：仅验证这套一次性三成员环境下的受控双成员停止/恢复；不代表长时间网络分区、非对称分区、磁盘损坏、生产可用性/性能、TLS/RBAC或多主机Coordinator验收。ASSET-000092的30项正式场景继续PROPOSED_NOT_APPROVED / NOT_RUN。
+## CH17-T004 etcd Watch Gateway 流式包络保真（第五十轮，2026-11-26）
+
+- 驱动：`scripts/spare_parts_provider_etcd3gw_driver.py` 增加 `Etcd3gwV3Client.watch()` 和可关闭的响应迭代器；通过当前配置的 HTTP session 访问 `/v3/watch`，增量解码任意 chunk 边界的 JSON 流。
+- 字段保真：header revision、watch_id、created/canceled、compact_revision、cancel_reason、fragment、PUT/DELETE 事件与 KV/prev_kv；缺省 proto3 event type 按默认 PUT 处理。WatchCreate 支持 progress_notify，但没有后续双向 WatchProgress/WatchCancel 消息；close 只关闭 HTTP 流，不伪造 cancel ack。
+- Fake Gateway 测试：`tests/test_spare_parts_provider_etcd3gw_driver.py` 现 13 项契约测试，覆盖拆帧、全字段、二进制、prev_kv、启动 failover、断线和资源释放。
+- Live 测试：`tests/test_spare_parts_provider_authority_store_etcd_integration.py` 新增真实 Watch 事件测试；连同原 5 项、单成员故障、双成员 quorum-loss 场景合计 8 项。真实 [Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310) 在一次性三成员 etcd v3.7.0 集群 8/8 PASS；诊断 Artifact [15128407498](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310/artifacts/15128407498)，SHA-256 `9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9`。
+- 默认 CI：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156) 全库 505 项 unittest，497 通过、8 项 live 测试按默认策略 skip；CH12 143 项通过；strict knowledge lint 0 errors；结构/数据校验 0 errors、5 项既有 warning。
+- 边界：不支持双向 WatchProgress/WatchCancel 和服务端 cancel 确认；未测试 mTLS/RBAC、长期流背压、网络分区、性能或多主机；ASSET-000092 的 30 项正式场景仍 PROPOSED_NOT_APPROVED / NOT_RUN。
