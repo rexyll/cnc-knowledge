@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000393",
+  "source_type": "other",
+  "title": "How to prevent object overwrites with conditional writes",
+  "publisher": "Amazon Web Services — Amazon S3 Documentation",
+  "author": null,
+  "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Conditional writes using If-Match and If-None-Match; PutObject and CompleteMultipartUpload support; in-progress multipart uploads are not completed objects.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used only to map the generic one-object CAS control pointer to S3 conditional write APIs. Does not imply S3 provides cross-object transactions or validates CNC fencing claims.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
