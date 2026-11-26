@@ -1,0 +1,72 @@
+{
+  "entity_id": "KNOW-000036",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存账本备份 Provider 重试、一致性与模糊提交恢复",
+  "english_name": "CNC spare-parts inventory backup provider retry, consistency and ambiguous commit recovery",
+  "aliases": [
+    "Provider瞬态故障与指数退避",
+    "对象上传响应超时恢复",
+    "备份读后写一致性与历史版本校验"
+  ],
+  "description": "定义Provider瞬态/永久错误分类、outcome_unknown提交结果不确定、同请求幂等重试、有界指数退避、读后写可见性延迟和固定历史版本验证/恢复。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "合成测试夹具"
+  ],
+  "tags": [
+    "CH17",
+    "备份可靠性",
+    "Provider Retry",
+    "Exponential Backoff",
+    "Ambiguous Commit",
+    "Read-after-write",
+    "Version Pinning"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T12:00:00+08:00",
+  "updated_at": "2026-11-26T12:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-retry-consistency-and-recovery.md",
+    "article_version": "0.1",
+    "reviewed_on": "2026-11-26",
+    "implementation_path": "scripts/spare_parts_backup_storage_adapter.py",
+    "error_type": "ProviderTransientError",
+    "outcome_unknown_supported": true,
+    "retry_scope": "EXPLICIT_TRANSIENT_ERRORS_ONLY",
+    "retry_defaults": {
+      "max_attempts": 4,
+      "base_delay_seconds": 0.1,
+      "max_delay_seconds": 2
+    },
+    "retry_after_supported": true,
+    "jitter_in_mock": false,
+    "same_request_identity_retry": true,
+    "read_after_write_delay_simulation": true,
+    "version_history_and_pinning_simulation": true,
+    "missing_pinned_version_fails_closed": true,
+    "mock_self_check_extended": true,
+    "linked_test_file": "tests/test_spare_parts_backup_storage_adapter.py",
+    "linked_test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-retry-consistency-test-matrix-v1.csv",
+    "test_status": "SYNTHETIC_MOCK_ONLY",
+    "unit_test_count": 159,
+    "provider_specific_unittest_count": 31,
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL",
+    "production_backup_enabled": false,
+    "business_rule_assertions": "NOT_EVALUATED"
+  },
+  "notes": "指数退避默认值是实现参数而非生产参数建议；当前Mock确定性退避不含随机抖动。真实Provider需基于供应商状态码、Retry-After、幂等语义、重试deadline及版本/读一致性文档另行验证。无真实云网络/凭据/密钥/加密/对象锁或生产备份。"
+}

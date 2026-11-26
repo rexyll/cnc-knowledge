@@ -354,3 +354,17 @@
 
 - **最终资源同步CI：** 资源列宽修正提交 `540ab361a59dd54a2eb078e58257da4d4d8238dd` 对应Run 45738063901，Knowledge structure and data quality与CH12 numerical resource tests两个Job均success；全库150个unittest通过、知识校验0 errors；Provider Artifact ID 15080002233。
 - **最终资源结构：** ASSET-000064空白身份/权限评估模板26列；ASSET-000065空白孤儿盘点/回收审批模板30列；ASSET-000066测试矩阵14条、11列，均PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## 6.29 CH17-T004 备份Provider瞬态故障、重试与一致性恢复第二十二轮（2026-11-26）
+
+- **状态：** IN_PROGRESS；本地/Mock测试，不接真实云Provider。
+- **知识条目：** KNOW-000036《备份Provider重试、一致性与模糊提交恢复》。
+- **错误分类：** 新增ProviderTransientError，可附Retry-After和outcome_unknown。只捕获该异常进行重试；权限拒绝、摘要冲突、版本缺失和永久校验错误不重试。
+- **退避：** retry_max_attempts默认4（含首调），base delay默认0.1秒，max delay默认2秒；指数增长并受上限约束，Provider Retry-After提示合并进等待时间；sleep函数可注入。当前Mock为确定性无jitter，生产参数/抖动待供应商限流证据。
+- **模糊提交恢复：** Mock能在对象/分块/完成对象已实际写入后丢失响应并返回outcome_unknown；相同key/session/part/content重试必须幂等。
+- **读后写一致性：** Mock可以延迟若干次读取才显示对象；预算内可重试，预算耗尽不返回成功，后续以原backup ID重新盘点/验证。
+- **版本切换：** 模拟对象最新版本变化及历史版本不可用；验证按receipt固定历史version ID，版本缺失则失败关闭。
+- **测试：** 新增9项专项unittest，覆盖退避、限流、写响应丢失、延迟可见/重试耗尽、版本固定/缺失、multipart part/complete响应丢失、永久错误不重试。实现提交全库150个unittest通过；故障测试提交全库159个unittest通过，CI Run 45738812474两个Job均success。扩展self-check CI待最终确认。
+- **资源：** 新增ASSET-000067，12条Provider瞬态故障与一致性测试场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **生产门禁：** 无真实429/5xx/SDK超时/云端延迟可见性/版本生命周期/跨区一致性实测；无真实账户/凭据/网络/KMS/HSM/加密/对象锁/删除。生产备份继续关闭。

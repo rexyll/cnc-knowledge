@@ -95,3 +95,4 @@
   - [库存备份治理、RPO/RTO与灾备验收](17-operation-maintenance-and-repair/spare-parts-inventory-backup-governance.md)
   - [库存账本备份存储适配器契约与Mock验证](17-operation-maintenance-and-repair/spare-parts-inventory-backup-storage-adapter.md)
   - [备份 Provider 身份权限、分块续传与孤儿回收治理](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-security-and-resilience.md)
+  - [备份 Provider 重试、一致性与模糊提交恢复](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-retry-consistency-and-recovery.md)

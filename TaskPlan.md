@@ -793,3 +793,12 @@
 
 - 第二十一轮最终CI：实现与测试提交 08adad0f35fd3528121b5bc9ca424d12c558f757对应Run 45737732766两个Job成功、150个unittest通过；知识/资源同步及矩阵格式修正提交 540ab361a59dd54a2eb078e58257da4d4d8238dd对应Run 45738063901两个Job成功，150个unittest通过、知识校验0 errors。Provider Artifact ID 15080002233。
 - 第二十一轮最终CH17覆盖：15篇KNOW、63个实体、59项资源。ASSET-000066为14条/11列矩阵，两个治理模板均为空白待审批模板。
+
+
+## CH17-T004 第二十二轮：备份Provider重试、一致性与模糊提交恢复（2026-11-26）
+
+- 新增瞬态错误显式类型与提交结果未知标记；只对ProviderTransientError执行有界指数退避，永久错误立即失败。
+- 对普通对象、receipt、multipart parts、multipart complete和读取使用相同ID/键/内容重试，覆盖服务端已提交但客户端超时的恢复。
+- Mock支持对象延迟可见、Retry-After提示、当前对象版本切换和历史版本移除；验证/恢复必须使用receipt固定版本，历史版本不可用即失败关闭。
+- 新增8/9项故障测试（最终按unittest实际统计），并将关键组合路径加入CI自检。全库159个unittest通过，后续最终CI补记。
+- 新增KNOW-000036、ASSET-000067；没有真实云访问、凭据或生产行为。

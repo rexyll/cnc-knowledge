@@ -81,3 +81,5 @@
 | spare-parts-inventory-backup-provider-identity-access-review-template.csv | CSV空白模板 / ASSET-000064 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-security-and-resilience.md / KNOW-000035 | Provider主体身份、动作与前缀授权、租户隔离、凭据托管、审计和审批评估模板；无默认权限方案。 |
 | spare-parts-inventory-backup-orphan-inventory-reclamation-review-template.csv | CSV空白模板 / ASSET-000065 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-security-and-resilience.md / KNOW-000035 | 未提交对象/分块会话只读盘点和回收审批记录模板；不执行删除，不预设保留期。 |
 | spare-parts-inventory-backup-provider-resilience-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000066 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-security-and-resilience.md / KNOW-000035 | 14项Mock合成测试场景，覆盖最小权限、租户隔离、分块续传、故障恢复和孤儿对象审查；不代表真实云验收。 |
+
+| spare-parts-inventory-backup-provider-retry-consistency-test-matrix-v1.csv | CSV测试矩阵 / ASSET-000067 | 项目原创 | 2026-11-26 | 原创，可在项目内使用 | CH17-T004 / spare-parts-inventory-backup-provider-retry-consistency-and-recovery.md / KNOW-000036 | 12条合成场景，覆盖限流退避、写成功响应丢失、延迟可见、重试耗尽、版本切换/缺失、分块响应丢失及永久错误不重试；不代表真实云Provider验收。 |

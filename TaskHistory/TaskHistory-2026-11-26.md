@@ -85,3 +85,15 @@
 - **最终记录CI：** [Run 45738063901](https://github.com/rexyll/cnc-knowledge/actions/runs/45738063901)，两个Job均completed/success；全库150个unittest通过，Knowledge Quality 0 errors；适配器Artifact ID 15080002233。
 - **资源格式复核：** 身份权限评估模板26列、孤儿盘点/回收审批模板30列、Provider可靠性测试矩阵11列/14条数据行，数据行列宽一致。
 - **最终边界：** 主分支main；15篇KNOW、63个实体、59项资源；孤儿回收候选均未批准且不可执行。无真实云/IAM/凭据/密钥/网络/加密/已完成对象删除，生产备份未启用。
+
+
+## CH17-T004 备份Provider重试与一致性第二十二轮（2026-11-26）
+
+- **实现代码：** `scripts/spare_parts_backup_storage_adapter.py`新增ProviderTransientError和outcome_unknown，提供只对瞬态错误生效的有界指数退避（默认max_attempts=4、base=0.1s、max=2s、sleep可注入）。
+- **Mock故障注入：** 服务端已写入对象/分块/完成对象后故意丢失响应；延迟读可见、瞬态GET故障、历史版本切换与历史版本不可用。
+- **幂等恢复：** 使用原对象键、backup ID、upload ID、分块序号和相同字节重试；已提交对象/分块复用；重试预算耗尽不返回PUBLISHED/VERIFIED，永久错误不重试。
+- **版本：** receipt固定历史版本；当前版本切换时仍读取历史版本；历史版本缺失时失败关闭，不回退latest。
+- **测试：** 新增9项专项unittest，Provider专项合计31个，当前全库159个unittest通过。最终代码Run 45738812474两个Job均success；扩展self-check CI Run 45738938023待最终确认。
+- **自检Artifact：** 自检增加commit timeout、read-after-write延迟、瞬态读取及历史版本切换的组合路径；Artifact及最终Run待CI结束后记录。
+- **资源：** 新增KNOW-000036与ASSET-000067（12条重试/一致性故障场景）；全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- **边界：** 没有真实云端限流、Retry-After、读一致性、版本生命周期、HTTP/SDK超时验证；无网络/凭据/KMS/HSM/加密/对象锁/生产备份。

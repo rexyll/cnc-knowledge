@@ -264,3 +264,21 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 新增KNOW-000035；新增Provider ACL、Multipart、prefix inventory能力；不实现真实IAM/云凭据、已完成对象删除或自动回收。
 
 - 最终资源格式复核：ASSET-000064 26列空白模板、ASSET-000065 30列空白模板、ASSET-000066 11列/14条测试矩阵；CI Run 45738063901两个Job success，150个unittest通过，Artifact 15080002233。
+
+
+## CH17-T004 Provider瞬态故障与模糊提交恢复第二十二轮（2026-11-26）
+
+- 新增 `ProviderTransientError`：显式区分可重试瞬态错误以及outcome_unknown提交结果未知错误；永久权限/冲突/完整性错误不自动重试。
+- `BackupStorageAdapter`新增可配置最大尝试次数、基础/最大延迟及sleep注入，采用有界指数退避并合并Provider Retry-After提示；当前Mock不使用随机抖动。
+- Mock故障注入包括写入成功但响应超时、分块写后响应超时、分块完成后响应超时、读取可见性延迟、瞬态读故障和历史版本切换/缺失。
+- 对象写入、回执写入、分块和读取均以原key/backup ID/upload ID/part number和相同内容幂等重试；重试耗尽不得标记成功。
+- 自检覆盖提交超时、延迟可见、瞬态读取、当前版本切换和固定历史版本隔离恢复；全库159个unittest通过。
+
+
+## CH17-T004 Provider重试与一致性第二十二轮（2026-11-26）
+
+- 新增ProviderTransientError与outcome_unknown分类；只重试可明确归类的瞬态错误，永久错误不重试。
+- 新增可配置有界指数退避：默认最多4次尝试、base 0.1s、max 2s，可注入sleep函数；Mock测试不真实等待且不启用随机抖动。
+- 模拟PUT提交成功但响应丢失、multipart part写后超时、multipart complete已提交但响应丢失、对象读后写延迟和瞬态GET限流；所有重试固定同一请求身份/对象键/内容。
+- 支持Mock历史版本集合与版本切换；历史版本仍在时依回执固定版本读取，版本缺失时失败关闭，不回退到最新版本。
+- 新增ASSET-000067，定义12条重试/一致性合成场景。实现及测试全库159个unittest通过；第二十二轮组合self-check还需最终CI确认。

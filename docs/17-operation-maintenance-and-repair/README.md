@@ -81,3 +81,5 @@
 - [库存账本备份存储适配器契约与Mock验证](spare-parts-inventory-backup-storage-adapter.md)（KNOW-000034）
 
 - [库存账本备份 Provider 身份权限、分块续传与孤儿回收治理](spare-parts-inventory-backup-provider-security-and-resilience.md)（KNOW-000035）
+
+- [备份 Provider 重试、一致性与模糊提交恢复](spare-parts-inventory-backup-provider-retry-consistency-and-recovery.md)（KNOW-000036）
