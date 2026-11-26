@@ -26,6 +26,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from scripts.spare_parts_fencing_attestation import (
+    FencingAttestationError, verify_fencing_attestation_signature,
+)
+
 from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageConflict,
     BackupStorageError,
@@ -42,7 +46,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     _sha,
 )
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 PBKDF2_ITERATIONS = 210_000
 MAX_FENCING_TOKEN = (1 << 63) - 1
 DEFAULT_ACTIONS = (
@@ -57,6 +61,10 @@ DEFAULT_ACTIONS = (
 
 class SQLiteProviderAuthorizationError(BackupStorageError):
     """The configured local Provider principal is not allowed to perform an action."""
+
+
+class FencingAttestationRejectedError(BackupStorageError):
+    """A Coordinator signature or scope-bound fencing claim is invalid."""
 
 
 class SQLiteProviderObjectNotFoundError(BackupStorageError):
@@ -74,6 +82,7 @@ class SQLiteFencedObjectStorageProvider:
     """
 
     supports_fencing = True
+    requires_fencing_attestation = True
 
     def __init__(
         self,
@@ -81,6 +90,7 @@ class SQLiteFencedObjectStorageProvider:
         *,
         principal_id: str,
         principal_secret: str,
+        trusted_attestation_keys: dict[str, str | bytes],
         busy_timeout_seconds: float = 5.0,
         fault_hook: Callable[[str], None] | None = None,
     ):
@@ -102,6 +112,23 @@ class SQLiteFencedObjectStorageProvider:
             raise BackupStorageError("SQLite busy timeout must be in (0, 120] seconds")
         self.principal_id = principal_id.strip()
         self._principal_secret = principal_secret.encode("utf-8")
+        if not isinstance(trusted_attestation_keys, dict) or not trusted_attestation_keys:
+            raise BackupStorageError("Provider requires at least one trusted fencing attestation key")
+        self._trusted_attestation_keys: dict[str, bytes] = {}
+        for key_id, secret in trusted_attestation_keys.items():
+            if not isinstance(key_id, str) or not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+            ):
+                raise BackupStorageError("trusted attestation key ID is invalid")
+            if isinstance(secret, str):
+                key_bytes = secret.encode("utf-8")
+            elif isinstance(secret, bytes):
+                key_bytes = secret
+            else:
+                raise BackupStorageError("trusted attestation key must be bytes or text")
+            if len(key_bytes) < 32:
+                raise BackupStorageError("trusted HMAC attestation keys must contain at least 32 bytes")
+            self._trusted_attestation_keys[key_id] = key_bytes
         self.busy_timeout_seconds = float(busy_timeout_seconds)
         self.fault_hook = fault_hook
         self._capabilities = ProviderCapabilities(
@@ -121,6 +148,19 @@ class SQLiteFencedObjectStorageProvider:
             evidence_scope="SAME_HOST_LOCAL_SQLITE_REFERENCE_NOT_CLOUD_OR_MULTI_HOST",
         )
         self._authenticate_initial_session()
+        self._validate_configured_attestation_keys()
+
+    def _validate_configured_attestation_keys(self) -> None:
+        try:
+            with self._transaction() as c:
+                rows = c.execute(
+                    "SELECT key_id FROM trusted_fencing_keys WHERE status IN ('ACTIVE','RETIRING')"
+                ).fetchall()
+                trusted = {row["key_id"] for row in rows}
+                if not trusted or not trusted.intersection(self._trusted_attestation_keys):
+                    raise BackupStorageError("Provider has no matching runtime key for trusted Coordinator attestations")
+        except sqlite3.Error as exc:
+            raise BackupStorageError("cannot load trusted Coordinator attestation key registry") from exc
 
     @classmethod
     def provision_database(
@@ -128,6 +168,7 @@ class SQLiteFencedObjectStorageProvider:
         database_path: str | os.PathLike[str],
         *,
         principals: list[dict[str, Any]],
+        trusted_attestation_keys: list[dict[str, Any]],
         minimum_fencing_token: int = 0,
     ) -> dict[str, Any]:
         """Create a new DB and principal verifier records; never overwrites a DB."""
@@ -157,6 +198,16 @@ class SQLiteFencedObjectStorageProvider:
                 CREATE TABLE provider_meta (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
+                );
+                CREATE TABLE trusted_fencing_keys (
+                    issuer_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    algorithm TEXT NOT NULL CHECK(algorithm='HMAC-SHA256'),
+                    status TEXT NOT NULL CHECK(status IN ('ACTIVE','RETIRING','REVOKED')),
+                    not_before REAL NOT NULL,
+                    not_after REAL,
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY(issuer_id,key_id)
                 );
                 CREATE TABLE provider_principals (
                     principal_id TEXT PRIMARY KEY,
@@ -252,6 +303,46 @@ class SQLiteFencedObjectStorageProvider:
                 "INSERT INTO provider_meta(key,value) VALUES('provisioned_at',?)",
                 (str(now),),
             )
+            if not isinstance(trusted_attestation_keys, list) or not trusted_attestation_keys:
+                raise BackupStorageError("at least one trusted Coordinator attestation key is required")
+            trusted_seen: set[tuple[str, str]] = set()
+            for trusted in trusted_attestation_keys:
+                if not isinstance(trusted, dict):
+                    raise BackupStorageError("trusted attestation key metadata must be objects")
+                issuer_id, key_id = trusted.get("issuer_id"), trusted.get("key_id")
+                algorithm = trusted.get("algorithm", "HMAC-SHA256")
+                status = trusted.get("status", "ACTIVE")
+                not_before = trusted.get("not_before", 0.0)
+                not_after = trusted.get("not_after")
+                if not isinstance(issuer_id, str) or not issuer_id.strip() or len(issuer_id) > 128:
+                    raise BackupStorageError("trusted attestation issuer ID is invalid")
+                if not isinstance(key_id, str) or not re.fullmatch(
+                    r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+                ):
+                    raise BackupStorageError("trusted attestation key ID is invalid")
+                if algorithm != "HMAC-SHA256" or status not in {"ACTIVE", "RETIRING"}:
+                    raise BackupStorageError("trusted attestation key algorithm or initial status is invalid")
+                if (
+                    not isinstance(not_before, (int, float)) or isinstance(not_before, bool)
+                    or not 0 <= float(not_before) < float("inf")
+                ):
+                    raise BackupStorageError("trusted attestation not_before is invalid")
+                if not_after is not None and (
+                    not isinstance(not_after, (int, float)) or isinstance(not_after, bool)
+                    or not float(not_before) < float(not_after) < float("inf")
+                ):
+                    raise BackupStorageError("trusted attestation not_after is invalid")
+                identity = (issuer_id.strip(), key_id)
+                if identity in trusted_seen:
+                    raise BackupStorageError("duplicate trusted attestation issuer/key ID")
+                trusted_seen.add(identity)
+                connection.execute(
+                    """INSERT INTO trusted_fencing_keys(
+                        issuer_id,key_id,algorithm,status,not_before,not_after,created_at
+                    ) VALUES(?,?,?, ?,?,?,?)""",
+                    (identity[0], key_id, algorithm, status, float(not_before),
+                     float(not_after) if not_after is not None else None, now),
+                )
             seen: set[str] = set()
             for principal in principals:
                 if not isinstance(principal, dict):
@@ -306,6 +397,7 @@ class SQLiteFencedObjectStorageProvider:
                 "database_sha256": cls._sha256_file(path),
                 "file_mode": oct(path.stat().st_mode & 0o777),
                 "plaintext_secrets_stored": False,
+                "trusted_attestation_key_count": len(trusted_seen),
             }
         except Exception:
             if connection is not None:
@@ -457,6 +549,79 @@ class SQLiteFencedObjectStorageProvider:
         if self.fault_hook is not None:
             self.fault_hook(phase)
 
+    def _verify_fencing_attestation(
+        self, token: str, *, fencing_scope: str, resource_key: str,
+        fencing_token: int, operation: str, idempotency_key: str,
+    ) -> dict[str, Any]:
+        try:
+            claims, key_id = verify_fencing_attestation_signature(
+                token, trusted_keys=self._trusted_attestation_keys
+            )
+        except FencingAttestationError as exc:
+            raise FencingAttestationRejectedError(str(exc)) from exc
+        expected_domain = "write" if operation == "object:put_if_absent" else "multipart"
+        expected = {
+            "v": 1, "kid": key_id, "tenant_id": self.tenant_id,
+            "fencing_scope": fencing_scope, "resource_key": resource_key,
+            "fencing_token": fencing_token, "operation": operation,
+            "idempotency_key": idempotency_key, "domain": expected_domain,
+        }
+        for field, value in expected.items():
+            if claims.get(field) != value:
+                raise FencingAttestationRejectedError(
+                    "fencing attestation claim mismatch: " + field
+                )
+        if (
+            not isinstance(claims.get("iss"), str) or not claims["iss"].strip()
+            or not isinstance(claims.get("lease_id"), str) or not claims["lease_id"].strip()
+            or not isinstance(claims.get("owner_id"), str) or not claims["owner_id"].strip()
+        ):
+            raise FencingAttestationRejectedError("fencing attestation lease identity is incomplete")
+        now = time.time()
+        issued = claims.get("issued_at")
+        expires = claims.get("expires_at")
+        lease_expires = claims.get("lease_expires_at")
+        if any(
+            not isinstance(value, (int, float)) or isinstance(value, bool)
+            or not 0 <= float(value) < float("inf")
+            for value in (issued, expires, lease_expires)
+        ):
+            raise FencingAttestationRejectedError("fencing attestation time claims are invalid")
+        if (
+            float(issued) > now + 5.0
+            or float(expires) <= now
+            or float(expires) <= float(issued)
+            or float(expires) > float(lease_expires)
+            or float(expires) - float(issued) > 60.0
+            or float(lease_expires) <= now
+        ):
+            raise FencingAttestationRejectedError("fencing attestation is expired or exceeds its lease")
+        if len(claims) != 15:
+            raise FencingAttestationRejectedError("fencing attestation contains unknown or missing claims")
+        return claims
+
+    def _authorize_fencing_attestation(
+        self, c: sqlite3.Connection, *, claims: dict[str, Any], tenant_id: str
+    ) -> None:
+        row = c.execute(
+            """SELECT algorithm,status,not_before,not_after
+               FROM trusted_fencing_keys WHERE issuer_id=? AND key_id=?""",
+            (claims["iss"], claims["kid"]),
+        ).fetchone()
+        now = time.time()
+        if (
+            row is None or row["algorithm"] != "HMAC-SHA256"
+            or row["status"] not in {"ACTIVE", "RETIRING"}
+            or now < float(row["not_before"])
+            or (row["not_after"] is not None and now >= float(row["not_after"]))
+            or float(claims["issued_at"]) < float(row["not_before"])
+            or (row["not_after"] is not None and float(claims["issued_at"]) >= float(row["not_after"]))
+            or claims["tenant_id"] != tenant_id
+        ):
+            raise FencingAttestationRejectedError(
+                "fencing attestation issuer/key is not trusted for this tenant or time window"
+            )
+
     @staticmethod
     def _validate_fenced_arguments(
         fencing_token: int, idempotency_key: str
@@ -575,13 +740,18 @@ class SQLiteFencedObjectStorageProvider:
 
     def put_if_absent_fenced(
         self, key: str, data: bytes, *, fencing_scope: str,
-        fencing_token: int, idempotency_key: str,
+        fencing_token: int, idempotency_key: str, fencing_attestation: str,
     ) -> StoredObject:
         normalized_key = _safe_key(key)
         normalized_scope = _safe_key(fencing_scope)
         self._validate_fenced_arguments(fencing_token, idempotency_key)
         if not isinstance(data, bytes):
             raise BackupStorageError("Provider object payload must be bytes")
+        self._validate_fenced_arguments(fencing_token, idempotency_key)
+        claims = self._verify_fencing_attestation(
+            fencing_attestation, fencing_scope=normalized_scope, resource_key=normalized_key,
+            fencing_token=fencing_token, operation="object:put_if_absent", idempotency_key=idempotency_key,
+        )
         digest = _sha(data)
         operation = "object:write_fenced"
         operation_hash = self._operation_hash(
@@ -591,6 +761,7 @@ class SQLiteFencedObjectStorageProvider:
         with self._authorized_transaction(
             action=operation, object_key=normalized_key, fencing_scope=normalized_scope
         ) as (c, tenant_id):
+            self._authorize_fencing_attestation(c, claims=claims, tenant_id=tenant_id)
             prior = self._prepare_fenced_operation(
                 c, tenant_id=tenant_id, fencing_scope=normalized_scope,
                 fencing_token=fencing_token, idempotency_key=idempotency_key,
@@ -640,12 +811,16 @@ class SQLiteFencedObjectStorageProvider:
 
     def begin_multipart_upload_fenced(
         self, key: str, upload_id: str, *, fencing_scope: str,
-        fencing_token: int, idempotency_key: str,
+        fencing_token: int, idempotency_key: str, fencing_attestation: str,
     ) -> None:
         normalized_key, scope = _safe_key(key), _safe_key(fencing_scope)
         self._validate_fenced_arguments(fencing_token, idempotency_key)
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", upload_id or ""):
             raise BackupStorageError("multipart upload ID is invalid")
+        claims = self._verify_fencing_attestation(
+            fencing_attestation, fencing_scope=scope, resource_key=normalized_key,
+            fencing_token=fencing_token, operation="multipart:begin", idempotency_key=idempotency_key,
+        )
         action = "multipart:write_fenced"
         operation_hash = self._operation_hash(
             "multipart_begin", {"key": normalized_key, "scope": scope, "upload_id": upload_id}
@@ -653,6 +828,7 @@ class SQLiteFencedObjectStorageProvider:
         with self._authorized_transaction(
             action=action, object_key=normalized_key, fencing_scope=scope
         ) as (c, tenant_id):
+            self._authorize_fencing_attestation(c, claims=claims, tenant_id=tenant_id)
             prior = self._prepare_fenced_operation(
                 c, tenant_id=tenant_id, fencing_scope=scope,
                 fencing_token=fencing_token, idempotency_key=idempotency_key,
@@ -693,7 +869,7 @@ class SQLiteFencedObjectStorageProvider:
     def put_multipart_part_fenced(
         self, key: str, upload_id: str, part_number: int, data: bytes,
         expected_sha256: str, *, fencing_scope: str,
-        fencing_token: int, idempotency_key: str,
+        fencing_token: int, idempotency_key: str, fencing_attestation: str,
     ) -> MultipartPart:
         normalized_key, scope = _safe_key(key), _safe_key(fencing_scope)
         self._validate_fenced_arguments(fencing_token, idempotency_key)
@@ -701,6 +877,10 @@ class SQLiteFencedObjectStorageProvider:
             raise BackupStorageError("multipart part number must be a positive integer")
         if not isinstance(data, bytes) or _sha(data) != expected_sha256:
             raise BackupStorageError("multipart part data or checksum is invalid")
+        claims = self._verify_fencing_attestation(
+            fencing_attestation, fencing_scope=scope, resource_key=normalized_key,
+            fencing_token=fencing_token, operation="multipart:put_part", idempotency_key=idempotency_key,
+        )
         action = "multipart:write_fenced"
         digest = _sha(data)
         operation_hash = self._operation_hash(
@@ -712,6 +892,7 @@ class SQLiteFencedObjectStorageProvider:
         with self._authorized_transaction(
             action=action, object_key=normalized_key, fencing_scope=scope
         ) as (c, tenant_id):
+            self._authorize_fencing_attestation(c, claims=claims, tenant_id=tenant_id)
             prior = self._prepare_fenced_operation(
                 c, tenant_id=tenant_id, fencing_scope=scope,
                 fencing_token=fencing_token, idempotency_key=idempotency_key,
@@ -774,6 +955,7 @@ class SQLiteFencedObjectStorageProvider:
         self, key: str, upload_id: str, *, expected_part_count: int,
         expected_size_bytes: int, expected_sha256: str,
         fencing_scope: str, fencing_token: int, idempotency_key: str,
+        fencing_attestation: str,
     ) -> StoredObject:
         normalized_key, scope = _safe_key(key), _safe_key(fencing_scope)
         self._validate_fenced_arguments(fencing_token, idempotency_key)
@@ -785,6 +967,10 @@ class SQLiteFencedObjectStorageProvider:
             or not isinstance(expected_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256)
         ):
             raise BackupStorageError("multipart completion metadata is invalid")
+        claims = self._verify_fencing_attestation(
+            fencing_attestation, fencing_scope=scope, resource_key=normalized_key,
+            fencing_token=fencing_token, operation="multipart:complete", idempotency_key=idempotency_key,
+        )
         action = "multipart:write_fenced"
         operation_hash = self._operation_hash(
             "multipart_complete", {
@@ -796,6 +982,7 @@ class SQLiteFencedObjectStorageProvider:
         with self._authorized_transaction(
             action=action, object_key=normalized_key, fencing_scope=scope
         ) as (c, tenant_id):
+            self._authorize_fencing_attestation(c, claims=claims, tenant_id=tenant_id)
             prior = self._prepare_fenced_operation(
                 c, tenant_id=tenant_id, fencing_scope=scope,
                 fencing_token=fencing_token, idempotency_key=idempotency_key,
@@ -1078,7 +1265,7 @@ class SQLiteFencedObjectStorageProvider:
             if meta.get("schema_version") != str(SCHEMA_VERSION):
                 raise BackupStorageError("Provider backup schema version is unsupported")
             required = {
-                "provider_principals", "fencing_scopes", "fenced_operations",
+                "provider_principals", "trusted_fencing_keys", "fencing_scopes", "fenced_operations",
                 "provider_objects", "multipart_sessions", "multipart_parts", "provider_audit",
             }
             tables = {
@@ -1241,14 +1428,31 @@ class SQLiteFencedObjectStorageProvider:
                     "principal_secret": secret,
                     "allowed_prefixes": ["cnc/ch17"],
                 }],
+                trusted_attestation_keys=[{
+                    "issuer_id": "ci-coordinator", "key_id": "ci-key",
+                    "algorithm": "HMAC-SHA256", "status": "ACTIVE",
+                }],
             )
             provider = SQLiteFencedObjectStorageProvider(
-                database, principal_id="ci-writer", principal_secret=secret
+                database, principal_id="ci-writer", principal_secret=secret,
+                trusted_attestation_keys={"ci-key": "ci-fencing-attestation-key-000000000001"},
             )
+            from scripts.spare_parts_fencing_attestation import create_fencing_attestation
+            issued = time.time()
             provider.put_if_absent_fenced(
                 "cnc/ch17/backup-selfcheck/payload.bin", b"synthetic",
                 fencing_scope="cnc/ch17/backup-selfcheck",
                 fencing_token=1, idempotency_key="ci-put-1",
+                fencing_attestation=create_fencing_attestation({
+                    "v": 1, "iss": "ci-coordinator", "kid": "ci-key",
+                    "lease_id": "ci-lease-1", "owner_id": "ci-self-check",
+                    "tenant_id": "synthetic-tenant", "domain": "write",
+                    "fencing_token": 1, "issued_at": issued,
+                    "expires_at": issued + 30, "lease_expires_at": issued + 30,
+                    "fencing_scope": "cnc/ch17/backup-selfcheck",
+                    "resource_key": "cnc/ch17/backup-selfcheck/payload.bin",
+                    "operation": "object:put_if_absent", "idempotency_key": "ci-put-1",
+                }, key_id="ci-key", secret="ci-fencing-attestation-key-000000000001"),
             )
             rejected = False
             try:
@@ -1256,6 +1460,16 @@ class SQLiteFencedObjectStorageProvider:
                     "cnc/ch17/backup-selfcheck/late.bin", b"late",
                     fencing_scope="cnc/ch17/backup-selfcheck",
                     fencing_token=1, idempotency_key="ci-stale-1",
+                    fencing_attestation=create_fencing_attestation({
+                        "v": 1, "iss": "ci-coordinator", "kid": "ci-key",
+                        "lease_id": "ci-lease-2", "owner_id": "ci-self-check",
+                        "tenant_id": "synthetic-tenant", "domain": "write",
+                        "fencing_token": 1, "issued_at": issued,
+                        "expires_at": issued + 30, "lease_expires_at": issued + 30,
+                        "fencing_scope": "cnc/ch17/backup-selfcheck",
+                        "resource_key": "cnc/ch17/backup-selfcheck/late.bin",
+                        "operation": "object:put_if_absent", "idempotency_key": "ci-stale-1",
+                    }, key_id="ci-key", secret="ci-fencing-attestation-key-000000000001"),
                 )
             except (StaleFencingTokenError, FencingTokenConflictError):
                 rejected = True
