@@ -150,6 +150,124 @@ class SQLiteFencedObjectStorageProvider:
         self._authenticate_initial_session()
         self._validate_configured_attestation_keys()
 
+    @classmethod
+    def admin_register_trusted_attestation_key(
+        cls, database_path: str | os.PathLike[str], *, issuer_id: str, key_id: str,
+        not_before: float | None = None,
+    ) -> dict[str, Any]:
+        """Register a verification key using local database-owner privileges.
+
+        This is an offline/local control-plane operation. It stores metadata only;
+        the secret must be injected separately into Coordinator and Provider.
+        """
+        path = Path(database_path).expanduser()
+        if path.is_symlink():
+            raise BackupStorageError("Provider key registry database cannot be a symlink")
+        path = path.resolve()
+        if not path.is_file():
+            raise BackupStorageError("Provider key registry database does not exist")
+        if not isinstance(issuer_id, str) or not issuer_id.strip() or len(issuer_id) > 128:
+            raise BackupStorageError("trusted issuer ID is invalid")
+        if not isinstance(key_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+        ):
+            raise BackupStorageError("trusted key ID is invalid")
+        boundary = time.time() if not_before is None else not_before
+        if (
+            not isinstance(boundary, (int, float)) or isinstance(boundary, bool)
+            or not 0 <= float(boundary) < float("inf")
+        ):
+            raise BackupStorageError("trusted key not_before is invalid")
+        connection = None
+        try:
+            connection = sqlite3.connect(str(path), isolation_level=None)
+            connection.execute("PRAGMA foreign_keys=ON")
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                """INSERT INTO trusted_fencing_keys(
+                    issuer_id,key_id,algorithm,status,not_before,not_after,created_at
+                ) VALUES(?,?,'HMAC-SHA256','ACTIVE',?,NULL,?)""",
+                (issuer_id.strip(), key_id, float(boundary), time.time()),
+            )
+            connection.commit()
+            return {
+                "result": "REGISTERED",
+                "issuer_id": issuer_id.strip(),
+                "key_id": key_id,
+                "algorithm": "HMAC-SHA256",
+                "status": "ACTIVE",
+                "secret_stored": False,
+            }
+        except sqlite3.IntegrityError as exc:
+            if connection is not None:
+                connection.rollback()
+            raise BackupStorageError("trusted issuer/key ID already exists") from exc
+        except sqlite3.Error as exc:
+            if connection is not None:
+                connection.rollback()
+            raise BackupStorageError("cannot register trusted Provider attestation key") from exc
+        finally:
+            if connection is not None:
+                connection.close()
+
+    @classmethod
+    def admin_set_trusted_attestation_key_status(
+        cls, database_path: str | os.PathLike[str], *, issuer_id: str, key_id: str,
+        status: str, not_after: float | None = None,
+    ) -> dict[str, Any]:
+        """Retire or revoke a key; REVOKED is terminal and immediately fails closed."""
+        path = Path(database_path).expanduser()
+        if path.is_symlink():
+            raise BackupStorageError("Provider key registry database cannot be a symlink")
+        path = path.resolve()
+        if not path.is_file():
+            raise BackupStorageError("Provider key registry database does not exist")
+        if status not in {"RETIRING", "REVOKED"}:
+            raise BackupStorageError("key status transition must be RETIRING or REVOKED")
+        now = time.time()
+        boundary = now if status == "REVOKED" else not_after
+        if status == "RETIRING" and (
+            not isinstance(boundary, (int, float)) or isinstance(boundary, bool)
+            or not now < float(boundary) < float("inf")
+        ):
+            raise BackupStorageError("retiring key requires a future not_after deadline")
+        connection = None
+        try:
+            connection = sqlite3.connect(str(path), isolation_level=None)
+            connection.row_factory = sqlite3.Row
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT status FROM trusted_fencing_keys WHERE issuer_id=? AND key_id=?",
+                (issuer_id, key_id),
+            ).fetchone()
+            if row is None:
+                raise BackupStorageError("trusted issuer/key ID is not registered")
+            if row["status"] == "REVOKED":
+                if status != "REVOKED":
+                    raise BackupStorageError("revoked attestation keys cannot be reactivated")
+                connection.commit()
+                return {"result": "UNCHANGED", "issuer_id": issuer_id, "key_id": key_id, "status": "REVOKED"}
+            connection.execute(
+                "UPDATE trusted_fencing_keys SET status=?,not_after=? WHERE issuer_id=? AND key_id=?",
+                (status, float(boundary), issuer_id, key_id),
+            )
+            connection.commit()
+            return {
+                "result": "UPDATED", "issuer_id": issuer_id, "key_id": key_id,
+                "status": status, "not_after": float(boundary),
+            }
+        except BackupStorageError:
+            if connection is not None:
+                connection.rollback()
+            raise
+        except sqlite3.Error as exc:
+            if connection is not None:
+                connection.rollback()
+            raise BackupStorageError("cannot update trusted Provider attestation key status") from exc
+        finally:
+            if connection is not None:
+                connection.close()
+
     def _validate_configured_attestation_keys(self) -> None:
         try:
             with self._transaction() as c:

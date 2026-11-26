@@ -156,7 +156,6 @@ def _provision(path: Path, *, two_tenants: bool = False) -> None:
         principals=principals,
         trusted_attestation_keys=[
             {"issuer_id": ISSUER_ID, "key_id": KEY_ID, "algorithm": "HMAC-SHA256", "status": "ACTIVE"},
-            {"issuer_id": ISSUER_ID, "key_id": OLD_KEY_ID, "algorithm": "HMAC-SHA256", "status": "RETIRING"},
         ],
     )
 
@@ -289,6 +288,16 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
             )
 
     def test_key_rotation_accepts_retiring_and_active_keys_then_revocation_rejects(self):
+        registered = SQLiteFencedObjectStorageProvider.admin_register_trusted_attestation_key(
+            self.database, issuer_id=ISSUER_ID, key_id=OLD_KEY_ID,
+        )
+        self.assertEqual(registered["result"], "REGISTERED")
+        retired = SQLiteFencedObjectStorageProvider.admin_set_trusted_attestation_key_status(
+            self.database, issuer_id=ISSUER_ID, key_id=OLD_KEY_ID,
+            status="RETIRING", not_after=time.time() + 60,
+        )
+        self.assertEqual(retired["status"], "RETIRING")
+        self.provider = _new_provider(self.database)
         old_key = "cnc/ch17/backup-reference-001/old-key.bin"
         old_proof = _proof(
             tenant_id="tenant-a", key=old_key, scope=SCOPE, token=5,
@@ -309,11 +318,10 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
             new_key, b"new-key", fencing_scope=SCOPE, fencing_token=6,
             idempotency_key="new-key-write", fencing_attestation=new_proof,
         )
-        with sqlite3.connect(self.database) as connection:
-            connection.execute(
-                "UPDATE trusted_fencing_keys SET status='REVOKED' WHERE issuer_id=? AND key_id=?",
-                (ISSUER_ID, OLD_KEY_ID),
-            )
+        revoked_status = SQLiteFencedObjectStorageProvider.admin_set_trusted_attestation_key_status(
+            self.database, issuer_id=ISSUER_ID, key_id=OLD_KEY_ID, status="REVOKED",
+        )
+        self.assertEqual(revoked_status["status"], "REVOKED")
         revoked_key = "cnc/ch17/backup-reference-001/revoked-key.bin"
         revoked_proof = _proof(
             tenant_id="tenant-a", key=revoked_key, scope=SCOPE, token=7,
