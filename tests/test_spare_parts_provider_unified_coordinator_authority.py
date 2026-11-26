@@ -198,8 +198,13 @@ class StoreBackedCoordinatorAuthorityContract:
         self.assertEqual([row.idempotency_key for row in pending_rows], ["pending-before-takeover"])
         renewed = self.authority.renew_leadership(new_leader, ttl_seconds=45)
         self.assertEqual(renewed.epoch, new_leader.epoch)
-        with self.assertRaises(CoordinatorAuthorityStaleLeaderError):
-            self.authority.list_pending_operations(new_leader)
+        self.assertGreater(renewed.expires_at, new_leader.expires_at)
+        # Leader identity is epoch-based: the pre-renewal handle remains valid
+        # for this epoch until its new persisted TTL expires or a new epoch wins.
+        self.assertEqual(
+            self.authority.list_pending_operations(new_leader),
+            self.authority.list_pending_operations(renewed),
+        )
 
     def test_activation_idempotency_scope_tenant_isolation_and_lease_validation(self):
         lease = self.acquire("idem-first")

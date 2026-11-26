@@ -195,7 +195,7 @@ class StoreBackedProviderAdmissionCoordinator:
             entry, _ = self.store.linearizable_get(self._STATE_KEY)
             if entry is not None:
                 state = self._decode(entry)
-                if state is None or state.get("schema_version") != 1:
+                if state is None or state.get("schema_version") != 2:
                     raise UnifiedAdmissionStateError("unsupported unified admission state schema")
                 if state.get("policy_hash") != self._policy_hash:
                     raise BackupStorageError("admission policy differs from the store-bound policy")
