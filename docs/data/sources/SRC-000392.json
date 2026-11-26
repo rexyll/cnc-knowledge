@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000392",
+  "source_type": "other",
+  "title": "SQLite Write-Ahead Logging — WAL Concurrency and Same-Host Requirement",
+  "publisher": "SQLite Project",
+  "author": null,
+  "url": "https://www.sqlite.org/wal.html",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Sections 1 and 2.2: WAL shared-memory wal-index requires processes on the same host; WAL is not supported over network filesystems; a WAL file permits one writer at a time.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to limit the atomic reference mode to a supported local filesystem on one host. It does not imply distributed or multi-host transaction semantics.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
