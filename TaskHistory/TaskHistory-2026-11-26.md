@@ -54,3 +54,13 @@
 - **新增资源：** ASSET-000062 Provider能力评估矩阵；ASSET-000063 12项适配器测试矩阵。新增KNOW-000034和独立知识文档。
 - **CI：** Knowledge Quality新增Mock适配器self-check与报告Artifact；初始CI发现版本读取和测试篡改样本问题，已修复并提交新版本。最终Run和Job状态待确认后补录。
 - **边界：** 仅本地临时目录/内存Mock，无真实云网络、账户/凭据、KMS/HSM、加密、对象锁、远端副本或删除操作。Mock声明不是真实供应商能力证据；企业备份启用门禁保持BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+
+### 第二十轮最终CI验收补记
+
+- **最终main代码提交：** 2b95bca7741efa359bd287ffec16dc9c98f131c7。
+- **GitHub Actions：** [Run 45732798249](https://github.com/rexyll/cnc-knowledge/actions/runs/45732798249)，Knowledge structure and data quality、CH12 numerical resource tests两个Job均completed/success。
+- **自动测试：** 全库140个unittest通过；新增13个适配器专项unittest；strict knowledge lint `RESULT: PASS (0 errors)`；Provider/备份治理校验流程均通过。
+- **适配器Artifact：** `ch17-backup-storage-adapter-45732798249`，Artifact ID 15076314703。报告显示Mock对象上传、回执发布、完整性验证与隔离恢复PASS；无外部连接、凭据/密钥、网络和删除操作。
+- **CI修复过程：** Run 45732501248发现两项对象版本读取错误和一项无效篡改测试；Run 45732585785修复后140个单测通过，但脚本直接运行时repo import path仍缺失；最终提交2b95bca7741efa359bd287ffec16dc9c98f131c7补齐路径初始化，Run 45732798249全部成功。
+- **统计与边界：** CH17当前14篇KNOW、59个实体、56项资源。13个新增unittest与12条资源场景定义分别统计。无真实云Provider/网络/凭据/KMS/HSM/加密/对象锁/异地复制；CH17-T004保持IN_PROGRESS、business_rule_assertions=NOT_EVALUATED、production_backup_enabled=false。

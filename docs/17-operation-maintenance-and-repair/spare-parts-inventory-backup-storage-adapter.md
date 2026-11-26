@@ -70,3 +70,10 @@ SHA-256可检测普通内容损坏，但无外部信任根/数字签名时不能
 在开发任何真实对象存储Provider之前，应先完成：能力矩阵评审、供应商官方API/合同核验、独立账户与最小权限、凭据短期化/托管、TLS与静态加密验证、对象锁/保留策略、版本读取和条件创建一致性测试、带宽/费用/RPO/RTO实测、退出与恢复演练及安全审查。
 
 **严格状态：** 本轮没有真实云Provider、凭据或网络访问；没有加密、远端复制、对象锁或删除操作。Mock能力不构成生产证据。`production_backup_enabled=false`，`governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL`，业务断言`NOT_EVALUATED`，企业备份/恢复测试`NOT_RUN`。
+
+
+### CI 验收补充
+
+- GitHub Actions Run 45732798249：Knowledge structure and data quality 与 CH12 numerical resource tests 两个Job均completed/success；全库140个unittest方法通过；治理校验器与strict knowledge lint均0 errors。
+- 适配器self-check报告 `ch17-backup-storage-adapter-45732798249`（Artifact ID 15076314703）：Mock上传/回执发布、远端manifest/负载校验和隔离恢复均PASS；external_connections=false、credentials_or_keys_used=false、network_access=false、delete_operations=false。
+- 本轮新增13个专项unittest方法；ASSET-000063资源矩阵包含12个测试场景，两者分别是自动测试方法数和场景定义数。

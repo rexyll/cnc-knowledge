@@ -334,5 +334,8 @@
 - **实现：** `scripts/spare_parts_backup_storage_adapter.py` 定义ObjectStorageProvider的capabilities、put_if_absent、get_object；实现FileSystemStorageProvider和MockObjectStorageProvider；BackupStorageAdapter提供publish_backup、verify_stored_backup、restore_from_provider。
 - **提交协议：** 四个负载对象先写，BACKUP-RECEIPT.json最后发布作为提交标记。失败留下未提交孤儿对象，无回执不视为完整备份；同字节重试幂等，不同内容冲突；无delete/list API。
 - **安全边界：** 能力声明附带evidence_scope；Mock的版本/对象锁/加密/TLS仅为模拟声明。无真实网络、凭据、KMS/HSM、加密、对象锁、云区域或远端副本。
-- **测试：** 新增12项左右Provider/适配器合成测试，覆盖幂等、冲突、中断续传、回执最后提交、篡改/缺失、版本ID、路径安全和隔离恢复；CI增加Mock self-check与Artifact。
+- **测试：** 新增13项Provider/适配器专项unittest；ASSET-000063包含12个测试场景，覆盖幂等、冲突、中断续传、回执最后提交、篡改/缺失、版本ID、路径安全和隔离恢复；CI增加Mock self-check与Artifact。
 - **生产门禁：** 真实Provider接入前须评审条件创建/读后写语义、身份权限、加密与密钥、对象锁/保留、数据驻留、恢复吞吐、RPO/RTO与供应商退出证据；production_backup_enabled=false，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL。
+
+- **CI验收：** 最终代码提交 2b95bca7741efa359bd287ffec16dc9c98f131c7 对应Run 45732798249，两个Job均completed/success；全库140个unittest通过。Provider self-check与strict knowledge lint均PASS（0 errors）；Artifact `ch17-backup-storage-adapter-45732798249`，ID 15076314703。
+- **CI修复记录：** 初始Run 45732501248发现对象版本读取/测试篡改样本问题；Run 45732585785修正后140个单测通过，但CI直接执行脚本发现repo import path问题；提交2b95bca7741efa359bd287ffec16dc9c98f131c7补齐ROOT/sys.path后最终CI通过。
