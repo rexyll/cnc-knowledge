@@ -522,3 +522,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 
 
 第四十二轮离线容量探针实现提交 `f52937e1af7b622c11801e2ca502661365e75d05`；CI Run 45814052446两个必需Job均通过。全库356项unittest、CH12 143项数值资源测试通过，strict lint与结构质量均0 errors（5项非阻断warning）。14个profile已在CI合成测试中执行；CSV本身不含真实性能测量，ASSET-000087仍待企业批准，真实etcd容量验收未执行。
+
+
+## CH17-T004 Operation Ledger生命周期与安全归档（第四十三轮）
+
+- 新增 spare-parts-coordinator-operation-ledger-archive-test-matrix-v1.csv（ASSET-000088），包含25条待批准/未执行场景，覆盖归档准入、pending保护、幂等、CAS、manifest链、恢复及物理删除边界。
+- 协议正文位于 docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-operation-ledger-archival.md（KNOW-000057）；纯内存参考模型位于 scripts/spare_parts_operation_ledger_archive.py，单元测试位于 tests/test_spare_parts_operation_ledger_archive.py。
+- CSV是形式化场景定义，不包含企业执行结果；ASSET-000088保持PROPOSED_NOT_APPROVED / NOT_RUN。参考模型不连接真实etcd或对象存储，不启用生产归档。

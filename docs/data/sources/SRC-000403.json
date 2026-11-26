@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000403",
+  "source_type": "other",
+  "title": "Configuration options — etcd v3.7",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/op-guide/configuration/",
+  "version": "etcd v3.7 official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "--max-txn-ops defaults to 128; --max-request-bytes defaults to 1572864; both are server configuration options.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Defaults are configuration references only. Target cluster settings and actual request/transaction behavior must be verified for the intended deployment.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

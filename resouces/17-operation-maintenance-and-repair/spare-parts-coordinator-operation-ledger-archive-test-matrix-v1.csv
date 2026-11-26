@@ -1,0 +1,26 @@
+scenario_id,purpose,precondition,action,expected_result,approval_status,execution_status
+OLAR-001,archive only terminal operations,scope contains COMMITTED and REVOKED operations,archive one batch,archive immutable records and retain hot authority until pointer CAS,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-002,protect pending activation,scope contains PENDING_ACTIVATION,request archive,archive blocked and hot state unchanged,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-003,protect pending revocation,scope contains REVOKING,request archive,archive blocked and hot state unchanged,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-004,protect pending publish,scope contains PENDING_PUBLISH,request archive,archive blocked and hot state unchanged,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-005,protect recovery review,scope contains RECOVERY_REVIEW,request archive,archive blocked and hot state unchanged,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-006,retain current active lease operation,scope ACTIVE points to same lease and token,request archive,active ACTIVATE remains hot,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-007,archive superseded activation,scope token advanced beyond prior activation,request archive,old ACTIVATE may archive after no unresolved operations remain,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-008,minimum retention age,terminal operation is younger than configured age,request archive,no record removed from hot state,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-009,maximum records per batch,eligible count exceeds configured record ceiling,archive one batch,only bounded deterministic prefix is selected,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-010,maximum batch bytes,first record exceeds configured byte ceiling,request archive,fail before hot state mutation,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-011,immutable put response lost,archive object may have been written,read by deterministic content hash,verify bytes and continue only after exact match,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-012,archive read-back mismatch,archive store returns different bytes,attempt archive,fail closed and retain all hot records,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-013,Coordinator CAS conflict,scope changes after immutable object creation,attempt pointer CAS,retain hot records and leave unreferenced archive object for later inventory,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-014,Coordinator commit response lost,scope pointer commit may have succeeded,read authoritative scope pointer,resolve only exact generation and digest match,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-015,unknown commit cannot be read back,scope pointer response lost and authoritative read unavailable,attempt reconciliation,report unknown outcome and do not invent rollback,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-016,archived idempotent replay,same scope and key exist only in archive,repeat same request,return exact archived operation without allocating new sequence,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-017,archived idempotency conflict,same key exists with another payload digest,retry request,return conflict and never allocate a second operation,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-018,archive service unavailable on replay,hot record absent but scope has archive pointer,replay an old key,fail closed instead of treating archive outage as not-found,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-019,manifest-chain integrity,archive chain contains multiple generations,verify chain,all hashes scopes generations links and cumulative counts must match,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-020,archive object corruption,manifest bytes change after commitment,lookup archived operation,reject corrupt bytes and fail closed,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-021,scope isolation,archives exist for two tenants,lookup each tenant,never return a record from another scope,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-022,preserve fencing and sequence floors,scope has high-water token and publish sequence,archive terminal records,never lower either monotonic floor,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-023,orphan object retention,object written but pointer CAS did not commit,run archive operation,do not delete object in the archive transaction,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-024,physical retention deletion,archive has no live hot references,request hard delete,require separately approved retention and full reference inventory,PROPOSED_NOT_APPROVED,NOT_RUN
+OLAR-025,archive policy bounds,archive record or byte limit invalid,request archive,reject invalid policy before writing or purging,PROPOSED_NOT_APPROVED,NOT_RUN

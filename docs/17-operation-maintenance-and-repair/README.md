@@ -163,3 +163,8 @@ Coordinator统一事务参考见 [Unified Coordinator Authority：Leader、Scope
 
 
 第四十二轮离线容量探针代码提交 `f52937e1af7b622c11801e2ca502661365e75d05`；[CI Run 45814052446](https://github.com/rexyll/cnc-knowledge/actions/runs/45814052446)两个必需Job均completed/success。全库356项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项既有非阻断warning）。14个容量profile在CI合成测试中通过；真实etcd容量与性能仍未验证。
+
+
+## CH17-T004 Operation Ledger生命周期与安全归档（第四十三轮）
+
+新增 [Coordinator Operation Ledger 生命周期与安全归档协议](spare-parts-inventory-backup-provider-operation-ledger-archival.md)（KNOW-000057），明确终态候选筛选、未决操作保护、内容寻址不可变归档、manifest链、scope指针CAS、跨归档精确幂等和fail-closed恢复。配套25项企业待批准场景矩阵为ASSET-000088。新增脚本仅是纯内存协议参考模型，未接入当前StoreBackedCoordinatorAuthority或真实etcd/对象存储。

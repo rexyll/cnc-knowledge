@@ -1,0 +1,65 @@
+{
+  "entity_id": "ASSET-000088",
+  "entity_type": "asset_file",
+  "canonical_name": "备件库存备份 Coordinator Operation Ledger安全归档测试矩阵v1",
+  "english_name": "CNC spare-parts backup Coordinator Operation Ledger safe archival test matrix v1",
+  "aliases": [
+    "Operation Ledger archival conformance matrix",
+    "Coordinator archive CAS and idempotency scenarios",
+    "ASSET-000088"
+  ],
+  "description": "25条待审批/未执行的Operation Ledger归档形式化场景，覆盖终态准入、未决保护、不可变存储、读回、CAS、幂等、manifest链、恢复与物理删除审批边界。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Operation Ledger",
+    "Archive",
+    "ASSET-000088"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T21:00:00+08:00",
+  "updated_at": "2026-11-26T21:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000403",
+    "SRC-000404",
+    "SRC-000405"
+  ],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-operation-ledger-archive-test-matrix-v1.csv",
+    "file_name": "spare-parts-coordinator-operation-ledger-archive-test-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000057",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic archive protocol conformance scenarios",
+    "scenario_count": 25,
+    "approval_status": "PROPOSED_NOT_APPROVED",
+    "execution_status": "NOT_RUN",
+    "synthetic_only": true,
+    "real_etcd_connected": false,
+    "real_archive_store_connected": false,
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "正式场景矩阵用于后续企业批准与执行计划；CI中的内存参考模型单元测试仅验证原型代码，不改变矩阵的企业批准和正式验收状态。"
+}

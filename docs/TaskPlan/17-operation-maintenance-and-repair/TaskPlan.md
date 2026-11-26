@@ -746,3 +746,13 @@
 - **质量结果：** 全库356项unittest（包括新增12个容量探针测试）、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5项非阻断warning）。
 - **范围说明：** 14个容量profile通过CI中的合成构造/统计测试。真实etcd集群、实际gRPC/protobuf请求大小、Txn latency/throughput及多主机故障未测；生产容量门禁尚未建立。
 - **状态：** KNOW-000056 / ASSET-000087已登记；ASSET-000087仍为PROPOSED_NOT_APPROVED，真实容量验收NOT_RUN。CH17-T004继续IN_PROGRESS。
+
+
+## 6.15 CH17-T004 Coordinator Operation Ledger生命周期与安全归档（第四十三轮，2026-11-26）
+
+- **目标：** 定义历史Operation Ledger从hot aggregate向不可变归档介质迁移的安全协议，避免归档破坏幂等、fencing和恢复审查。
+- **核心协议：** 只选择COMMITTED/REVOKED及已被明确取代的旧ACTIVE ACTIVATE；任何PENDING_ACTIVATION、REVOKING、PENDING_PUBLISH、RECOVERY_REVIEW都会阻断该scope归档。归档对象先写入并读回校验，再由Coordinator权威scope pointer执行CAS切换；CAS冲突保留hot records，可能产生的orphan对象不在本事务删除。
+- **幂等和恢复：** 精确idempotency index跨manifest链查找；archive outage/corruption时fail-closed。high_water_token与latest_operation_sequence不得下降；归档不自动完成恢复、重新绑定Lease或改变Provider状态。
+- **新增参考模型：** scripts/spare_parts_operation_ledger_archive.py；新增tests/test_spare_parts_operation_ledger_archive.py，共24个测试方法；新增25项正式待批准场景矩阵ASSET-000088及来源SRC-000403～SRC-000405。
+- **范围边界：** 参考模型仅用内存archive adapter，不修改StoreBackedCoordinatorAuthority schema-v2，不连接SQLite/真实etcd/对象存储。生产归档、schema v3迁移、保留期、法律保留、WORM/密钥和物理删除策略均未批准。
+- **状态：** CH17-T004继续IN_PROGRESS；本轮只完成协议设计与参考模型，不能视为生产归档功能或企业验收完成。

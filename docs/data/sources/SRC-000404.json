@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000404",
+  "source_type": "other",
+  "title": "Data model — etcd v3.7",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/learning/data_model/",
+  "version": "etcd v3.7 official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "MVCC logical view and compaction: compaction removes revisions before the compact revision and superseded values, not application-level current values encoded inside a live key.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to distinguish backend MVCC revision compaction from application-level Operation Ledger archival. No claim that etcd compaction prunes current aggregate values.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

@@ -1,0 +1,61 @@
+{
+  "entity_id": "KNOW-000057",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存备份 Coordinator Operation Ledger 生命周期与安全归档协议",
+  "english_name": "CNC spare-parts backup Coordinator Operation Ledger lifecycle and safe archival protocol",
+  "aliases": [
+    "Coordinator Operation Ledger archival",
+    "Operation Ledger compaction protocol",
+    "KNOW-000057"
+  ],
+  "description": "定义Coordinator操作账本的终态筛选、不可变内容寻址归档、scope manifest链、权威指针CAS、跨归档幂等查询、fail-closed恢复和物理删除审批边界。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Coordinator归档与生命周期治理"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Operation Ledger",
+    "Archive",
+    "Idempotency",
+    "Fencing",
+    "etcd MVCC"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T21:00:00+08:00",
+  "updated_at": "2026-11-26T21:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000403",
+    "SRC-000404",
+    "SRC-000405"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-operation-ledger-archival.md",
+    "implementation_path": "scripts/spare_parts_operation_ledger_archive.py",
+    "test_file": "tests/test_spare_parts_operation_ledger_archive.py",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-coordinator-operation-ledger-archive-test-matrix-v1.csv",
+    "matrix_scenario_count": 25,
+    "reference_model_only": true,
+    "integrated_into_unified_coordinator": false,
+    "real_archive_store_connected": false,
+    "real_etcd_connected": false,
+    "production_archive_enabled": false,
+    "physical_archive_deletion_implemented": false,
+    "governance_readiness": "BLOCKED_PENDING_ENTERPRISE_APPROVAL"
+  },
+  "notes": "新增纯内存归档协议参考模型与单元测试；不接入当前 StoreBackedCoordinatorAuthority、不改schema-v2、不连接真实etcd或对象存储。25条正式场景矩阵全部PROPOSED_NOT_APPROVED / NOT_RUN。归档模型测试不能作为企业存储持久性、多主机CAS、法律保留或生产恢复验收。"
+}

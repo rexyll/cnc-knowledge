@@ -118,3 +118,5 @@
 | spare-parts-inventory-backup-provider-unified-coordinator-authority-matrix-v1.csv | CSV Unified Coordinator Authority统一事务场景矩阵 / ASSET-000086 | 项目原创 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000055 | 35条场景，覆盖Leader TTL/epoch、恢复floor、tenant scope fencing、ACTIVATE/REVOKE/PUBLISH、publish sequence、持久operation idempotency、proof签名授权和Admission同Txn边界；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |
 
 | spare-parts-coordinator-capacity-profile-v1.csv | CSV Unified Coordinator Aggregate容量画像场景矩阵 / ASSET-000087 | 项目原创合成负载定义 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000056 | 14条场景，隔离scope/operation/活动Admission lease/waiter及混合负载增长；由离线容量探针统计canonical JSON字节数与比较项模型；不是实测性能报告。 |
+
+| spare-parts-coordinator-operation-ledger-archive-test-matrix-v1.csv | CSV Coordinator Operation Ledger安全归档测试矩阵 / ASSET-000088 | 项目原创合成参考场景 | 2026-11-26 | 原创合成参考场景，待企业批准 | CH17-T004 / KNOW-000057 | 25条场景，覆盖终态准入、未决操作保护、immutable archive put/read-back、scope pointer CAS、跨归档幂等、manifest链完整性、恢复和物理删除审批；全部PROPOSED_NOT_APPROVED / NOT_RUN。 |

@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000405",
+  "source_type": "other",
+  "title": "etcd API — transactions",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/learning/api/",
+  "version": "etcd v3.7 official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Transaction section: atomic If/Then/Else, conjunction of Compare predicates, and ordered success/failure RequestOp blocks.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports the proposed pointer-switch CAS boundary. The actual production archive protocol has not been integrated or tested against an etcd cluster.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}

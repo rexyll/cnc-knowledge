@@ -583,3 +583,15 @@
 - **合成范围：** 14个容量profile在CI合成测试中执行，scope/operation索引增长关系与active lease比较项模型检查通过。
 - **限制：** 没有连接真实etcd、SQLite生产数据或对象存储Provider；没有测量真实gRPC/protobuf请求大小、Txn延迟/吞吐和多主机quorum。50%只是分析展示预算，不是生产限值。ASSET-000087仍PROPOSED_NOT_APPROVED；真实etcd容量验收NOT_RUN。
 - **状态：** CH17-T004继续IN_PROGRESS；未执行生产迁移或cutover。
+
+
+## CH17-T004 Coordinator Operation Ledger生命周期与安全归档（第四十三轮）
+
+- **完成日期：** 2026-11-26（项目TaskHistory按Asia/Shanghai记日；未接入生产执行环境）。
+- **分支：** main；未创建分支。
+- **新增知识/来源/资源：** KNOW-000057、ASSET-000088、SRC-000403～SRC-000405；新增归档协议正文及25项CSV场景矩阵。
+- **新增代码：** scripts/spare_parts_operation_ledger_archive.py；tests/test_spare_parts_operation_ledger_archive.py，共24个内存参考模型测试方法。
+- **关键设计：** immutable put → read-back SHA-256 → authoritative scope-pointer CAS → hot index removal；CAS冲突不删除hot records；idempotency exact lookup跨archive manifest chain；归档不可降低scope fencing/sequence floors。
+- **安全边界：** pending activation/revocation/publish/recovery-review操作阻断归档；archive outage/corruption fail-closed；orphan archive objects不在归档事务删除；物理保留与GC需要独立审批。
+- **验收状态：** 自动测试待本轮提交CI执行；ASSET-000088的25条正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。参考模型无真实存储、真实Coordinator、etcd集群或企业归档集成。
+- **遗留事项：** 生产实现需先明确归档介质、精确索引、读后写一致性、保留/法律保留、schema v3迁移及回滚、真实多主机/故障测试；生产备份/归档继续关闭。

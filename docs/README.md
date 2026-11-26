@@ -41,7 +41,8 @@
   - [备件合成场景本地包生成器](../scripts/spare_parts_fixture_loader.py)
   - [备件合成场景包离线校验与事件投影工具](../scripts/spare_parts_scenario_runner.py)
   - [备件系统 Unified Coordinator Aggregate 容量模型与观测边界](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-capacity-model.md)
-- [18. 故障诊断与可靠性](./18-fault-diagnosis-and-reliability/README.md) — 机械、电气、数控、伺服、通信、软件和加工质量故障，以及根因分析、可靠性、可维护性和故障统计。
+-   - [备件库存备份 Coordinator Operation Ledger 生命周期与安全归档](17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-operation-ledger-archival.md)
+[18. 故障诊断与可靠性](./18-fault-diagnosis-and-reliability/README.md) — 机械、电气、数控、伺服、通信、软件和加工质量故障，以及根因分析、可靠性、可维护性和故障统计。
 - [19. 厂商、产品与供应链](./19-manufacturers-products-and-supply-chain/README.md) — 数控机床整机厂、数控系统、伺服驱动、主轴、导轨丝杠、轴承、刀具、传感器及备件供应商和产品目录。
 - [20. BOM、图纸与工程技术文档](./20-bom-drawings-and-technical-documents/README.md) — 整机/子系统BOM、零件清单、电气BOM、图纸、规格书、手册、技术变更、文档版本和数据关联。
 - [21. 数字化、联网与智能制造](./21-digitalization-and-smart-manufacturing/README.md) — 数控机床联网、数据采集、状态监测、工业信息模型、MES/ERP集成、能耗、预测性维护、数字孪生和网络安全。
