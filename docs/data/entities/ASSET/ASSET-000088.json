@@ -59,7 +59,17 @@
     "real_etcd_connected": false,
     "real_archive_store_connected": false,
     "sha256": null,
-    "file_size": null
+    "file_size": null,
+    "code_commit": "4ed91a04138e30ecf2275c07bb947ecc872fadd2",
+    "ci_run": 45817146500,
+    "ci_status": "completed/success",
+    "ci_model_test_methods": 24,
+    "repository_unit_test_count": 380,
+    "ch12_numerical_test_count": 143,
+    "strict_knowledge_lint": "PASS_0_ERRORS",
+    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "formal_scenario_approval": "PROPOSED_NOT_APPROVED",
+    "formal_scenario_execution": "NOT_RUN"
   },
-  "notes": "正式场景矩阵用于后续企业批准与执行计划；CI中的内存参考模型单元测试仅验证原型代码，不改变矩阵的企业批准和正式验收状态。"
+  "notes": "正式场景矩阵用于后续企业批准与执行计划；CI中的内存参考模型单元测试仅验证原型代码，不改变矩阵的企业批准和正式验收状态。 24项内存归档协议模型测试包含于CI Run 45817146500并通过；25项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN，不能把单元测试视作企业归档场景已执行。"
 }

@@ -595,3 +595,11 @@
 - **安全边界：** pending activation/revocation/publish/recovery-review操作阻断归档；archive outage/corruption fail-closed；orphan archive objects不在归档事务删除；物理保留与GC需要独立审批。
 - **验收状态：** 自动测试待本轮提交CI执行；ASSET-000088的25条正式场景全部PROPOSED_NOT_APPROVED / NOT_RUN。参考模型无真实存储、真实Coordinator、etcd集群或企业归档集成。
 - **遗留事项：** 生产实现需先明确归档介质、精确索引、读后写一致性、保留/法律保留、schema v3迁移及回滚、真实多主机/故障测试；生产备份/归档继续关闭。
+
+
+### 第四十三轮CI验收与修正记录
+
+- **最终测试head：** 4ed91a04138e30ecf2275c07bb947ecc872fadd2；main分支；[GitHub Actions Run 45817146500](https://github.com/rexyll/cnc-knowledge/actions/runs/45817146500)两个必需Job均completed/success。
+- **结果：** 全库380项unittest通过（其中24项为新增Operation Ledger archive参考模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors。5项warning来自既有合成夹具数据集DRAFT/企业环境未批准等状态。
+- **CI修正：** Run 45816870459发现lost-commit-response测试在归档开始前禁用了scope读取；提交 f8e373411c3612b733d525b475cf64dcd79ed699 将读故障注入移动到权威指针/热索引切换之后。Run 45817037091随后发现测试断言用了错误的统计字段名；提交 4ed91a04138e30ecf2275c07bb947ecc872fadd2 修正。第三次完整CI通过。
+- **最终限制：** 纯内存参考模型，不接入当前StoreBackedCoordinatorAuthority，不连接真实etcd、生产SQLite或云对象存储；25条ASSET-000088正式场景仍全部PROPOSED_NOT_APPROVED / NOT_RUN。未启用生产归档、保留策略或schema迁移；CH17-T004继续IN_PROGRESS。
