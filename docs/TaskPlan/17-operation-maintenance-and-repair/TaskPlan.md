@@ -859,3 +859,12 @@
 - **真实集成结果：** [Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997)在一次性etcd v3.7.0三成员集群7/7 PASS，0失败、0跳过；节点清理成功；Artifact 15128755397，SHA-256 `d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8`。
 - **默认CI：** [Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)全库501项unittest（494通过、7项live测试按默认策略skip）、CH12 143项测试通过、strict lint 0 errors、fixture validator 0 errors/5项既有warning；两个Job全部成功。
 - **限制：** 这是单次、受控、可丢弃环境验证，不是网络分区、磁盘损坏、性能、mTLS/RBAC或企业生产验收。ASSET-000092的30项正式场景均保持PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威；CH17-T004继续IN_PROGRESS。
+
+## 6.22 CH17-T004 etcd Watch Gateway 流式包络保真（第五十轮，2026-11-26）
+
+- **目标：** 基于etcd3gw使用的HTTP Gateway server-streaming传输形式，补充低层Watch响应包络适配，避免高层事件迭代器丢失WatchResponse控制字段。
+- **交付：** `Etcd3gwV3Client.watch()`可选流式接口；逐JSON响应帧解码；规范化WatchResponse header、watch_id、created/canceled/compact_revision/cancel_reason/fragment/events；KV和prev_kv二进制解码；HTTP响应关闭与断线异常传播。
+- **能力门禁：** 只有真实服务端测试覆盖完整响应后才在Etcd driver上暴露Watch；若HTTP server-streaming不支持发送后续WatchProgress/Cancel请求，则不声明WatchProgress，取消只关闭流，不伪造服务端确认。
+- **测试：** 默认Fake gateway contract覆盖任意chunk边界、完整字段、PUT/DELETE/prev_kv、fragment/compaction与断线；opt-in真实etcd集成覆盖created、变更事件和连接关闭。
+- **安全和一致性：** Watch仅提供通知；安全状态仍来自linearizable Range/Txn；created/fragment不能错误推进cursor；流断线/compaction由上层Range snapshot + R+1恢复；写Txn仍一次发送并保留OUTCOME_UNKNOWN。
+- **状态：** CH17-T004保持IN_PROGRESS；ASSET-000092正式矩阵未批准前不改写执行状态；schema-v2仍为唯一生产权威。

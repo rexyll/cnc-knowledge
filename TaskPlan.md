@@ -844,3 +844,11 @@
 - **真实集成验收：** [Run 45840903997](https://github.com/rexyll/cnc-knowledge/actions/runs/45840903997)在三成员etcd v3.7.0临时集群中7/7 PASS、0失败、0跳过；包括两成员停机后的读写失败关闭及恢复后重新写入；清理容器、数据卷和网络成功。诊断Artifact 15128755397，SHA-256 `d326119ddda7cc64a1cf3e14fbefc83e21d4693b25d2b9d870604bbee28747b8`。
 - **默认CI回归：** [Run 45840904137](https://github.com/rexyll/cnc-knowledge/actions/runs/45840904137)两个Job均completed/success；全库501项unittest，494通过、7项opt-in live测试按设计skip；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；fixture validator 0 errors/5项既有warning。
 - **边界：** 仅证明本次etcd v3.7.0 disposable三节点环境、当前请求与超时设置下的行为；未覆盖网络分区、部分恢复/非对称分区、磁盘故障、长时间不可用、吞吐/时延、TLS/mTLS、RBAC或生产多主机Coordinator。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威。
+
+## CH17-T004 第二十七轮：etcd Watch Gateway 流式包络保真（全局第五十轮，2026-11-26）
+
+- **目标：** 不使用会过滤created/取消/压缩/fragment/header字段的高层事件迭代器，直接消费etcd v3 HTTP gRPC-gateway Watch server-streaming响应，保留完整WatchResponse关键字段与事件KV/prev_kv。
+- **实现范围：** 对每条流响应逐帧解析外层`result` JSON对象；保留header revision、watch_id、created、canceled、compact_revision、cancel_reason、fragment和events；Base64二进制解码；支持有限的HTTP连接建立failover，但流建立后断线不自动切换/重放，必须由上层执行linearizable Range重建和R+1续订。
+- **控制边界：** Watch创建请求支持start_revision/progress_notify/filters/prev_kv/range_end/watch_id/fragment；若HTTP Gateway映射不能在同一流上发送WatchProgress/Cancel双向消息，则只通过关闭HTTP响应释放流，不声明WatchProgress能力，不伪造cancel ack。
+- **验收：** Fake stream覆盖跨HTTP chunk JSON拆分、created/PUT/DELETE/prev_kv/fragment/canceled/compact_revision/header、无效帧、断线及close资源释放；真实三节点etcd集成验证创建响应、PUT/DELETE事件、字段保真和断开释放。默认CI不启动etcd。
+- **状态边界：** 不以Watch事件作授权判断；事件游标推进仍遵循已有store协议，fragment未结束不得推进；compaction/断线后先linearizable Range，再从R+1恢复。mTLS/RBAC、背压与长期压力测试单独跟踪；schema-v2保持唯一生产权威。
