@@ -66,7 +66,7 @@
     "provider_option": "require_online_attestation_status",
     "coordinator_unavailable_behavior": "FAIL_CLOSED",
     "released_lease_behavior": "REJECT_ON_NEXT_STATUS_CHECK",
-    "cross_database_status_check_commit_race": "TOCTOU_NOT_LINEARIZABLE",
+    "cross_database_status_check_commit_race": "TOCTOU_REMAINS_IN_LEGACY_SEPARATE_DATABASE_MODE",
     "multi_host_status_service": false,
     "production_cloud_provider_integrated": false,
     "dependency": "cryptography==50.0.2",
@@ -78,7 +78,14 @@
     "latest_verified_ci_status": "completed/success",
     "provider_self_check_artifact_id": 15089847421,
     "admission_self_check_artifact_id": 15089209106,
-    "adapter_self_check_artifact_id": 15089074481
+    "adapter_self_check_artifact_id": 15089074481,
+    "atomic_online_lease_status_api": "SQLiteProviderAdmissionCoordinator.is_attestation_active_in_transaction",
+    "atomic_provider_option": "require_atomic_online_attestation_status",
+    "atomic_shared_database_mode_available": true,
+    "atomic_mode_requires_same_resolved_database_path": true,
+    "atomic_mode_same_connection": true,
+    "atomic_mode_lease_release_serialized": true,
+    "atomic_mode_scope": "SAME_HOST_LOCAL_SQLITE_ONLY"
   },
-  "notes": "Ed25519 v2签名证明使用规范化claims并由Coordinator signer callback签名，Provider只持公钥验证；CallbackEd25519Signer为外部KMS/HSM适配接口，不代表已经连接具体云KMS。旧HMAC v1仍作为迁移兼容。Provider可以require_online_attestation_status=true，在Provider写事务内调用Coordinator is_attestation_active；租约已释放/过期则拒绝，协调器不可用则fail-closed。由于Coordinator与Provider使用不同SQLite事务，状态查询成功后到Provider commit仍有TOCTOU竞态，不构成严格线性一致的即时撤销。新增ASSET-000078的22条参考验收场景均PROPOSED_NOT_APPROVED/NOT_RUN。CI Run 45760844653全库252 tests、CH12 143 tests、strict lint 0 errors/5 warnings、Provider self-check PASS。生产备份继续关闭。"
+  "notes": "Ed25519 v2签名证明使用规范化claims并由Coordinator signer callback签名，Provider只持公钥验证；CallbackEd25519Signer为外部KMS/HSM适配接口，不代表已经连接具体云KMS。旧HMAC v1仍作为迁移兼容。第三十三轮的require_online_attestation_status分库模式仍存在status check到Provider commit的TOCTOU竞态；第三十四轮新增require_atomic_online_attestation_status同库模式，要求Coordinator和Provider指向同一SQLite文件，Provider复用BEGIN IMMEDIATE连接调用is_attestation_active_in_transaction，从而使lease release与Provider对象/multipart事务串行。SQLite WAL仅同机，不支持网络文件系统/多主机。ASSET-000078 22条形式化场景PROPOSED_NOT_APPROVED/NOT_RUN。未连接真实KMS/HSM，生产备份继续关闭。"
 }
