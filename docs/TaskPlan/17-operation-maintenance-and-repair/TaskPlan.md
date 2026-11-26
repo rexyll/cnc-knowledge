@@ -472,3 +472,11 @@
 - 修复SQLite队列满异常回滚时rejected_queue诊断计数也被回滚的问题；改为准入事务回滚后单独提交计数。
 - 新增1项SQLite unittest，验证拒绝新请求、保留活动租约、清理等待者并持久增加rejected_queue。
 - ASSET-000072新增SACQ-011；11条场景全部保持PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+### 第二十八轮附加队列拒绝计数回归最终验收
+
+- 首轮补充提交 331fe25d4dd966e0e2c97b51d12f9db05c935696 的Run 45749038281仅因新测试遗漏导入ProviderAdmissionQueueFullError发生NameError；队列计数逻辑的回归断言尚未执行。提交 b4dcebb5249546954090a50a1c7dff809796345c补齐import。
+- 最终Run 45749107843两个Job均completed/success，全库203项unittest通过，CH12资源143项通过，strict lint 0 errors。
+- 队列满诊断回归通过：活动租约保持、没有残留等待者、rejected_queue增加1。SQLite self-check Artifact ID 15083979275。
+- ASSET-000072扩展至11条合成场景；全部仍PROPOSED_NOT_APPROVED / NOT_RUN。

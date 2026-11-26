@@ -242,3 +242,14 @@
 - 在最终验收复核中发现SQLite队列满时rejected_queue计数随准入事务回滚的问题；调整为独立事务持久计数。
 - 新增1项unittest：队列满返回ProviderAdmissionQueueFullError，现有活动租约不受影响，等待队列不残留，rejected_queue从0增至1。
 - ASSET-000072扩展为11条场景，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；新增测试需由下一次CI验证。
+
+
+### 第二十八轮最终附加修复与验收（2026-11-26）
+
+- **队列诊断修复：** 提交 331fe25d4dd966e0e2c97b51d12f9db05c935696 修复SQLite队列满时rejected_queue计数随准入事务异常回滚的问题；计数改在事务回滚后由独立事务提交，并新增队列溢出回归测试。
+- **首轮回归CI问题：** Run 45749038281在全库203项测试中，仅新增测试因漏导入 ProviderAdmissionQueueFullError 出现NameError；测试尚未进入队列断言。修复提交 b4dcebb5249546954090a50a1c7dff809796345c 补齐测试导入。
+- **最终CI：** [Run 45749107843](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843)，两个必需Job均completed/success；全库203项unittest通过，CH12数控资源143项通过，knowledge_lint.py --strict为PASS（0 errors）。
+- **回归证据：** test_queue_overflow_is_fail_fast_and_rejection_counter_persists通过；验证队列满抛出ProviderAdmissionQueueFullError、现有活动租约不变、waiting队列清零、rejected_queue持久增加1。
+- **SQLite自检：** Artifact [ch17-provider-admission-sqlite-45749107843](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843/artifacts/15083979275)，ID 15083979275；Provider Mock adapter self-check Artifact ID 15084203674。
+- **资源：** ASSET-000072扩展为11条场景，全部TRUE / PROPOSED_NOT_APPROVED / NOT_RUN；SQLite协调器专项unittest共12项。
+- **限制：** SQLite仅支持同主机受支持本地文件系统上的多进程共享；未验证多主机/NFS/SMB/HA、真实存储端fencing、数据库灾备/静态加密、生产QPS或真实Provider。生产备份关闭，治理门禁BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。

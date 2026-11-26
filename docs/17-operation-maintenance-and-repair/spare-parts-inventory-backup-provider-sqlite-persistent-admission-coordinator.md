@@ -44,7 +44,7 @@ SQLite后端把租约到期时间保存为Unix wall-clock秒数，使进程重�
 
 ## 5. 自动化验证
 
-新增 `tests/test_spare_parts_provider_admission_sqlite.py` 的11项测试，覆盖：
+新增 `tests/test_spare_parts_provider_admission_sqlite.py` 的12项测试，覆盖：
 
 - 同一request_id重复申请返回同一租约、身份冲突拒绝、终态request_id不可复用；
 - acquire响应丢失后重新打开数据库并用原request_id恢复租约；
@@ -77,9 +77,18 @@ SQLite后端把租约到期时间保存为Unix wall-clock秒数，使进程重�
 - 修复提交 8d2a36b6240f20b1968a7e2ef148dcc02e745f88 为SQLite CLI显式增加仓库根目录导入路径。最终 [Run 45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053) 两个必需Job均completed/success；全库202项unittest通过，CH12资源测试143项通过，knowledge_lint.py --strict返回RESULT: PASS (0 errors)。
 - SQLite持久化自检PASS，Artifact [ch17-provider-admission-sqlite-45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053/artifacts/15084821221)，ID 15084821221；Provider Mock self-check PASS，Artifact ID 15084277008。
 
-**未覆盖边界：** 所有SQLite用例仍是GitHub runner同主机本地文件的合成技术测试，不改变ASSET-000072中10条场景的批准/执行状态。未验证多主机/NFS/SMB/HA、数据库文件损坏/备份还原、静态加密、自动心跳、持久QPS令牌桶、下游fencing enforcement或生产容量。完整测试通过不能作为生产Provider、企业安全评审或灾备恢复验收。
+**未覆盖边界：** 所有SQLite用例仍是GitHub runner同主机本地文件的合成技术测试，不改变ASSET-000072中11条场景的批准/执行状态。未验证多主机/NFS/SMB/HA、数据库文件损坏/备份还原、静态加密、自动心跳、持久QPS令牌桶、下游fencing enforcement或生产容量。完整测试通过不能作为生产Provider、企业安全评审或灾备恢复验收。
 
 
 ### 第二十八轮附加回归：队列拒绝计数的事务边界
 
 最终CI自检接入后的代码复核发现，队列满分支在准入事务中先更新rejected_queue再抛出异常，事务回滚会同时撤销该诊断计数。该问题不影响请求被拒绝或活动租约安全，但会使快照少报拒绝次数。现已将计数写入独立事务，并增加SAQQ-011对应的SQLite单元测试：队列满时拒绝新请求、保留活动租约、队列无残留，且rejected_queue持久增加。该测试仍属于本机SQLite合成验证。
+
+
+### SQLite队列拒绝计数附加回归与最终验收
+
+- 队列满分支原先在准入事务内更新rejected_queue并抛异常，事务回滚会使计数丢失。现改为准入事务回滚后使用独立事务提交拒绝计数；新增测试验证拒绝新请求、保留原活动租约、清除等待者并持久增加rejected_queue。
+- 首轮补充测试Run 45749038281中新增测试因漏导入ProviderAdmissionQueueFullError产生NameError；修复提交b4dcebb5249546954090a50a1c7dff809796345c。
+- **最终CI：** [Run 45749107843](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843)，两个必需Job均completed/success；全库203项unittest、CH12资源143项通过，knowledge_lint.py --strict为PASS（0 errors）。
+- SQLite自检Artifact [15083979275](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843/artifacts/15083979275)；Provider Mock self-check Artifact ID 15084203674。
+- 当前SQLite协调器专项unittest 12项；ASSET-000072共11条场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。

@@ -354,3 +354,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 修复提交 8d2a36b6240f20b1968a7e2ef148dcc02e745f88 对应CI Run [45748707053](https://github.com/rexyll/cnc-knowledge/actions/runs/45748707053)两个Job均completed/success；全库202项unittest、CH12资源143项通过，strict lint 0 errors。
 - SQLite持久化协调器CLI self-check PASS，Artifact ID 15084821221；Provider Mock self-check PASS，Artifact ID 15084277008。
 - 首轮文档同步Run 45748616308的SQLite CLI导入路径问题已在上述提交修复；新增11项SQLite协调测试全部包含于202项全库测试。ASSET-000072的10项场景仍未批准/未执行。
+
+
+### 第二十八轮队列拒绝计数附加验收（2026-11-26）
+
+- SQLite队列满时rejected_queue计数改在准入事务回滚后单独提交；新增回归保证活动租约不变、等待者无残留、拒绝计数递增。
+- 最终Run [45749107843](https://github.com/rexyll/cnc-knowledge/actions/runs/45749107843)两个Job均completed/success；全库203项unittest、CH12资源143项通过，strict lint 0 errors。
+- SQLite self-check Artifact ID 15083979275；Provider Mock self-check Artifact ID 15084203674。
+- ASSET-000072现11条场景，全部PROPOSED_NOT_APPROVED / NOT_RUN。
