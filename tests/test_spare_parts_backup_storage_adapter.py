@@ -6,9 +6,11 @@ import threading
 import time
 import unittest
 from pathlib import Path
+import hashlib
 
 from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageAdapter,
+    FencedMockObjectStorageProvider,
     BackupStorageConflict,
     BackupStorageError,
     FileSystemStorageProvider,
@@ -32,6 +34,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     _synthetic_ledger,
 )
 from scripts.spare_parts_inventory_ledger_persistence import create_backup, publish_generation, recover_current
+from scripts.spare_parts_provider_fencing_contract import StaleFencingTokenError
 
 
 def make_backup(base: Path, backup_id: str = "adapter-test-001") -> Path:
@@ -1511,6 +1514,112 @@ class BackupStorageAdapterTests(unittest.TestCase):
             coordinator.snapshot()
         self.assertEqual(snapshot_error.exception.phase, "snapshot")
         self.assertTrue(coordinator.release(lease))
+
+
+
+    def test_provider_fencing_mode_fails_closed_without_coordinator_or_provider_contract(self):
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(MockObjectStorageProvider(), require_provider_fencing=True)
+        coordinator = InMemoryProviderAdmissionCoordinator()
+        with self.assertRaises(BackupStorageError):
+            BackupStorageAdapter(
+                MockObjectStorageProvider(), admission_coordinator=coordinator,
+                require_provider_fencing=True,
+            )
+
+    def test_provider_fencing_tokens_reach_payload_multipart_and_receipt_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            backup = make_backup(base)
+            provider = FencedMockObjectStorageProvider()
+            coordinator = InMemoryProviderAdmissionCoordinator()
+            adapter = BackupStorageAdapter(
+                provider, multipart_threshold_bytes=1, multipart_part_size_bytes=128,
+                admission_coordinator=coordinator, require_provider_fencing=True,
+                retry_base_delay_seconds=0, sleep_fn=lambda _: None,
+            )
+            published = adapter.publish_backup(backup, prefix="cnc/ch17")
+            verified = adapter.verify_stored_backup(
+                prefix="cnc/ch17", backup_id="adapter-test-001"
+            )
+            self.assertEqual(published["result"], "PUBLISHED")
+            self.assertEqual(verified["result"], "VERIFIED")
+            operations = {entry["operation"] for entry in provider.fencing_write_log}
+            self.assertIn("begin_multipart_upload_fenced", operations)
+            self.assertIn("put_multipart_part_fenced", operations)
+            self.assertIn("complete_multipart_upload_fenced", operations)
+            self.assertIn("put_if_absent_fenced", operations)
+            tokens = [entry["fencing_token"] for entry in provider.fencing_write_log]
+            self.assertTrue(all(token > 0 for token in tokens))
+            self.assertEqual(tokens, sorted(tokens))
+            receipt_entries = [
+                entry for entry in provider.fencing_write_log
+                if entry["operation"] == "put_if_absent_fenced"
+                and entry["resource_key"].endswith(RECEIPT_NAME)
+            ]
+            self.assertEqual(len(receipt_entries), 1)
+            self.assertTrue(
+                all(provider.fencing_high_water(entry["resource_key"]) >= entry["fencing_token"]
+                    for entry in provider.fencing_write_log)
+            )
+
+    def test_provider_fencing_rejects_stale_multipart_part_and_receipt_writer(self):
+        provider = FencedMockObjectStorageProvider()
+        provider.begin_multipart_upload_fenced(
+            "cnc/ch17/multipart.bin", "fenced-session",
+            fencing_token=10, idempotency_key="begin-10",
+        )
+        first = b"current-part"
+        provider.put_multipart_part_fenced(
+            "cnc/ch17/multipart.bin", "fenced-session", 1, first,
+            hashlib.sha256(first).hexdigest(),
+            fencing_token=11, idempotency_key="part-11",
+        )
+        with self.assertRaises(StaleFencingTokenError):
+            provider.put_multipart_part_fenced(
+                "cnc/ch17/multipart.bin", "fenced-session", 1, b"stale-part",
+                __import__("hashlib").sha256(b"stale-part").hexdigest(),
+                fencing_token=9, idempotency_key="stale-part-9",
+            )
+        completed_bytes = first
+        provider.complete_multipart_upload_fenced(
+            "cnc/ch17/multipart.bin", "fenced-session", expected_part_count=1,
+            expected_size_bytes=len(completed_bytes),
+            expected_sha256=__import__("hashlib").sha256(completed_bytes).hexdigest(),
+            fencing_token=12, idempotency_key="complete-12",
+        )
+        self.assertEqual(provider.get_object("cnc/ch17/multipart.bin").data, first)
+        provider.put_if_absent_fenced(
+            "cnc/ch17/receipt.json", b"new-receipt",
+            fencing_token=20, idempotency_key="receipt-20",
+        )
+        with self.assertRaises(StaleFencingTokenError):
+            provider.put_if_absent_fenced(
+                "cnc/ch17/receipt.json", b"old-receipt",
+                fencing_token=19, idempotency_key="receipt-19",
+            )
+        self.assertEqual(provider.get_object("cnc/ch17/receipt.json").data, b"new-receipt")
+
+    def test_fenced_multipart_completion_response_loss_replays_with_new_lease_token(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            backup = make_backup(Path(tmp))
+            provider = FencedMockObjectStorageProvider(timeout_after_complete_commit=True)
+            coordinator = InMemoryProviderAdmissionCoordinator()
+            adapter = BackupStorageAdapter(
+                provider, multipart_threshold_bytes=1, multipart_part_size_bytes=2048,
+                admission_coordinator=coordinator, require_provider_fencing=True,
+                retry_max_attempts=3, retry_base_delay_seconds=0, sleep_fn=lambda _: None,
+            )
+            result = adapter.publish_backup(backup, prefix="cnc/ch17")
+            self.assertEqual(result["result"], "PUBLISHED")
+            self.assertTrue(provider._timeout_after_complete_emitted)
+            self.assertEqual(
+                adapter.verify_stored_backup(
+                    prefix="cnc/ch17", backup_id="adapter-test-001"
+                )["result"],
+                "VERIFIED",
+            )
+
 
 
 if __name__ == "__main__":
