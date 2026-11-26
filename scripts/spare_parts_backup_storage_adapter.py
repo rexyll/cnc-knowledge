@@ -385,6 +385,11 @@ class ProviderAdmissionCoordinator(Protocol):
 
     def validate(self, lease: ProviderAdmissionLease) -> bool: ...
 
+    def issue_fencing_attestation(
+        self, lease: ProviderAdmissionLease, *, fencing_scope: str,
+        resource_key: str, operation: str, idempotency_key: str,
+    ) -> str: ...
+
     def snapshot(self) -> dict[str, Any]: ...
 
 
@@ -1738,6 +1743,12 @@ class BackupStorageAdapter:
         if not isinstance(require_provider_fencing, bool):
             raise BackupStorageError("require_provider_fencing must be a boolean")
         if require_provider_fencing:
+            if getattr(provider, "requires_fencing_attestation", False) is True and not callable(
+                getattr(admission_coordinator, "issue_fencing_attestation", None)
+            ):
+                raise FencingNotSupportedError(
+                    "Provider requires signed fencing attestations but Coordinator cannot issue them"
+                )
             if admission_coordinator is None:
                 raise FencingNotSupportedError(
                     "provider fencing requires an admission coordinator that issues fencing tokens"
@@ -2066,6 +2077,22 @@ class BackupStorageAdapter:
         payload = {"operation": operation, "resource_key": _safe_key(key), **identity}
         return "ch17-fence-" + _sha(_json_bytes(payload))
 
+    def _fencing_attestation_kwargs(
+        self, lease: ProviderAdmissionLease, *, fencing_scope: str,
+        resource_key: str, operation: str, idempotency_key: str,
+    ) -> dict[str, str]:
+        if getattr(self.provider, "requires_fencing_attestation", False) is not True:
+            return {}
+        issuer = getattr(self.admission_coordinator, "issue_fencing_attestation", None)
+        if not callable(issuer):
+            raise FencingNotSupportedError("Provider requires a signed fencing attestation")
+        return {
+            "fencing_attestation": issuer(
+                lease, fencing_scope=fencing_scope, resource_key=resource_key,
+                operation=operation, idempotency_key=idempotency_key,
+            )
+        }
+
     def _fenced_put(
         self, *, operation: str, key: str, data: bytes, provider_operation: str,
         fencing_scope: str,
@@ -2079,6 +2106,10 @@ class BackupStorageAdapter:
             fenced_callback=lambda lease: self.provider.put_if_absent_fenced(
                 key, data, fencing_scope=fencing_scope,
                 fencing_token=lease.fencing_token, idempotency_key=idempotency_key,
+                **self._fencing_attestation_kwargs(
+                    lease, fencing_scope=fencing_scope, resource_key=key,
+                    operation="object:put_if_absent", idempotency_key=idempotency_key,
+                ),
             ),
         )
 
@@ -2114,6 +2145,10 @@ class BackupStorageAdapter:
                 (lambda lease: self.provider.begin_multipart_upload_fenced(
                     key, upload_id, fencing_scope=fencing_scope or key,
                     fencing_token=lease.fencing_token, idempotency_key=begin_idempotency_key,
+                    **self._fencing_attestation_kwargs(
+                        lease, fencing_scope=fencing_scope or key, resource_key=key,
+                        operation="multipart:begin", idempotency_key=begin_idempotency_key,
+                    ),
                 )) if self.require_provider_fencing else None
             ),
         )
@@ -2150,6 +2185,10 @@ class BackupStorageAdapter:
                         key, upload_id, number, part, digest,
                         fencing_scope=fencing_scope or key,
                         fencing_token=lease.fencing_token, idempotency_key=part_idempotency_key,
+                        **self._fencing_attestation_kwargs(
+                            lease, fencing_scope=fencing_scope or key, resource_key=key,
+                            operation="multipart:put_part", idempotency_key=part_idempotency_key,
+                        ),
                     )) if self.require_provider_fencing else None
                 ),
             )
@@ -2171,6 +2210,10 @@ class BackupStorageAdapter:
                     expected_size_bytes=len(data), expected_sha256=complete_digest,
                     fencing_scope=fencing_scope or key,
                     fencing_token=lease.fencing_token, idempotency_key=complete_idempotency_key,
+                    **self._fencing_attestation_kwargs(
+                        lease, fencing_scope=fencing_scope or key, resource_key=key,
+                        operation="multipart:complete", idempotency_key=complete_idempotency_key,
+                    ),
                 )) if self.require_provider_fencing else None
             ),
         )

@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import sqlite3
 import tempfile
 import threading
@@ -20,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from scripts.spare_parts_fencing_attestation import create_fencing_attestation
 from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageError, ProviderAdmissionIdempotencyConflictError,
     ProviderAdmissionLease, ProviderAdmissionQueueFullError,
@@ -45,6 +47,10 @@ class SQLiteProviderAdmissionCoordinator:
         busy_timeout_seconds: float = 5.0,
         poll_interval_seconds: float = 0.05,
         clock_fn: Callable[[], float] = time.time,
+        attestation_issuer_id: str | None = None,
+        attestation_key_id: str | None = None,
+        attestation_secret: str | bytes | None = None,
+        attestation_ttl_seconds: float = 15.0,
     ):
         if not isinstance(database_path, (str, os.PathLike)) or not str(database_path).strip():
             raise BackupStorageError("SQLite coordinator database path is required")
@@ -83,6 +89,29 @@ class SQLiteProviderAdmissionCoordinator:
         self.busy_timeout_seconds = float(busy_timeout_seconds)
         self.poll_interval_seconds = float(poll_interval_seconds)
         self.clock_fn = clock_fn
+        signer_parts = (attestation_issuer_id, attestation_key_id, attestation_secret)
+        if any(value is not None for value in signer_parts):
+            if any(value is None for value in signer_parts):
+                raise BackupStorageError("coordinator attestation issuer, key ID and secret must be configured together")
+            if not isinstance(attestation_issuer_id, str) or not attestation_issuer_id.strip():
+                raise BackupStorageError("coordinator attestation issuer ID is required")
+            if not isinstance(attestation_key_id, str) or not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", attestation_key_id
+            ):
+                raise BackupStorageError("coordinator attestation key ID is invalid")
+            if not isinstance(attestation_ttl_seconds, (int, float)) or isinstance(attestation_ttl_seconds, bool) or not math.isfinite(attestation_ttl_seconds) or not 0 < attestation_ttl_seconds <= 60:
+                raise BackupStorageError("coordinator attestation TTL must be in (0, 60] seconds")
+            # Validate key length without retaining it in coordinator SQLite.
+            from scripts.spare_parts_fencing_attestation import _key_bytes
+            self._attestation_secret = _key_bytes(attestation_secret)
+            self.attestation_issuer_id = attestation_issuer_id.strip()
+            self.attestation_key_id = attestation_key_id
+            self.attestation_ttl_seconds = float(attestation_ttl_seconds)
+        else:
+            self._attestation_secret = None
+            self.attestation_issuer_id = None
+            self.attestation_key_id = None
+            self.attestation_ttl_seconds = float(attestation_ttl_seconds)
         self._fault_lock = threading.Lock()
         self._injected_failures: dict[str, int] = {}
         policy = {
@@ -447,6 +476,65 @@ class SQLiteProviderAdmissionCoordinator:
                 row is not None and row["state"] == "ACTIVE"
                 and float(row["expires_at"]) > now and self._as_lease(row) == lease
             )
+
+    def issue_fencing_attestation(
+        self, lease: ProviderAdmissionLease, *, fencing_scope: str,
+        resource_key: str, operation: str, idempotency_key: str,
+    ) -> str:
+        """Sign a short-lived proof only while the exact lease is active."""
+        if self._attestation_secret is None:
+            raise BackupStorageError("Coordinator fencing attestation signer is not configured")
+        from scripts.spare_parts_backup_storage_adapter import _safe_key
+        scope, key = _safe_key(fencing_scope), _safe_key(resource_key)
+        if not key.startswith(scope + "/"):
+            raise BackupStorageError("attested resource key must be inside the fencing scope")
+        if operation not in {
+            "object:put_if_absent", "multipart:begin",
+            "multipart:put_part", "multipart:complete",
+        }:
+            raise BackupStorageError("unsupported fencing attestation operation")
+        if not isinstance(idempotency_key, str) or not idempotency_key.strip() or len(idempotency_key) > 256:
+            raise BackupStorageError("attestation idempotency key must contain 1..256 characters")
+        now = self.clock_fn()
+        with self._transaction("issue_fencing_attestation") as c:
+            self._expire_locked(c, now)
+            row = c.execute(
+                "SELECT * FROM admission_requests WHERE lease_id=?", (lease.lease_id,)
+            ).fetchone()
+            if (
+                row is None or row["state"] != "ACTIVE"
+                or float(row["expires_at"]) <= now
+                or self._as_lease(row) != lease
+            ):
+                raise BackupStorageError("Coordinator refuses to attest an inactive or mismatched lease")
+            if row["tenant_id"] != lease.tenant_id or row["owner_id"] != lease.owner_id:
+                raise BackupStorageError("Coordinator lease identity does not match attestation request")
+            expires_at = min(float(row["expires_at"]), now + self.attestation_ttl_seconds)
+            claims = {
+                "v": 1,
+                "iss": self.attestation_issuer_id,
+                "kid": self.attestation_key_id,
+                "lease_id": lease.lease_id,
+                "owner_id": lease.owner_id,
+                "tenant_id": lease.tenant_id,
+                "domain": lease.domain,
+                "fencing_token": lease.fencing_token,
+                "issued_at": now,
+                "expires_at": expires_at,
+                "lease_expires_at": float(row["expires_at"]),
+                "fencing_scope": scope,
+                "resource_key": key,
+                "operation": operation,
+                "idempotency_key": idempotency_key,
+            }
+            c.execute(
+                """INSERT INTO coordinator_meta(key,value) VALUES(?,?)
+                   ON CONFLICT(key) DO UPDATE SET value=excluded.value""",
+                ("attestations_issued", str(int(self._meta_int(c, "attestations_issued")) + 1)),
+            )
+        return create_fencing_attestation(
+            claims, key_id=self.attestation_key_id, secret=self._attestation_secret
+        )
 
     def reclaim_expired(self) -> int:
         with self._transaction("reclaim") as c:
