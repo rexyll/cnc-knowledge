@@ -424,7 +424,7 @@ class SQLiteFencedObjectStorageProvider:
                     """INSERT INTO provider_audit(
                         principal_id,tenant_id,action,object_key,fencing_scope,
                         fencing_token,idempotency_key,outcome,created_at
-                    ) VALUES(?,?,?,?,NULL,NULL,'','DENY',?)""",
+                    ) VALUES(?,?,?,?,?,NULL,NULL,'DENY',?)""",
                     (self.principal_id, tenant_id, action, object_key, fencing_scope, time.time()),
                 )
         except sqlite3.Error:
