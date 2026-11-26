@@ -198,7 +198,7 @@ class OperationLedgerArchiveTests(unittest.TestCase):
         with self.assertRaises(OperationArchiveOutcomeUnknownError):
             self.archive()
         self.model.scope_read_available = True
-        self.assertEqual(self.model.snapshot(SCOPE_A)["archive_operation_count"], 1)
+        self.assertEqual(self.model.snapshot(SCOPE_A)["archived_operation_count"], 1)
         self.assertEqual(self.model.lookup(SCOPE_A, "commit-unknown-unreadable")["state"], "COMMITTED")
 
     def test_cas_conflict_keeps_hot_records_and_leaves_only_orphan_object(self):
