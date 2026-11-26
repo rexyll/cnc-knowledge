@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000391",
+  "source_type": "other",
+  "title": "SQLite Transaction — Transaction Control and IMMEDIATE Write Transactions",
+  "publisher": "SQLite Project",
+  "author": null,
+  "url": "https://www.sqlite.org/lang_transaction.html",
+  "version": "Official online documentation; page last updated 2026-02-18; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Sections 2.1 and 2.2: only one simultaneous write transaction; BEGIN IMMEDIATE starts a write transaction immediately.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to ground the same-database serialization design. The page documents SQLite transaction semantics; it does not certify this CNC backup reference implementation.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
