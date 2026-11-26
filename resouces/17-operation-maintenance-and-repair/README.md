@@ -437,3 +437,10 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - [Run 45767658789](https://github.com/rexyll/cnc-knowledge/actions/runs/45767658789)两个必需Job success；全库268项unittest、CH12 143项测试通过；strict lint 0 errors/5 warnings；知识结构与数据质量0 errors。
 - Artifacts：CH12 S-curve 15091879973；Adapter 15093210029；Admission 15092029877；SQLite Provider 15092204228；治理readiness 15092980848。
 - ASSET-000080 20条场景仍PROPOSED_NOT_APPROVED / NOT_RUN；无真实云SDK/远程Coordinator/多主机验收，生产备份继续关闭。
+
+
+## CH17-T004 Coordinator持久权威与故障恢复第三十六轮（2026-11-26）
+
+- `spare-parts-inventory-backup-provider-coordinator-authority-test-matrix-v1.csv`（ASSET-000081）：16条本地合成参考场景，涵盖租户scope命名空间、token/operation sequence单调与幂等、activation/revocation两阶段Provider读回、完整publish receipt、Leader epoch接管、旧Leader拒绝及外部恢复高水位；全部PROPOSED_NOT_APPROVED / NOT_RUN。
+- 新增代码参考位于`scripts/spare_parts_provider_coordinator_authority.py`，专项测试位于`tests/test_spare_parts_provider_coordinator_authority.py`。代码与测试不是实物资源/企业测试报告；SQLite WAL仅支持同机本地文件系统，不支持NFS/SMB多主机。
+- 关联正文：`docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-durable-authority-and-recovery.md`；实体KNOW-000050、ASSET-000081；来源复用SRC-000391/392。

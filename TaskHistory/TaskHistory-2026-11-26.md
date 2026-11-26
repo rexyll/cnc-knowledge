@@ -410,3 +410,14 @@
 - **Artifacts：** CH12 S-curve synthetic 15091879973；BackupStorageAdapter self-check 15093210029；Provider admission 15092029877；SQLite fenced Provider 15092204228；Backup governance readiness 15092980848。
 - **验收边界：** ASSET-000080的20条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。本轮没有真实对象存储SDK、远程Coordinator/KMS/HSM/IAM或多主机测试；单进程CAS模型不是生产验收。
 - **状态：** CH17-T004继续IN_PROGRESS；production_backup_enabled=false；governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL；business_rule_assertions=NOT_EVALUATED。
+
+
+## CH17-T004 Coordinator持久权威、Leader切换与故障恢复第三十六轮（2026-11-26）
+
+- **新增模块：** `scripts/spare_parts_provider_coordinator_authority.py`，在同一SQLite WAL数据库中持久化全局Leader lease/epoch、tenant-qualified scope token、publish operation sequence和activation/revoke/publish operation ledger。
+- **状态与确认：** activation以PENDING_ACTIVATION起步，只有Provider control object强一致读回确认ACTIVE/token/lease/generation后才转ACTIVE；revoke以REVOKING起步，只有Provider读回REVOKED后完成；publish receipt匹配token、sequence、idempotency key、manifest key和SHA-256后转COMMITTED。
+- **隔离与恢复：** scope强制`tenants/<tenant_id>/...`；proof签发前重新校验当前Leader epoch和持久pending operation；旧Leader不能继续写入/签新proof。新Leader接管后可检查pending operation，并基于Provider状态重签相同原操作。数据库恢复要求独立外部token/sequence/Leader epoch floors；不自动重放或cutover。
+- **测试：** 新增15项Coordinator authority unittest（基础14项加1项租户scope隔离）；包含本地多实例并发sequence、Leader过期接管、旧Leader签名/确认拒绝、Provider activation提交后Coordinator崩溃恢复。
+- **首轮问题修复：** Commit `cc259d2`首轮CI暴露测试manifest key未使用实际整数token目录；改为Provider要求的`<scope>/staging/<token>/...`路径后，Run 45768939343全库282项和CH12 143项通过。随后增加当前Leader proof签发校验及manifest receipt完整匹配；Run 45769230014全库282项和CH12 143项通过。进一步增加tenant-qualified scope拒绝测试，最终状态以Run 45769331991为准。
+- **参考文件：** 新增KNOW-000050和ASSET-000081（16条场景）；复用SRC-000391/392。测试及矩阵均为本地合成范围。
+- **生产边界：** 仅同机SQLite WAL；无多主机共识、远程Coordinator/KMS/HSM、真实云对象存储/IAM Gateway、真实灾备或企业生产验收。生产备份仍关闭，治理状态BLOCKED_PENDING_ENTERPRISE_APPROVAL，业务断言NOT_EVALUATED。

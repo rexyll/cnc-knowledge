@@ -581,3 +581,16 @@
 - **Artifact：** CH12 S-curve synthetic 15091879973；BackupStorageAdapter self-check 15093210029；Provider admission 15092029877；SQLite fenced Provider 15092204228；Backup governance readiness 15092980848。
 - **登记：** CH17更新为29篇KNOW、81个登记实体、73项资源、15条去重来源。ASSET-000080的20条分布式fencing场景全部PROPOSED_NOT_APPROVED / NOT_RUN。
 - **边界：** 本轮验证只覆盖单进程内存CAS参考模型；无远程Coordinator、云对象存储SDK、真实KMS/HSM、IAM/RBAC配置或多主机故障演练。生产备份继续关闭，CH17-T004仍IN_PROGRESS。
+
+
+## CH17-T004 第三十六轮：Coordinator 持久权威、Leader epoch 与两阶段恢复
+
+- **目标：** 在KNOW-000049单对象分布式fencing协议之上，增加Coordinator本地持久权威参考层，保证tenant-qualified scope token、publish operation sequence、Leader epoch、幂等操作和Provider结果确认可在进程重启后追溯。
+- **代码：** 新增 `scripts/spare_parts_provider_coordinator_authority.py` 与 `tests/test_spare_parts_provider_coordinator_authority.py`。使用同一Admission SQLite文件及WAL/BEGIN IMMEDIATE，新增leader、scope authority、operation ledger和schema版本表。
+- **租户与序列：** scope强制 `tenants/<tenant_id>/...` 命名空间；每scope单调token及operation sequence独立持久化；idempotency key绑定规范化request SHA-256，冲突内容拒绝。
+- **两阶段状态：** activation为PENDING_ACTIVATION→Provider control object CAS/强一致读回→ACTIVE；revoke为ACTIVE→REVOKING→Provider CAS/读回→REVOKED；publish先分配sequence、签署绑定manifest key/SHA-256 proof，再以完整Provider receipt确认COMMITTED。
+- **Leader隔离：** 全局Leader lease持久化leader_id/epoch/expires_at；prepare/confirm/renew和proof签发均核验当前Leader，proof签发前还重新核对operation ledger仍处于pending。新Leader可恢复并重新签署仍pending的原operation；旧Leader缓存对象不得签新proof或确认。
+- **恢复：** `list_pending_operations()`不自动补成功；须强一致读取Provider control object与receipt后精确确认。数据库从旧备份恢复时要求独立token/sequence/Leader epoch floors；`reconcile_after_restore()`提升高水位、置RECOVERY_REQUIRED及RECOVERY_REVIEW，不自动cutover。
+- **测试：** 新增15项本地合成Coordinator authority unittest，覆盖端到端activation/publish/revoke、重启持久化、幂等与冲突、并发sequence分配、Leader TTL接管、proof签发旧Leader拒绝、新Leader恢复pending和外部高水位恢复门禁。
+- **新增知识/资源：** KNOW-000050；ASSET-000081为16条场景矩阵，全部PROPOSED_NOT_APPROVED / NOT_RUN；复用SRC-000391/392（SQLite Transaction/WAL）。
+- **限制：** 同机本地SQLite参考，不支持NFS/SMB或多主机；没有远程共识服务/Coordinator API、KMS/HSM、真实云Provider/IAM/Gateway或生产灾备环境。已签发且未过期的旧短时proof不能仅由本地Leader epoch变化撤销，仍依赖Provider token high-water、TTL和CAS防线。生产备份关闭，治理门禁不变。

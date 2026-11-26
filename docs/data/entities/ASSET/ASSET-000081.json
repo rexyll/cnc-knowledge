@@ -1,0 +1,61 @@
+{
+  "entity_id": "ASSET-000081",
+  "entity_type": "asset_file",
+  "canonical_name": "备件库存备份 Coordinator 持久权威与故障恢复测试矩阵v1",
+  "english_name": "CNC spare-parts backup durable Coordinator authority and recovery test matrix v1",
+  "aliases": [
+    "Coordinator authority failover matrix",
+    "durable fencing token and operation sequence scenarios",
+    "ASSET-000081"
+  ],
+  "description": "16条合成参考场景，覆盖tenant-qualified scope、持久token/sequence、幂等分配、activation/revocation两阶段确认、Provider回执、Leader epoch接管、旧Leader隔离和外部恢复高水位门禁；全部未批准/未执行。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "asset_file"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Fencing",
+    "Leader Epoch",
+    "SQLite WAL",
+    "Crash Recovery",
+    "ASSET-000081"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T15:00:00+08:00",
+  "updated_at": "2026-11-26T15:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [],
+  "attributes": {
+    "file_path": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-authority-test-matrix-v1.csv",
+    "file_name": "spare-parts-inventory-backup-provider-coordinator-authority-test-matrix-v1.csv",
+    "media_type": "data",
+    "mime_type": "text/csv",
+    "license_status": "project_original",
+    "chapter_owner": "CH17",
+    "related_knowledge_id": "KNOW-000050",
+    "generated_on": "2026-11-26",
+    "version": "1.0",
+    "authoring_method": "Project-authored synthetic Coordinator authority, Leader epoch and recovery acceptance scenarios",
+    "scenario_count": 16,
+    "approval_status": "PROPOSED_NOT_APPROVED",
+    "execution_status": "NOT_RUN",
+    "synthetic_only": true,
+    "sha256": null,
+    "file_size": null
+  },
+  "notes": "16条场景全部PROPOSED_NOT_APPROVED / NOT_RUN。CI单元测试仅验证本地参考代码，不会自动批准或执行矩阵；没有多主机共识、真实Provider、KMS/HSM、企业灾备或生产验收证据。"
+}

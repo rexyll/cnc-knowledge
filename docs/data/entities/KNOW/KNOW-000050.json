@@ -1,0 +1,77 @@
+{
+  "entity_id": "KNOW-000050",
+  "entity_type": "knowledge_article",
+  "canonical_name": "数控机床备件库存备份 Coordinator 持久权威、Leader 切换与故障恢复",
+  "english_name": "CNC spare-parts backup durable Coordinator authority, Leader failover and recovery",
+  "aliases": [
+    "durable Coordinator fencing authority",
+    "per-scope monotonic token and operation sequence",
+    "Coordinator Leader epoch recovery",
+    "two-phase Provider activation and revocation"
+  ],
+  "description": "基于同机SQLite WAL参考层持久分配tenant-qualified scope token与publish operation sequence，建立Leader epoch门禁、proof签发前持久状态核验，以及activation/revocation/publish的两阶段Provider回执收敛与恢复流程。",
+  "primary_chapter": "CH17",
+  "related_chapters": [
+    "CH17",
+    "CH18",
+    "CH19",
+    "CH20",
+    "CH21"
+  ],
+  "classification_path": [
+    "数控机床运行维护",
+    "维修与备件管理",
+    "备件系统验收与测试数据治理",
+    "Coordinator持久权威与故障恢复"
+  ],
+  "tags": [
+    "CH17",
+    "Coordinator",
+    "Fencing Token",
+    "Operation Sequence",
+    "Leader Epoch",
+    "Crash Recovery",
+    "Idempotency",
+    "SQLite WAL"
+  ],
+  "lifecycle_status": "active",
+  "verification_status": "in_review",
+  "created_at": "2026-11-26T15:00:00+08:00",
+  "updated_at": "2026-11-26T15:00:00+08:00",
+  "verified_at": null,
+  "valid_from": null,
+  "valid_to": null,
+  "source_ids": [
+    "SRC-000391",
+    "SRC-000392"
+  ],
+  "attributes": {
+    "document_path": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-durable-authority-and-recovery.md",
+    "test_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-authority-test-matrix-v1.csv",
+    "coordinator_authority_module": "scripts/spare_parts_provider_coordinator_authority.py",
+    "coordinator_authority_test": "tests/test_spare_parts_provider_coordinator_authority.py",
+    "admission_coordinator_module": "scripts/spare_parts_provider_admission_sqlite.py",
+    "distributed_fencing_module": "scripts/spare_parts_provider_distributed_fencing.py",
+    "authority_backend": "SQLITE_WAL_SAME_HOST_REFERENCE",
+    "tenant_scope_namespace": "tenants/<tenant_id>/<resource-scope>",
+    "leader_epoch": "MONOTONIC_GLOBAL_LEASE",
+    "scope_token": "MONOTONIC_PER_TENANT_QUALIFIED_SCOPE",
+    "operation_sequence": "MONOTONIC_PER_TENANT_QUALIFIED_SCOPE_IDEMPOTENT",
+    "activation_requires_provider_readback": true,
+    "revocation_requires_provider_readback": true,
+    "publish_receipt_binds_manifest_key_and_sha256": true,
+    "proof_signing_checks_current_persisted_leader": true,
+    "restore_requires_external_fencing_floors": true,
+    "old_leader_mutations_rejected_after_epoch_advance": true,
+    "multi_host_sqlite_supported": false,
+    "remote_consensus_backend_integrated": false,
+    "remote_coordinator_api_integrated": false,
+    "kms_hsm_integrated": false,
+    "cloud_provider_integrated": false,
+    "production_backup_enabled": false,
+    "unit_tests_added": 15,
+    "code_ci_run": 45769331991,
+    "code_ci_status": "PENDING"
+  },
+  "notes": "该知识条目实现的是同一主机本地SQLite WAL参考权威，不是分布式共识服务。Coordinator以BEGIN IMMEDIATE持久分配tenant-qualified scope token和operation sequence，Leader epoch用于拒绝旧进程prepare/confirm/renew及新proof签发。activation/revocation/publish均先持久化pending，再依据受信任Provider Gateway强一致read-back/receipt确认。数据库恢复必须获得独立外部token、sequence和Leader epoch下限；reference字符串本身不是证据。无多主机线性一致性、远程HTTP/gRPC、KMS/HSM、云对象存储SDK/IAM或生产备份启用。ASSET-000081的16项场景均PROPOSED_NOT_APPROVED/NOT_RUN。"
+}

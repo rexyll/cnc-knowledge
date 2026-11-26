@@ -88,7 +88,13 @@
     "adapter_self_check_artifact_id": 15093210029,
     "admission_self_check_artifact_id": 15092029877,
     "sqlite_fenced_provider_self_check_artifact_id": 15092204228,
-    "backup_governance_readiness_artifact_id": 15092980848
+    "backup_governance_readiness_artifact_id": 15092980848,
+    "coordinator_authority_article": "docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-durable-authority-and-recovery.md",
+    "coordinator_authority_module": "scripts/spare_parts_provider_coordinator_authority.py",
+    "coordinator_authority_test": "tests/test_spare_parts_provider_coordinator_authority.py",
+    "coordinator_authority_matrix": "resouces/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-authority-test-matrix-v1.csv",
+    "coordinator_authority_backend": "SQLITE_WAL_SAME_HOST_REFERENCE",
+    "coordinator_authority_integrated": false
   },
-  "notes": "该知识条目仅定义厂商中立协议和合成CAS状态机。现有Coordinator接口尚未实现fencing:activate/revoke/publish远程proof签发端点，也未分配生产分布式operation_sequence；对象存储SDK、IAM策略、网络服务、KMS/HSM均未接入。协议依赖单scope control object的强一致读取与ETag/generation条件替换，并要求Gateway独占control key写权限；payload与control object不构成跨对象事务。InMemoryConditionalObjectControlStore仅单进程测试，不能作为真实多主机证据。 代码/测试CI Run 45767324560已通过：全库268项unittest、CH12 143项、strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。ASSET-000080的20条参考场景仍PROPOSED_NOT_APPROVED/NOT_RUN。该CI只执行单进程内存CAS合成模型，无真实对象存储/远程Coordinator验证。 最终文档同步CI Run 45767658789两个必需Job均success，全库268项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。ASSET-000080的20条场景仍PROPOSED_NOT_APPROVED/NOT_RUN；真实云Provider/Coordinator/KMS/IAM/多主机尚未接入。"
+  "notes": "该知识条目仅定义厂商中立协议和合成CAS状态机。现有Coordinator接口尚未实现fencing:activate/revoke/publish远程proof签发端点，也未分配生产分布式operation_sequence；对象存储SDK、IAM策略、网络服务、KMS/HSM均未接入。协议依赖单scope control object的强一致读取与ETag/generation条件替换，并要求Gateway独占control key写权限；payload与control object不构成跨对象事务。InMemoryConditionalObjectControlStore仅单进程测试，不能作为真实多主机证据。 代码/测试CI Run 45767324560已通过：全库268项unittest、CH12 143项、strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。ASSET-000080的20条参考场景仍PROPOSED_NOT_APPROVED/NOT_RUN。该CI只执行单进程内存CAS合成模型，无真实对象存储/远程Coordinator验证。 最终文档同步CI Run 45767658789两个必需Job均success，全库268项unittest、CH12 143项测试通过，strict lint 0 errors/5 warnings，知识结构与数据质量0 errors。ASSET-000080的20条场景仍PROPOSED_NOT_APPROVED/NOT_RUN；真实云Provider/Coordinator/KMS/IAM/多主机尚未接入。 第三十六轮新增KNOW-000050：Coordinator本地SQLite持久权威，进一步实现tenant-qualified scope token、operation sequence、Leader epoch、proof签名当前Leader校验和两阶段Provider确认；仍非多主机共识，详见KNOW-000050。"
 }
