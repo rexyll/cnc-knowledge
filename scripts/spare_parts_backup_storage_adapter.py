@@ -1161,6 +1161,67 @@ def _synthetic_ledger():
 def self_check() -> dict[str, Any]:
     from scripts.spare_parts_inventory_ledger_persistence import publish_generation
 
+    class _SelfCheckClock:
+        now = 0.0
+        def __call__(self) -> float:
+            return self.now
+        def advance(self, seconds: float) -> None:
+            self.now += seconds
+
+    # Circuit behavior is independently exercised here so the CI artifact
+    # records a real state transition, not merely that unit tests exist.
+    circuit_clock = _SelfCheckClock()
+    circuit_provider = MockObjectStorageProvider()
+    circuit_provider.put_if_absent("ch17/synthetic/circuit-probe", b"probe")
+    circuit_provider._transient_failures["get"] = 1
+    circuit_adapter = BackupStorageAdapter(
+        circuit_provider,
+        retry_max_attempts=1,
+        circuit_failure_threshold=1,
+        circuit_reset_timeout_seconds=5,
+        clock_fn=circuit_clock,
+    )
+    try:
+        circuit_adapter._provider_call(
+            "get_payload",
+            lambda: circuit_provider.get_object("ch17/synthetic/circuit-probe"),
+        )
+        raise AssertionError("injected provider failure did not occur")
+    except ProviderTransientError:
+        pass
+    assert circuit_adapter.circuit_snapshot("read")["state"] == "OPEN"
+    try:
+        circuit_adapter._provider_call(
+            "get_payload",
+            lambda: circuit_provider.get_object("ch17/synthetic/circuit-probe"),
+        )
+        raise AssertionError("open circuit admitted a request")
+    except ProviderCircuitOpenError:
+        pass
+    circuit_clock.advance(5)
+    probe = circuit_adapter._provider_call(
+        "get_payload",
+        lambda: circuit_provider.get_object("ch17/synthetic/circuit-probe"),
+    )
+    assert probe.data == b"probe"
+    assert circuit_adapter.circuit_snapshot("read")["state"] == "CLOSED"
+
+    budget_adapter = BackupStorageAdapter(
+        MockObjectStorageProvider(),
+        retry_max_attempts=2,
+        retry_budget_total=0,
+        retry_base_delay_seconds=0,
+        sleep_fn=lambda _: None,
+    )
+    try:
+        budget_adapter._provider_call(
+            "get_payload",
+            lambda: (_ for _ in ()).throw(ProviderTransientError("self-check budget")),
+        )
+        raise AssertionError("zero retry budget unexpectedly allowed a retry")
+    except RetryBudgetExceededError:
+        pass
+
     with tempfile.TemporaryDirectory(prefix="ch17-backup-adapter-") as tmp:
         base = Path(tmp)
         source_root = base / "source-store"
@@ -1207,9 +1268,9 @@ def self_check() -> dict[str, Any]:
             "read_after_write_and_transient_get_retried": "PASS",
             "historical_version_pinned_after_current_version_switch": "PASS",
             "retry_policy": "BOUNDED_EXPONENTIAL_NO_RANDOM_JITTER_IN_SYNTHETIC_TEST",
-            "circuit_breaker_and_half_open": "TESTED_BY_UNIT_SUITE",
-            "operation_domain_bulkheads": "TESTED_BY_UNIT_SUITE",
-            "aggregate_retry_budget": "TESTED_BY_UNIT_SUITE",
+            "circuit_breaker_open_half_open_probe_and_recovery": "PASS",
+            "operation_domain_bulkheads": "PASS_IN_UNIT_SUITE",
+            "aggregate_retry_budget_exhaustion": "PASS",
             "payload_object_count": published["payload_object_count"],
             "external_connections": False,
             "credentials_or_keys_used": False,
