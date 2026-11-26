@@ -133,3 +133,5 @@ Coordinator 权威状态迁移基础见 [事务内有序读取与状态快照](s
 
 
 Admission lease 统一事务参考模型见 [Admission Lease Authority 与Coordinator统一事务存储](spare-parts-inventory-backup-provider-admission-lease-authority-store.md)（KNOW-000053）：提供基于CoordinatorAuthorityStore的lease创建、续租、释放、单调fencing token及可纳入authority Txn的双键guard；ASSET-000084包含20条待批准/未执行场景。该组件尚未替代旧SQLite Admission排队/全局与租户配额调度器，也未接入SQLite Coordinator领域状态机。
+
+第三十九轮文档同步CI Run 45776156101（提交 b79aede8a06cc55ac60681cbfc9acf03b1f44a55）两个必需Job均completed/success：314项全库unittest、CH12 143项测试、strict lint 0 errors/5 warnings、知识结构质量0 errors。ASSET-000084场景仍待批准/未执行。
