@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000395",
+  "source_type": "other",
+  "title": "Manage concurrency in Blob Storage",
+  "publisher": "Microsoft Learn — Azure Storage",
+  "author": null,
+  "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/concurrency-manage",
+  "version": "Official online documentation; accessed 2026-11-26.",
+  "published_on": null,
+  "accessed_on": "2026-11-26",
+  "locator": "Optimistic concurrency using ETag and If-Match; Blob Lease pessimistic concurrency.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to map generic per-blob CAS to Azure ETag conditions and clarify that an object lease is a per-blob concurrency primitive, not a multi-blob transaction.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
