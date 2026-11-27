@@ -728,3 +728,13 @@
 - 真实集成结果：[Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310)在三成员 etcd v3.7.0 临时集群 8 项 live 测试全部 PASS（8/8，0 failures，0 skips），新增 Watch created/PUT/DELETE/prev_kv/stream-close 实测；Artifact ID 15128407498，SHA-256 `9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9`。临时容器、数据卷与网络清理成功。
 - 默认 CI：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个必需 Job 均 completed/success；全库 505 项 unittest，497 通过、8 项 opt-in live 测试按默认策略 skip；CH12 143 项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量 0 errors、5 项既有 DRAFT/审批 warning。
 - 边界：没有实现 HTTP 双向 WatchProgress/Cancel、服务端 cancel 确认、mTLS 握手、RBAC；没有执行长期流压力/背压、网络分区和多主机测试；Watch 仅为通知，不作为授权判据。ASSET-000092 的 30 项正式场景保持 PROPOSED_NOT_APPROVED / NOT_RUN；production_backup_enabled=false，governance_readiness=BLOCKED_PENDING_ENTERPRISE_APPROVAL，business_rule_assertions=NOT_EVALUATED；schema-v2 仍为唯一生产权威。
+
+
+### 第五十一轮 mTLS 实时验收补记（2026-11-27）
+
+- 代码提交：测试断言修正 `286378e2185854eea38ee04f4ee6cf049cd9c8f3`（main）。
+- 实时集成：[Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363) completed/success；明文三节点 live suite 全部通过，独立 mTLS suite 3/3 PASS：有效双向证书完成三成员发现、CAS Txn 写入和 linearizable readback；缺失客户端证书被服务端拒绝；不受信任 CA 被客户端拒绝。诊断 Artifact 15163390323，SHA-256 `91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74`。
+- 负向测试注意：etcd3gw/requests 对 TLS 握手失败可能包装为无文本的 `ConnectionError('')`；断言以连接失败为准，并由同一集群有效证书用例建立健康基线，不依赖异常字符串。
+- 默认质量 CI：[Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)两个必需Job成功；全库508项unittest通过；CH12 143项通过；结构/数据校验0 errors、5项既有治理warning；strict knowledge lint 0 errors。
+- 证书由 runner 临时生成并在 job cleanup 中清理；mTLS Compose 数据卷也已删除。没有提交证书、私钥或CA私钥。
+- 边界：该结果证明指定 etcd v3.7.0/etcd3gw 2.7.0 一次性环境的 TLS CA 校验和客户端证书认证，不等于企业PKI、证书轮换/吊销、生产密钥托管、etcd RBAC或生产网络验收。ASSET-000092 的30项正式场景仍 PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持 IN_PROGRESS。
