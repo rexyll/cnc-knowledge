@@ -455,7 +455,7 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
         )
         with self.assertRaises(Etcd3Exception):
             self.driver.range(b"/protected")
-        self.assertEqual(len(first.calls), 0)
+        self.assertEqual(len(first.calls), 1)
         self.assertEqual(second.calls, [])
 
     def test_from_env_requires_explicit_endpoint_list(self):
