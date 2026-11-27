@@ -426,5 +426,5 @@
 - **实现：** 新增`scripts/spare_parts_migration_namespace.py`，严格验证隔离namespace，并通过线性一致prefix Range检查空空间；非空、连接失败均拒绝继续，成功结果保留Range revision。
 - **测试设计：** 覆盖prefix空空间、已存在键阻断、相邻namespace不误报、namespace格式校验、后端不可用fail-closed。
 - **客户端修正：** `InMemoryEtcdV3Client.range()`支持`range_end`，避免此前fake只读精确键而无法验证prefix范围。
-- **验证状态：** 已提交测试代码，但GitHub Combined Status当前返回空statuses；尚无可确认的Quality CI结论，不宣称测试通过。
+- **验证结果：** Quality CI run `46016856810`（代码/测试提交 `d76802e`）通过；主Job与CH12 numerical resource Job均success。主Job共运行574个unittest，40个skip，结果`OK`；新增5项namespace预检测试全部通过。后续文档提交触发的Quality CI run `46017099566`亦success。
 - **安全边界：** 预检不是锁；必须后续配合一次性临时etcd或服务端RBAC防止竞态。当前没有KV写入、Lease创建、候选包导入或生产变更。MIG-04 IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
