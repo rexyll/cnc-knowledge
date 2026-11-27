@@ -943,3 +943,20 @@
 - 默认质量[Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：526项unittest（504通过、22项opt-in skip），CH12 143项，strict lint 0 errors，fixture validator 0 errors/5项既有warning。
 - 更新CH17正文/README、资源README/ASSET索引、KNOW-000061、ASSET-000092和TaskHistory。正式30场景仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
 - **状态：** 本轮工程任务验收通过；自动token刷新、企业IAM/JWT密钥管理、生产凭据轮换/撤销/审计、网络分区与认证服务HA仍未验证。
+
+
+## CH17-T004 第五十五轮：mTLS + RBAC 单成员故障与跨成员 Token 传播（2026-11-27）
+
+- **目标：** 在一次性 etcd v3.7.0 三成员 mTLS + RBAC 集群中，验证一个成员停止但剩余 quorum 存在时，持有有效 reader/writer token 的客户端能否从故障 endpoint failover 到健康成员；并区分 transport failover、跨成员 token 接受、认证状态传播和成员恢复。
+- **任务拆解：**
+  1. 建立临时 root/reader RBAC 身份和受限 key prefix，token/密码/证书只存在 runner 临时目录或内存。
+  2. 通过 etcd Compose 真正停止一个成员（优先 etcd1），确认其余两个成员保持健康且成员数/集群状态符合预期。
+  3. 使用 endpoint 顺序明确包含已停止成员在首位的 Etcd3gwV3Client，并注入由停止前认证取得的有效 reader token；对授权 prefix 执行线性一致 Range，验证真实 transport failover 后成功，并验证越权仍为 PermissionDenied、不触发额外 endpoint 重试。
+  4. 以直接请求方式分别测试相同 token 对健康成员的接受情况，记录 immediate 与短暂等待后的结果；不得把成功归因于驱动 failover，需区分实际命中的 endpoint。
+  5. 重启停止成员，等待其恢复健康；再次通过各 endpoint 验证同一 token 和授权结果。
+  6. 在多轮重复实验中记录失败类别、成员健康、请求 endpoint、HTTP/gRPC错误类别和恢复时间；不输出 token、密码或证书私钥。
+- **实现边界：** 只读 Range 可按现有策略在真实连接/超时故障时 failover；401/403/InvalidArgument不得切换endpoint；Txn/Lease写请求仍只发送一次。若观察到 simple token 跨成员短暂不一致，先记录可重复证据，不得用无限重试掩盖；仅允许后续设计有界、显式且不匿名的重新认证策略。本轮不引入自动token provider，不持久化用户名/密码。
+- **测试与清理：** 专用 opt-in live suite；停止成员必须在 finally 中恢复；runner退出时销毁Compose volumes和临时证书；不得触碰外部集群或正式生产环境。
+- **验收标准：** 真实单成员停止期间2/3 quorum可用；首个故障endpoint被连接层识别并由只读请求成功切换至健康成员；token在其他成员的接受情况有独立实测结论；恢复成员后重新健康且请求成功；认证/授权错误不触发transport failover；默认全库质量CI与strict lint通过。
+- **交付物：** 专项live测试、CI独立阶段、更新CH17技术正文/README、KNOW-000061与ASSET-000092 supporting evidence、TaskHistory、资源README/ASSET索引及必要来源记录。
+- **治理边界：** 一次性 etcd v3.7.0/etcd3gw 2.7.0 测试不构成企业HA、IAM、生产token复制/撤销/轮换或多机房网络分区验收。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持IN_PROGRESS。
