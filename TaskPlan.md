@@ -1213,3 +1213,14 @@
 - **交付：** `scripts/spare_parts_sqlite_migration_inventory.py`及专用unittest、迁移设计文档和README使用说明。
 - **状态：** DONE；实现、专用单元测试及main Quality CI均通过。
 
+
+
+### 第七十四轮任务计划：MIG-04 Unified schema-v2 Candidate Importer
+
+- **目标：** 在MIG-03只读Inventory/Export基础上构建可验证的Unified schema-v2候选导入包。
+- **实现：** 校验manifest/records格式、全表行数与SHA-256、snapshot digest；显式提供来源Admission策略并校验policy_hash；确定性映射终态request幂等索引、scope/operation、fencing/sequence floors和计数器。
+- **安全门禁：** 只接受已排空ACTIVE request、waiter与pending operation的快照；不恢复旧Leader，只保留epoch floor；非空闲scope标记RECOVERY_REQUIRED；外部Provider fencing floor未知时保持REQUIRED/null。
+- **隔离约束：** 本轮只生成候选包，不写etcd或AuthorityStore。目标Store的namespace目前固定，后续必须先实现隔离namespace能力、目标Lease创建、原子事务/分批checkpoint与未知结果读回恢复；不得接触生产namespace。
+- **交付：** `scripts/spare_parts_sqlite_candidate_importer.py`、专用unittest、迁移设计第11节、章节README、根/章节TaskPlan与TaskHistory。
+- **验收：** manifest/records篡改、策略不匹配、活动租约/waiter/未决操作、源文件变化等场景fail closed；候选摘要可确定性重建。
+- **状态：** 首阶段候选包生成器已实现；完整目标写入器和MIG-05/06验证未完成，MIG-04保持IN_PROGRESS。
