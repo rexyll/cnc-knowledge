@@ -308,3 +308,13 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 线性一致Range快照revision=29，确认被Watch key仍存在且value/mod_revision不变。progress帧不携带KV内容；健康测试中revision相等不证明分区时也一致。官方etcd说明progress revision属于本地成员，可能落后quorum Range。
 - [Quality Run 45944091695](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091695)：539 unittest（508 passed、31 skipped），CH12 143，strict lint 0 errors/5 warning，结构/data 0 errors；SPAT 30项仅离线模拟。
 - 一次性CI supporting evidence；显式双向WatchProgress/WatchCancel仍不支持；ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+## CH17-T004 少数派Watch progress滞后与快照恢复（第六十三轮）
+
+- [Live Run 45946092810](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092810)整体success；新增少数派分区和恢复测试1/1 PASS（6.213秒）。etcd1通过临时专用网络保持Watch连接、同时与etcd2/etcd3隔离；多数派写入revision 33、34、35时，etcd1两次空Progress Notification的header revision均为32，events=0、watch_id=0。多数派线性一致Range revision=35，确认本地progress watermark不能当作quorum最新revision。
+- 网络恢复后，多数派快照revision=35，etcd1线性一致读达到revision=35；新Watch从revision=36（snapshot+1）恢复，只收到revision=36的新PUT一次，prev_kv与快照值匹配；下一响应为空Progress帧，revision 33–35未重放。诊断Artifact [15174961822](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092810/artifacts/15174961822)，SHA-256 `5d72bea9eeb46ea6d9a26b90204f5c350797a393c774852b64792520af6a5364`。
+- Live流水线中普通etcd、mTLS、短TTL Token、auth/quorum、RBAC成员故障/Token传播、诊断采集及临时Compose容器/volumes清理全部success。测试只操作经标签核验的一次性容器与临时Docker网络，没有修改宿主机iptables或其他容器。
+- [Quality Run 45946092822](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092822)两个Job均success：540 unittest（32 skipped），CH12数值测试143项通过，strict knowledge lint通过，结构/data检查0 errors。
+- Progress revision取自Watch连接的本地成员；少数派时可能低于quorum线性一致Range。恢复后必须通过线性一致快照确定权威状态，并从R+1续接。当前仍只验证周期性`progress_notify=true`，不代表双向WatchProgress/WatchCancel已实现。
+- 本轮是一次性etcd v3.7.0 / etcd3gw 2.7.0 supporting evidence；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004仍`IN_PROGRESS`。
