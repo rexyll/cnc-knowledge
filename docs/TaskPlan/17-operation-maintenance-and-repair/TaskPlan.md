@@ -910,3 +910,13 @@
 - etcd gRPC-Gateway不接受通过非空客户端证书CN映射用户；最终使用无CN的CA签名client cert继续强制mTLS，RBAC身份通过用户名/密码换token和Authorization header实现。
 - 默认CI [Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)成功：515项unittest（499通过、16项opt-in live skip）、CH12 143项、strict lint 0 errors、结构/数据0 errors/5项既有warning。
 - token只显式注入并保存在内存，本轮不实现自动刷新/续期；企业IAM、凭据轮换、审计及生产密钥托管仍未验证。ASSET-000092正式30项继续PROPOSED_NOT_APPROVED / NOT_RUN；CH17-T004仍IN_PROGRESS。
+
+
+## 6.25 CH17-T004 etcd Gateway Token 生命周期与认证故障语义（第五十三轮，2026-11-27）
+
+- **目标：** 研究etcd v3.7.0 token TTL/类型及Gateway认证错误语义，在mTLS+RBAC三成员临时集群验证过期、重新认证、跨endpoint传递和认证服务暂时不可用行为。
+- **任务拆解：** 核验v3.7.0 token TTL配置及默认值；实现短TTL隔离测试；捕获过期token、无效密码、权限拒绝、TLS失败、连接中断和服务端不可用的HTTP/gRPC错误细节；验证重新认证后新token可用及旧token行为；验证多个endpoint和Watch stream使用一致Authorization token；验证一成员停机时已有token数据请求与认证请求的区别。
+- **安全要求：** token/密码/证书只在runner临时目录或进程内存；错误信息不得泄露凭据；权限拒绝/认证失败不得作为网络错误进行endpoint failover，不得匿名或明文降级。
+- **实现决策门：** 不预设必须自动刷新。只有在真实协议、token TTL、并发刷新锁、时钟偏差、凭据来源/托管和故障语义可验证后，才引入自动token provider；否则保留显式token更新接口并将生命周期责任交给外部安全凭据提供方。
+- **交付物：** etcd版本/配置与token生命周期说明、Fake Gateway错误分类/多endpoint测试、mTLS+RBAC live集成测试、更新后的CH17知识文章/实体/资源索引及CI证据。
+- **验收边界：** 不声称企业IAM/生产轮换撤销/审计已完成；ASSET-000092仍由企业正式审批控制，schema-v2仍是唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
