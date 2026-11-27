@@ -551,3 +551,39 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 [Quality Run 45982644355](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644355)两个必需Job均success：全库545项unittest（36 skipped，即509项通过）；CH12数值资源测试143项通过；strict knowledge lint 0 errors / 5 warnings；结构/data检查0 errors（260实体、240关系、412来源记录、178 Markdown文件）。SPAT仅离线模拟30包、failed=0，`business_test_status=NOT_RUN`、`external_connections=NO`、`writes=NO`；不得将模拟包校验描述为企业业务验收。
 
 **解释边界：** 本轮只证明一次性etcd v3.7.0 / etcd3gw 2.7.0三节点Compose夹具中，受控停止etcd1后已建立Watch的显式断流分类、有限断流写入窗口及snapshot+1恢复。没有验证生产网络代理空闲超时、真实长尾时延分布、无限期连接耐久性、客户端队列/堆内存上限、TCP窗口或自动背压；没有新增自动重连和自动failover。Watch仍是单向HTTP server-streaming，不支持双向`WatchProgress`/`WatchCancel`。客户端投影仅是测试模型，不是生产Watch缓存。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004整体保持`IN_PROGRESS`。
+
+## 29. 第六十八轮：Watch空闲Progress、读取超时与客户端访问路径失联
+
+本轮补充可选HTTP Watch read-inactivity timeout，并验证“集群无revision推进时的完全静默”“Watch前缀不变但其他KV revision推进时的Progress控制帧”以及“etcd成员继续运行但客户端专用访问路径断开”三个不同状态。测试不将TCP/HTTP路径可达、Watch响应有进展和etcd成员/Quorum健康混为同一个指标。
+
+**驱动配置：** `Etcd3gwV3Client`新增`watch_read_timeout: float | None`构造参数。`None`为默认值，保持原来`timeout=(connect_timeout, None)`行为；显式正数被设置为HTTP Watch请求的read inactivity timeout，即限制流式response连续无数据的等待时长，connect timeout仍使用原`timeout`。非正数、布尔值和非数字配置被拒绝。超时或连接异常由Store层统一映射为`AuthorityStoreUnavailableError`；该参数不触发自动重连、自动failover或旧cursor重放。Fake契约覆盖参数传播、配置校验和读超时错误分类。
+
+**阶段一：完全静默的Watch。** 多数派Range建立prefix snapshot revision=`38`；etcd1本地Range确认已应用该revision；Watch从`39`建立，`progress_notify=true`，read timeout=`4.0s`。随后整个测试KV空间没有新revision，也没有Watch prefix事件。在本轮etcd v3.7.0 Compose观察中，4秒内没有收到Progress响应；流在`4.004492609s`后以底层`ConnectionError`映射为`AuthorityStoreUnavailableError`而结束。与此同时，etcd1容器仍为`running`、仍在Raft Compose网络，Quorum仍可正常服务；多数派Range确认目标prefix和seed value均未变化。这表明该参数测量的是HTTP流无数据间隔，而不是成员健康。健康且完全静默的Watch也会因配置了read timeout而被判定为Unavailable。
+
+**阶段二：外部revision推进与空Progress。** 在同一目标prefix之外提交两个marker PUT，revision=`[39,40]`；多数派写入后对etcd1进行线性一致Range确认。Watch没有收到marker KV事件，只收到两个空Progress响应：`progress_revisions=[39,39]`，目标prefix事件数仍为0；两次Progress响应间隔分别约`2.1347s`和`1.1550s`。第二个marker revision已推进到40，但本轮Progress header仍停留在39。因此Progress只反映该Watch流所观察到的本地进度watermark，不保证追上刚完成的其他KV写入，更不能替代quorum Range快照。
+
+**阶段三：客户端访问路径断开。** etcd1通过一个仅连接该容器的临时bridge网络接受Watch请求；在Progress帧后，从仍运行的etcd1容器断开该专用客户端访问网络，但保留etcd1的Compose Raft网络。已建立的HTTP流在`4.004505946s`后以底层`ConnectionError`终止，Store报告`AuthorityStoreUnavailableError`。观测`etcd1_container_remained_running=true`、`etcd1_remained_on_raft_network=true`、`only_client_access_network_removed=true`、`final_quorum_recovered=true`。本次耗时与配置4秒read timeout一致；该实验验证专用客户端路径被移除后的有界检测，但没有使用抓包证明WAN/NAT/代理环境中的TCP静默丢包行为。
+
+| 观测项 | 结果 |
+|---|---:|
+| 初始snapshot revision | 38 |
+| Watch start revision | 39 |
+| Watch read timeout | 4.0 s |
+| 全局无写入时的结束时间 | 4.0045 s |
+| 无写入期间etcd1健康 | true |
+| 外部marker revisions | 39、40 |
+| 空Progress header revisions | 39、39 |
+| watched-prefix事件数 | 0 |
+| 客户端访问路径断开后的检测时间 | 4.0045 s |
+| 访问路径断开时etcd1仍运行/Raft网络仍连接 | true / true |
+| 最终Quorum健康 | true |
+
+**Live与Quality：** [Live Run 45987534125](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125)整体success。Watch minority/Progress测试文件5项测试通过（24.605秒），包括本轮空闲、Progress与访问路径失联场景；普通三节点etcd、mTLS、短TTL Token、auth/quorum isolation、RBAC成员故障/Token传播、诊断采集、一次性Compose容器和volumes清理及Artifact上传均success。诊断Artifact [15192246652](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125/artifacts/15192246652)，SHA-256 `e9f2dbb141dc55a60f3988876df8eaa86eb02b4b26dda3f43c76f0a4a0b30663`。
+
+[Quality Run 45987533954](https://github.com/rexyll/cnc-knowledge/actions/runs/45987533954)两个必需Job均success：全库548项unittest（37 skipped，即511项非跳过通过）；CH12数值资源测试143项通过；strict knowledge lint 0 errors / 5 warnings；结构/data检查0 errors（260实体、240关系、412来源记录、178 Markdown文件）。SPAT只执行离线模拟30包、failed=0，`business_test_status=NOT_RUN`、`external_connections=NO`、`writes=NO`。
+
+**中间尝试与修正：** 第一版Live测试错误地假设完全静默集群也会周期性发送Progress；实际观察是4秒读超时先触发，即使etcd1和Quorum健康。第二版由prefix外marker推进revision，但过度要求Progress header必须不小于刚提交的marker revision；实际收到的已排队响应header为39，而marker已到40。最终测试改为验证Progress header不低于快照基线且连续不回退，不将Progress当成强一致或quorum最新水位。前两次失败Run不作为通过证据。
+
+**运维解释和限制：** `watch_read_timeout`是可选的字节读取静默阈值，不是etcd集群健康检测器。对长期不变化的key/集群，若没有可靠的独立心跳/持续revision推进，启用该参数会把健康空闲Watch判为Unavailable；默认`None`仍可能无限期等待。只有在服务端能保证空闲期持续产生可观测控制流量，且超时阈值明显大于Progress间隔及网络/调度抖动时，才应为特定Watch显式配置read timeout。即使收到Progress，其header也不保证是quorum最新revision；权威状态仍需健康多数派线性一致Range。客户端路径断开测试仅是一次性Compose网络隔离演练，不等于WAN、NAT或生产代理半开连接验收；未新增TCP keepalive、后台健康探针、自动重连或双向WatchProgress/WatchCancel。Watch仍为单向HTTP server-streaming。
+
+**治理状态：** 本轮仍为一次性CI supporting engineering evidence。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004总体保持`IN_PROGRESS`。
