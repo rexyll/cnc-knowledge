@@ -1191,3 +1191,17 @@
 - **范围与负载限制：** 使用固定数量的唯一KV、小型定长value和有限写入线程；记录停读时长、写入事件数、消费响应数/最大单响应事件数、压缩revision、活动流完成模式和恢复cursor。不把该测试解释为无界压力、网络带宽上限、RSS/堆内存上限、真实自动背压或无限期运行测试。
 - **协议与安全：** 复用etcd1配置的1秒Progress通知端点；由etcd2/etcd3多数派负责写、快照、Compaction和旧cursor探测；Compaction仅在Compose project/service标签核验后的本次etcd2容器执行。唯一测试前缀，finally关闭所有流/客户端并删除该前缀全部KV；不改宿主机iptables、不触碰其他容器/网络。
 - **验收：** Fake/单元契约与三节点Live分别记录；Live测试接入现有`run.sh`。只将其作为etcd v3.7.0 / etcd3gw 2.7.0一次性Compose supporting evidence；不宣称已交付生产消费者队列、最大缓存容量、背压策略或业务Coordinator迁移。Watch仍为单向HTTP server-streaming，不实现双向WatchProgress/WatchCancel。
+
+## 第六十六轮结果记录：慢消费者、Watch积压与Compaction竞争（2026-11-27）
+
+- **任务状态：** DONE（一次性CI supporting engineering evidence）。新增`test_slow_watch_consumer_drains_backlog_or_rebuilds_after_compaction`，接入现有三节点Live测试文件与`run.sh`，没有增加生产消费者队列或缓存API。
+- **实现提交：** `4413098c1da320108ca6b744d04a728e517c69b8`新增Live测试；`1f0adfdb1911df4b98323b067c951c4d71bc17b8`收紧writer、取消帧和零事件竞态断言。全部提交到`main`，没有创建分支。
+- **测试基线：** 健康多数派线性一致Range初始snapshot revision=59；etcd1（唯一设置`--watch-progress-notify-interval=1s`的成员）上的Watch从revision=60建立。多数派后台writer提交64个唯一PUT，应用层暂停调用`next(stream)` 0.8秒后再按每响应8ms延迟恢复消费；64个事件全部按序收到，Watch响应64个、最大单响应事件数1，revision集合与写入事务一致。随后quorum snapshot revision=123与客户端投影cache完全一致。
+- **Compaction竞争：** 第二条Watch从cursor=124建立后，应用暂停读取，多数派连续提交96个唯一PUT，最高revision=219；经Compose project/service标签核验的etcd2容器执行`etcdctl compact 219`。恢复读取旧活动HTTP Watch后，实际观测其完整排空96条积压事件（96个响应、每响应1个事件），没有在该活动流内收到取消帧。该行为是本次etcd v3.7.0/etcd3gw 2.7.0运行的实际结果，不推广为所有网络/负载时序下活动Watch都能排空积压。
+- **旧cursor拒绝与重建：** 活动流完整排空后主动关闭；在健康多数派重新使用旧cursor=124建立Watch，服务端取消该过期cursor（测试核验`canceled=true`、`compact_revision>=219`、0 events且`resume_revision=None`）。随后quorum线性一致snapshot revision=219整体替换客户端cache，从snapshot+1=220建立新Watch；revision=220的新PUT只投递一次。最终线性一致Range revision=220与cache完全一致。
+- **完整性与积压观察：** `slow_burst_event_count=64`、`compaction_burst_event_count=96`、`compaction_revision=219`、`compaction_race_mode=drained`、`compaction_race_events_before_cancel_or_drain=96`、`recovery_cursor=220`、`final_write_revision=220`、`unique_applied_event_count=161`、`duplicate_applied_events=0`、`max_events_per_response=1`、`final_cache_matches_linearizable_range=true`。本次有限负载内没有观察到Progress帧（`progress_revisions_seen=[]`）。
+- **Live证据：** [Live Run 45980665924](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665924)整体success。Watch minority专项测试文件4项测试通过（13.524秒），包括少数派Progress滞后、第64轮Compaction恢复、第65轮多轮Compaction客户端缓存重建和第66轮慢消费者积压竞争。普通三节点集成、mTLS、短TTL Token、Auth/Quorum隔离、mTLS RBAC成员故障/Token传播、诊断采集、Compose容器与volumes清理、Artifact上传及post-job cleanup全部success。诊断Artifact [15189731260](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665924/artifacts/15189731260)，SHA-256 `5b7b2a925a27fad24bdf15cf401aecc22691a1c3f75cb84c918f6c7fb29061d5`。
+- **质量门禁：** [Quality Run 45980665958](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665958)两个必需Job均success：全库543项unittest（35 skipped，508项通过）；CH12数值资源测试143项通过；strict knowledge lint 0 errors / 5 warnings；知识结构/data检查0 errors（260实体、240关系、412来源记录、178 Markdown文件）。
+- **协议结论：** 本轮没有观察到应用层无界队列；测试验证的是应用暂停拉取后有限数量事件仍可通过已建立的流排空。Compaction在本次活动流仍排空事件时没有中断它，但旧cursor在重新建立Watch时已失效并被取消。因此恢复逻辑仍不能复用旧cursor：无论活动流排空与否，若需要重建状态，必须以健康多数派线性一致Range快照作为权威并从R+1恢复。
+- **失败/范围边界：** 本轮未模拟无限写入、超大KV、TCP窗口耗尽、慢网络、RSS/堆内存上限、自动背压策略或无限期耐久性；有限64/96事件的暂停读取不能作为这些指标的证明。实现仍为同步pull迭代器，不新增后台消费线程、可配置队列容量、磁盘spill或自动切换策略。Watch仍为单向HTTP server-streaming，不支持双向`WatchProgress`/`WatchCancel`。
+- **治理状态：** ASSET-000092正式30项继续`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威；SQLite Coordinator业务状态机尚未迁移；CH17-T004总体保持`IN_PROGRESS`。
