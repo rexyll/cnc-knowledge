@@ -134,7 +134,7 @@ ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。�
 
 | 项目 | 当前状态 | 下一步要求 |
 |---|---|---|
-| etcd3gw网络驱动 | Range/Txn/Lease与HTTP Watch server-streaming已实现；13项fake契约测试与8项真实etcd live测试通过（Run 45842517310） | 继续验证更复杂网络分区、mTLS/RBAC、长时流背压 |
+| etcd3gw网络驱动 | Range/Txn/Lease/HTTP Watch已实现；Gateway错误分类有20项Fake契约测试；mTLS/RBAC、短TTL Token、quorum隔离和单成员故障均有etcd v3.7.0 disposable live证据（最新Live Run 45927091505） | 仍需网络分区、长时流背压、企业Token provider/轮换/审计及生产HA验收 |
 | endpoint failover | 只读Range/status/member-list与Watch建立阶段仅在真实transport/timeout错误时跨endpoint尝试；401/403/请求错误不触发failover；已建立Watch流不自动迁移 | 保持Range+R+1恢复；认证失败由调用方显式重新认证并调用set_auth_token，不做匿名回退 |
 | Watch/WatchProgress | Watch响应完整包络与PUT/DELETE/prev_kv可用；WatchProgress/WatchCancel双向请求不支持，取消仅关闭HTTP响应 | 如需显式进度/取消与服务端ack，改用原生gRPC双向流驱动并进行多主机/长期压力验收 |
 | TLS/mTLS | etcd v3.7.0一次性三成员环境已验证双向证书、缺失客户端证书拒绝和不可信CA拒绝（Run 45918152363） | 企业PKI、证书轮换/吊销、生产密钥托管和长期压力仍需独立验收 |
