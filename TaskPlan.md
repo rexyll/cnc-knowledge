@@ -898,3 +898,14 @@
 - 默认质量CI：[Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)两个Job均success；全库515项unittest，499通过、16项opt-in live测试按设计skip；CH12 143项通过；strict knowledge lint 0 errors；结构/数据校验0 errors、5项既有治理warning。
 - 安全边界：密码、token、CA及证书私钥仅在runner内存/临时目录，Compose volumes和证书目录由runner清理。token本轮为显式静态注入，不包含刷新/过期自动续签机制；企业IAM、凭据轮换、审计和生产密钥托管未验证。HTTP /health与KV数据面RBAC不同，不以health成功作为授权证据。
 - 治理边界：ASSET-000092正式30项场景继续PROPOSED_NOT_APPROVED / NOT_RUN；本轮是supporting disposable integration evidence，不批准或执行正式矩阵。schema-v2仍为唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+
+## CH17-T004 第三十轮：etcd Gateway Token 生命周期与认证故障语义（全局第五十三轮，2026-11-27）
+
+- **目标：** 基于第五十二轮mTLS+RBAC集成环境，核验etcd v3.7.0 Authentication token类型/TTL配置、过期和撤销语义、重新认证、跨endpoint token一致性，以及认证服务不可用时的失败关闭行为。
+- **先决研究：** 以etcd v3.7.0官方文档/实际二进制帮助/真实Gateway行为确认token TTL选项及默认值；不得将Lease TTL与Authentication token TTL混淆，不得先验假设默认值或最小值。确认简单token与JWT token差异（若该版本支持），只在明确配置的短TTL测试环境中执行过期用例。
+- **场景：** (1) 合法凭据重复认证取得可用token；(2) 过期token对KV Range/Txn的实际HTTP状态和结构化错误；(3) 重新认证取得新token后恢复授权，旧token失效行为按实测记录；(4) 同一token应用于所有endpoint session及Watch stream；(5) 认证/授权拒绝不得被当作transport error进行endpoint failover或匿名重试；(6) 一成员不可用时已有token的KV请求与重新认证行为分别验证；(7) 区分Unauthenticated、PermissionDenied、TLS/transport和服务端故障。
+- **实现边界：** 本轮先形成基于实测的错误分类与生命周期契约。只有在协议返回码/TTL行为稳定且并发刷新、时钟偏差、刷新风暴、凭据托管边界均可测试时，才增加token provider/自动刷新；不得把固定token注入包装成自动续期。禁止把用户名密码长期保存在driver对象或日志；若自动认证无法安全落地，则提供调用方显式重新认证/替换token的受控接口或明确维持外部token provider责任。
+- **安全约束：** 所有密码、token、证书仅由CI临时生成并存放于内存/临时目录；不打印token/密码，不提交密钥；不允许HTTP明文、匿名回退或权限错误时跨endpoint重试。认证服务故障不得导致无凭据请求继续执行。
+- **验收：** 明确记录etcd版本、token类型、TTL参数与实测有效期；expired/invalid token、wrong credentials、permission denied、TLS/transport failure具有可区分行为；有效重新认证后的token可访问授权范围；所有endpoint及Watch一致携带当前token；Live mTLS/RBAC和默认质量CI通过。
+- **治理边界：** 一次性集成证据不构成企业IAM、生产凭据轮换/撤销、审计、HA认证服务或生产密钥托管验收。ASSET-000092正式30项继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持IN_PROGRESS。
