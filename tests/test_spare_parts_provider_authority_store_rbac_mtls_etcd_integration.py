@@ -170,9 +170,10 @@ class Etcd3gwLiveRbacMtlsIntegrationTests(unittest.TestCase):
             timeout=5,
         )
         if response.status_code != 200:
+            # Include the server's structured error without exposing credentials.
             raise RuntimeError(
                 f"etcd authentication failed for test identity {username}: "
-                f"HTTP {response.status_code}"
+                f"HTTP {response.status_code}: {response.text[:1000]}"
             )
         token = response.json().get("token")
         if not isinstance(token, str) or not token:
