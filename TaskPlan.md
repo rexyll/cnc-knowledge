@@ -1127,5 +1127,5 @@
 
 - **目标：** 在目标KV前缀没有事件期间验证Watch Progress流活性，并补充可配置的HTTP Watch读取空闲超时，识别客户端到成员的连接路径失联。
 - **实现：** `Etcd3gwV3Client`新增可选`watch_read_timeout`，默认None保持兼容；配置后只约束HTTP Watch response body的read inactivity timeout，connect timeout仍使用原`timeout`。超时转换为不可用错误，不自动重连或切换endpoint。
-- **Live：** 以etcd1一秒Progress interval建立Watch，在目标前缀无KV事件时等待空Progress帧；然后仅断开到etcd1的专用宿主机访问bridge，保留节点运行及Raft网络，记录流终止类型和检测时长。
+- **Live：** 以etcd1一秒Progress interval建立Watch。先验证在整个KV无新revision时读超时会触发，即使节点/集群健康且目标prefix未变；再由prefix外marker推进revision并观测空Progress响应，证明控制帧不会改变目标KV投影。最后仅断开到etcd1的专用宿主机访问bridge，保留节点运行及Raft网络，记录既有流终止类型和检测时长。
 - **验收边界：** 网络断开可能被内核快速复位，也可能等待配置读超时；以真实观察为准，不把Docker路径断开夸大成真实WAN半开丢包。Progress不是Range快照，默认read timeout仍为None；生产需要依据服务端Progress间隔和网络抖动配置阈值。
