@@ -9,6 +9,11 @@ DIAG_DIR="/tmp/ch17-etcd-mtls-runner"
 rm -rf "$CERT_DIR"
 mkdir -p "$CERT_DIR" "$DIAG_DIR"
 export ETCD_MTLS_CERT_DIR="$CERT_DIR"
+export ETCD_AUTH_TOKEN_TTL="${ETCD_AUTH_TOKEN_TTL:-300}"
+if ! [[ "$ETCD_AUTH_TOKEN_TTL" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ETCD_AUTH_TOKEN_TTL must be a positive integer" >&2
+  exit 2
+fi
 
 cd "$ROOT_DIR"
 if ! command -v docker >/dev/null 2>&1; then
@@ -105,5 +110,5 @@ PY
 
 ETCD_INTEGRATION=1 python3 -m unittest discover \
   -s tests \
-  -p 'test_*mtls_etcd_integration.py' \
+  -p "${ETCD_MTLS_TEST_PATTERN:-test_*mtls_etcd_integration.py}" \
   -v
