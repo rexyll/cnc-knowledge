@@ -443,3 +443,14 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 调用者必须显式传入最大Txn操作数和字节预算。操作预算按compare+put保守计数；字节估算按Base64编码的紧凑HTTP Gateway JSON请求加安全余量计算，不等于已探测到的服务端限制。任一预算超限，工具标记容量超限并退出，不会静默拆批或跳过索引。
 
 **安全边界：** 规划器不连接etcd、不执行Range/Txn/Lease/RBAC操作。后续真实写入前仍需线性一致空prefix复检、一次性临时集群/服务端RBAC排他、应用身份访问屏障、写后读回验证，以及Provider外部fencing floor独立核对。超出单Txn预算时必须先另行设计并演练checkpoint/未知结果恢复和应用启动隔离协议；本工具不实现批量导入，也不授权生产写入。
+
+## CH17-T004 分阶段request索引导入与最终发布协议（第七十八轮）
+
+新增只读协议模型 `scripts/spare_parts_sqlite_staged_import_protocol.py` 与专用测试。其核心顺序是：初始化checkpoint；按操作数/字节预算分批写入终态request索引，每批将request Put与checkpoint推进放在同一Txn；所有索引完成并线性一致读回后，最后单独发布 `scheduler/state`。
+
+每批Txn比较本批request key不存在、checkpoint精确等于预期前驱、Scheduler state与Leader key仍不存在。checkpoint维护plan digest、已完成批次/记录数、最近batch digest和累积progress SHA-256。单个Scheduler aggregate仍不可拆分；它无法适配最终发布Txn时，协议在staging之前就拒绝。
+
+未知Txn结果必须读回checkpoint与目标值，分类为COMMITTED、NOT_COMMITTED_RETRY_SAME_TXN或INCONSISTENT_QUARANTINE。etcd Txn不应出现合法部分提交；读到部分request key即隔离调查。此轮只提供协议与分类，不含实际etcd writer/自动续跑。
+
+**应用访问门禁：** staging期间应用身份无权访问namespace；应用可能在state缺失时自动初始化空Scheduler，因此绝不能提前启动。导入完成后先读回最终state与Leader key，再撤销迁移写身份，只向应用身份开放业务所需精确键范围，并排除 `staging/`；随后才允许启动新Leader claim。Provider业务仍须独立完成外部fencing floor核验。
+
