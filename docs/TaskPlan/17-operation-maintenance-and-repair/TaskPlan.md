@@ -1256,3 +1256,12 @@
 - **范围限制：** 本轮只产出架构/运行策略决策，不实现TCP socket配置、gRPC PING、应用heartbeat写入、后台探针、自动重连或健康状态机；因为当前运行时消费循环/调度器、部署网络路径和生产SLO尚未定义。任何后续实现先单独验证连接类型、服务器keepalive策略、额外revision负载和超时预算。
 - **证据来源：** 参考etcd v3.7 API/Progress说明、etcd节点健康命令、gRPC Keepalive指导和Python Requests流式read timeout语义；在决策记录中保留可访问的上游文档链接与本仓库第63/68轮实测证据。
 - **验收：** 新增独立决策记录，章节README和TaskHistory可导航；根/章节TaskPlan同步；全库Quality、CH12、strict lint和结构/data检查通过。该轮为设计决策，不以新增Live测试或生产行为改动作为验收。
+
+## 第六十九轮结果记录：Watch连接健康分层与生产存活检测策略决策（2026-11-27）
+
+- **任务状态：** DONE（设计决策记录）。新增独立文档`docs/17-operation-maintenance-and-repair/watch-connection-health-and-liveness-decision-record.md`，并同步CH17技术正文第30节、章节README、根TaskPlan和当日TaskHistory。
+- **决策提交：** `9ddcd9af2b42fb2ec9be0ad3b4ed2ead27dca017`创建独立决策记录；`93fa9a54d8c1032badd157b08d96621272033dbf`、`20d185945e599119e9f46505fc9500f4cdca4dbc`写入本轮计划；`f8be577dc12194a7b4022a438e0c3f3d2b30f214`、`077c07a82cafcf1a802735036257dca80da895dc`、`e82fd1a09e369ae871348e2fce8001996451a933`同步正文/README/历史。全部在`main`，未创建分支。
+- **决策结论：** 采用Watch流状态 + 进程级共享Quorum线性一致Range + 可选端到端应用心跳的分层模型。Progress仅表示流所在成员本地revision；TCP Keepalive仅是传输路径检测；gRPC HTTP/2 PING不适用于当前Requests/gRPC-gateway客户端；独立Range验证Quorum读能力但不证明原Watch流活着；Lease心跳只在业务SLO明确要求端到端交付证明时考虑。
+- **默认策略：** `watch_read_timeout`继续为None；没有证明最大Progress/控制流响应间隔前，不给长时间静默Watch配置有限read timeout。Quorum探测应共享调度而非每条Watch独立高频Range；Watch恢复仍从线性一致snapshot R整体替换并从R+1恢复。
+- **实现范围：** 本轮只交付架构决策，没有增加TCP socket选项、gRPC channel/PING、Lease心跳写入、后台健康探针、Supervisor或自动重连/failover。当前Requests Watch消费循环为同步pull，未来探测调度须与可能阻塞的`next(stream)`解耦。
+- **上游依据：** 决策记录引用etcd v3.7 API/Progress/endpoint health、gRPC Keepalive及Requests timeout官方文档；第六十八轮Compose实测只作为局部Supporting evidence，不推导生产网络SLO。
