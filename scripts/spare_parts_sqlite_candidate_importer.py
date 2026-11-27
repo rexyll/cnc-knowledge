@@ -343,7 +343,9 @@ def build_candidate(
         },
         "legacy_metadata": {
             "attestations_issued": _required_int(admission_meta.get("attestations_issued"), "attestations_issued"),
-            "coordinator_schema_version": authority_meta["schema_version"],\n        },\n        "counts": {
+            "coordinator_schema_version": authority_meta["schema_version"],
+        },
+        "counts": {
             "terminal_requests": len(request_indexes),
             "scopes": len(scopes),
             "operations": len(operations),
