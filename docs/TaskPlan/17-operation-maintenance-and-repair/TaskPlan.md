@@ -892,3 +892,13 @@
 - mTLS runner、独立三成员 TLS Compose 拓扑和三个 live tests 已执行；[Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363)成功，mTLS 3/3通过（有效证书读写、缺失客户端证书拒绝、错误CA拒绝）。Artifact 15163390323，SHA-256 `91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74`。
 - 默认 CI [Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)成功：508项unittest、CH12 143项、strict lint 0 errors、结构/数据0 errors/5项既有warning。
 - mTLS 测试证书/私钥只在runner临时目录生成，退出清理；不作为企业PKI验收。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；CH17-T004仍IN_PROGRESS。
+
+## 6.24 CH17-T004 etcd v3 Gateway RBAC 与最小权限账户验证（第五十二轮，2026-11-27）
+
+- **目标：** 在mTLS三节点集成拓扑上启用etcd原生Authentication/RBAC，验证Coordinator etcd Gateway adapter能以认证用户执行受限KV操作，并严格遵守key prefix授权范围。
+- **依赖：** 第五十一轮 compose-mtls.yaml、临时CA/client certificate runner、Etcd3gwV3Client和etcd v3.7.0三成员环境；不修改schema-v2生产权威，不迁移SQLite业务状态机。
+- **场景：** root管理员临时配置reader/writer角色；reader仅可读 /cnc-knowledge-it/authorized/，不得写入；writer仅可读写 /cnc-knowledge-it/writable/，不得访问相邻未授权前缀；无token/错误凭证失败；mTLS仍保持强制。
+- **驱动研究：** 核查etcd3gw 2.7.0的session/header扩展点；必要时增加显式token provider/Authorization header注入。token仅内存保存，密码/token不进入URL、日志和仓库；认证/授权失败不得被误判为transport failure而跨endpoint重试，不允许匿名或HTTP降级。token自动刷新/过期若本轮未实现须明确记录。
+- **测试：** Fake transport验证Authorization header注入和fail-closed；独立live suite通过 /v3/auth/authenticate 取得临时token，再对真实etcd三成员集群执行Range/Txn正反向权限断言。所有CA、证书、密码和token均由CI临时生成/注入并清理。
+- **验收：** 合法角色在授权范围内成功；读写和前缀越权均由etcd返回拒绝；无凭证/错误密码认证失败；TLS验证仍有效；权限拒绝不触发网络failover、不吞错、不降级。
+- **状态边界：** 这是一次性集成验证，不代表企业IAM/密码管理/token轮换撤销/审计/生产RBAC验收。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；CH17-T004保持IN_PROGRESS。
