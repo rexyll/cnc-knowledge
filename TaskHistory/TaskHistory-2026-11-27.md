@@ -244,3 +244,16 @@
 - **失败修复记录：** 首次Live Run 45943942778因测试误假设服务端`watch_id>0`而在新用例断言失败，其他既有阶段在该断言前均通过，诊断Artifact上传和一次性Compose清理成功。修复后Run 45944091683完整通过。该初始断言失败不计作Watch行为通过。
 - **能力边界：** 本轮验证的是WatchCreate `progress_notify=true`产生的周期性通知；不代表驱动实现双向`WatchProgress`请求或`WatchCancel`。显式双向请求仍不支持；Watch仍是变更提示，权威状态须由线性一致Range确认。以上仅为一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting evidence，不是生产HA或业务Coordinator迁移验收。
 - **治理状态：** ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004保持`IN_PROGRESS`。
+
+## 第六十三轮：少数派成员上的Watch progress revision滞后（2026-11-27）
+
+- **任务目标：** 在一次性三节点etcd环境中保持Watch流连接在隔离的单成员上，同时由剩余多数派提交写入；对照本地Progress Notification header revision与quorum线性一致Range revision，并在网络恢复后通过快照+1重建Watch。
+- **实现提交：** `c3d3fb6e91e5067da7391ea0274ba51b73bd1d4a`新增Live分区/恢复测试；`6fb4d77e269a01a23f542caf505259d9a362c34c`加入Runner；`b4f23d87619bb4046a3cf2ce37a049d71e175816`修复Runner列表的Bash续行符；`6109e50d4657e711311179178061abb5b4868858`确保Watch start revision已被隔离成员应用；`ed191dca2157e536a585036f28b60dcdb53c2a1d`在恢复时增加最多30秒的只读线性一致Range重试。全部提交到`main`，未创建分支。
+- **分区搭建：** 测试在一次性etcd v3.7.0三节点Compose集群中，为标签核验后的etcd1临时增加专用bridge网络，保证Watch连接仍可到达etcd1；再仅将etcd1从Compose peer网络断开，etcd2/etcd3继续构成多数派。恢复时先重新连接peer网络并等待三成员恢复；最终清理临时网络、容器和volumes。没有改宿主机iptables，没有触碰其他容器。
+- **关键revision结果：** 被监视key初始PUT revision=31；独立baseline marker revision=32，多数派和etcd1线性一致读取均确认已应用revision=32；Watch从32建立，watch_id=0。隔离etcd1后，多数派连续写入revision=[33,34,35]，quorum线性一致Range revision=35。etcd1连续两次收到空Progress Notification，header revision均为32、events=0、watch_id=0；没有观察到隔离期间的KV事件。日志显示`quorum_revision_exceeds_isolated_progress=true`。
+- **恢复结果：** 多数派线性一致快照revision=35；重加入成员经有界只读重试后，线性一致Range也达到revision=35且值匹配。丢弃隔离期间旧Watch游标，从revision=36（snapshot+1）恢复；随后提交的revision=36新PUT只收到一次，prev_kv与快照值一致；下一响应为空Progress帧。观测标志`no_partition_write_replayed=true`。专项测试1/1 PASS，运行6.213秒。
+- **Live：** [Run 45946092810](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092810)整体success；普通三节点etcd Watch/compaction/lease类集成、mTLS、短TTL Token、auth/quorum隔离、mTLS RBAC成员故障/Token传播全部success；诊断采集、Compose容器/volumes清理、Artifact上传及post-job cleanup全部success。诊断Artifact [15174961822](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092810/artifacts/15174961822)，SHA-256 `5d72bea9eeb46ea6d9a26b90204f5c350797a393c774852b64792520af6a5364`。
+- **Quality：** [Run 45946092822](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092822)两个Job均success：全库540项unittest（32 skipped）；CH12数值资源测试143项通过；strict knowledge lint通过；结构/data校验0 errors（22章节、178 Markdown文件、260实体、240关系、412来源记录）。
+- **实验过程中的修正：** 第一版Watch start revision比少数派成员本地已应用revision高一版，watcher尚未同步导致没有progress帧；通过写入独立marker revision=32并由etcd1线性一致读取后再从32建立Watch修复。随后曾因网络刚恢复即执行Range遇到临时不可用；改为只读、有界重试后完整通过。两次中间失败均不作为通过证据。
+- **协议解释：** etcd v3.7 Watch进度响应revision反映Watch连接的本地成员进度；成员处于少数派时该revision可以落后于quorum线性一致Range。Progress帧不包含KV状态，因此不能作为权威快照；恢复流程应使用线性一致Range快照并从R+1重建Watch。参考[etcd v3.7 Watch progress说明](https://etcd.io/docs/v3.7/dev-guide/interacting_v3/)及[etcd v3.7 API](https://etcd.io/docs/v3.7/learning/api/)。
+- **能力与治理边界：** 本轮验证WatchCreate的周期性`progress_notify=true`通知；未实现或宣称支持双向`WatchProgress`/`WatchCancel`。本结果仅是一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting engineering evidence，不代表生产HA或业务Coordinator迁移验收。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威；SQLite Coordinator业务状态机未迁移；CH17-T004整体保持`IN_PROGRESS`。
