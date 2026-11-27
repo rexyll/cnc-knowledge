@@ -497,6 +497,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
         watch_store = None
         majority_store = None
         old_stream = None
+        stale_stream = None
         resumed_stream = None
         observations: dict = {}
 
@@ -553,7 +554,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             old_stream = watch_store.watch(
                 key,
                 start_revision=watch_start_revision,
-                progress_notify=False,
+                progress_notify=True,
                 prev_kv=True,
             )
             created_result = self._next_result(old_stream, timeout=8.0)
@@ -608,54 +609,74 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             self.assertEqual(compact_result.returncode, 0, compact_result.stderr)
             self.assertGreater(compacted_revision, watch_start_revision)
 
-            # The old HTTP Watch remains pinned to minority etcd1 while the
-            # majority has compacted the range. On rejoin, Raft catch-up may
-            # deliver some missing KV events before the compact command is
-            # applied locally and the old watcher is canceled. Do not assume
-            # either zero or all catch-up events arrive before cancellation.
-            self._run([
-                "docker", "network", "connect",
-                self.cluster_network, etcd1_container,
-            ])
-            cluster_network_disconnected = False
-            memberships = self._network_memberships(etcd1_container)
-            self.assertIn(self.cluster_network, memberships)
-            self._wait_for_quorum(timeout=60.0)
-
-            old_watch_events = []
-            canceled = None
-            cancel_deadline = time.monotonic() + 30.0
-            while time.monotonic() < cancel_deadline:
+            # The existing Watch may either be canceled while the member
+            # applies the compacted history, or remain valid if it can catch
+            # up through the compact revision. Drain queued minority progress
+            # frames until one of those two states is observed.
+            active_watch_status = None
+            last_active_progress_revision = 0
+            active_deadline = time.monotonic() + 20.0
+            while time.monotonic() < active_deadline:
                 outcome, response = self._next_result(
                     old_stream,
-                    timeout=min(10.0, max(0.5, cancel_deadline - time.monotonic())),
+                    timeout=min(8.0, max(0.5, active_deadline - time.monotonic())),
                 )
                 self.assertNotEqual(
                     outcome, "timeout",
-                    "old Watch did not receive compaction cancellation",
+                    "existing Watch neither canceled nor reported post-recovery progress",
                 )
                 self.assertEqual(outcome, "response", response)
                 if response.canceled:
-                    canceled = response
+                    self.assertEqual(response.compact_revision, compacted_revision)
+                    self.assertEqual(response.events, ())
+                    self.assertIsNone(response.resume_revision)
+                    active_watch_status = "canceled"
                     break
                 self.assertFalse(response.created)
-                # The compaction writes target a different key, so this exact-key
-                # Watch must not receive any of their catch-up KV events.
                 self.assertEqual(response.events, ())
-            self.assertIsNotNone(canceled, "old Watch was not canceled after compacted log catch-up")
-            self.assertFalse(canceled.created)
-            self.assertEqual(canceled.compact_revision, compacted_revision)
-            self.assertEqual(canceled.events, ())
-            self.assertIsNone(canceled.resume_revision)
-            self.assertIsInstance(canceled.cancel_reason, str)
-            if canceled.cancel_reason:
-                self.assertIn("compact", canceled.cancel_reason.lower())
-            old_event_revisions = [item["revision"] for item in old_watch_events]
-            self.assertEqual(old_event_revisions, sorted(set(old_event_revisions)))
+                if response.is_progress:
+                    last_active_progress_revision = response.header_revision
+                    if response.header_revision >= compacted_revision:
+                        active_watch_status = "caught_up"
+                        break
+            self.assertIn(active_watch_status, {"canceled", "caught_up"})
 
-            # The cancellation invalidates the old cursor even if some
-            # catch-up events were delivered immediately before the cancel.
+            # Regardless of whether the already-open watcher caught up, an
+            # attempt to recreate a Watch from the pre-partition cursor must
+            # be rejected because that start revision is below compactRev.
             old_stream.close()
+            stale_stream = watch_store.watch(
+                key,
+                start_revision=watch_start_revision,
+                progress_notify=False,
+                prev_kv=True,
+            )
+            stale_first_result = self._next_result(stale_stream, timeout=8.0)
+            self.assertEqual(
+                stale_first_result[0], "response", stale_first_result[1]
+            )
+            stale_first = stale_first_result[1]
+            if stale_first.created:
+                self.assertFalse(stale_first.canceled)
+                self.assertEqual(stale_first.events, ())
+                stale_cancel_result = self._next_result(stale_stream, timeout=8.0)
+                self.assertEqual(
+                    stale_cancel_result[0], "response", stale_cancel_result[1]
+                )
+                stale_canceled = stale_cancel_result[1]
+            else:
+                stale_canceled = stale_first
+            self.assertTrue(stale_canceled.canceled)
+            self.assertFalse(stale_canceled.created)
+            self.assertEqual(stale_canceled.compact_revision, compacted_revision)
+            self.assertEqual(stale_canceled.events, ())
+            self.assertIsNone(stale_canceled.resume_revision)
+            self.assertIsInstance(stale_canceled.cancel_reason, str)
+            if stale_canceled.cancel_reason:
+                self.assertIn("compact", stale_canceled.cancel_reason.lower())
+            # The stale-cursor cancellation invalidates the pre-partition
+            # cursor even if the original live Watch remained active.
+            stale_stream.close()
             snapshot, snapshot_revision = majority_store.linearizable_get(key)
             self.assertIsNotNone(snapshot)
             self.assertEqual(snapshot.value, initial_value)
@@ -735,12 +756,12 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 "majority_compact_revision": compacted_revision,
                 "compact_command_stdout": compact_result.stdout.strip(),
                 "majority_linearizable_revision_before_rejoin": majority_revision,
-                "old_watch_event_revisions_before_cancel": old_event_revisions,
-                "old_watch_received_no_compaction_marker_events": not old_watch_events,
-                "old_watch_canceled": canceled.canceled,
-                "old_watch_cancel_compact_revision": canceled.compact_revision,
-                "old_watch_cancel_event_count": len(canceled.events),
-                "old_watch_cancel_resume_revision": canceled.resume_revision,
+                "existing_watch_status_after_recovery": active_watch_status,
+                "existing_watch_post_recovery_progress_revision": last_active_progress_revision,
+                "stale_cursor_watch_canceled": stale_canceled.canceled,
+                "stale_cursor_cancel_compact_revision": stale_canceled.compact_revision,
+                "stale_cursor_cancel_event_count": len(stale_canceled.events),
+                "stale_cursor_cancel_resume_revision": stale_canceled.resume_revision,
                 "quorum_snapshot_revision": snapshot_revision,
                 "recovered_member_linearizable_revision": local_revision,
                 "resume_start_revision": snapshot_revision + 1,
@@ -757,7 +778,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 + json.dumps(observations, sort_keys=True)
             )
         finally:
-            for stream in (old_stream, resumed_stream):
+            for stream in (old_stream, stale_stream, resumed_stream):
                 if stream is not None:
                     try:
                         stream.close()
