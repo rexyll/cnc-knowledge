@@ -81,7 +81,7 @@ def _verify_records(manifest: dict[str, Any], records: dict[str, Any]) -> None:
             if not isinstance(row, dict) or not required_columns.issubset(row):
                 raise CandidateImportError(f"{table} contains a malformed row")
             hasher.update(_json_bytes(row))
-            hasher.update(b"\\n")
+            hasher.update(b"\n")
         if len(rows) != summary.get("row_count"):
             raise CandidateImportError(f"{table} row count does not match inventory")
         if hasher.hexdigest() != summary.get("records_sha256"):
@@ -340,7 +340,7 @@ def build_candidate(
 def _write_private_json(path: Path, payload: Any) -> None:
     path = path.expanduser().resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
-    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\\n"
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n"
     fd, temporary_name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(path.parent))
     temporary = Path(temporary_name)
     try:
