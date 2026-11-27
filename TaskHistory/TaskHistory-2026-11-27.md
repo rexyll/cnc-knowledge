@@ -87,3 +87,10 @@
 
 
 - 最终CH17专项TaskPlan状态更新为COMPLETED后，文档头质量复验 [Run 45928045386](https://github.com/rexyll/cnc-knowledge/actions/runs/45928045386) completed/success；该run针对最终任务计划head `b76b487b48c6653cc66fbdc23c1e56c69e9d3bb7`，两个必需Job均成功。KNOW-000061和ASSET-000092的latest_default_ci_run已指向该最终复验；正式矩阵30项PROPOSED_NOT_APPROVED / NOT_RUN未改变。
+
+
+## CH17-T004 第五十六轮：etcd 多数派网络分区与隔离成员恢复（进行中）
+
+- 本轮先补充根TaskPlan与CH17专项TaskPlan，定义真实网络分区的测试边界：只允许操作本CI创建的三成员Compose默认网络，不修改宿主机iptables，不触碰其他容器/网络。
+- 下一步新增opt-in live test：隔离etcd1网络，分别验证etcd2/etcd3多数派的linearizable Range/Txn与etcd1少数派的失败关闭/OUTCOME_UNKNOWN；在finally恢复网络，检查三成员恢复和多数派写入收敛。
+- **当前状态：** 计划已登记，live测试和CI证据尚未完成；不得标记DONE。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator未迁移。
