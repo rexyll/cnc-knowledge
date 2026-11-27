@@ -790,6 +790,8 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
 
         majority_driver = Etcd3gwV3Client(self.endpoints[1:], timeout=3.0)
         majority_store = EtcdV3CoordinatorAuthorityStore(majority_driver)
+        watch_driver = Etcd3gwV3Client([self.endpoints[0]], timeout=3.0)
+        watch_store = EtcdV3CoordinatorAuthorityStore(watch_driver)
         streams = []
         active_stream = None
         gap_thread = None
@@ -819,7 +821,14 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             self.assertEqual(actual, expected)
 
         def open_watch(start_revision: int):
-            stream = majority_store.watch(
+            local_applied = watch_store.linearizable_range(
+                prefix, range_end=range_end
+            )
+            self.assertGreaterEqual(
+                local_applied.revision, start_revision - 1,
+                "etcd1 has not linearly applied the snapshot before Watch creation",
+            )
+            stream = watch_store.watch(
                 prefix,
                 start_revision=start_revision,
                 range_end=range_end,
@@ -1195,6 +1204,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                     )
             except Exception:
                 pass
+            watch_driver.close()
             majority_driver.close()
 
 
