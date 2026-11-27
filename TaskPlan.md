@@ -1242,3 +1242,11 @@
 - **安全限制：** 空空间预检是瞬时观察，不是锁，也不能阻止并发写入；后续必须使用一次性临时集群或服务端RBAC锁定目标prefix。当前不写入etcd、不创建Lease、不导入候选包。
 - **验收：** Quality CI必须通过；MIG-04仍IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
 
+### 第七十七轮任务计划：MIG-04 候选导入单 Txn 映射与容量规划
+
+- **目标：** 在候选包和隔离namespace基础上，先实现纯只读导入计划，证明现有Unified schema-v2键布局、单Txn原子写集合和调用者预算，不直接写etcd。
+- **映射：** Aggregate写入`{prefix}/scheduler/state`；每个终态request索引写入`{prefix}/requests/{SHA256(request_id)}`；Leader TTL key只比较VERSION=0、不恢复；活动Lease/waiter不在候选中，导入不Grant原生Lease。
+- **事务：** 一个Txn比较state、全部request索引和Leader key均VERSION=0，再一起Put aggregate和终态request索引；任何目标键存在即整体失败，不覆盖。计划记录compare/put数量、逻辑KV大小、Base64 Gateway JSON请求估算及安全余量。
+- **容量：** 必须由操作者显式提供max transaction ops/bytes预算；采用compare+put总数的保守操作预算；超限标记CAPACITY_EXCEEDED并退出，不擅自分批或丢弃幂等索引。
+- **测试：** 覆盖candidate digest、state/request schema与key派生、scope high-water、非终态/活动Lease、预算超限和确定性write-set摘要。
+- **安全边界：** 规划器无etcd连接与写路径。后续实写仍需要一次性临时集群或服务端RBAC、线性一致空prefix重检、应用访问屏障、Txn未知结果验证、Provider外部fencing floor核对；超限后的checkpoint协议须另行设计和演练。
