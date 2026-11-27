@@ -1129,3 +1129,11 @@
 - **实现：** `Etcd3gwV3Client`新增可选`watch_read_timeout`，默认None保持兼容；配置后只约束HTTP Watch response body的read inactivity timeout，connect timeout仍使用原`timeout`。超时转换为不可用错误，不自动重连或切换endpoint。
 - **Live：** 以etcd1一秒Progress interval建立Watch。先验证在整个KV无新revision时读超时会触发，即使节点/集群健康且目标prefix未变；再由prefix外marker推进revision并观测空Progress响应，证明控制帧不会改变目标KV投影。最后仅断开到etcd1的专用宿主机访问bridge，保留节点运行及Raft网络，记录既有流终止类型和检测时长。
 - **验收边界：** 网络断开可能被内核快速复位，也可能等待配置读超时；以真实观察为准，不把Docker路径断开夸大成真实WAN半开丢包。Progress不是Range快照，默认read timeout仍为None；生产需要依据服务端Progress间隔和网络抖动配置阈值。
+
+### 第六十八轮完成状态（2026-11-27）
+
+- **状态：** DONE（一次性CI supporting engineering evidence）。完成可选Watch读空闲超时、空闲Progress与专用客户端访问路径失联测试；CH17章节任务计划、技术正文第29节、章节README和当日TaskHistory均已同步。
+- **实现：** `Etcd3gwV3Client`新增`watch_read_timeout`，默认None；配置时仅为HTTP Watch body设置read inactivity timeout，连接超时仍使用原配置，故障映射为`AuthorityStoreUnavailableError`且不自动重连/切换。
+- **Live观察：** baseline revision=38，Watch cursor=39；全局无新revision时4秒读超时在4.0045秒触发，但etcd1仍健康、Quorum正常、目标prefix不变。prefix外marker revisions=[39,40]触发两个空Progress响应，header=[39,39]且目标prefix没有KV事件；Progress不可视为当前quorum revision。断开etcd1专用客户端bridge、保留其进程及Raft网络后，Watch在4.0045秒结束为ConnectionError/Unavailable。
+- **验收入口：** [Live Run 45987534125](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125)与[Quality Run 45987533954](https://github.com/rexyll/cnc-knowledge/actions/runs/45987533954)均success。Quality：548 unittest（37 skipped）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors。Live Artifact [15192246652](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125/artifacts/15192246652)，SHA-256 `e9f2dbb141dc55a60f3988876df8eaa86eb02b4b26dda3f43c76f0a4a0b30663`。
+- **边界：** read timeout测量流的无字节时间，不判断成员是否健康；长期静默Watch若启用会误触发，默认None。没有实现可靠心跳源、TCP keepalive、后台探针、自动重连或生产WAN半开验收。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总体仍`IN_PROGRESS`。
