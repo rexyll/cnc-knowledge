@@ -1630,28 +1630,32 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
         prefix = f"/cnc-knowledge-it/watch-idle-liveness/{suffix}/state/".encode()
         range_end = prefix[:-1] + b"0"
         seed_key = prefix + b"seed"
+        marker_prefix = f"/cnc-knowledge-it/watch-idle-liveness/{suffix}/heartbeat/".encode()
         access_network = f"{self.project}-watch-liveness-{suffix[:12]}"
         purpose = "watch-idle-liveness"
         container_id = self._container_id("etcd1")
         read_timeout_seconds = 4.0
 
         network_created = False
-        network_attached = False
         stream = None
         majority_driver = Etcd3gwV3Client(self.endpoints[1:], timeout=3.0)
         majority_store = EtcdV3CoordinatorAuthorityStore(majority_driver)
         watch_driver = None
         watch_store = None
+        marker_keys: list[bytes] = []
         progress_revisions: list[int] = []
         progress_intervals: list[float] = []
+        marker_revisions: list[int] = []
+        idle_timeout_elapsed = None
+        idle_timeout_cause = None
         access_loss_elapsed = None
         disconnect_kind = None
+        drained_progress: list[int] = []
 
         try:
             self._create_access_network(access_network, purpose=purpose)
             network_created = True
             self._run(["docker", "network", "connect", access_network, container_id])
-            network_attached = True
 
             memberships = self._network_memberships(container_id)
             self.assertIn(self.cluster_network, memberships)
@@ -1670,16 +1674,15 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 [], [AuthorityStorePut(seed_key, f"seed-{suffix}".encode())]
             )
             self.assertTrue(seed.succeeded)
-            baseline = majority_store.linearizable_range(
-                prefix, range_end=range_end
-            )
+            baseline = majority_store.linearizable_range(prefix, range_end=range_end)
+            expected_prefix = {seed_key: f"seed-{suffix}".encode()}
             self.assertEqual(
                 {entry.key: entry.value for entry in baseline.entries},
-                {seed_key: f"seed-{suffix}".encode()},
+                expected_prefix,
             )
 
-            # Keep the node in the Raft cluster but route the Watch HTTP stream
-            # through a dedicated host-reachable bridge that can be detached.
+            # Keep etcd1 in the Raft cluster, but route the client Watch through
+            # a dedicated host-reachable bridge that can be detached independently.
             watch_driver = Etcd3gwV3Client(
                 [access_endpoint],
                 timeout=3.0,
@@ -1689,6 +1692,9 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             local = watch_store.linearizable_range(prefix, range_end=range_end)
             self.assertGreaterEqual(local.revision, baseline.revision)
 
+            # A truly idle cluster may not advance the Watch stream even when
+            # progress_notify is requested: test that the optional inactivity
+            # deadline bounds this silent interval rather than calling it healthy.
             stream = watch_store.watch(
                 prefix,
                 start_revision=baseline.revision + 1,
@@ -1702,52 +1708,107 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             self.assertFalse(opened[1].canceled)
             self.assertEqual(opened[1].events, ())
 
-            # There are no mutations in the watched prefix during this idle
-            # window. Periodic Progress frames are control-plane liveness, not KV events.
+            idle_started = time.monotonic()
+            idle_outcome = self._next_result(
+                stream, timeout=read_timeout_seconds + 2.0
+            )
+            idle_timeout_elapsed = time.monotonic() - idle_started
+            self.assertEqual(
+                idle_outcome[0],
+                "exception",
+                "an unchanged cluster should not be mistaken for a progressing Watch stream",
+            )
+            self.assertIsInstance(
+                idle_outcome[1],
+                AuthorityStoreUnavailableError,
+                f"unexpected idle Watch classification: {type(idle_outcome[1]).__name__}",
+            )
+            idle_timeout_cause = (
+                type(idle_outcome[1].__cause__).__name__
+                if idle_outcome[1].__cause__ is not None
+                else None
+            )
+            stream.close()
+            stream = None
+
+            # The no-write timeout must not be confused with an etcd member outage.
+            self.assertEqual(
+                self._run([
+                    "docker", "inspect", "--format",
+                    '{{.State.Status}}', container_id,
+                ]).stdout.strip(),
+                "running",
+            )
+            self.assertIn(self.cluster_network, self._network_memberships(container_id))
+            idle_snapshot = majority_store.linearizable_range(
+                prefix, range_end=range_end
+            )
+            self.assertEqual(
+                {entry.key: entry.value for entry in idle_snapshot.entries},
+                expected_prefix,
+            )
+            self.assertEqual(idle_snapshot.revision, baseline.revision)
+
+            # Reopen after the silent timeout. External revisions advance etcd,
+            # but they are outside the watched prefix, so they can only appear
+            # as empty Progress control frames to this consumer.
+            stream = watch_store.watch(
+                prefix,
+                start_revision=baseline.revision + 1,
+                range_end=range_end,
+                progress_notify=True,
+                prev_kv=True,
+            )
+            reopened = self._next_result(stream, timeout=8.0)
+            self.assertEqual(reopened[0], "response", reopened[1])
+            self.assertTrue(reopened[1].created)
+
             previous_progress_at = time.monotonic()
             for index in range(2):
-                outcome = self._next_result(stream, timeout=read_timeout_seconds + 2.0)
+                time.sleep(1.15)
+                marker_key = marker_prefix + f"{index:02d}".encode()
+                marker_keys.append(marker_key)
+                marker = majority_store.transact(
+                    [], [AuthorityStorePut(marker_key, f"heartbeat-{index}".encode())]
+                )
+                self.assertTrue(marker.succeeded)
+                marker_revisions.append(marker.revision)
+
+                local_marker, local_revision = watch_store.linearizable_get(marker_key)
+                self.assertIsNotNone(local_marker)
+                self.assertGreaterEqual(local_revision, marker.revision)
+
+                outcome = self._next_result(
+                    stream, timeout=read_timeout_seconds + 2.0
+                )
                 self.assertEqual(outcome[0], "response", outcome[1])
                 progress = outcome[1]
                 observed_at = time.monotonic()
                 self.assertTrue(progress.is_progress)
                 self.assertEqual(progress.events, ())
                 self.assertFalse(progress.canceled)
-                self.assertGreaterEqual(progress.header_revision, baseline.revision)
+                self.assertGreaterEqual(progress.header_revision, marker.revision)
                 progress_revisions.append(progress.header_revision)
                 progress_intervals.append(observed_at - previous_progress_at)
                 previous_progress_at = observed_at
 
-            after_idle = majority_store.linearizable_range(
+            unchanged = majority_store.linearizable_range(
                 prefix, range_end=range_end
             )
-            self.assertEqual(after_idle.revision, baseline.revision)
             self.assertEqual(
-                {entry.key: entry.value for entry in after_idle.entries},
-                {seed_key: f"seed-{suffix}".encode()},
+                {entry.key: entry.value for entry in unchanged.entries},
+                expected_prefix,
+                "heartbeat markers must remain outside the watched KV prefix",
             )
 
-            # The member remains running and attached to the Raft network.
-            # Only its dedicated client-access network is removed: from the
-            # stream consumer's perspective the established socket may remain
-            # silent until the configured HTTP read-inactivity timeout fires.
-            before_inspect = self._run([
-                "docker", "inspect", "--format",
-                '{{.State.Status}}', container_id,
-            ]).stdout.strip()
-            self.assertEqual(before_inspect, "running")
+            # Remove only the dedicated client path. The same etcd1 process and
+            # its Raft membership remain healthy; no host firewall is changed.
             self._run(["docker", "network", "disconnect", access_network, container_id])
-            network_attached = False
-            self.assertNotIn(
-                access_network, self._network_memberships(container_id)
-            )
-            self.assertIn(
-                self.cluster_network, self._network_memberships(container_id)
-            )
+            self.assertNotIn(access_network, self._network_memberships(container_id))
+            self.assertIn(self.cluster_network, self._network_memberships(container_id))
 
             result_queue: queue.Queue = queue.Queue(maxsize=1)
             disconnect_started = time.monotonic()
-            drained_progress: list[int] = []
 
             def wait_for_stream_failure():
                 try:
@@ -1782,17 +1843,19 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             self.assertIsInstance(
                 termination[1],
                 AuthorityStoreUnavailableError,
-                f"unexpected liveness failure classification: {type(termination[1]).__name__}",
+                f"unexpected path-loss classification: {type(termination[1]).__name__}",
             )
-            disconnect_kind = type(termination[1]).__name__
+            disconnect_kind = type(termination[1].__cause__).__name__ if (
+                termination[1].__cause__ is not None
+            ) else type(termination[1]).__name__
 
-            # Confirm etcd1 itself remained alive and healthy in the cluster;
-            # only the dedicated client path was removed.
-            final_status = self._run([
-                "docker", "inspect", "--format",
-                '{{.State.Status}}', container_id,
-            ]).stdout.strip()
-            self.assertEqual(final_status, "running")
+            self.assertEqual(
+                self._run([
+                    "docker", "inspect", "--format",
+                    '{{.State.Status}}', container_id,
+                ]).stdout.strip(),
+                "running",
+            )
             self._wait_for_quorum()
 
             print(
@@ -1800,13 +1863,17 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 + json.dumps(
                     {
                         "baseline_revision": baseline.revision,
-                        "watched_prefix_event_count_during_idle": 0,
+                        "idle_no_write_timeout_seconds": read_timeout_seconds,
+                        "idle_no_write_elapsed_seconds": idle_timeout_elapsed,
+                        "idle_no_write_error_cause": idle_timeout_cause,
+                        "etcd1_remained_healthy_during_idle_timeout": True,
+                        "external_marker_revisions": marker_revisions,
                         "progress_revisions": progress_revisions,
                         "progress_intervals_seconds": progress_intervals,
+                        "watched_prefix_event_count_during_idle_and_markers": 0,
                         "progress_frames_drained_after_access_loss": drained_progress,
-                        "watch_read_timeout_seconds": read_timeout_seconds,
                         "access_path_loss_detection_seconds": access_loss_elapsed,
-                        "disconnect_error": disconnect_kind,
+                        "access_loss_error_cause": disconnect_kind,
                         "etcd1_container_remained_running": True,
                         "etcd1_remained_on_raft_network": True,
                         "only_client_access_network_removed": True,
@@ -1838,14 +1905,16 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 remaining = majority_store.linearizable_range(
                     prefix, range_end=range_end
                 )
-                if remaining.entries:
-                    majority_store.transact(
-                        [],
-                        [
-                            AuthorityStoreDelete(entry.key)
-                            for entry in remaining.entries
-                        ],
-                    )
+                cleanup_operations = [
+                    AuthorityStoreDelete(entry.key) for entry in remaining.entries
+                ]
+                cleanup_operations.extend(
+                    AuthorityStoreDelete(key)
+                    for key in marker_keys
+                    if key not in {entry.key for entry in remaining.entries}
+                )
+                if cleanup_operations:
+                    majority_store.transact([], cleanup_operations)
             except Exception:
                 pass
             majority_driver.close()
