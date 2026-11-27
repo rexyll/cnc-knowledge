@@ -216,3 +216,25 @@ python scripts/spare_parts_sqlite_candidate_importer.py \
 ### 11.4 当前不支持/后续门禁
 
 MIG-04首阶段不是完整导入器：它不创建目标TTL Lease、不写request/state key、不执行分批事务、不建立目标checkpoint，也不处理写入Txn结果未知的恢复。目标namespace隔离、目标Lease分配和原子事务容量评估必须在后续实现中补齐；候选包不能直接喂给生产Store。MIG-05需补齐状态映射/幂等/高水位/故障注入验证，MIG-06才允许在一次性临时etcd集群演练完整写入与恢复。
+
+## 12. MIG-04：隔离命名空间注入（第七十五轮）
+
+Unified Admission Scheduler新增可选构造参数`namespace_prefix`：
+
+- 不传参数时，仍使用既有`/cnc/admission/unified/v2/`，保持现有部署与测试键路径不变。
+- 迁移预演自定义值必须位于`/cnc/migration/isolated/{namespace-id}/`，namespace-id只能是一个可打印ASCII路径段；拒绝生产前缀、空ID、多段路径、控制字符及路径穿越。
+- Scheduler State、Admission Lease key、Request幂等索引统一从实例prefix派生。
+- Unified Coordinator的Leader TTL key改为从传入Scheduler的实例prefix派生，确保Leader与Admission aggregate处于同一隔离键空间。
+- 两个不同隔离namespace必须完全分离；默认namespace必须与历史版本兼容。
+
+本轮仅增加键空间路由与输入门禁。它不验证调用者拥有的etcd RBAC是否只允许该namespace，不会自动创建namespace或校验namespace为空，也不写候选状态。后续写入器必须在启动前使用独立临时etcd凭证，并对目标prefix做线性一致空空间检查；不能把“字符串prefix受限”误认为后端权限隔离。
+
+### 12.1 当前未覆盖的写入安全门禁
+
+1. 创建隔离namespace时必须显式提供唯一演练ID，目标前缀不得复用历史数据。
+2. 对目标prefix做线性一致Range空空间检查；发现任意键即停止，不覆盖、不清理。
+3. 迁移专用凭证应由etcd RBAC限制在目标prefix及必要Lease API；本地参数校验不能代替服务端权限。
+4. Admission State、request terminal indexes、Coordinator scopes/operations与Leader epoch floor必须在一个受控导入协议中恢复；旧Leader TTL key不得恢复。
+5. 活动Lease目前不在候选bundle范围内；后续若支持活动Lease，必须按冻结剩余TTL逐一创建native Lease，并证明Granted TTL不延长来源deadline。
+6. 尚未实现事务容量/分批checkpoint/Txn未知结果恢复。本轮代码不得用于导入任何生产数据。
+
