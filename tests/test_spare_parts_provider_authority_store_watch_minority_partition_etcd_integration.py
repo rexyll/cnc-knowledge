@@ -329,8 +329,37 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             snapshot, snapshot_revision = majority_store.linearizable_get(key)
             self.assertIsNotNone(snapshot)
             self.assertEqual(snapshot.value, partition_values[-1])
-            local_entry, local_revision = watch_store.linearizable_get(key)
-            self.assertIsNotNone(local_entry)
+
+            # Membership/status recovery does not imply that the formerly
+            # isolated member has already re-established ReadIndex service.
+            # Retry only read-only linearizable probes until it serves the
+            # quorum snapshot (or the bounded recovery deadline expires).
+            local_entry = None
+            local_revision = 0
+            last_local_read_error: Exception | None = None
+            local_read_deadline = time.monotonic() + 30.0
+            while time.monotonic() < local_read_deadline:
+                try:
+                    candidate, candidate_revision = watch_store.linearizable_get(key)
+                    if (
+                        candidate is not None
+                        and candidate.value == snapshot.value
+                        and candidate_revision >= snapshot_revision
+                    ):
+                        local_entry = candidate
+                        local_revision = candidate_revision
+                        break
+                    last_local_read_error = RuntimeError(
+                        "reconnected member has not yet reached the quorum snapshot"
+                    )
+                except Exception as exc:
+                    last_local_read_error = exc
+                time.sleep(0.5)
+            self.assertIsNotNone(
+                local_entry,
+                f"reconnected member did not serve the quorum snapshot; "
+                f"last_error={last_local_read_error}",
+            )
             self.assertEqual(local_entry.value, snapshot.value)
             self.assertGreaterEqual(local_revision, snapshot_revision)
 
