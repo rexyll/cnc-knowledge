@@ -304,3 +304,53 @@ python scripts/spare_parts_sqlite_candidate_import_plan.py \
 ### 14.4 第七十七轮验证记录
 
 Quality Run [46027837959](https://github.com/rexyll/cnc-knowledge/actions/runs/46027837959) success：全库582 unittest（40 skipped）、CH12 143项通过、knowledge lint 0 errors/5 warnings、结构检查0 errors。本结果仅验证规划器与仓库质量门禁，不包含任何真实etcd导入或生产变更。
+
+## 15. MIG-04：分阶段索引导入、checkpoint与最终发布协议（第七十八轮）
+
+新增只读协议模型：
+`scripts/spare_parts_sqlite_staged_import_protocol.py`，测试位于
+`tests/test_spare_parts_sqlite_staged_import_protocol.py`。
+
+### 15.1 分阶段写入顺序
+
+当前Unified schema-v2的Scheduler构造函数会在`scheduler/state`不存在时初始化一个空aggregate。因此，不能先启动应用再逐批导入request索引；这会导致应用抢先创建空state并破坏迁移目标。协议按以下顺序运行：
+
+1. **初始化checkpoint：** 在同一个Txn中比较checkpoint、`scheduler/state`、`coordinator/leader`均不存在，写入初始checkpoint。任何键已存在即停止。
+2. **分批写终态request索引：** 按稳定的key顺序将`requests/{SHA256(request_id)}`分成多个batch。每批Txn比较该批所有request key均`VERSION=0`、checkpoint等于精确前驱值、Scheduler state和Leader key仍不存在；同一Txn Put全部request记录及下一版checkpoint。
+3. **最终发布aggregate：** 只有所有批次提交、所有终态request key线性一致读回且摘要匹配后，才执行最后Txn。该Txn比较checkpoint精确值、state不存在、Leader key不存在，然后只Put完整`scheduler/state`。state是当前运行时的发布门，不会在前序批次提前出现。
+
+Checkpoint key位于`{prefix}/staging/sqlite-import/{candidate_digest}/checkpoint`。checkpoint内包含plan digest、下一个batch序号、已完成request数量、最近batch digest和累积`progress_sha256`。每次批次事务同时推进request索引和checkpoint，因此不会出现“索引写入成功但进度未记录”或相反的有效Txn状态。
+
+### 15.2 预算与不可分割对象
+
+在compare/put保守计数口径下：
+
+- 初始化Txn：3 compares + 1 put。
+- 含N条request的batch：N个request不存在性compare，加checkpoint前驱值compare及state/Leader不存在性compare；Put N条request及1条checkpoint，即compare+put为`2N+4`。
+- 最终发布Txn：3 compares + 1 put。
+
+每个Txn均独立计算紧凑Gateway JSON请求体字节数并加入调用者配置的安全余量。批次按操作数和字节预算贪心分段；单条request也无法放入batch时直接拒绝。Scheduler aggregate仍然是**单个不可拆分KV值**：若它无法放入最终发布Txn，协议在任何staging写入前拒绝，必须先对schema/runtime实施分片设计，不能把部分aggregate暴露给应用。
+
+本阶段候选只含终态request，因此不产生Admission Lease Grant。旧Leader TTL key始终只比较不存在，不导入；重新claim Leader发生在应用访问开启之后。
+
+### 15.3 未知Txn结果恢复
+
+网络超时/响应丢失时禁止盲目重发或假定失败，必须进行线性一致读回：
+
+- **Checkpoint初始化未知：** checkpoint精确等于初始值且state/Leader/request目标均未出现时判定COMMITTED；checkpoint和目标键均不存在时可重试相同Txn；其他状态隔离。
+- **Batch Txn未知：** 读回checkpoint及本批每个request值。checkpoint仍等于前驱且全部目标key不存在时判定NOT_COMMITTED，可重试完全相同的Txn；checkpoint属于相同plan且已推进到该批或更后、同时本批所有记录值逐字节匹配时判定COMMITTED；其余情况QUARANTINE。
+- **最终发布Txn未知：** state字节与候选完全一致、checkpoint处于最终状态且Leader key不存在时判定COMMITTED；state不存在但最终checkpoint一致且Leader key不存在时可重试相同发布Txn；任何冲突状态均QUARANTINE。
+- etcd Txn本身具有原子性，若线性一致读回看到本批只有部分key存在，则不能把它解释成合法的Txn部分提交，必须隔离调查。
+
+状态分类值分别为`COMMITTED`、`NOT_COMMITTED_RETRY_SAME_TXN`和`INCONSISTENT_QUARANTINE`。本轮只实现分类函数和计划模型，不执行真实Range、Txn或自动恢复。
+
+### 15.4 应用隔离和最终启用屏障
+
+- 迁移身份在演练期间拥有目标隔离namespace所需权限；应用身份在staging期间必须无权访问目标namespace。
+- 应用身份即使需要后续访问，也只能获得`scheduler/state`、`requests/`、`leases/`和`coordinator/leader`对应的最小键范围；不得授权`staging/`。
+- 所有request索引和最终checkpoint完成线性一致读回后，才发布`scheduler/state`；发布后先读回state与Leader key，再撤销/禁用迁移写身份，最后才开放应用身份并启动单一新Leader claim。
+- Provider操作仍需独立核验外部fencing floor、generation与scope recovery；KV导入成功不自动开放Provider控制面。
+- checkpoint和摘要证据至少保留至迁移验收完成；不得在成功返回后立即删除审计证据。
+
+**状态边界：** 本轮新增纯只读协议模型和分类测试；没有连接etcd、写入KV、创建Lease、调整RBAC、启动应用或触碰生产数据。真实批次写入器、checkpoint续跑执行器和一次性临时etcd故障注入演练仍未实现。
+
