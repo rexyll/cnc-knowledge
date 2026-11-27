@@ -1269,3 +1269,12 @@
 - **测试：** 验证分批大小、checkpoint/request同Txn、state-last、零request、预算边界、未知结果提交/重试/隔离、后续checkpoint证明前序batch及应用隔离屏障。
 - **安全边界：** 当前只做纯规划和恢复分类，没有etcd连接、Range/Txn写入、Lease/RBAC修改、应用启动或生产迁移。
 
+### 第七十八轮完成状态（2026-11-27）
+
+- **状态：** DONE（分阶段导入协议模型与未知结果恢复分类；不是实际写入器）。
+- **实现：** 新增scripts/spare_parts_sqlite_staged_import_protocol.py和专用测试。request索引分批写入；每批与checkpoint CAS同Txn；全部索引验证后再以最终Txn发布scheduler/state。
+- **恢复：** 初始checkpoint、batch和最终publish各自具备线性一致读回分类：COMMITTED、NOT_COMMITTED_RETRY_SAME_TXN、INCONSISTENT_QUARANTINE。checkpoint绑定candidate/namespace/state/request-set digest，并累积progress SHA-256。
+- **应用屏障：** staging期间禁止应用身份访问namespace，避免Scheduler初始化空state；发布验证后撤销migration身份，再仅开放业务键范围并排除staging路径。
+- **验证：** [Knowledge Quality Run 46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) success：594 unittest（40 skipped/554 passed）、CH12 143项、lint 0 errors/5 warnings、结构0 errors。
+- **未完成：** 无实际etcd writer/自动resume；未执行Lease、RBAC、应用启动或生产迁移。MIG-04仍IN_PROGRESS，MIG-05/06待完成，MIG-07 BLOCKED。
+
