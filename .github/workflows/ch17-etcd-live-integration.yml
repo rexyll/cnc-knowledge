@@ -56,6 +56,14 @@ jobs:
           ETCD_MTLS_TEST_PATTERN: "test_spare_parts_provider_authority_store_token_lifecycle_etcd_integration.py"
         run: bash scripts/etcd-integration/run-mtls.sh
 
+      - name: Run etcd auth and quorum isolation integration tests
+        id: auth_quorum_isolation
+        env:
+          ETCD_KEEP_CLUSTER: "0"
+          ETCD_AUTH_QUORUM_ISOLATION: "1"
+          ETCD_MTLS_TEST_PATTERN: "test_spare_parts_provider_authority_store_auth_quorum_isolation_etcd_integration.py"
+        run: bash scripts/etcd-integration/run-mtls.sh
+
       - name: Capture etcd diagnostics
         if: always()
         run: |
