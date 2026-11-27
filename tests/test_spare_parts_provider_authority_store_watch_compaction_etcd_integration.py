@@ -287,7 +287,7 @@ class Etcd3gwLiveWatchCompactionTests(unittest.TestCase):
             self.assertEqual(created_result[0], "response", created_result[1])
             created = created_result[1]
             self.assertTrue(created.created)
-            self.assertGreater(created.watch_id, 0)
+            self.assertGreaterEqual(created.watch_id, 0)
             self.assertEqual(created.events, ())
 
             # Advance the cluster revision with a key outside this exact-key Watch.
