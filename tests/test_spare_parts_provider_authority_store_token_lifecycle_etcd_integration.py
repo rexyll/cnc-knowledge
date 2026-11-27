@@ -6,7 +6,6 @@ import time
 import unittest
 from uuid import uuid4
 
-import requests
 
 from scripts.spare_parts_provider_etcd3gw_driver import Etcd3gwV3Client
 
@@ -19,6 +18,7 @@ from scripts.spare_parts_provider_etcd3gw_driver import Etcd3gwV3Client
 class Etcd3gwTokenLifecycleIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        import requests
         cls.endpoints = [
             item.strip()
             for item in os.environ["ETCD_MTLS_ENDPOINTS"].split(",")
