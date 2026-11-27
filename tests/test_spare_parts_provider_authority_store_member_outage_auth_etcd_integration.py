@@ -245,6 +245,8 @@ class Etcd3gwLiveMemberOutageAuthIntegrationTests(unittest.TestCase):
                     last_status = "accepted"
                     break
                 last_status = f"http-{response.status_code}"
+                if response.status_code == 401:
+                    break
             except self.requests.exceptions.RequestException as exc:
                 last_status = f"transport-{type(exc).__name__}"
             time.sleep(2)
