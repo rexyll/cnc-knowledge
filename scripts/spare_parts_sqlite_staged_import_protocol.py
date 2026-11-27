@@ -125,6 +125,7 @@ def _checkpoint(
     next_batch_index: int,
     completed_request_count: int,
     last_batch_sha256: str | None,
+    progress_sha256: str,
 ) -> dict[str, Any]:
     return {
         "format": CHECKPOINT_FORMAT,
@@ -132,6 +133,7 @@ def _checkpoint(
         "next_batch_index": next_batch_index,
         "completed_request_count": completed_request_count,
         "last_batch_sha256": last_batch_sha256,
+        "progress_sha256": progress_sha256,
     }
 
 
@@ -193,6 +195,7 @@ def build_staged_import_plan(
         next_batch_index=0,
         completed_request_count=0,
         last_batch_sha256=None,
+        progress_sha256=_sha256((plan_sha + "\\x00checkpoint:init").encode("utf-8")),
     )
     initial_checkpoint_value = _canonical(initial_checkpoint)
 
@@ -239,11 +242,15 @@ def build_staged_import_plan(
         batch_index = len(batches)
         digest = _batch_digest(pairs)
         next_completed = completed + len(pairs)
+        progress_sha = _sha256((
+            previous_checkpoint["progress_sha256"] + "\\x00" + digest
+        ).encode("ascii"))
         next_checkpoint = _checkpoint(
             plan_sha256=plan_sha,
             next_batch_index=batch_index + 1,
             completed_request_count=next_completed,
             last_batch_sha256=digest,
+            progress_sha256=progress_sha,
         )
         next_checkpoint_value = _canonical(next_checkpoint)
         compares = [
@@ -380,9 +387,10 @@ def build_staged_import_plan(
         "activation_barrier": [
             "Use a fresh isolated etcd cluster or server-side RBAC that gives only the migration principal access during staging.",
             "Keep all application principals denied access to this namespace; an early Scheduler construction can initialize an empty state and invalidate the import.",
-            "Run a linearizable read-back of every terminal request index and the full checkpoint chain before final publication.",
+            "Grant application access only to the exact scheduler/state, requests/, leases/ and coordinator/leader key ranges; exclude staging/ checkpoint keys.",
+            "Run a linearizable read-back of every terminal request index and verify the final checkpoint progress digest before final publication.",
             "Publish scheduler/state only after every batch is committed and verified; do not start the application yet.",
-            "Read back scheduler/state and Leader key; only then enable application access and start a single new Coordinator Leader claim.",
+            "Read back scheduler/state and Leader key, revoke or disable the migration writer, then enable application access and start a single new Coordinator Leader claim.",
             "Keep Provider operations disabled until external Provider fencing floors and scope reconciliation are independently approved.",
         ],
         "non_goals": [
@@ -449,12 +457,18 @@ def classify_batch_unknown(
         not isinstance(checkpoint, dict)
         or checkpoint.get("format") != CHECKPOINT_FORMAT
         or checkpoint.get("plan_sha256") != plan_sha256
+        or set(checkpoint) != {
+            "format", "plan_sha256", "next_batch_index",
+            "completed_request_count", "last_batch_sha256", "progress_sha256",
+        }
         or not isinstance(checkpoint.get("next_batch_index"), int)
         or isinstance(checkpoint.get("next_batch_index"), bool)
         or not isinstance(checkpoint.get("completed_request_count"), int)
         or isinstance(checkpoint.get("completed_request_count"), bool)
         or checkpoint["completed_request_count"] < expected_completed_request_count
         or checkpoint["next_batch_index"] < 1
+        or not isinstance(checkpoint.get("progress_sha256"), str)
+        or len(checkpoint["progress_sha256"]) != 64
     ):
         return UNKNOWN_QUARANTINE
     if all(
