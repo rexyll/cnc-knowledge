@@ -87,6 +87,20 @@ def _verify_records(manifest: dict[str, Any], records: dict[str, Any]) -> None:
         if hasher.hexdigest() != summary.get("records_sha256"):
             raise CandidateImportError(f"{table} record digest does not match inventory")
 
+    admission_meta_from_records = {
+        row["key"]: row["value"] for row in tables["coordinator_meta"]
+    }
+    authority_meta_from_records = {
+        row["key"]: row["value"] for row in tables["coordinator_authority_meta"]
+    }
+    if admission_meta_from_records != manifest.get("admission_meta"):
+        raise CandidateImportError("Admission metadata differs between manifest and records")
+    if authority_meta_from_records != manifest.get("coordinator_authority_meta"):
+        raise CandidateImportError("Coordinator metadata differs between manifest and records")
+    leader_rows = tables["coordinator_authority_leader"]
+    if len(leader_rows) != 1 or leader_rows[0] != manifest.get("derived", {}).get("leader"):
+        raise CandidateImportError("Leader record differs between manifest and records")
+
     material = {
         "schema": manifest.get("schema"),
         "table_summaries": summaries,
