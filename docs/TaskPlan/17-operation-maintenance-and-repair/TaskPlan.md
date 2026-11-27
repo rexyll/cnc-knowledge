@@ -1330,3 +1330,14 @@
 - **验收：** unittest及main Quality CI成功后标记DONE；若扫描期间源DB/WAL变化，inventory发出warning并要求写冻结后重跑。
 - **状态：** DONE；实现与专用测试已通过main Quality CI（Run 46000363197）。不代表生产数据已盘点或已迁移。
 
+
+
+### 第七十四轮：MIG-04 Unified schema-v2 Candidate Importer（首阶段）
+
+- **目标：** 从MIG-03的inventory/records构建可校验、可审计的候选Unified schema-v2状态包。
+- **输入验证：** 重算所有表的row_count与records SHA-256，重新计算snapshot digest；策略JSON必须显式提供且policy_hash完全匹配；拒绝源扫描期间DB/WAL变化或完整性非PASS。
+- **映射：** 保留终态request索引、scope/operation历史、全局和scope fencing/sequence floors、Provider generation/manifest及可映射计数器；旧Leader不恢复，只输出epoch floor。
+- **排空门禁：** ACTIVE request、waiter、pending operation或expired-but-ACTIVE行均拒绝；非IDLE/REVOKED scope标记RECOVERY_REQUIRED；外部Provider fencing floor未知时不得激活。
+- **实现边界：** 本阶段只生成candidate bundle，不写etcd。当前Store namespace前缀固定，目标隔离namespace、Lease分配、Txn/checkpoint和unknown-outcome恢复仍需实现；不能把candidate bundle直接用于生产。
+- **交付：** candidate importer脚本及专用unittest，迁移设计第11节、章节README、根TaskPlan和TaskHistory。
+- **状态：** IN_PROGRESS（首阶段候选包生成器完成；目标写入器及完整迁移验证未完成）。
