@@ -780,8 +780,9 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
 
     def test_long_running_watch_rebuilds_client_cache_across_periodic_compactions(self):
         suffix = uuid4().hex
-        prefix = f"/cnc-knowledge-it/watch-long-running/{suffix}/".encode()
+        prefix = f"/cnc-knowledge-it/watch-long-running/{suffix}/state/".encode()
         range_end = prefix[:-1] + b"0"
+        progress_marker_key = f"/cnc-knowledge-it/watch-long-running/{suffix}/progress-marker".encode()
         keys = [prefix + f"state-{index}".encode() for index in range(4)]
         initial_values = [
             f"initial-{index}-{suffix}".encode() for index in range(len(keys))
@@ -1031,7 +1032,11 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             # Keep the stream open across an idle interval and confirm that a
             # periodic Progress frame is not mistaken for a KV cache mutation.
             time.sleep(1.15)
-            progress = self._next_result(active_stream, timeout=6.0)
+            progress_marker = majority_store.transact(
+                [], [AuthorityStorePut(progress_marker_key, b"progress-trigger")]
+            )
+            self.assertTrue(progress_marker.succeeded)
+            progress = self._next_result(active_stream, timeout=8.0)
             self.assertEqual(progress[0], "response", progress[1])
             self.assertTrue(progress[1].is_progress)
             self.assertEqual(progress[1].events, ())
@@ -1163,6 +1168,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 "concurrent_write_revisions": first_writes + second_writes,
                 "final_write_revision": final_write.revision,
                 "progress_frame_revisions": progress_revisions,
+                "progress_trigger_marker_revision": progress_marker.revision,
                 "unique_watch_event_count": len(seen_events),
                 "watch_event_revisions": event_revisions,
                 "final_cache_matches_linearizable_range": True,
@@ -1194,14 +1200,14 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 remaining = majority_store.linearizable_range(
                     prefix, range_end=range_end
                 )
-                if remaining.entries:
-                    majority_store.transact(
-                        [],
-                        [
-                            AuthorityStoreDelete(entry.key)
-                            for entry in remaining.entries
-                        ],
-                    )
+                cleanup_operations = [
+                    AuthorityStoreDelete(entry.key) for entry in remaining.entries
+                ]
+                marker_entry, _ = majority_store.linearizable_get(progress_marker_key)
+                if marker_entry is not None:
+                    cleanup_operations.append(AuthorityStoreDelete(progress_marker_key))
+                if cleanup_operations:
+                    majority_store.transact([], cleanup_operations)
             except Exception:
                 pass
             watch_driver.close()
