@@ -1205,3 +1205,13 @@
 - **协议结论：** 本轮没有观察到应用层无界队列；测试验证的是应用暂停拉取后有限数量事件仍可通过已建立的流排空。Compaction在本次活动流仍排空事件时没有中断它，但旧cursor在重新建立Watch时已失效并被取消。因此恢复逻辑仍不能复用旧cursor：无论活动流排空与否，若需要重建状态，必须以健康多数派线性一致Range快照作为权威并从R+1恢复。
 - **失败/范围边界：** 本轮未模拟无限写入、超大KV、TCP窗口耗尽、慢网络、RSS/堆内存上限、自动背压策略或无限期耐久性；有限64/96事件的暂停读取不能作为这些指标的证明。实现仍为同步pull迭代器，不新增后台消费线程、可配置队列容量、磁盘spill或自动切换策略。Watch仍为单向HTTP server-streaming，不支持双向`WatchProgress`/`WatchCancel`。
 - **治理状态：** ASSET-000092正式30项继续`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威；SQLite Coordinator业务状态机尚未迁移；CH17-T004总体保持`IN_PROGRESS`。
+
+### 第六十七轮任务计划：Watch连接中断后的部分投影恢复与EOF语义
+
+- **目标：** 明确区分etcd Watch服务端取消与HTTP流意外结束；验证已有部分事件已应用、随后Watch连接丢失且多数派继续提交变化时，客户端必须废弃不完整投影，通过健康多数派线性一致Range整体重建，再从snapshot revision+1续接。
+- **驱动EOF契约：** 收到canceled=true的WatchResponse后，后续迭代结束属于正常终止；若HTTP响应流在未收到任何取消控制帧时EOF，即使底层HTTP以干净关闭结束，也必须转换为连接中断错误。不得让上层把无终止帧EOF当作正常Watch完成。
+- **部分消费与故障窗口：** 建立prefix snapshot和R+1 Watch；先消费并应用至少一条PUT事件。随后停止通过Compose project/service标签核验的etcd1容器；在etcd2/3多数派继续提交覆盖更新、DELETE和新PUT。已建立的原Watch必须显式失败，不跨endpoint静默切换，不从旧cursor自动重放。
+- **权威恢复与续接：** 恢复同一etcd1容器并等待三成员quorum；从健康多数派获取prefix线性一致snapshot，整体替换之前部分应用的缓存投影。验证snapshot包含全部断流期间提交的最终状态；从R+1创建新Watch，提交后续新事件并验证只投递一次，最终投影与线性一致Range逐key/value相同。
+- **契约和清理：** Fake响应测试覆盖“created后无取消帧EOF”必须抛出AuthorityStoreUnavailableError；显式canceled帧后的StopIteration仍为正常结束。所有Watch/客户端在finally中关闭，停止的Compose成员必须恢复；临时prefix全部清理，不修改宿主机iptables、非本项目容器或外部网络。
+- **边界：** 本轮验证的是一次性etcd v3.7.0 / etcd3gw 2.7.0 Compose环境中的受控成员停止和恢复；不是生产网络故障、真实代理空闲超时、长尾时延分布、无限期连接耐久性或服务端背压/容量测试。Watch保持单向HTTP server-streaming，不新增自动重连或双向WatchProgress/WatchCancel。
+- **验收：** 驱动Fake契约、原Lease Watch断流用例、新增部分投影恢复Live用例、全库Quality、CH12、strict lint和结构/data校验均通过；观察记录包含已应用事件revision、断流期间写入revision、快照revision、恢复cursor和最终Range一致性。
