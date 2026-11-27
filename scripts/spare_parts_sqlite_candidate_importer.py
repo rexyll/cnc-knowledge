@@ -144,7 +144,7 @@ def _policy(policy: Any, expected_hash: str) -> dict[str, Any]:
 
 def _request_key(request_id: str) -> str:
     digest = _sha256(request_id.encode("utf-8"))
-    return (ADMISSION_PREFIX + b"requests/" + digest.encode("ascii")).decode("ascii")
+    return "requests/" + digest
 
 
 def build_candidate(
