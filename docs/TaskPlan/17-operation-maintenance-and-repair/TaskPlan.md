@@ -948,3 +948,14 @@
 - quorum loss时已有token Range和重新认证均超时；恢复quorum后旧token成功。此结果没有证明认证API在无quorum时独立可用。
 - 默认质量[Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：526项unittest（504通过、22项opt-in skip），CH12 143项、strict lint 0 errors、fixture validator 0 errors/5项既有warning。
 - **未完成项：** 自动刷新、企业IAM/JWT密钥管理、生产凭据轮换/撤销/审计、网络分区、认证服务HA及多节点simple token长期传播未验证。正式ASSET-000092状态不变；CH17-T004保持IN_PROGRESS。
+
+
+## 6.25 CH17-T004 etcd mTLS + RBAC 单成员故障与跨成员 Token 传播（第五十五轮，2026-11-27）
+
+- **目标：** 补齐真实单成员停机时有效RBAC token的只读failover，以及同一simple token在健康成员之间的接受/传播验证。
+- **依赖：** 第五十一至第五十四轮的mTLS Compose、临时CA/client cert runner、RBAC reader/writer fixture、Etcd3gwV3Client错误分类与只读failover契约。
+- **测试设计：** 以临时root创建最小权限reader；认证后停止etcd1，保留etcd2/etcd3形成quorum；先通过driver的首个endpoint为etcd1、后续endpoint为etcd2和etcd3的顺序验证故障endpoint transport failover，再直接访问健康成员区分跨成员token接受；记录立即访问和短暂等待后访问结果；恢复etcd1并确认三成员健康和旧token恢复可用。
+- **错误边界：** 仅连接/超时可触发只读failover；401/403/请求错误不重试；写事务不跨endpoint重放。token传播失败必须与transport错误分开记录，禁止匿名回退和无界重试。
+- **安全边界：** 临时密码/token/CA/证书私钥只存内存或runner临时目录；不输出秘密；Compose成员在finally中恢复，runner结束销毁volume。只对本测试Compose集群执行stop/start。
+- **验收：** 实际2/3成员quorum持续可用；有效reader token对健康成员的实际结果被独立观测；driver failover成功/失败有准确证据；越权仍拒绝且不触发错误重试；节点恢复后三成员重新健康；live和默认质量CI通过。
+- **状态：** 本任务仅增加supporting engineering evidence；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
