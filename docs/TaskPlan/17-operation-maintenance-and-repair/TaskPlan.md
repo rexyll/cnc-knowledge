@@ -1234,3 +1234,14 @@
 - **恢复与安全：** finally关闭流和HTTP Session、将专用网络从容器清理并删除经标签核验的临时网络；prefix KV只由多数派测试客户端清理。不修改宿主机iptables、不停止etcd成员、不触碰其他容器/网络。测试仅对本次Compose项目资源操作。
 - **边界：** Docker bridge断开模拟的是客户端访问路径中断/可能半开，不等于真实WAN路由器静默丢包、NAT超时或生产代理行为；如果内核立即返回RST，则只证明快速传输错误检测，不声称触发read timeout。测试记录实际检测时长与错误类别。可选timeout只有在Watch Progress频率足够、且timeout大于心跳间隔与调度抖动时才适用；未配置时仍可能无限等待。
 - **验收：** Fake验证timeout参数传播、正值校验和读超时错误分类；Live验证空闲Progress与专用客户端路径断开；全库Quality、CH12、strict lint和结构/data检查通过。Watch仍为单向HTTP server-streaming，不实现双向WatchProgress/WatchCancel。
+
+## 第六十八轮结果记录：Watch空闲Progress与连接路径存活检测（2026-11-27）
+
+- **任务状态：** DONE（一次性CI supporting engineering evidence）。完成可选Watch read inactivity timeout、Fake契约与三节点Live空闲/Progress/访问路径失联验证。
+- **实现提交：** `77931fa8545c556ab26464941c4d162e24c9d97b`新增`watch_read_timeout`，默认None；`c1580eea7ab8c6da64eb40c13febfee059f71b24`补充驱动契约测试；`08e9fb8ceba2054ebf559dd37d42b72401b59bfb`首版Live测试；`3cefff70dd27189d46754c1969f1933e848c2e30`修正完全静默无Progress和外部marker预期；`d4039e47a86c68066336e9f96e87e85c2614ea94`完成最后断言修正。所有提交均在`main`，未创建分支。
+- **完全静默观察：** snapshot=38，Watch cursor=39，read timeout=4秒。全局无写入时没有Progress帧，流在4.0045秒后产生ConnectionError/Unavailable；etcd1仍running、Raft网络仍连接、Quorum健康、prefix不变。
+- **Progress观察：** prefix外marker revisions=[39,40]，目标prefix事件数0；空Progress header=[39,39]，间隔约[2.1347s,1.1550s]。最新marker=40但Progress header仍为39，需保持Progress不等价于quorum最新revision的解释。
+- **路径失联观察：** 仅断开etcd1专用客户端bridge，保留etcd1进程和Raft网络；既有Watch约4.0045秒后ConnectionError/Unavailable，随后Quorum恢复健康。
+- **Live验收：** [Run 45987534125](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125)整体success；Watch minority文件5项测试通过（24.605s），其余mTLS、Token、auth/quorum、RBAC及清理/Artifact步骤全success。Artifact [15192246652](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125/artifacts/15192246652)，SHA-256 `e9f2dbb141dc55a60f3988876df8eaa86eb02b4b26dda3f43c76f0a4a0b30663`。
+- **Quality验收：** [Run 45987533954](https://github.com/rexyll/cnc-knowledge/actions/runs/45987533954)两个Job success：548 unittest（37 skipped）、CH12 143项、strict lint 0 errors / 5 warnings、结构/data 0 errors（260实体、240关系、412来源、178 Markdown）。
+- **解释边界：** `watch_read_timeout`只限制流无字节间隔，不是成员健康检测。全局完全静默时即使节点健康也会超时；默认None保持兼容。没有实现后台心跳、TCP keepalive、独立探针、自动重连或双向Watch。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总体`IN_PROGRESS`。
