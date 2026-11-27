@@ -445,3 +445,15 @@
 - **提交：** planner eed93616df7d900ace816887682b6431cd49e5c4；测试与修正 7cd3b2d5c8b9dfe53b90cb457a6c315abf273f3d、455656e5faa13f127177521c6af88abfa21953f0、1b95efb8cd7646934578809e91887ad1eb945909、2d62563c0d2e112ffda4b9f46b038d1ac63e3a8b；计划/文档同步 462e27364cba3f263c530fbcfb5416dcc7fdd862、13629977bbec77936d51cae7885b1cd5074daf56、243f668d9f729ea81b1a4320de325650c1f5c056、8c41a71bbd6bf227595a3dff08ac39436fed9476、aab5a6c7341628e44ec246d13bc2c1f613802879；本轮最终计划状态记录随后追加至main。
 - **范围边界：** 规划器只构造并估算单Txn，不连接etcd。它不读取服务端max-txn-ops/max-request-bytes配置；预算由操作者提供。无目标KV写入、Lease Grant/Revoke、RBAC或生产数据操作。单Txn容量超限时当前流程只阻断，分批checkpoint/未知结果恢复和应用访问屏障仍待后续设计与演练。
 - **状态：** 第七十七轮只读规划任务DONE；MIG-04仍IN_PROGRESS（真实写入器、批次/unknown-outcome恢复未完成），MIG-05/06未完成，MIG-07 BLOCKED。生产schema-v2 authority不变；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+## CH17-T004：MIG-04 分阶段索引导入与checkpoint恢复协议（全局第七十八轮，2026-11-27）
+
+- **目标：** 对大量终态request索引设计分批Txn和持久checkpoint流程，明确Txn未知结果读回与Scheduler state最终发布顺序；防止应用在迁移中途启动并初始化空aggregate。
+- **实现：** 新增 `scripts/spare_parts_sqlite_staged_import_protocol.py`，只读取候选bundle并构造确定性协议计划；新增专用测试 `tests/test_spare_parts_sqlite_staged_import_protocol.py`。
+- **事务模型：** 初始checkpoint比较checkpoint/state/Leader均不存在并写入初始游标。每批比较request keys VERSION=0、checkpoint精确前驱值、state/Leader仍不存在，并在同Txn内Put该批request records与下一checkpoint。最终Txn比较最终checkpoint、state/Leader不存在，只Put完整Scheduler aggregate。
+- **Checkpoint：** 计划digest绑定candidate digest、namespace、state digest与全量request write-set digest；checkpoint包含batch序号、完成request数、last batch digest和累积progress SHA-256。每批CAS推进游标。
+- **未知结果：** 对初始checkpoint、batch和最终publish分别提供读回分类函数：准确匹配则COMMITTED；仍是精确前驱且目标request keys全部不存在时NOT_COMMITTED_RETRY_SAME_TXN；冲突值、部分request值或Leader/state意外出现时INCONSISTENT_QUARANTINE。
+- **应用隔离：** 应用身份在staging期间不得访问target namespace；因为Scheduler构造函数会在state key缺失时初始化空状态。发布state、读回验证后，先撤销migration身份，再只向应用身份开放Scheduler state、request、Lease和Leader业务键范围，并排除staging checkpoint路径。
+- **不能分片对象：** terminal request indexes可分批；Unified Scheduler aggregate仍是单个KV值，最终发布Txn不满足预算时必须先重构schema/runtime，不能提前发布部分state。
+- **范围边界：** 本轮只实现纯只读协议模型与测试，没有连接etcd、执行Range/Txn、创建Lease、修改RBAC/凭证、启动应用、触发Provider操作或迁移生产数据。真实writer、checkpoint自动续跑和临时真实etcd故障注入仍未完成；MIG-04继续IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
+
