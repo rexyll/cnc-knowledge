@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000410",
+  "source_type": "other",
+  "title": "Configuration options — etcd v3.7",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/op-guide/configuration/",
+  "version": "etcd v3.7 configuration reference; accessed 2026-11-27.",
+  "published_on": null,
+  "accessed_on": "2026-11-27",
+  "locator": "Auth flags: --auth-token supports simple or jwt; --auth-token-ttl defaults to 300 seconds for the simple token. JWT token TTL is specified in auth-token JWT options.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to identify the documented token type options and default simple-token TTL. The exact deployed etcd v3.7.0 behavior is additionally verified by the disposable integration test; do not confuse this setting with KV lease TTL.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
