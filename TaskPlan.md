@@ -960,3 +960,10 @@
 - **验收标准：** 真实单成员停止期间2/3 quorum可用；首个故障endpoint被连接层识别并由只读请求成功切换至健康成员；token在其他成员的接受情况有独立实测结论；恢复成员后重新健康且请求成功；认证/授权错误不触发transport failover；默认全库质量CI与strict lint通过。
 - **交付物：** 专项live测试、CI独立阶段、更新CH17技术正文/README、KNOW-000061与ASSET-000092 supporting evidence、TaskHistory、资源README/ASSET索引及必要来源记录。
 - **治理边界：** 一次性 etcd v3.7.0/etcd3gw 2.7.0 测试不构成企业HA、IAM、生产token复制/撤销/轮换或多机房网络分区验收。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持IN_PROGRESS。
+
+
+### 第五十五轮验收补充（2026-11-27，基于首次 live 观测）
+
+- 首次真实 live run 已确认：Token 签发后立即三个成员均接受；停止 etcd1 后剩余两个成员均接受；Driver 通过 transport failover 成功读取；健康成员直接访问均为 HTTP 200。
+- 首次 run 在重启 etcd1 后观察到原 reader simple token 返回 HTTP 401。该结果不得被简单归类为节点恢复失败或测试噪声；需进一步验证其是否为重启成员丢失/未恢复 token 验证状态，以及是否可通过显式重新认证获得新 Token。
+- 更新验收：重启后必须独立记录旧 Token 状态；若为 401，则从健康成员显式重新认证，验证新 Token 是否在三个成员均可用。不得在 driver 中自动匿名回退或静默刷新；本轮只验证显式 re-auth 可恢复性，并保留旧 Token 失效证据。
