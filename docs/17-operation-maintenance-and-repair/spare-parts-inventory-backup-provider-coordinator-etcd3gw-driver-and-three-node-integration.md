@@ -520,3 +520,34 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 **对实现的解释：** 当前驱动为同步pull iterator；应用调用`next(stream)`时才推进HTTP响应消费。有限测试表明暂停读取后，当前etcd v3.7.0/etcd3gw 2.7.0场景仍能通过既有活动流排空这批96事件，不能将其推广为有界缓存或自动背压证明。此测试没有测量TCP窗口、网络层buffer、服务端队列、Python RSS/heap，也没有无限写入或无限期运行。Compaction竞争的确定性安全边界仍是：若要重建应用状态，旧cursor不得重用；由健康多数派线性一致Range取得snapshot并从R+1开始新Watch。Watch仍为单向HTTP server-streaming，不支持双向`WatchProgress`/`WatchCancel`。
 
 **治理状态：** 本轮仍为一次性CI supporting engineering evidence，不等于生产HA、性能/容量SLO或正式业务验收。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004整体继续`IN_PROGRESS`。
+
+## 28. 第六十七轮：Watch连接中断后的部分投影恢复与EOF识别
+
+本轮在既有Watch/Compaction/慢消费者验证基础上，补齐HTTP Watch连接意外结束的契约与部分应用状态恢复场景。核心要求是区分etcd明确取消与传输流意外EOF：Watch是持续服务端流，若没有收到`canceled=true`终止响应，HTTP流结束不能被上层解释为正常完成。
+
+**驱动EOF契约：** `_Etcd3gwWatchStream`记录是否已收到服务端显式`canceled`响应。若收到取消响应，后续HTTP EOF按正常迭代结束处理；若流在未收到取消响应前EOF，即使底层HTTP连接是干净关闭，也抛出`ConnectionError`，由`EtcdV3CoordinatorAuthorityStore`转换为`AuthorityStoreUnavailableError`。这避免把不完整Watch当作正常完成。新Fake测试`test_watch_clean_eof_without_terminal_control_frame_is_a_disconnect`覆盖created握手后直接EOF；此前包含显式Compaction取消帧的契约测试仍验证其后续`StopIteration`是正常结束。
+
+**部分投影与成员故障测试：** 新增`test_watch_partial_projection_is_rebuilt_after_midstream_member_restart`。首先从etcd2/etcd3多数派读取线性一致前缀快照，etcd1也先通过线性一致Range确认已应用该revision；Watch仅连接etcd1。客户端测试投影先应用alpha更新事件，随后停止经Compose项目/服务标签核验的一次性etcd1容器。期间多数派继续提交alpha覆盖更新、beta删除和gamma新增。原流明确以`AuthorityStoreUnavailableError`结束，Watch请求尝试列表始终只有etcd1 endpoint，没有跨endpoint静默切换。
+
+**revision观察：** 初始快照revision=`24`，Watch从`25`建立；故障前客户端已应用事件revision=`25`。etcd1停止期间，多数派写入revision=`[26,27,28]`，依次覆盖alpha值、删除beta并创建gamma。恢复同一个etcd1容器并确认三成员恢复后，多数派线性一致快照revision=`28`；客户端整体替换此前已部分应用的投影，最终状态精确为alpha v2和gamma v1，不含beta。新Watch从snapshot+1=`29`建立；随后delta PUT revision=`29`只收到一次。最终线性一致Range revision=`29`，客户端投影逐key/value完全一致。
+
+| 观测项 | 结果 |
+|---|---:|
+| 初始snapshot revision | 24 |
+| 断流前已应用Watch事件 | 25 |
+| 断流期间多数派写入revision | 26、27、28 |
+| 恢复snapshot revision | 28 |
+| 恢复Watch start_revision | 29 |
+| 恢复后新事件revision | 29 |
+| 最终线性一致Range revision | 29 |
+| 原Watch endpoint attempts | 仅`http://127.0.0.1:23791` |
+| 最终投影与Range一致 | true |
+| 旧游标事件重放 | false |
+
+**既有Lease断流场景收紧：** `test_watch_disconnect_rebuilds_from_linearizable_snapshot_plus_one`现在要求没有取消控制帧的断流必须返回`AuthorityStoreUnavailableError`，不再接受裸`StopIteration`。本次观测中原Watch仅向`http://127.0.0.1:23791`发起连接；多数派Revoke删除revision=`21`；恢复snapshot revision=`21`，从`22`创建新Watch，后续PUT revision=`22`仅投递一次，旧DELETE没有重放。该场景与新部分投影测试共同覆盖断流异常分类和状态重建。
+
+**Live与Quality：** [Live Run 45982644017](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017)整体success。Lease Watch recovery测试文件3项测试通过（3.930秒）；其中新增部分投影恢复测试通过，既有Lease DELETE和断流恢复测试也通过。Watch minority测试文件4项测试通过（13.314秒），包括少数派Progress滞后、Compaction恢复、多轮Compaction重建和慢消费者积压场景。mTLS、短TTL Token、auth/quorum隔离、RBAC成员故障/Token传播、诊断采集、Compose容器/volumes清理及Artifact上传均success。诊断Artifact [15190500314](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017/artifacts/15190500314)，SHA-256 `364c70b27a0ac0cca5da2d2c1930513885cefe2706a09ddcdfc2e41adce2e04e`。
+
+[Quality Run 45982644355](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644355)两个必需Job均success：全库545项unittest（36 skipped，即509项通过）；CH12数值资源测试143项通过；strict knowledge lint 0 errors / 5 warnings；结构/data检查0 errors（260实体、240关系、412来源记录、178 Markdown文件）。SPAT仅离线模拟30包、failed=0，`business_test_status=NOT_RUN`、`external_connections=NO`、`writes=NO`；不得将模拟包校验描述为企业业务验收。
+
+**解释边界：** 本轮只证明一次性etcd v3.7.0 / etcd3gw 2.7.0三节点Compose夹具中，受控停止etcd1后已建立Watch的显式断流分类、有限断流写入窗口及snapshot+1恢复。没有验证生产网络代理空闲超时、真实长尾时延分布、无限期连接耐久性、客户端队列/堆内存上限、TCP窗口或自动背压；没有新增自动重连和自动failover。Watch仍是单向HTTP server-streaming，不支持双向`WatchProgress`/`WatchCancel`。客户端投影仅是测试模型，不是生产Watch缓存。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004整体保持`IN_PROGRESS`。
