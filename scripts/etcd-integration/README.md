@@ -7,7 +7,8 @@ stream, and Unified Admission/Coordinator business state machine.
 ## Run
 
 Prerequisites: Docker Engine with the Compose plugin, Python 3.12, and network
-access to pull quay.io/coreos/etcd:v3.7.0 and the pinned Python dependency.
+access to pull quay.io/coreos/etcd:v3.7.0 and install the pinned etcd3gw and
+CH17 security dependencies (including cryptography for Ed25519 test signing).
 
 From the repository root:
 
