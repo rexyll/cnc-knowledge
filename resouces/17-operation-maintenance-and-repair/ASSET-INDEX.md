@@ -147,5 +147,5 @@
 - Live [Run 45927091505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505)通过：基础三成员6项、mTLS/RBAC 12项、短TTL生命周期1项、auth/quorum隔离1项、单成员故障/Token传播1项；单成员专项1/1 PASS。
 - Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 `2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff`。
 - 证据：Token签发后即时和收敛后3/3成员接受；单成员停止期间driver只读failover成功；重启成员后旧simple Token HTTP 401；从健康成员显式重新认证的新Token在3/3成员接受。
-- 默认质量Run 45927138505：527 unittest、CH12 143、strict lint 0 errors、fixture validator 0 errors/5 warnings。
+- 默认质量Run 45927138505：527 unittest total（504 passed、23 skipped）、CH12 143、strict lint 0 errors、fixture validator 0 errors/5 warnings。
 - 此处仅登记supporting evidence；正式矩阵仍30项，`PROPOSED_NOT_APPROVED / NOT_RUN`，不得更改审批或执行状态。
