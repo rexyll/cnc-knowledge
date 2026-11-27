@@ -428,3 +428,12 @@
 - **客户端修正：** `InMemoryEtcdV3Client.range()`支持`range_end`，避免此前fake只读精确键而无法验证prefix范围。
 - **验证结果：** Quality CI run `46016856810`（代码/测试提交 `d76802e`）通过；主Job与CH12 numerical resource Job均success。主Job共运行574个unittest，40个skip，结果`OK`；新增5项namespace预检测试全部通过。后续文档提交触发的Quality CI run `46017099566`亦success。
 - **安全边界：** 预检不是锁；必须后续配合一次性临时etcd或服务端RBAC防止竞态。当前没有KV写入、Lease创建、候选包导入或生产变更。MIG-04 IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
+
+## CH17-T004：MIG-04 候选导入单 Txn 映射与容量规划（全局第七十七轮，2026-11-27）
+
+- **目标：** 在真正写入隔离etcd前，先将候选bundle映射到Unified schema-v2的真实KV键布局，并对单Txn compare/Put数量与请求体大小进行只读预算评估。
+- **代码：** 新增`scripts/spare_parts_sqlite_candidate_import_plan.py`。验证候选digest、schema-v2 aggregate、终态request record结构与hash key派生、Coordinator scope fencing/sequence floors、计数和recovery requirements；构建隔离目标的单Txn写集合摘要。
+- **Txn设计：** 比较scheduler/state、全部终态request key和coordinator/leader key均VERSION=0；一次性Put aggregate与全部终态request索引。Leader key只做不存在性比较，不恢复旧Leader。没有活动Admission Lease/waiter，故本阶段原生Lease Grant数为0；终态request的backend_lease_id=1仍仅为非Lease哨兵。
+- **容量策略：** 操作者显式提供max_txn_ops/max_txn_bytes；规划器报告compare/put计数、Base64 HTTP Gateway JSON估算字节与额外余量。预算超限标记CAPACITY_EXCEEDED，不自动分批、不删减幂等历史。工具不查询服务器配置，最终限制仍需在临时目标环境核对。
+- **测试：** 新增`tests/test_spare_parts_sqlite_candidate_import_plan.py`，覆盖单Txn键布局、候选摘要篡改、request key错配、活动/非终态request、scope遗留Lease identity及操作/字节预算超限。Quality CI结果待最终验收补记。
+- **范围边界：** 只读计划，无etcd连接、Range、Txn、Lease Grant/Revoke或RBAC变更；不写入生产namespace，不进行迁移/cutover。超限场景的分批checkpoint、unknown-outcome恢复与应用启动隔离协议尚未实现；MIG-04继续IN_PROGRESS，MIG-05/06未完成，MIG-07 BLOCKED。
