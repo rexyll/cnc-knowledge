@@ -296,6 +296,7 @@ class Etcd3gwV3Client:
         self._clients: list[Any] = []
         self._next_index = 0
         self._lock = threading.Lock()
+        self._auth_token = auth_token
 
         for endpoint in self.endpoints:
             parsed = self._parse_endpoint(endpoint)
@@ -313,15 +314,36 @@ class Etcd3gwV3Client:
                 client = client_factory(**kwargs)
             except TypeError:
                 raise
-            if auth_token is not None:
-                session = getattr(client, "session", None)
+            self._clients.append(client)
+
+        if auth_token is not None:
+            self.set_auth_token(auth_token)
+
+    def set_auth_token(self, auth_token: str | None) -> None:
+        """Replace or clear the bearer token on every endpoint session.
+
+        Authentication itself is deliberately external: callers obtain a new
+        token through their credential provider and then install it here.
+        This method does not retain usernames/passwords or refresh tokens.
+        """
+        if auth_token is not None and (
+            not isinstance(auth_token, str) or not auth_token.strip()
+        ):
+            raise Etcd3gwConfigurationError("auth_token must be a non-empty string")
+        with self._lock:
+            sessions = [getattr(client, "session", None) for client in self._clients]
+            for session in sessions:
                 headers = getattr(session, "headers", None)
                 if headers is None or not hasattr(headers, "__setitem__"):
                     raise Etcd3gwConfigurationError(
                         "authenticated clients require a mutable HTTP session headers mapping"
                     )
-                headers["Authorization"] = auth_token
-            self._clients.append(client)
+            for headers in (session.headers for session in sessions):
+                if auth_token is None:
+                    headers.pop("Authorization", None)
+                else:
+                    headers["Authorization"] = auth_token
+            self._auth_token = auth_token
 
     @classmethod
     def from_env(cls, *, env_var: str = "ETCD_ENDPOINTS", **kwargs: Any) -> "Etcd3gwV3Client":
