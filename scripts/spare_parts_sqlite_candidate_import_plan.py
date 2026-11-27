@@ -317,7 +317,7 @@ def build_import_plan(
         )
     if not fits_bytes:
         reasons.append(
-            f"estimated compact gateway body plus margin {estimated_with_margin} exceeds budget {max_bytes}"
+            f"estimated compact gateway body plus margin {estimated_with_margin} bytes exceeds budget {max_bytes} bytes"
         )
 
     key_bytes = sum(len(key) for key, _ in put_pairs)
