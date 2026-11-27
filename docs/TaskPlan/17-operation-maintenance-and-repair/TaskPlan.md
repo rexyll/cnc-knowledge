@@ -1364,3 +1364,11 @@
 - 生成单Txn比较/Put计数、Base64 HTTP Gateway JSON请求字节估算和operator-supplied budget判断；超限fail closed，不自动拆批。
 - 测试候选摘要篡改、request key错配、活动/非终态记录、scope残留lease identity、操作预算和字节预算超限。
 - 不连接etcd、不写KV、不Grant Lease、不创建RBAC；写入仍须专用临时集群/服务端RBAC、预检竞态屏障、应用访问隔离、写后读回和Provider外部fencing核验。
+
+### 第七十七轮完成记录：候选导入单 Txn 规划
+
+- **状态：** DONE（只读规划器与自动化测试）。
+- 新增planner校验candidate digest、Unified aggregate、terminal request indexes/key derivation、scope high-water与recovery contract；输出单Txn compare/put计数、compact Gateway JSON字节估算及operator budget结果。
+- 单Txn内比较state、所有request keys和Leader key均不存在，再同时写入aggregate和所有终态索引；旧Leader不恢复，不创建Admission Lease。
+- **CI：** [46027837959](https://github.com/rexyll/cnc-knowledge/actions/runs/46027837959) success：582 unittest（40 skipped），CH12 143项，lint 0 errors/5 warnings，结构0 errors。
+- **边界：** 未连接或写入etcd；没有实现超限批次/checkpoint、unknown-outcome恢复或应用访问屏障。MIG-04仍IN_PROGRESS。
