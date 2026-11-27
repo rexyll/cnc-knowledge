@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000415",
+  "source_type": "other",
+  "title": "etcd3gw client HTTP error handling",
+  "publisher": "OpenStack etcd3gw — Official Project Documentation",
+  "author": null,
+  "url": "https://docs.openstack.org/etcd3gw/2.7.0/_modules/etcd3gw/client.html",
+  "version": "etcd3gw 2.7.0; accessed 2026-11-27.",
+  "published_on": null,
+  "accessed_on": "2026-11-27",
+  "locator": "Etcd3Client.post maps 500/503/408/504/412 to selected exception classes; other non-200 responses raise generic Etcd3Exception(resp.text, resp.reason).",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports the adapter compatibility layer: structured error body may be present in Etcd3Exception arguments even though the HTTP status is not retained as a dedicated field. Current runtime dependency pin is etcd3gw 2.7.0.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
