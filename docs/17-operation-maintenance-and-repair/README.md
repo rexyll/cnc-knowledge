@@ -222,3 +222,8 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 ## CH17-T004 etcd Gateway mTLS 双向证书与信任链验证（第五十一轮）
 
 新增一次性三成员 etcd v3.7.0 TLS Compose 拓扑和临时证书 runner。真实 [Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363)成功，mTLS 3/3：有效双向证书成员发现/CAS写入/线性一致读回、缺失客户端证书拒绝、错误CA拒绝；诊断Artifact 15163390323。默认质量 [Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)成功（508项unittest、CH12 143项、strict lint 0 errors、结构/数据0 errors/5项既有warning）。临时证书和私钥已由runner清理。该结果不等于企业PKI/RBAC/生产密钥管理验收；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN，schema-v2仍唯一生产权威。
+
+
+## CH17-T004 etcd Gateway RBAC + mTLS 最小权限验证（第五十二轮）
+
+Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Authorization header。真实 [Run 45919206834](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206834)成功：mTLS suite 8/8通过（基础mTLS 3项 + RBAC 5项），reader仅能读取授权prefix、writer仅能读写授权prefix，跨prefix访问和无token/错误密码均被拒绝；普通三节点live suite 8项通过。Artifact 15163741056。默认 [Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)成功：515项unittest（499通过、16项opt-in skip）、CH12 143项、strict lint 0 errors、结构/数据0 errors/5项既有warning。Gateway mTLS客户端证书不使用CN映射用户，RBAC由认证token独立承载。token自动刷新、企业IAM/审计/生产凭据管理尚未验证；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
