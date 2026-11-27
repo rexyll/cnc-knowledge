@@ -587,3 +587,22 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 **运维解释和限制：** `watch_read_timeout`是可选的字节读取静默阈值，不是etcd集群健康检测器。对长期不变化的key/集群，若没有可靠的独立心跳/持续revision推进，启用该参数会把健康空闲Watch判为Unavailable；默认`None`仍可能无限期等待。只有在服务端能保证空闲期持续产生可观测控制流量，且超时阈值明显大于Progress间隔及网络/调度抖动时，才应为特定Watch显式配置read timeout。即使收到Progress，其header也不保证是quorum最新revision；权威状态仍需健康多数派线性一致Range。客户端路径断开测试仅是一次性Compose网络隔离演练，不等于WAN、NAT或生产代理半开连接验收；未新增TCP keepalive、后台健康探针、自动重连或双向WatchProgress/WatchCancel。Watch仍为单向HTTP server-streaming。
 
 **治理状态：** 本轮仍为一次性CI supporting engineering evidence。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004总体保持`IN_PROGRESS`。
+
+## 30. 第六十九轮：Watch连接健康分层与生产存活检测策略
+
+本轮新增独立设计决策记录：[Watch连接健康与存活检测策略决策记录](watch-connection-health-and-liveness-decision-record.md)。决策核心是将Watch传输流、Watch本地Progress revision、Quorum线性一致读能力和应用端到端心跳分开观测，不再使用单一心跳或超时布尔值表达etcd整体健康。
+
+**对当前实现的判断：** 当前`Etcd3gwV3Client`通过Requests Session访问`/v3/watch`，发起create请求后读取服务端响应流；活动流固定在接受请求的endpoint，没有在流上继续发送原生gRPC `WatchProgressRequest`/`WatchCancelRequest`的双向客户端能力。当前`linearizable_range()`使用`serializable=false`并能在只读请求失败时切换endpoint；`status()`只是`/maintenance/status`调用，不应当作为Quorum健康证明。`watch_read_timeout`仍默认None。
+
+**机制选择：**
+- Watch Progress：保留为本地流响应/本地revision水位观测，不视为Quorum最新revision、严格周期心跳或权威快照。
+- TCP Keepalive：只在明确生产网络/操作系统/代理路径和检测SLO后才评估；它探测传输路径，不验证HTTP handler、Watch消费或Quorum。
+- gRPC HTTP/2 PING：属于原生gRPC transport能力，与当前Requests调用gRPC-gateway的路径不同，不能直接当作现有配置项。
+- 独立线性一致Range：推荐作为进程级共享Quorum-read探针，使用最小权限/最小读取范围和独立deadline；探针成功不表示原Watch流仍然健康。
+- Lease-backed应用心跳：默认不启用；只有端到端Watch交付SLO需要时才考虑，并评估写入revision、Raft、Watch fan-out、Lease和compaction成本。
+
+**组合判定：** Watch事件/Progress/断流负责流维度观测；独立Range负责Quorum读能力观测。Watch静默但Range成功，表示Watch路径可疑而不代表集群不可用；Watch仍有响应但Range失败，不能宣称Quorum健康；两者均失败时报告服务不可用/状态未知。任何Watch重建仍必须从健康Quorum取得完整Range snapshot R，整体替换投影，再从R+1恢复。
+
+**实施约束：** 由于当前同步pull Watch的`next(stream)`可能阻塞，本轮建议未来将Watch消费者和Quorum探测调度器分开运行；探测器按进程共享结果，不为每条Watch各自高频请求。未获得生产Progress最大间隔、代理空闲时限、网络抖动和业务SLO之前，不设定生产read timeout数值；无可靠流量来源的长时间静默Watch继续使用默认`None`。本轮不增加TCP socket options、HTTP/2 gRPC client、自动重连、自动failover、Lease心跳写入或后台健康状态机。
+
+**验收与治理：** 本轮是架构决策记录，不增加新的Live测试或生产行为。机制定义依据etcd v3.7 Watch API / API reference / endpoint health文档、gRPC Keepalive与Requests timeout文档；第六十八轮的4秒静默和访问路径演练作为本仓库有限CI证据，不扩大解释为生产网络验收。CH17-T004仍为`IN_PROGRESS`；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机尚未迁移。
