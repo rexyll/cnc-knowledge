@@ -469,3 +469,29 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 **质量门禁：** [Quality Run 45949089930](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089930)的Knowledge structure and data quality与CH12 numerical resource tests两个Job均success。
 
 **实现与实验边界：** 分区网络、etcd容器及临时key均限定在一次性Compose项目内；没有修改宿主机iptables或其他容器/网络。上述结果仅证明etcd v3.7.0 / etcd3gw 2.7.0一次性CI场景中的协议与恢复路径，不表示生产HA验收。Watch仍是单向HTTP server-streaming，本轮未实现双向`WatchProgress`/`WatchCancel`。ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威；SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
+
+## 26. 第六十五轮：长运行Watch、多轮Compaction与客户端缓存快照重建
+
+第六十五轮将前几轮的一次性Watch恢复验证扩展到单次Live会话中的连续事件消费和两轮Compaction。新增`test_long_running_watch_rebuilds_client_cache_across_periodic_compactions`，复用三成员etcd Live Runner与现有Watch适配器；没有增添未经业务状态机调用的生产缓存API。客户端缓存只是在测试方法中建立的前缀KV投影，用来检查事件应用和快照替换是否正确。
+
+**基线与Progress通知：** 测试在唯一前缀`/cnc-knowledge-it/watch-long-running/{uuid}/state/`下写入四个状态key。通过etcd2/etcd3健康多数派执行线性一致Range，取得初始snapshot revision=38并建立客户端cache；随后从revision=39创建Watch。当前一次性Compose配置仅在etcd1设置`--watch-progress-notify-interval=1s`，因此长Watch绑定etcd1；建流前先在etcd1执行线性一致Range，确认本地至少应用到snapshot revision。等待通知间隔后，多数派对Watch前缀外的独立progress-marker提交revision=39，Watch返回revision=39的空Progress帧（events=0）。该marker不属于缓存前缀，Progress不触发任何KV cache变化。
+
+**第一轮并发写与Compaction：** 两个独立Etcd客户端通过Barrier并发执行4次PUT，事务revision为40、41、42、43。Watch仅消费对应前缀内的KV事件，按`(revision,key,event_type)`构造事件去重身份，检查事件revision、PUT值和previous KV，再更新缓存。Quorum线性一致Range snapshot revision=43与缓存按key/value完全匹配。关闭旧Watch后，以本次Compose etcd2容器执行`etcdctl compact 43`；随后在健康多数派端用旧cursor=39重新Watch，服务端返回`canceled=true`、`compact_revision>=43`、events=0、`resume_revision=None`。旧cursor不可继续消费。
+
+**快照与Watch重建之间的写入窗口：** 后台写入线程先提交key0更新revision=44，然后通过Event等待主线程完成Quorum snapshot revision=44。该更新包含于快照，因此客户端以快照结果整体替换cache。主线程随后放行后台线程，在新Watch创建之前再提交key1、key2更新revision=45和46。新Watch从snapshot+1=45建立，准确重放revision 45、46两条事件；revision 44由快照覆盖，不重复应用。此场景把“快照前已提交”和“快照后、Watch创建前提交”的时序边界确定性地分开。
+
+**第二轮活动Watch与Compaction：** 新Watch持续活动，另两个独立客户端并发提交4次PUT/DELETE，revision依次为47、48、49、50。消费端对DELETE校验previous KV和删除前缓存存在性，并更新cache。线性一致Range snapshot revision=50与事件投影一致；关闭旧流，在本次etcd2容器执行`compact 50`，再用旧cursor=45在健康多数派探测，服务端取消旧Watch且不返回事件或续接cursor。此时从revision=50的权威快照整体替换客户端cache。
+
+**最终续接与重复检测：** 第三条Watch从snapshot+1=51建立，提交key1 PUT revision=51后只接收一次该事件。最终线性一致Range revision=51与客户端cache完全相同。观测JSON记录：
+
+- 快照revision：`[38,43,44,46,50,50,51]`；Compaction revision：`[43,50]`。
+- 旧游标取消2次；恢复Watch起始cursor：`[39,45,51]`。
+- 并发写revision：第一组`[40,41,42,43]`，跨快照写入`[44,45,46]`，第二组`[47,48,49,50]`，最终写入`51`。
+- Watch唯一事件11条，revision为`[40,41,42,43,45,46,47,48,49,50,51]`；重复事件数0。revision=44由snapshot覆盖；45、46在snapshot后、Watch创建前提交，由新Watch完整回放。
+- `snapshot_before_watch_gap_replayed_from_r_plus_one=true`、`cache_replaced_after_each_compaction=true`、`final_cache_matches_linearizable_range=true`。
+
+**Live与质量门禁：** [Live Run 45975852325](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852325)整体success；长运行Watch测试所在文件3项测试通过（9.443秒）。同一Live Run的普通etcd、mTLS、短TTL Token、Auth/Quorum隔离、mTLS RBAC成员故障/Token传播、诊断采集、Compose容器/volumes清理、Artifact上传和post-job cleanup全部success。诊断Artifact [15187805125](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852325/artifacts/15187805125)，SHA-256 `6bd9f0f1f2ed97ccefc9a819b6230d734ac7eef4be8bc1a64954d5c0057a27a2`。 [Quality Run 45975852368](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852368)两个Job均success：542项unittest（34 skipped，508项通过），CH12数值资源测试143项，strict knowledge lint 0 errors/5项既有warning，结构/data检查0 errors。
+
+**实施修正记录：** 前两次Live尝试未通过，分别因为测试在未配置Progress interval的etcd2/3等待空Progress，以及只等待空闲流但没有采用已验证的范围外marker触发路径。最终实现将Watch连接到配置Progress interval的etcd1，并在Watch建立前确认该节点已线性一致应用snapshot revision；等待间隔后，由多数派对Watch前缀外marker写入revision=39，触发空Progress帧。修正后的Live Run 45975852325完整通过；此前两个失败Run不作为验收证据。
+
+**能力和治理边界：** 本轮是在一次性etcd v3.7.0 / etcd3gw 2.7.0 Compose环境内模拟单次会话跨多次Compaction与Watch重建，不构成无限期运行、真实长时间生产负载、背压/内存限制或生产SLO验收。测试cache不是生产功能。Watch仍为单向HTTP server-streaming，未实现双向`WatchProgress`/`WatchCancel`；Progress帧只提供本地观察进度，Compaction/断流后权威状态仍由健康多数派线性一致Range快照确定，并从`R+1`恢复。ASSET-000092正式30项继续`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004整体`IN_PROGRESS`。
