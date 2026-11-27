@@ -47,6 +47,15 @@ jobs:
           ETCD_KEEP_CLUSTER: "0"
         run: bash scripts/etcd-integration/run-mtls.sh
 
+      - name: Run short-TTL etcd token lifecycle integration tests
+        id: token_lifecycle_integration
+        env:
+          ETCD_KEEP_CLUSTER: "0"
+          ETCD_AUTH_TOKEN_TTL: "10"
+          ETCD_TOKEN_LIFECYCLE: "1"
+          ETCD_MTLS_TEST_PATTERN: "test_spare_parts_provider_authority_store_token_lifecycle_etcd_integration.py"
+        run: bash scripts/etcd-integration/run-mtls.sh
+
       - name: Capture etcd diagnostics
         if: always()
         run: |
