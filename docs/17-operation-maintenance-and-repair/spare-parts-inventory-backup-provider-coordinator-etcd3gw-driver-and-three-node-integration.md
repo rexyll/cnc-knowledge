@@ -227,3 +227,24 @@ etcd v3.7 配置参考（SRC-000410）显示，`--auth-token`支持`simple`与`j
 
 
 **错误分类边界补充：** etcd3gw 2.7.0 对部分HTTP状态（如内部错误、服务不可用、请求/网关超时）映射为传输/服务异常，而其他非200响应统一抛出通用 `Etcd3Exception`；驱动会原样传播该非传输异常，不把认证/授权拒绝作为endpoint failover条件。当前尚未将HTTP 401/403或Gateway结构化错误码归一为独立的Unauthenticated/PermissionDenied类型；也未完成认证服务不可用/多数派丢失期间“已有token读写”与“重新认证”差异测试。该项列为后续切片，不能声称本轮已完成精细错误分类或认证服务HA验证。
+
+
+## 14. 第五十四轮 Gateway 认证错误分类与多数派故障隔离（2026-11-27）
+
+etcd Gateway错误响应的协议依据补充如下：SRC-000413记录etcd v3.6+ gRPC-Gateway以HTTP状态码和google.rpc.Status JSON承载RPC错误；SRC-000414记录etcd rpctypes中invalid auth token对应Unauthenticated（code 16）、permission denied对应PermissionDenied（code 7），而no leader、leader changed、stopped和timeout属于Unavailable；SRC-000415记录etcd3gw 2.7.0只对部分HTTP状态映射专用异常，其他非200响应抛出通用Etcd3Exception。
+
+**驱动实现：** `scripts/spare_parts_provider_etcd3gw_driver.py`新增`Etcd3gwAuthenticationError`、`Etcd3gwPermissionDeniedError`、`Etcd3gwRequestError`和Gateway状态解析函数。解析优先使用HTTP 401/403与gRPC code 16/7，并兼容HTTP 400/code 3且message明确为authentication failed的etcd错误；普通InvalidArgument仍归类为request error。异常保留原始cause。Watch建立请求也使用相同错误分类。未识别载荷继续作为原异常传播，不做猜测。
+
+**Failover策略：** 只读Range/status/member-list仍只对真实连接/超时故障切换endpoint；认证失败、权限拒绝、其他Gateway请求错误和协议错误不会触发切换。Txn/Lease写请求仍只发送一次。没有匿名回退，不记录Authorization token。
+
+**Fake契约测试：** 覆盖HTTP 401/code16、HTTP 403/code7、400错误密码消息、普通400参数错误、畸形错误JSON、原始异常cause，以及认证/授权拒绝时第二endpoint未被触达；Watch的403也验证不触发failover。驱动契约测试当前20项。
+
+**Live RBAC/mTLS：** [Run 45922792420](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792420)中mTLS/RBAC suite 12/12通过（原mTLS 3项 + RBAC 9项），包括invalid token归一为AuthenticationError、reader越权归一为PermissionDeniedError、错误密码HTTP Gateway错误载荷归一为AuthenticationError，以及无效endpoint连接失败后切换到健康endpoint成功。
+
+**多数派故障隔离：** 同一live run另起一次性mTLS三成员集群，停止两个成员后，有效token的线性一致Range超时；同一节点上的显式`/auth/authenticate`请求也超时（观测值`AUTH_REAUTH_RESULT_DURING_QUORUM_LOSS=timeout`）。恢复两个成员后，原有效token再次成功完成Range，未要求匿名降级或自动刷新。该实验说明数据面和重新认证在quorum loss期间都不可用；token本身在恢复后仍有效。它不证明认证API能在失去多数派时独立提供服务。
+
+**Live结果：** Run 45922792420全部步骤成功：普通三节点基础/成员故障/失去多数派suite 8项、mTLS/RBAC suite 12项、10秒token生命周期suite 1项、认证/quorum隔离suite 1项通过。诊断Artifact 15165755534，SHA-256 `c3b8d8e25e91cc7bff7e3d2893a55688de0b2567836052a20cb887fd2bcc7608`。runner清理临时证书、凭据及Compose volumes。
+
+**默认质量CI：** [Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：全库526项unittest（504 passed、22项opt-in live skip），CH12 143项通过，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有warning；结构数据为22章、178 Markdown、260实体、240关系、412来源、584内部链接。
+
+**限制：** 本轮测试只覆盖etcd v3.7.0/etcd3gw 2.7.0的Gateway状态和一次性三节点环境。没有构建自动token provider/refresh；没有测试跨节点简单token复制的长期稳定性、认证请求在单节点实际停机时的独立切换、网络分区和生产IAM/审计/密钥管理。正式30项场景继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
