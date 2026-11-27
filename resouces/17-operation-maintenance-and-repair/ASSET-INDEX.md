@@ -149,3 +149,10 @@
 - 证据：Token签发后即时和收敛后3/3成员接受；单成员停止期间driver只读failover成功；重启成员后旧simple Token HTTP 401；从健康成员显式重新认证的新Token在3/3成员接受。
 - 默认质量Run 45927138505：527 unittest total（504 passed、23 skipped）、CH12 143、strict lint 0 errors、fixture validator 0 errors/5 warnings。
 - 此处仅登记supporting evidence；正式矩阵仍30项，`PROPOSED_NOT_APPROVED / NOT_RUN`，不得更改审批或执行状态。
+
+### ASSET-000092 supporting evidence — 第五十六轮
+
+- [Live Run 45929955634](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634)：网络分区专项 `test_minority_partition_fails_closed_and_majority_recovers` 1/1 PASS（8.248秒）；少数派本地线性一致读写失败，多数派CAS写入/读回成功，恢复后etcd1读到多数派提交值。
+- 诊断Artifact [15168271744](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634/artifacts/15168271744)。
+- [Knowledge Quality Run 45930090004](https://github.com/rexyll/cnc-knowledge/actions/runs/45930090004)：528项unittest（504 passed、24 skipped），CH12 143项，strict lint 0 errors/5项既有warning，结构与最终自检0 errors。
+- 该次CI是supporting engineering evidence，不是正式矩阵场景执行；ASSET-000092仍30项，`PROPOSED_NOT_APPROVED / NOT_RUN`。

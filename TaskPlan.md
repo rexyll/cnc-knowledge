@@ -982,3 +982,25 @@
 - **交付物：** 独立live测试、runner显式测试选择、CI阶段、CH17技术正文/README/KNOW-000061/ASSET-000092 supporting evidence、资源索引和TaskHistory更新。
 - **验收标准：** 多数派在分区期间保持线性一致读写；少数派成员的线性一致操作失败关闭/结果未知且不返回伪成功；重连后3成员恢复并读到多数派提交值；finally清理有效；默认全库质量CI、CH12测试、strict lint和结构校验通过。
 - **治理边界：** 本轮为一次性三节点网络分区工程冒烟测试，不构成多机房/真实网络设备/生产故障演练或正式验收。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持IN_PROGRESS。
+
+
+### 第五十六轮最终验收（2026-11-27）
+
+- **实时集成：** [CH17 Live Run 45929955634](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634)在修复后的代码提交 `ca2ce5f115193a51f974e7cb18ab240e6a27e8a7` 上完成，Disposable three-member etcd v3.7.0 integration Job及所有后续阶段均为 success。
+- **网络分区专项：** `test_minority_partition_fails_closed_and_majority_recovers` 实际执行并通过，测试耗时8.248秒。将etcd1从专用Compose网络隔离后，容器内本地etcdctl线性一致Range和Put均以非零退出码失败；etcd2/etcd3多数派通过Coordinator Store执行CAS写事务并线性一致读回；finally重新连接网络、等待三成员恢复，并从etcd1读回多数派提交的同一值。诊断Artifact [15168271744](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634/artifacts/15168271744)。
+- **Runner修复：** 早期两次live run的失败原因为 `scripts/etcd-integration/run.sh` 测试文件列表缺少Bash续行符，出现line 63语法错误，并非网络分区断言失败。修复提交为 `ca2ce5f...`；修复后的Run 45929955634日志明确包含网络分区专项PASS。测试实现提交为 `00cef471bb5fb247b9def0511534ba8546d0a3fd`。
+- **质量门禁：** [Knowledge Quality Run 45930090004](https://github.com/rexyll/cnc-knowledge/actions/runs/45930090004)两个必需Job均success：全库528项unittest（504 passed、24 skipped），CH12数值资源测试143项通过，strict knowledge lint 0 errors / 5项既有治理warning，结构和最终自检0 errors。合成SPAT夹具阶段报告30个包模拟PASS、failed=0，但明确 `business_test_status=NOT_RUN`、无外部连接、无写入；这不构成正式业务场景执行。
+- **专项状态：** 第五十六轮工程任务标记为 `COMPLETED`。本次证明的是一次性CI Compose三成员环境中的1节点少数派隔离、2节点多数派线性一致写入以及恢复收敛；未验证Etcd3gw Driver从少数派endpoint开始时的只读failover分类，也未验证Coordinator Store对少数派Txn超时的 `OUTCOME_UNKNOWN` 语义、非对称分区、多机房或生产网络故障演练。
+- **治理边界：** ASSET-000092正式30项仍为 `PROPOSED_NOT_APPROVED / NOT_RUN`；本轮只新增supporting engineering evidence，不修改审批/执行字段。schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移；CH17-T004总状态继续 `IN_PROGRESS`。全部改动只在 `main` 分支。
+
+
+
+### 第五十七轮任务计划：Coordinator Driver在少数派网络分区下的读取故障转移与写入未知结果核验
+
+- **目标：** 在已通过的三成员网络分区夹具上，将验证从etcdctl/多数派Store调用推进到Etcd3gwV3Client与EtcdV3CoordinatorAuthorityStore调用层，明确少数派endpoint响应、只读failover、Txn单次发送和结果恢复语义。
+- **只读路径：** 构造endpoint顺序包含隔离etcd1及健康多数派成员的客户端；分别记录单endpoint请求与多endpoint请求的实际响应类别、endpoint尝试次数和最终结果。只有连接/超时等真实transport异常允许只读Range尝试其他endpoint；HTTP认证/授权/请求错误及协议错误不得触发failover。不得先验假定少数派Gateway必然表现为TCP断连，需记录etcd v3.7.0实际返回的HTTP/gRPC错误。
+- **写入路径：** 通过EtcdV3CoordinatorAuthorityStore对隔离少数派发起唯一一次CAS Txn，捕获实际异常或Txn结果；核对驱动仅发送一次、不跨endpoint重放。只有在适配层将传输不确定性分类为结果未知时，才断言 `OUTCOME_UNKNOWN`；若Gateway返回明确拒绝，则按实测协议错误记录，不将其伪装为未知提交。
+- **恢复核对：** 在finally中恢复专用Compose网络并确认三成员健康；禁止重放第一次写请求。用原始key/幂等标识对多数派和恢复成员执行线性一致读取，区分“未提交”“已提交但响应丢失”和明确失败；验证不存在重复写入。
+- **契约测试：** 增加Fake Gateway/记录型transport测试，证明read-only transport failover可用、认证/权限/请求错误不failover、Txn/Lease变更请求恰好发送一次、超时结果按既有存储端口契约保留。Live测试只报告真实etcd观测，不用Fake结果替代Raft证据。
+- **安全和隔离：** 仅操作本CI创建的 `cnc-knowledge-etcd-itest` Compose项目与网络；容器须通过Compose project/service标签复核；不修改宿主机iptables、不接触其他容器/网络；使用唯一临时key，不输出token、密码和证书私钥；所有网络恢复必须位于finally路径。
+- **验收：** Fake契约、真实三节点live测试、默认质量CI及CH12/strict lint/结构校验均通过；报告明确区分HTTP/gRPC响应、transport错误、Txn已知结果和 `OUTCOME_UNKNOWN`。本轮仍为工程supporting evidence，不批准或执行ASSET-000092正式30项。

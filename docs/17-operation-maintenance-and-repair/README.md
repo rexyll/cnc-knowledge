@@ -251,3 +251,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 实测：签发后立即和等待传播后3/3成员接受旧Token；停止etcd1时Driver failover成功，etcd2/3均HTTP 200；重启etcd1后旧Token返回HTTP 401；从健康成员重新认证得到的新Token在3/3成员可用，Driver恢复读取。
 - 默认质量[Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)成功：527项unittest（504 passed、23 skipped）、CH12 143项、strict lint 0 errors、fixture validator 0 errors/5项既有warning，知识结构22章/178 Markdown/260实体/240关系/412来源/584内部链接。
 - 边界：不自动刷新/重新认证、不匿名回退；simple Token重启后401只代表本次etcd v3.7.0实验，不外推JWT或生产环境。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 etcd 多数派网络分区与隔离成员恢复（第五十六轮）
+
+- 新增真实集成测试 `tests/test_spare_parts_provider_authority_store_network_partition_etcd_integration.py`，通过Compose标签校验隔离对象，仅断开一次性CI集群etcd1与专用网络的连接。
+- [Live Run 45929955634](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634)成功；少数派本地线性一致Range/Put失败，多数派etcd2/etcd3完成Coordinator Store CAS写入和读回；finally恢复网络后，etcd1读到多数派提交的数据。专项测试1/1 PASS（8.248秒），Artifact [15168271744](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634/artifacts/15168271744)。
+- [Knowledge Quality Run 45930090004](https://github.com/rexyll/cnc-knowledge/actions/runs/45930090004)两个Job成功：528项unittest（504通过、24跳过）、CH12 143项、strict lint 0 errors/5项既有warning，结构/最终自检0 errors。
+- 该证据只覆盖一次性etcd v3.7.0/Compose三成员网络分区，不覆盖Driver层的少数派endpoint failover及Txn `OUTCOME_UNKNOWN` 语义；后续第五十七轮专门验证。ASSET-000092正式30项仍 `PROPOSED_NOT_APPROVED / NOT_RUN`。

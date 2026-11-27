@@ -269,3 +269,20 @@ etcd Gateway错误响应的协议依据补充如下：SRC-000413记录etcd v3.6+
 **技术解释与限制：** 本次结果证明限定环境下存活成员可继续接受旧Token，Driver可从停机成员failover；但成员重启后旧simple Token在该成员返回401，而从健康成员重新认证得到的新Token在三个成员都可用。该结果只描述本次etcd v3.7.0/simple-token实验，不将原因扩展推断为所有etcd版本或JWT token行为。Driver仍不保存用户名/密码，不自动重新认证，不自动刷新Token；调用方必须通过受控凭据源显式重新认证并调用token替换接口。不得匿名回退，不得将401/403作为endpoint failover条件。
 
 **治理边界：** 本轮只是supporting engineering evidence，不执行或批准ASSET-000092正式30项场景；其`PROPOSED_NOT_APPROVED / NOT_RUN`保持不变。schema-v2仍是唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
+
+
+## 16. 第五十六轮：三成员多数派/少数派网络分区实测
+
+新增 `tests/test_spare_parts_provider_authority_store_network_partition_etcd_integration.py`，仅在显式设置 `ETCD_INTEGRATION=1` 的一次性CI集成环境执行。测试通过Compose project/service标签确认etcd1容器身份，只将etcd1从专用 `cnc-knowledge-etcd-itest_default` 网络断开；不修改宿主机iptables，也不接触其他容器或网络。
+
+分区期间，etcd1容器进程仍运行且本地客户端端口可达。测试通过容器内etcdctl对etcd1本地endpoint发起线性一致Range和Put，两项均以非零退出码失败，证明隔离的单节点不能在没有Raft多数派时确认线性一致读写。etcd2/etcd3仍互通，Coordinator Store经Etcd3gwV3Client对唯一临时key执行初始线性一致读取、VERSION=0 CAS Txn写入及线性一致读回；事务成功且读回值与提交值一致。
+
+测试的finally路径重新连接etcd1网络，并轮询三个endpoint及成员列表，确认三成员恢复。恢复后，测试单独通过etcd1 endpoint执行Coordinator Store线性一致读取，成功读到多数派提交的同一值。隔离期间少数派写入没有被确认，也没有覆盖多数派数据。
+
+**实时证据：** [CH17 Live Run 45929955634](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634)的 `test_minority_partition_fails_closed_and_majority_recovers` 实际执行并通过（1/1，8.248秒）。修复后的runner还完成基础etcd、成员故障、quorum loss、mTLS、RBAC、短TTL token、auth/quorum及成员Token传播阶段；整个live Job success。诊断Artifact [15168271744](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634/artifacts/15168271744)。
+
+**默认质量门禁：** [Run 45930090004](https://github.com/rexyll/cnc-knowledge/actions/runs/45930090004)在当时main head通过：全库528项unittest（504 passed、24 skipped）、CH12 143项数值资源测试、strict knowledge lint 0 errors（5项既有治理warning）、结构与最终自检0 errors。30个SPAT包在隔离环境仅完成模拟构建校验，记录为 `business_test_status=NOT_RUN`，没有外部连接或写入。
+
+**验证边界：** 该测试从etcdctl本地endpoint验证少数派的失败关闭，从Coordinator Store验证多数派事务及恢复后的收敛；它没有验证Etcd3gwV3Client在少数派endpoint上的多endpoint只读failover，也没有验证Coordinator Store对少数派Txn超时的 `OUTCOME_UNKNOWN` 分类或单次发送行为。非对称分区、多机房、性能与生产故障演练未覆盖。第五十七轮继续验证驱动层的这些语义。
+
+本轮工程任务完成，但不批准或执行正式验收矩阵。ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总状态保持`IN_PROGRESS`。

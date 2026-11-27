@@ -981,3 +981,21 @@
 - **实现要求：** 仅通过Docker Compose project/service标签定位测试容器；网络名称限定为本测试项目的默认网络；不修改宿主机iptables，不操作其他容器/网络。分区操作须有finally恢复；写请求仅发送一次，OUTCOME_UNKNOWN通过恢复后的Range核实。
 - **验收：** 多数派读写成功；少数派线性一致读写失败关闭或结果未知，不返回成功；网络恢复后三成员健康且数据收敛；opt-in live suite与默认质量CI通过。
 - **治理边界：** 仅为一次性etcd v3.7.0/Compose工程验证，不代表多机房或生产网络分区验收；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator未迁移；CH17-T004保持IN_PROGRESS。
+
+
+## CH17-T004 第五十七轮：Coordinator Driver在少数派网络分区下的读取故障转移与写入未知结果核验（2026-11-27）
+
+- **目标：** 将第五十六轮已通过的网络分区测试推进到Etcd3gwV3Client和EtcdV3CoordinatorAuthorityStore调用层，验证只读endpoint failover、事务单次发送及结果未知语义。
+- **只读场景：** 让客户端endpoint集合包含隔离etcd1和健康多数派节点；用单endpoint请求先记录少数派Gateway的真实HTTP/gRPC/transport行为，再用多endpoint客户端验证只有连接/超时类异常触发只读failover。不得预设隔离节点必然TCP断开；认证、权限、请求及协议错误不得触发切换。
+- **写入场景：** 通过Coordinator Store向隔离少数派发送一次CAS Txn，记录调用次数、响应类别与存储层结果。校验Txn/Lease写请求不跨endpoint重试；仅当适配器将传输不确定性映射为结果未知时断言 `OUTCOME_UNKNOWN`，不得将Gateway明确拒绝混同为未知提交。
+- **恢复场景：** finally恢复专用Compose网络并等候三成员恢复；不重放首次写请求；通过线性一致读取及幂等key核实首次事务究竟未提交、已提交但响应丢失或明确失败，确认没有重复写入。
+- **Fake契约：** 验证read-only真实transport异常可failover、401/403/其他请求错误不failover、Txn只发送一次、响应丢失保持既有 `OUTCOME_UNKNOWN` 契约。Fake结果不得替代live Raft证据。
+- **资源/安全边界：** 仅允许操作本CI一次性Compose project/network，继续校验Compose project/service标签；禁止修改宿主机iptables或触碰其他容器/网络；临时key唯一，日志不得包含凭据，网络恢复置于finally。
+- **验收：** 同时取得Fake契约、三成员live测试和最新默认质量CI证据；准确记录少数派Gateway实际返回类别、endpoint尝试路径、Txn发送次数及恢复后数据状态。仍不构成企业生产故障演练，也不改变ASSET-000092正式30项的审批/执行状态。
+
+### 第五十六轮最终验收结果（2026-11-27）
+
+- Live [Run 45929955634](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634)成功；网络分区专项 `test_minority_partition_fails_closed_and_majority_recovers` 1/1 PASS（8.248秒）。etcd1从专用Compose网络断开后，其本地线性一致Range/Put失败；etcd2/etcd3多数派CAS写入及读回成功；finally恢复网络并确认etcd1线性一致读回多数派提交值。Artifact [15168271744](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634/artifacts/15168271744)。
+- Runner行续接缺陷已由 `ca2ce5f115193a51f974e7cb18ab240e6a27e8a7` 修复。修复前两次失败日志为Bash line 63语法错误；修复后live workflow全部步骤成功。
+- 最新文档head之前的默认质量 [Run 45930090004](https://github.com/rexyll/cnc-knowledge/actions/runs/45930090004)：528项unittest（504 passed、24 skipped），CH12 143项通过，strict knowledge lint 0 errors/5项既有治理warning，结构和最终自检0 errors。SPAT夹具30包模拟通过但business_test_status仍NOT_RUN。
+- 第五十六轮专项任务：`COMPLETED`；CH17-T004总状态仍`IN_PROGRESS`。ASSET-000092正式30项继续`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移。

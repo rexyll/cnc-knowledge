@@ -656,3 +656,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 观测：Token签发后即时和收敛后均3/3成员接受；停止etcd1时只读Range经transport failover成功；重启后旧Token在etcd1返回401；从etcd2显式重新认证后新Token在3/3成员接受。
 - runner已将mTLS Compose成员日志/状态写入runner临时诊断目录并纳入Artifact；临时证书、私钥、密码、Token和Compose volumes在runner退出时清理。
 - 默认质量[Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)通过：527项unittest（504 passed、23 skipped）、CH12 143项、strict lint 0 errors；正式ASSET-000092 30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 etcd 多数派网络分区与隔离成员恢复（第五十六轮）
+
+- 新增真实集成测试 `tests/test_spare_parts_provider_authority_store_network_partition_etcd_integration.py`，通过Compose标签校验隔离对象，仅断开一次性CI集群etcd1与专用网络的连接。
+- [Live Run 45929955634](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634)成功；少数派本地线性一致Range/Put失败，多数派etcd2/etcd3完成Coordinator Store CAS写入和读回；finally恢复网络后，etcd1读到多数派提交的数据。专项测试1/1 PASS（8.248秒），Artifact [15168271744](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634/artifacts/15168271744)。
+- [Knowledge Quality Run 45930090004](https://github.com/rexyll/cnc-knowledge/actions/runs/45930090004)两个Job成功：528项unittest（504通过、24跳过）、CH12 143项、strict lint 0 errors/5项既有warning，结构/最终自检0 errors。
+- 该证据只覆盖一次性etcd v3.7.0/Compose三成员网络分区，不覆盖Driver层的少数派endpoint failover及Txn `OUTCOME_UNKNOWN` 语义；后续第五十七轮专门验证。ASSET-000092正式30项仍 `PROPOSED_NOT_APPROVED / NOT_RUN`。
