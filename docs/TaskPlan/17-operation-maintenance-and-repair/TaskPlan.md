@@ -1372,3 +1372,14 @@
 - 单Txn内比较state、所有request keys和Leader key均不存在，再同时写入aggregate和所有终态索引；旧Leader不恢复，不创建Admission Lease。
 - **CI：** [46027837959](https://github.com/rexyll/cnc-knowledge/actions/runs/46027837959) success：582 unittest（40 skipped），CH12 143项，lint 0 errors/5 warnings，结构0 errors。
 - **边界：** 未连接或写入etcd；没有实现超限批次/checkpoint、unknown-outcome恢复或应用访问屏障。MIG-04仍IN_PROGRESS。
+
+### 第七十八轮：MIG-04 分阶段索引导入与checkpoint恢复协议
+
+- 将终态request indexes按稳定hash key顺序拆为满足compare+put操作预算和Gateway JSON字节预算的批次。
+- 初始checkpoint、每批request数据+checkpoint CAS、最终Scheduler state发布分别建模为独立Txn；任何批次在state key存在或Leader key存在时拒绝继续。
+- checkpoint包含candidate/namespace/state/request-set绑定的plan digest、batch游标、已完成记录数、last batch digest和累积progress SHA-256。
+- 实现初始化、batch、publish未知结果的读回分类；明确未提交可重试、已提交不可重复写、矛盾/部分值必须QUARANTINE。
+- 应用principal staging期间拒绝访问；发布验证完成后撤销migration principal，只开放业务精确键范围并排除staging路径。
+- Scheduler aggregate单key不可拆分；最终发布预算不满足时提前拒绝，要求先做runtime/schema sharding设计。
+- 当前只提交只读协议模型与测试；真实writer、自动resume、etcd故障注入与生产切换均不在本轮授权范围。
+
