@@ -30,3 +30,7 @@
 - Live CI：[Run 45920726761](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726761)成功；普通三节点suite 6项、mTLS/RBAC suite 8项、独立10秒simple-token生命周期suite 1项通过。过期token请求被拒绝，重新认证后的新token同步更新所有endpoint session，KV Range和Watch created握手成功。Artifact 15164208273，SHA-256 `0b66c69eb7f1ecc12e0d8bfbbf80ab0bf51de739ec31d8d2e9f3db878619e476`。runner清理证书、token和Compose volumes。
 - 默认质量CI：[Run 45920726730](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726730)两个Job成功：518项unittest（501 passed、17项opt-in skip），CH12 143项通过，strict knowledge lint 0 errors；结构数据统计：22章、178个Markdown文件、260条实体、240条关系、409条来源、584条内部链接。
 - 第五十三轮任务验收通过。自动token刷新仍未实现；JWT私钥管理、企业IAM、生产token轮换/撤销/审计和HA认证服务未验证。ASSET-000092正式30项继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+
+- 最终文档头质量复验：[Run 45920942863](https://github.com/rexyll/cnc-knowledge/actions/runs/45920942863)两个Job成功：518项unittest（501 passed、17项opt-in skip），CH12 143项，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有治理warning；22章、178个Markdown、260实体、240关系、409来源、584内部链接。
+- 错误分类边界：当前仅确保etcd3gw通用非传输异常不触发endpoint failover；未将HTTP 401/403结构化为独立Unauthenticated/PermissionDenied类型，认证服务不可用/多数派丢失与已有token继续有效的分离故障未验证，明确留作后续任务。该限制不影响本轮simple token TTL过期/重新认证测试结论。
