@@ -1234,3 +1234,11 @@
 - **交付：** 更新Unified Admission/Coordinator实现、专用测试、迁移设计第12节、章节README、根/章节TaskPlan与TaskHistory。
 - **验收：** main Quality CI通过后确认；MIG-04仍IN_PROGRESS，MIG-05/06未完成，MIG-07 BLOCKED。
 
+### 第七十六轮任务计划：MIG-04 隔离目标空空间预检
+
+- **目标：** 在迁移写入器实现之前，提供只读、线性一致的目标namespace空空间预检。
+- **实现：** 新增`scripts/spare_parts_migration_namespace.py`，校验namespace必须为`/cnc/migration/isolated/{单一ID}/`；通过etcd v3线性一致Range读取整个prefix，发现任意键即fail-closed；返回读取revision作为预检证据。
+- **测试：** 覆盖合法/非法namespace、空prefix、prefix内已有键、相邻namespace键不误报、后端不可用时拒绝继续。扩展InMemoryEtcdV3Client以正确模拟Range prefix语义。
+- **安全限制：** 空空间预检是瞬时观察，不是锁，也不能阻止并发写入；后续必须使用一次性临时集群或服务端RBAC锁定目标prefix。当前不写入etcd、不创建Lease、不导入候选包。
+- **验收：** Quality CI必须通过；MIG-04仍IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
+
