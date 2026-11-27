@@ -188,3 +188,14 @@ etcd集群的三节点成员数量不自动代表业务高可用已验收；读�
 **默认CI：** [Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156)两个必需Job成功；全库505项unittest（497通过、8项opt-in live测试按默认策略skip），CH12 143项数值资源测试通过，strict knowledge lint 0 errors，结构/数据质量0 errors（5项既有治理warning）。
 
 **能力边界：** WatchCreate支持progress_notify参数以请求服务端周期进度通知，但当前HTTP请求/响应模型不提供双向WatchProgress和WatchCancel消息，故驱动不暴露watch_progress；取消仅关闭HTTP流，不宣称服务端取消已确认。建立流之后的网络中断不自动failover/replay，调用方需执行linearizable Range + R+1恢复。mTLS握手、RBAC、复杂网络分区与长期流压力仍未验证；正式矩阵ASSET-000092的30项场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## 11. 第五十一轮 etcd Gateway mTLS 实时验收（2026-11-27）
+
+新增`scripts/etcd-integration/compose-mtls.yaml`、`scripts/etcd-integration/run-mtls.sh`及`tests/test_spare_parts_provider_authority_store_mtls_etcd_integration.py`，使用一次性 etcd v3.7.0 三成员 TLS 集群验证 Gateway 客户端证书配置。runner 临时生成 CA、server/client cert 和 key，所有敏感文件位于runner临时目录，job退出时清理；TLS Compose volumes也删除。
+
+**真实CI：** [Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363)成功。独立mTLS测试3/3通过：合法双向证书完成成员发现、CAS Txn写入及linearizable readback；缺失客户端证书连接被服务端拒绝；错误CA无法验证服务端证书。诊断Artifact [15163390323](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363/artifacts/15163390323)，SHA-256 `91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74`。
+
+**默认CI：** [Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)两个必需Job成功；全库508项unittest通过，CH12 143项通过，strict knowledge lint 0 errors，结构/数据校验0 errors、5项既有治理warning。
+
+**能力边界：** 这是指定版本和一次性Compose环境的TLS握手/CA信任/客户端证书认证证据，不代表企业PKI接入、证书轮换或吊销、生产密钥托管、etcd RBAC、长期压力或生产环境验收。`etcd3gw` 对TLS底层异常可能包装成无文本ConnectionError，负向测试验证连接失败并以有效证书用例作为健康基线。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威。
