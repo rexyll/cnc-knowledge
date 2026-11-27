@@ -1105,5 +1105,5 @@
 
 - **状态：** DONE（一次性CI工程supporting evidence）。在CH17章节任务计划、技术正文第26节、章节README与当日TaskHistory中完成结果记录。
 - **交付：** 长运行Watch缓存重建Live测试完成；同一会话跨越两轮Compaction（revision 43、50）、两次旧游标取消、三次snapshot+1重建；11条唯一Watch事件无重复，跨快照窗口revision 45、46均由新Watch补齐，最终测试缓存与线性一致Range完全一致。
-- **验收入口：** [Live Run 45975852325](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852325)与[Quality Run 45975852368](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852368)两个workflow均success。Live诊断Artifact [15187805125](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852325/artifacts/15187805125)。最终文档提交后仍需以最新head重新运行Quality门禁。
+- **验收入口：** [Live Run 45975852325](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852325)与[Quality Run 45975852368](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852368)实现提交对应的两个Job均success；最终文档head `a18273b7cfa089b8f7df5dc046e0c4bd620b875e`对应[最终文档Quality Run 45976448815](https://github.com/rexyll/cnc-knowledge/actions/runs/45976448815)，两个Job再次均success。Live诊断Artifact [15187805125](https://github.com/rexyll/cnc-knowledge/actions/runs/45975852325/artifacts/15187805125)。
 - **边界：** 仅为一次性etcd v3.7.0 / etcd3gw 2.7.0三节点CI证据；测试缓存不是生产功能，不证明无限期稳定性/背压上限/生产SLO。Watch仍为单向HTTP server-streaming；ASSET-000092正式30项继续`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004仍`IN_PROGRESS`。
