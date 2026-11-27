@@ -1787,7 +1787,17 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 self.assertTrue(progress.is_progress)
                 self.assertEqual(progress.events, ())
                 self.assertFalse(progress.canceled)
-                self.assertGreaterEqual(progress.header_revision, marker.revision)
+                self.assertGreaterEqual(
+                    progress.header_revision,
+                    baseline.revision,
+                    "Progress must not fall behind the snapshot revision",
+                )
+                if progress_revisions:
+                    self.assertGreaterEqual(
+                        progress.header_revision,
+                        progress_revisions[-1],
+                        "Progress revision must not move backwards",
+                    )
                 progress_revisions.append(progress.header_revision)
                 progress_intervals.append(observed_at - previous_progress_at)
                 previous_progress_at = observed_at
