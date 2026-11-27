@@ -115,18 +115,33 @@ class Etcd3gwLiveLeasePartitionTests(unittest.TestCase):
         return payload
 
     def _wait_for_lease_expiry(
-        self, container_id: str, lease_id: int, timeout: float = 18.0
+        self,
+        container_id: str,
+        lease_id: int,
+        store: EtcdV3CoordinatorAuthorityStore,
+        attached_key: bytes,
+        timeout: float = 20.0,
     ) -> None:
         deadline = time.monotonic() + timeout
         last_ttl: dict | None = None
         while time.monotonic() < deadline:
             last_ttl = self._lease_ttl(container_id, lease_id)
-            if last_ttl is None:
-                return
-            # etcd v3.7 LeaseTimeToLive reports ttl=-1 and granted-ttl=0
-            # for an expired lease when returning JSON output.
-            if int(last_ttl.get("ttl", 0)) <= 0:
-                return
+            ttl_expired = (
+                last_ttl is None or int(last_ttl.get("ttl", 0)) <= 0
+            )
+            if ttl_expired:
+                # The TTL endpoint can report -1 before lease-attached key
+                # deletion has been applied. Confirm actual linearizable key
+                # absence rather than treating the TTL response as sufficient.
+                while time.monotonic() < deadline:
+                    entry, _ = store.linearizable_get(attached_key)
+                    if entry is None:
+                        return
+                    time.sleep(0.25)
+                self.fail(
+                    f"lease TTL expired but attached authority key remains: "
+                    f"lease_id={lease_id}, last_ttl={last_ttl}"
+                )
             time.sleep(0.5)
         self.fail(f"lease {lease_id} did not expire before deadline; last TTL={last_ttl}")
 
@@ -239,7 +254,8 @@ class Etcd3gwLiveLeasePartitionTests(unittest.TestCase):
                 # The lease expires naturally. No KeepAlive retry or revoke is
                 # used to force expiry; etcd removes the attached authority key.
                 self._wait_for_lease_expiry(
-                    majority_container, old_lease.lease_id
+                    majority_container, old_lease.lease_id,
+                    majority_store, leader_key,
                 )
                 expired_leader, _ = majority_store.linearizable_get(leader_key)
                 persistent_epoch, _ = majority_store.linearizable_get(epoch_key)
