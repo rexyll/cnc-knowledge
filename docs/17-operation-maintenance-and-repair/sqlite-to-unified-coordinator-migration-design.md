@@ -238,3 +238,22 @@ Unified Admission Scheduler新增可选构造参数`namespace_prefix`：
 5. 活动Lease目前不在候选bundle范围内；后续若支持活动Lease，必须按冻结剩余TTL逐一创建native Lease，并证明Granted TTL不延长来源deadline。
 6. 尚未实现事务容量/分批checkpoint/Txn未知结果恢复。本轮代码不得用于导入任何生产数据。
 
+## 13. MIG-04：隔离目标空空间预检（第七十六轮）
+
+新增`scripts/spare_parts_migration_namespace.py`：
+
+- `validate_isolated_namespace(prefix)`仅允许`/cnc/migration/isolated/{single-id}/`单段ASCII namespace ID；拒绝生产schema-v2前缀、空ID、多段路径、控制字符、空格和路径穿越。
+- `preflight_empty_namespace(store, prefix)`调用`EtcdV3CoordinatorAuthorityStore.linearizable_range()`，对prefix对应的完整字节区间做线性一致Range。只要返回至少一个KV，即拒绝继续；Range错误/连接错误不允许被解释成空空间。
+- 成功时返回`NamespacePreflight(prefix, revision, existing_key_count=0)`，供后续审计记录使用。
+
+### 13.1 预检的安全边界
+
+空空间预检仅证明在该次线性一致Range的读取revision上没有匹配键。它**不是锁**，不能防止预检完成后其他客户端创建键，也不能证明调用凭证只拥有目标prefix权限。正式迁移写入器必须同时满足：
+
+1. 使用专用、短期、最小权限的etcd凭证，服务端RBAC限制在该演练prefix；
+2. 最好使用一次性临时etcd集群，确保不存在其他写入者；
+3. 将目标prefix唯一ID、Range revision、集群身份和凭证身份写入演练记录；
+4. 写入前后均核验目标范围，任何范围外写入/意外键均中止；
+5. 不得将此预检作为生产写入许可或cutover审批。
+
+本轮仅新增只读预检与内存客户端Range语义测试；不创建namespace、不写入KV、不创建Lease、不导入候选包。
