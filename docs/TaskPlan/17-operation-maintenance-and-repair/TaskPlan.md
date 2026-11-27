@@ -1215,3 +1215,12 @@
 - **契约和清理：** Fake响应测试覆盖“created后无取消帧EOF”必须抛出AuthorityStoreUnavailableError；显式canceled帧后的StopIteration仍为正常结束。所有Watch/客户端在finally中关闭，停止的Compose成员必须恢复；临时prefix全部清理，不修改宿主机iptables、非本项目容器或外部网络。
 - **边界：** 本轮验证的是一次性etcd v3.7.0 / etcd3gw 2.7.0 Compose环境中的受控成员停止和恢复；不是生产网络故障、真实代理空闲超时、长尾时延分布、无限期连接耐久性或服务端背压/容量测试。Watch保持单向HTTP server-streaming，不新增自动重连或双向WatchProgress/WatchCancel。
 - **验收：** 驱动Fake契约、原Lease Watch断流用例、新增部分投影恢复Live用例、全库Quality、CH12、strict lint和结构/data校验均通过；观察记录包含已应用事件revision、断流期间写入revision、快照revision、恢复cursor和最终Range一致性。
+
+## 第六十七轮结果记录：Watch连接中断后的部分投影恢复与EOF语义（2026-11-27）
+
+- **任务状态：** DONE（一次性CI supporting engineering evidence）。驱动EOF契约、Fake测试、Lease断流场景收紧及部分投影恢复Live测试完成。
+- **实现提交：** `bdcf7b385ef42a02e56ea74db83e14b38225d9c7`（无取消终止帧的EOF分类）；`13f393f53bdab3f752b32b16765c0a68014ae805`（Fake EOF契约）；`00e99b649e04735099ea63535a5018d038b138df`（部分投影恢复Live场景及既有断流测试收紧）；`91e80622ead2f964065c6b759161fa738019ae2d`（第六十七轮计划）。全部位于`main`，没有创建分支。
+- **Live结果：** [Run 45982644017](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017)整体success。新增测试基线24、先应用事件25；etcd1停止期间多数派写入revision 26/27/28；恢复snapshot=28、Watch从29续接并收到revision 29新事件；最终Range=29与projection一致。原Watch只有etcd1 endpoint尝试，未自动failover。Lease Watch recovery文件3项通过（3.930s），Watch minority文件4项通过（13.314s）。
+- **Quality结果：** [Run 45982644355](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644355)两个Job success：545 unittest（36 skipped）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors（260实体、240关系、412来源、178 Markdown）。SPAT 30包仅离线模拟、failed=0，`business_test_status=NOT_RUN`。
+- **诊断Artifact：** [15190500314](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017/artifacts/15190500314)，SHA-256 `364c70b27a0ac0cca5da2d2c1930513885cefe2706a09ddcdfc2e41adce2e04e`。
+- **能力边界：** 没有验证生产代理空闲超时、真实长尾延迟分布、无限期连接耐久性、自动背压或内存/队列容量；Watch不自动重连或跨endpoint切换，仍为单向HTTP server-streaming。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总体`IN_PROGRESS`。
