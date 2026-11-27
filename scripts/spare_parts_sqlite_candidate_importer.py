@@ -216,7 +216,7 @@ def build_candidate(
         idem = row["idempotency_key"]
         if scope not in scopes:
             raise CandidateImportError(f"operation references missing scope: {scope}")
-        key = _sha256((scope + "\\x00" + idem).encode("utf-8"))
+        key = _sha256((scope + "\x00" + idem).encode("utf-8"))
         if key in operations:
             raise CandidateImportError("duplicate Coordinator operation idempotency key")
         operations[key] = {
@@ -309,7 +309,8 @@ def build_candidate(
         "source_snapshot_digest_sha256": manifest["snapshot_digest_sha256"],
         "generated_at_unix": float(generated_at),
         "target": {
-            "namespace": None,\n            "namespace_must_be_explicit": True,
+            "namespace": None,
+            "namespace_must_be_explicit": True,
             "mode": "ISOLATED_CANDIDATE_ONLY",
             "requires_empty_namespace": True,
             "production_write_allowed": False,
@@ -322,9 +323,12 @@ def build_candidate(
             "external_fencing_reconciliation": external_fencing_reconciliation,
             "external_fencing_floor": None,
             "provider_operations_must_be_reconciled_before_activation": True,
-            "active_lease_ttl_keys_are_not_imported": True,\n            "terminal_request_backend_lease_id_sentinel": 1,\n            "terminal_request_backend_lease_id_is_not_a_live_lease": True,
+            "active_lease_ttl_keys_are_not_imported": True,
+            "terminal_request_backend_lease_id_sentinel": 1,
+            "terminal_request_backend_lease_id_is_not_a_live_lease": True,
         },
-        "legacy_metadata": {\n            "attestations_issued": _required_int(admission_meta.get("attestations_issued"), "attestations_issued"),\n            "coordinator_schema_version": authority_meta["schema_version"],\n        },\n        "counts": {
+        "legacy_metadata": {\n            "attestations_issued": _required_int(admission_meta.get("attestations_issued"), "attestations_issued"),
+            "coordinator_schema_version": authority_meta["schema_version"],\n        },\n        "counts": {
             "terminal_requests": len(request_indexes),
             "scopes": len(scopes),
             "operations": len(operations),
