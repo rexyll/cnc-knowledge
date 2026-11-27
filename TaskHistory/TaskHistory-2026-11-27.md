@@ -102,3 +102,10 @@
 - 更新 `scripts/etcd-integration/run.sh`，将新测试加入一次性三节点集成套件。工作流已有对 `tests/test_*etcd_integration.py` 与runner路径的push触发规则，无需创建分支或新增第二套workflow。
 - 代码提交：测试 `00cef471bb5fb247b9def0511534ba8546d0a3fd`；runner `50c5127e6cacac0a8df833c3404bdb8213c4399d`；测试导入清理 `77c4d450582dd149a2a6984ee5286ab7d61d1d22`。
 - **待验收：** 本轮live workflow与最新默认质量CI尚无可核验结果；不得将测试代码存在等同于网络分区场景通过。需检查少数派行为、finally网络恢复及全库质量门禁后，再更新知识正文/实体/资源索引并决定任务状态。
+
+
+### 第五十六轮 Runner 缺陷修复（2026-11-27）
+
+- 复核 `scripts/etcd-integration/run.sh` 时发现 quorum-loss 测试路径缺少 Bash 行续接符，导致新网络分区测试未进入循环。已在 `ca2ce5f115193a51f974e7cb18ab240e6a27e8a7` 修复，并重新检查完整for列表，四个专项测试文件现均处于同一循环中。
+- 已对照 `EtcdV3CoordinatorAuthorityStore.transact()` 核实返回契约：`AuthorityStoreTxnResult.succeeded/revision` 与测试断言匹配；etcdctl默认线性一致读，隔离成员本地请求用于验证少数派无法取得Raft quorum。
+- 当前最新head为 `ca2ce5f115193a51f974e7cb18ab240e6a27e8a7`。GitHub combined status查询尚未返回可核验的CI status；本轮live网络分区与默认质量门禁仍标记待验收，不宣称通过。
