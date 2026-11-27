@@ -10,8 +10,6 @@ from uuid import uuid4
 from scripts.spare_parts_provider_authority_store import (
     AuthorityStoreCompare,
     AuthorityStorePut,
-    AuthorityStoreUnavailableError,
-    AuthorityStoreOutcomeUnknownError,
     EtcdV3CoordinatorAuthorityStore,
 )
 from scripts.spare_parts_provider_etcd3gw_driver import Etcd3gwV3Client
