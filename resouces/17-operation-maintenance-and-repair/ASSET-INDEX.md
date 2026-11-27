@@ -188,3 +188,11 @@
 - 已建立Watch在etcd1停止后返回AuthorityStoreUnavailableError，未自动切换endpoint；多数派删除revision=21。恢复后snapshot revision=21/key absent，Watch从22恢复并首先收到新PUT revision=22，未重放旧DELETE。Artifact [15171088378](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313/artifacts/15171088378)。
 - Quality [Run 45938253249](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253249)：535 unittest（506 passed、29 skipped），CH12 143，strict lint 0 errors/5 warning，结构自检0 errors。SPAT 30项仅模拟，business_test_status=NOT_RUN。
 - supporting evidence不代表正式30场景执行；ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+### ASSET-000092 supporting evidence — 第六十一轮 Watch compaction
+
+- [Live Run 45940105118](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118)通过新compaction Live测试1/1：旧Watch cursor revision=24，etcdctl compact至25，收到created后收到canceled=true/compact_revision=25终止帧，0 events且resume_revision=None；cancel_reason由Gateway留空。
+- 线性一致snapshot revision=25/mod_revision=25，value匹配；新Watch从revision=26建立，首个PUT revision=26，prev_kv与快照一致，旧事件未重放。
+- 诊断Artifact [15172995164](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118/artifacts/15172995164)，SHA-256 `01ee63687fc67194471e55246412854604314700c2d160870bbff17ca77bed76`。
+- [Quality Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074)：537 unittest（507 passed、30 skipped），CH12 143，strict lint 0 errors/5既有warnings，结构检查0 errors。
+- 仅一次性CI supporting evidence；正式CSV仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`。

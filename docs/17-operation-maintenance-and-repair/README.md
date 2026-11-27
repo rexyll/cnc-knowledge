@@ -292,3 +292,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 已建立Watch在etcd1停止后返回`AuthorityStoreUnavailableError`，只请求初始endpoint一次。多数派删除revision=21；恢复后线性一致快照revision=21/key不存在，从revision=22恢复Watch，首个新事件是PUT revision=22，旧DELETE未重放。Artifact [15171088378](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313/artifacts/15171088378)。
 - [Quality Run 45938253249](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253249)：535 unittest（506 passed、29 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构校验0 errors；SPAT 30项仅离线模拟、business_test_status仍NOT_RUN。
 - 该结果是一次性CI supporting evidence；Watch仍不支持双向WatchProgress/WatchCancel；正式ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+## CH17-T004 Watch compaction取消与快照恢复（第六十一轮）
+
+- [Live Run 45940105118](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118)成功；旧游标revision=24已被compact revision=25覆盖，Watch先返回created再返回canceled=true/compact_revision=25，无事件且resume_revision=None。
+- 取消后线性一致快照revision=25、mod_revision=25且值正确；从revision=26恢复Watch，首个PUT事件revision=26，prev_kv与快照值一致，旧事件未重放。cancel_reason在Gateway响应中为空字符串。
+- 诊断Artifact [15172995164](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118/artifacts/15172995164)。[Quality Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074)：537 unittest（507通过、30跳过），CH12 143，strict lint 0 errors/5既有warning，结构0 errors。
+- 本轮为一次性CI supporting evidence；Watch仍为单向HTTP server-stream、不支持双向WatchProgress/WatchCancel；ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`。

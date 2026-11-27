@@ -397,10 +397,25 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 
 **限制：** 当前Watch实现仍为单向HTTP server-streaming，不支持双向WatchProgress/WatchCancel。断流后必须先读线性一致快照并从R+1恢复；Watch不得代替权威读取。上述结果只代表一次性etcd CI集成证据，ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004继续IN_PROGRESS。
 
-## 22. 第六十一轮计划：Watch compaction取消、游标失效与快照恢复
+## 22. 第六十一轮：Watch compaction取消、游标失效与快照恢复
 
-- 用唯一合成key在一次性etcd集群写入多个revision并保存早期游标R；通过标签验证的etcd容器内etcdctl执行限定revision的compaction。
-- 尝试从已压缩的旧revision创建Watch，验证服务端canceled、compact_revision、cancel_reason，且不把压缩前事件伪装成正常实时事件。
-- 收到取消后执行线性一致Range取得snapshot revision和值，再从snapshot revision+1创建新Watch；验证新的marker事件能到达且早期事件没有重放。
-- 验证Watch response的resume_revision / canceled / compact_revision语义及iterator释放；继续将Range快照作为权威，Watch只作变更提示。保持单向HTTP Gateway能力边界。
-- 仅操作一次性Compose集群及标签确认的容器；不改宿主机网络、不接触其他容器，finally关闭流并清理临时Lease/key。所有证据仍为supporting engineering evidence，不改变正式30项矩阵状态。
+新增 `tests/test_spare_parts_provider_authority_store_watch_compaction_etcd_integration.py`，并注册到 `scripts/etcd-integration/run.sh`。测试仅对`cnc-knowledge-etcd-itest` Compose项目中经project/service labels核验的etcd1容器执行`etcdctl compact`；不修改宿主机网络或其他容器。
+
+**旧游标与compaction取消：** 测试写入唯一key，记录旧Watch start_revision=24，再写入后续revision并将compact目标推进至25，严格保证compaction revision高于旧游标。Watch响应先给出created握手，再给出canceled控制帧：`canceled=true`、`compact_revision=25`、无事件、`resume_revision=None`。etcd v3.7.0 HTTP Gateway在该终止帧中未提供`cancel_reason`文本，字段保持空字符串；该字段是可选诊断信息，不能替代canceled/compact_revision判断。
+
+**Header兼容：** Gateway压缩取消终止帧可能省略ResponseHeader。适配器现在只对`canceled=true`的终止响应允许缺少Header，并将未提供的header revision规范化为0；created和普通事件响应继续要求有效Header/revision。Fake Gateway新增headerless cancellation契约测试。
+
+**快照与R+1恢复：** 取消后执行线性一致Range，snapshot revision=25、key mod_revision=25且value与压缩前最新值一致。丢弃旧游标后，新Watch从revision=26建立；提交新PUT marker后，首个恢复事件为PUT revision=26，`prev_kv`与快照值一致；未重放压缩前事件。
+
+**Live证据：** [Run 45940105118](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118)整体success，新compaction测试1/1 PASS；mTLS、短TTL Token、auth/quorum、RBAC成员故障阶段均success，诊断/Compose清理/Artifact上传均success。诊断Artifact [15172995164](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118/artifacts/15172995164)，SHA-256 `01ee63687fc67194471e55246412854604314700c2d160870bbff17ca77bed76`。
+
+**质量门禁：** [Quality Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074)：537 unittest（507 passed、30 skipped），CH12 143项通过，strict knowledge lint 0 errors/5既有warning，结构/data检查0 errors；SPAT 30包只做离线模拟，`business_test_status=NOT_RUN`、`external_connections=NO`、`writes=NO`。
+
+**解释边界：** 实验只证明一次性etcd v3.7.0 / etcd3gw 2.7.0环境内的协议与恢复行为，不等于生产HA或业务Coordinator迁移。Watch仍为单向HTTP server-streaming，不支持双向WatchProgress/WatchCancel；Range快照仍是权威。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
+
+## 23. 第六十二轮计划：Watch progress notification与无事件响应游标语义
+
+- 验证WatchCreate `progress_notify=true`时服务端无事件进度响应的created/canceled/header revision字段和空events语义。
+- 比较progress header revision与线性一致Range快照revision，明确progress通知不等于KV快照，也不能代替Range确定状态。
+- 覆盖progress响应之后新事件交付、stream关闭和断流后快照+1恢复；不声称支持双向WatchProgress/WatchCancel。
+- 仅操作一次性Compose资源和标签核验容器；不改宿主机网络、不触碰其他容器；supporting evidence不改变ASSET-000092正式矩阵审批/执行状态。

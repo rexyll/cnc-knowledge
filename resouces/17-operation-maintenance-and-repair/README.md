@@ -697,3 +697,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 已建立Watch在etcd1停止后返回`AuthorityStoreUnavailableError`，只请求初始endpoint一次。多数派删除revision=21；恢复后线性一致快照revision=21/key不存在，从revision=22恢复Watch，首个新事件是PUT revision=22，旧DELETE未重放。Artifact [15171088378](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313/artifacts/15171088378)。
 - [Quality Run 45938253249](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253249)：535 unittest（506 passed、29 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构校验0 errors；SPAT 30项仅离线模拟、business_test_status仍NOT_RUN。
 - 该结果是一次性CI supporting evidence；Watch仍不支持双向WatchProgress/WatchCancel；正式ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+## 第六十一轮 Watch compaction与快照恢复证据（2026-11-27）
+
+- 测试：`tests/test_spare_parts_provider_authority_store_watch_compaction_etcd_integration.py`。
+- [Live Run 45940105118](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118)通过compaction取消与R+1恢复测试；旧revision 24被压缩到25，取消帧canceled=true、compact_revision=25、无事件，resume_revision=None。
+- 快照revision/mod_revision=25；恢复Watch从26开始，首个PUT事件revision=26，prev_kv值匹配快照，未重放旧事件。Gateway cancel_reason为空字符串。
+- 诊断Artifact [15172995164](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118/artifacts/15172995164)，SHA-256 `01ee63687fc67194471e55246412854604314700c2d160870bbff17ca77bed76`。
+- Quality [Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074)：537 unittest（507通过、30跳过），CH12 143项，strict lint 0 errors/5既有warning，结构0 errors。
+- 此记录为supporting engineering evidence，不改变ASSET-000092正式矩阵审批/执行状态。

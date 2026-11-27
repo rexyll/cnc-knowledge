@@ -1089,3 +1089,9 @@
 - **恢复路径：** 读取取消Watch后的线性一致快照，记录snapshot revision、key value/mod_revision；从snapshot revision+1重新Watch；提交唯一新PUT/DELETE marker，验证恢复后仅收到新修订事件，不重放快照之前的事件。
 - **契约及安全边界：** 延续Fake Watch对canceled/compact_revision/resume_revision语义的检查；不实现或声称支持双向WatchProgress/WatchCancel。etcdctl只在一次性Compose项目和标签确认的服务容器内执行，不修改宿主机iptables、不接触其他容器；唯一临时key，finally关闭流、清理key/Lease，Runner最后销毁容器和volumes。
 - **验收：** Live compaction/canceled响应、线性一致快照和R+1恢复通过；全库质量CI、CH12、strict lint与结构校验通过。仍是supporting engineering evidence，不改变ASSET-000092正式30项矩阵审批/执行状态。
+
+### 第六十一轮完成状态（2026-11-27）
+
+- **状态：** DONE（工程supporting evidence）；实现/修复提交最终 `1afc40393fc9cfa0d901ab385882d0807a657b0f`。
+- **验收入口：** [Live Run 45940105118](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118) 与 [Quality Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074) 均success；详细结果与revision观察记录见 `TaskHistory/TaskHistory-2026-11-27.md` 和CH17技术文章第22节。
+- **后续任务：** 第六十二轮验证Watch progress notification与无事件响应的revision/游标语义；不得将progress通知当成KV权威快照。

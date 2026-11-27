@@ -222,3 +222,13 @@
 - **恢复路径：** 读取取消Watch后的线性一致快照，记录snapshot revision、key value/mod_revision；从snapshot revision+1重新Watch；提交唯一新PUT/DELETE marker，验证恢复后仅收到新修订事件，不重放快照之前的事件。
 - **契约及安全边界：** 延续Fake Watch对canceled/compact_revision/resume_revision语义的检查；不实现或声称支持双向WatchProgress/WatchCancel。etcdctl只在一次性Compose项目和标签确认的服务容器内执行，不修改宿主机iptables、不接触其他容器；唯一临时key，finally关闭流、清理key/Lease，Runner最后销毁容器和volumes。
 - **验收：** Live compaction/canceled响应、线性一致快照和R+1恢复通过；全库质量CI、CH12、strict lint与结构校验通过。仍是supporting engineering evidence，不改变ASSET-000092正式30项矩阵审批/执行状态。
+
+## 第六十一轮：Watch compaction取消与快照恢复（2026-11-27）
+
+- **任务目标：** 验证旧Watch游标被etcd compaction覆盖后，服务端canceled/compact_revision响应、旧resume cursor失效，以及线性一致快照后从R+1恢复。
+- **实现提交：** `ffc3421c599720fdf3e1312ed5060fb1fa6d301b`；修复created握手帧处理 `10b0b6f8ed5cbb174afc5e8a2e5bb42cc37a2aca`；调整压缩目标为旧游标之后的revision `6757927ec90ef8e1d060af07e5da41bf9c7d8af4`；兼容无Header取消帧 `ce04581989f1b703a2cbb05445d0b3db114e451d`；保留可选cancel_reason为空的行为 `1afc40393fc9cfa0d901ab385882d0807a657b0f`。均在`main`快进提交。
+- **Live：** [Run 45940105118](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118)整体success，新增compaction恢复用例1/1 PASS；所有普通etcd、mTLS、短TTL Token、auth/quorum、RBAC成员故障阶段和清理步骤均success。诊断Artifact [15172995164](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118/artifacts/15172995164)，SHA-256 `01ee63687fc67194471e55246412854604314700c2d160870bbff17ca77bed76`。
+- **关键观察：** old watch revision=24；etcdctl compact revision=25；服务端先发送created握手，再发送`canceled=true`、`compact_revision=25`、0 events，`resume_revision=None`，cancel_reason为空。线性一致快照revision/mod_revision=25且value为最新值；从revision=26恢复后首个PUT事件revision=26，`prev_kv`值与快照一致，旧事件未重放。
+- **Quality：** [Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074)success：537 unittest（507 passed、30 skipped），CH12 143项，strict lint 0 errors/5既有warnings，结构校验0 errors；SPAT 30项仅离线模拟，business_test_status=NOT_RUN。
+- **工程边界：** Gateway取消帧可能不含Header/可选cancel_reason；仅canceled终止帧允许无Header，缺失revision规范化为0，普通帧仍严格校验。Watch仍是单向server stream，不支持双向WatchProgress/WatchCancel；Watch不是权威状态源。只操作标签核验的一次性etcd容器；Compose容器/volumes清理成功，未改宿主机iptables或其他容器。
+- **治理状态：** 以上均为一次性CI supporting evidence；ASSET-000092保持30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威；SQLite Coordinator业务状态机未迁移；CH17-T004总体`IN_PROGRESS`。
