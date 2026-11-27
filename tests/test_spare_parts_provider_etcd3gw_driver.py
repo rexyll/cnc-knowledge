@@ -11,8 +11,12 @@ from scripts.spare_parts_provider_authority_store import (
     EtcdV3CoordinatorAuthorityStore,
 )
 from scripts.spare_parts_provider_etcd3gw_driver import (
+    Etcd3gwAuthenticationError,
     Etcd3gwConfigurationError,
+    Etcd3gwPermissionDeniedError,
+    Etcd3gwRequestError,
     Etcd3gwV3Client,
+    _gateway_error_from_response,
 )
 
 
@@ -444,19 +448,73 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
             driver.set_auth_token(" ")
         driver.close()
 
+    def test_gateway_error_classification_uses_http_and_grpc_status(self):
+        self.assertIsInstance(
+            _gateway_error_from_response(401, '{"code":16,"message":"etcdserver: invalid auth token"}'),
+            Etcd3gwAuthenticationError,
+        )
+        self.assertIsInstance(
+            _gateway_error_from_response(403, '{"code":7,"message":"etcdserver: permission denied"}'),
+            Etcd3gwPermissionDeniedError,
+        )
+        self.assertIsInstance(
+            _gateway_error_from_response(400, '{"code":3,"message":"etcdserver: authentication failed, invalid user ID or password"}'),
+            Etcd3gwAuthenticationError,
+        )
+        self.assertIsInstance(
+            _gateway_error_from_response(400, '{"code":3,"message":"etcdserver: key is empty"}'),
+            Etcd3gwRequestError,
+        )
+        self.assertIsInstance(
+            _gateway_error_from_response(418, 'not-json'),
+            Etcd3gwRequestError,
+        )
+
     def test_authentication_exception_is_not_treated_as_transport_failover(self):
         class Etcd3Exception(Exception):
             pass
 
         first = self.by_port[23791]
         second = self.by_port[23792]
-        first.failures["kv/range"] = Etcd3Exception(
-            '{"code":16,"message":"etcdserver: invalid auth token"}'
+        original = Etcd3Exception(
+            '{"code":16,"message":"etcdserver: invalid auth token"}',
+            "Unauthorized",
         )
-        with self.assertRaises(Etcd3Exception):
+        first.failures["kv/range"] = original
+        with self.assertRaises(Etcd3gwAuthenticationError) as caught:
             self.driver.range(b"/protected")
+        self.assertIs(caught.exception.__cause__, original)
         self.assertEqual(len(first.calls), 1)
         self.assertEqual(second.calls, [])
+
+    def test_permission_denied_exception_is_not_treated_as_transport_failover(self):
+        class Etcd3Exception(Exception):
+            pass
+
+        first = self.by_port[23791]
+        second = self.by_port[23792]
+        first.failures["kv/range"] = Etcd3Exception(
+            '{"code":7,"message":"etcdserver: permission denied"}'
+        )
+        with self.assertRaises(Etcd3gwPermissionDeniedError):
+            self.driver.range(b"/outside-prefix")
+        self.assertEqual(len(first.calls), 1)
+        self.assertEqual(second.calls, [])
+
+    def test_gateway_watch_permission_error_is_typed_and_not_failed_over(self):
+        first = self.by_port[23791]
+        second = self.by_port[23792]
+        response = FakeStreamingResponse(
+            [], status_code=403
+        )
+        response.text = '{"code":7,"message":"etcdserver: permission denied"}'
+        first.session = FakeStreamingSession([response])
+        second.session = FakeStreamingSession([])
+        with self.assertRaises(Etcd3gwPermissionDeniedError):
+            self.driver.watch(b"/outside-prefix")
+        self.assertTrue(response.closed)
+        self.assertEqual(len(first.session.calls), 1)
+        self.assertEqual(second.session.calls, [])
 
     def test_from_env_requires_explicit_endpoint_list(self):
         with self.assertRaises(Etcd3gwConfigurationError):
