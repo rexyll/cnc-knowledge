@@ -332,7 +332,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             # to be able to serve at least that applied revision.
             snapshot, snapshot_revision = majority_store.linearizable_get(key)
             self.assertIsNotNone(snapshot)
-            self.assertEqual(snapshot.value, partition_values[-1])
+            self.assertEqual(snapshot.value, initial_value)
 
             # Membership/status recovery does not imply that the formerly
             # isolated member has already re-established ReadIndex service.
@@ -447,7 +447,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 if majority_store is not None:
                     try:
                         cleanup = []
-                        for cleanup_key in (key, baseline_marker_key):
+                        for cleanup_key in (key, baseline_marker_key, compaction_marker_key):
                             current, _ = majority_store.linearizable_get(cleanup_key)
                             if current is not None:
                                 cleanup.append(AuthorityStoreDelete(cleanup_key))
@@ -475,6 +475,9 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
         key = f"/cnc-knowledge-it/watch-minority-compaction/{suffix}/leader".encode()
         baseline_marker_key = (
             f"/cnc-knowledge-it/watch-minority-compaction/{suffix}/baseline"
+        ).encode()
+        compaction_marker_key = (
+            f"/cnc-knowledge-it/watch-minority-compaction/{suffix}/compaction-marker"
         ).encode()
         initial_value = f"leader-before-minority-compaction-{suffix}".encode()
         partition_values = [
@@ -573,7 +576,9 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             # The remaining two-member majority commits new KV revisions.
             partition_write_revisions = []
             for value in partition_values:
-                result = majority_store.transact([], [AuthorityStorePut(key, value)])
+                result = majority_store.transact(
+                    [], [AuthorityStorePut(compaction_marker_key, value)]
+                )
                 self.assertTrue(result.succeeded)
                 partition_write_revisions.append(result.revision)
             self.assertEqual(
@@ -582,7 +587,9 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             )
             self.assertGreater(partition_write_revisions[0], watch_start_revision)
 
-            majority_latest, majority_revision = majority_store.linearizable_get(key)
+            majority_latest, majority_revision = majority_store.linearizable_get(
+                compaction_marker_key
+            )
             self.assertIsNotNone(majority_latest)
             self.assertEqual(majority_latest.value, partition_values[-1])
             self.assertGreaterEqual(majority_revision, partition_write_revisions[-1])
@@ -629,16 +636,10 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                     canceled = response
                     break
                 self.assertFalse(response.created)
-                for event in response.events:
-                    self.assertEqual(event.event_type, "PUT")
-                    self.assertEqual(event.key, key)
-                    self.assertIn(event.revision, partition_write_revisions)
-                    self.assertIsNotNone(event.entry)
-                    self.assertIn(event.entry.value, partition_values)
-                    old_watch_events.append({
-                        "revision": event.revision,
-                        "value": event.entry.value.decode("utf-8"),
-                    })
+                # The compacted writes deliberately target a key outside
+                # this exact-key Watch, so no catch-up KV events should advance
+                # the old watcher's min_revision before Compaction is applied.
+                self.assertEqual(response.events, ())
             self.assertIsNotNone(canceled, "old Watch was not canceled after compacted log catch-up")
             self.assertFalse(canceled.created)
             self.assertEqual(canceled.compact_revision, compacted_revision)
@@ -686,7 +687,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 local_snapshot,
                 f"recovered member did not serve the quorum snapshot: {last_local_error}",
             )
-            self.assertEqual(local_snapshot.value, snapshot.value)
+            self.assertEqual(local_snapshot.value, initial_value)
             self.assertGreaterEqual(local_revision, snapshot_revision)
 
             resumed_stream = watch_store.watch(
@@ -719,7 +720,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             self.assertEqual(resumed_event.key, key)
             self.assertEqual(resumed_event.entry.value, resumed_value)
             self.assertIsNotNone(resumed_event.previous_entry)
-            self.assertEqual(resumed_event.previous_entry.value, snapshot.value)
+            self.assertEqual(resumed_event.previous_entry.value, initial_value)
             self.assertEqual(resumed_event.revision, post_snapshot_write.revision)
             self.assertEqual(
                 resumed_response.resume_revision, post_snapshot_write.revision + 1
@@ -733,6 +734,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 "compact_command_stdout": compact_result.stdout.strip(),
                 "majority_linearizable_revision_before_rejoin": majority_revision,
                 "old_watch_event_revisions_before_cancel": old_event_revisions,
+                "old_watch_received_no_compaction_marker_events": not old_watch_events,
                 "old_watch_canceled": canceled.canceled,
                 "old_watch_cancel_compact_revision": canceled.compact_revision,
                 "old_watch_cancel_event_count": len(canceled.events),
