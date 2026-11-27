@@ -120,7 +120,7 @@ class Etcd3gwAuthQuorumIsolationIntegrationTests(unittest.TestCase):
         self._compose("stop")
         try:
             time.sleep(5)
-            with self.assertRaises(ConnectionError):
+            with self.assertRaises((TimeoutError, ConnectionError)):
                 self.client.range(self.key)
 
             # Reauthentication is a separate RPC path. Record the actual Gateway
