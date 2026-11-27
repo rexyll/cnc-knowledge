@@ -364,3 +364,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - [Live Run 45987534125](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125)整体success；Watch minority测试文件5项通过（24.605s），所有后续mTLS、Token、auth/quorum、RBAC阶段及容器/volumes清理成功。Artifact [15192246652](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125/artifacts/15192246652)，SHA-256 `e9f2dbb141dc55a60f3988876df8eaa86eb02b4b26dda3f43c76f0a4a0b30663`。
 - [Quality Run 45987533954](https://github.com/rexyll/cnc-knowledge/actions/runs/45987533954)两个Job success：548 unittest（37 skipped）、CH12 143项、strict lint 0 errors / 5 warnings、结构/data 0 errors（260实体、240关系、412来源、178 Markdown）。
 - 运维边界：未配置read timeout时仍可能无限等待；完全静默的Watch若配置read timeout会被判为Unavailable，不能在没有可靠心跳的前提下盲目启用。ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
+
+## CH17-T004 Watch连接健康分层与存活检测策略（第六十九轮）
+
+- 新增独立决策记录：[Watch连接健康与存活检测策略决策记录](watch-connection-health-and-liveness-decision-record.md)，比较Progress、TCP Keepalive、HTTP/2 gRPC PING、独立线性一致Range和Lease-backed应用心跳。
+- 决策采用分层健康模型：Watch流事件/Progress/断流衡量流维度；进程级共享线性一致Range探测衡量Quorum-read能力；可选Lease心跳只用于明确的端到端Watch交付SLO。Progress header是Watch本地revision，不能代表Quorum最新revision。
+- 当前驱动使用Requests访问`/v3/watch`，没有原生gRPC双向Watch控制流；HTTP/2 gRPC PING不能直接套用于当前Requests客户端。`status()`的`/maintenance/status`也不替代线性一致Range探测。
+- `watch_read_timeout`继续默认None；在没有可靠且有界的流量间隔前，不为长时间静默Watch设置生产超时。TCP Keepalive、后台Quorum Scheduler、应用心跳写入和自动恢复状态机均未实现。
+- 本轮为设计决策记录，不新增生产代码或Live验收。后续实现需先明确生产网络/代理、消费调度模型、权限范围和SLO，再分别验证连接探测与Quorum探测。CH17-T004保持`IN_PROGRESS`。
