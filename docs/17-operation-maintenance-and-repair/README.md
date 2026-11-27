@@ -417,3 +417,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 外部Provider fencing floor不从SQLite推测，保持REQUIRED/null；终态request backend_lease_id使用明确标注的非活动占位符，不代表原生Lease。
 - **验证：** [Knowledge Quality Run 46004441510](https://github.com/rexyll/cnc-knowledge/actions/runs/46004441510)成功：566项unittest（40 skipped）、CH12数值资源Job通过；候选导入器专用用例包含在全库unittest中。
 - **严格边界：** 本阶段只生成候选包，不写etcd/CoordinatorAuthorityStore。目标Store当前namespace前缀固定，隔离namespace注入和目标Lease/Txn/checkpoint/未知结果恢复仍待实现；候选包不可直接导入生产。MIG-04保持IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
+
+## CH17-T004 Unified Store 隔离命名空间注入（第七十五轮）
+
+- `StoreBackedProviderAdmissionCoordinator`新增可选`namespace_prefix`；省略时沿用原有`/cnc/admission/unified/v2/`，保持既有业务实例的键路径兼容。
+- 自定义namespace限定为`/cnc/migration/isolated/{单一标识}/`；拒绝生产namespace、空标识、多级路径和路径穿越。Scheduler State、Admission Lease/Request索引均从实例前缀派生。
+- `StoreBackedCoordinatorAuthority`的Leader TTL key现在从scheduler实例前缀派生，避免业务状态隔离但Leader key仍写入默认生产前缀。
+- 新增单元测试验证默认前缀、隔离前缀与非法输入；Coordinator测试验证Leader key只存在于指定隔离前缀。
+- **边界：** 仅完成键空间隔离能力，不会自动创建隔离namespace，不写候选导入包、不创建业务Lease、不执行导入Txn；Txn容量、批处理checkpoint、未知结果恢复和临时真实etcd迁移演练仍待完成。等待Quality CI确认。
