@@ -286,3 +286,38 @@ etcd Gateway错误响应的协议依据补充如下：SRC-000413记录etcd v3.6+
 **验证边界：** 该测试从etcdctl本地endpoint验证少数派的失败关闭，从Coordinator Store验证多数派事务及恢复后的收敛；它没有验证Etcd3gwV3Client在少数派endpoint上的多endpoint只读failover，也没有验证Coordinator Store对少数派Txn超时的 `OUTCOME_UNKNOWN` 分类或单次发送行为。非对称分区、多机房、性能与生产故障演练未覆盖。第五十七轮继续验证驱动层的这些语义。
 
 本轮工程任务完成，但不批准或执行正式验收矩阵。ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总状态保持`IN_PROGRESS`。
+
+
+## CH17-T004 第五十七轮：少数派分区下Driver读取故障转移与Txn结果核验（2026-11-27）
+
+新增live方法 `test_driver_partition_read_failover_and_single_txn_outcome`，在一次性三成员etcd v3.7.0集群中，真实隔离etcd1后通过Etcd3gwV3Client和EtcdV3CoordinatorAuthorityStore观察调用层行为。使用记录型post包装捕捉每次HTTP endpoint调用；对Txn使用只包含隔离etcd1的单endpoint driver，避免将自动重试误判为Raft行为。finally中关闭driver、恢复Compose网络并等待三成员恢复；事务恢复核对只读，不重放写请求。
+
+**实时观测：** [CH17 Live Run 45931474359](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)整个Job成功。新增测试与第五十六轮基础网络分区测试均通过（网络分区文件2项测试，8.670秒）。CI日志的结构化观测如下：
+
+- 线性一致Range的endpoint尝试顺序为 `http://127.0.0.1:23791`（被隔离的etcd1），随后 `http://127.0.0.1:23792`（健康多数派成员）；最终读取成功，证实只读transport故障转移实际走到第二endpoint。
+- 隔离etcd1上的CAS Txn仅发送一次（唯一尝试endpoint为 `http://127.0.0.1:23791`），存储适配层将连接错误报告为 `OUTCOME_UNKNOWN/ConnectionError`；第二endpoint没有被写请求触达。
+- finally恢复网络及quorum后，对事务key执行线性一致读回结果为 `not-committed`。这将初始未知结果收敛为本次“未提交”；测试没有重放事务，也未观察到重复写入。
+- 第五十六轮网络分区基础测试 `test_minority_partition_fails_closed_and_majority_recovers` 在同一运行中再次通过。随后mTLS、短TTL Token、auth/quorum隔离、RBAC单成员故障/Token传播、诊断采集、Compose volumes清理及artifact上传全部成功。
+
+诊断Artifact [15168243294](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359/artifacts/15168243294)。
+
+**默认质量门禁：** [Knowledge Quality Run 45931474322](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474322)两个必需Job成功：全库529项unittest（504 passed、25 skipped），CH12 143项通过，strict knowledge lint 0 errors / 5项既有warning，结构/最终自检0 errors。SPAT合成夹具30包模拟检查成功，但 `business_test_status=NOT_RUN`、`external_connections=NO`、`writes=NO`，不构成正式业务验收。
+
+**第五十七轮结论：** 工程测试范围验收完成。实测证明只读Range在隔离首endpoint后能够继续尝试健康endpoint；Txn对隔离少数派只发送一次，连接中断按既有端口契约报告 `OUTCOME_UNKNOWN`，恢复后的线性一致读回确认本次未提交。此实验没有模拟“Txn已经提交而HTTP响应丢失”的窗口，也没有证明所有HTTP/gRPC Gateway错误均能区分为transport错误或确定性拒绝；不对etcd v3.7.0以外版本外推。CH17-T004总任务仍`IN_PROGRESS`。
+
+治理边界不变：ASSET-000092正式30项继续`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威，SQLite Coordinator业务状态机未迁移；本轮仅为一次性CI supporting engineering evidence。
+
+
+## 17. 第五十七轮：少数派分区下Coordinator Driver读取故障转移与Txn未知结果
+
+新增live测试方法 `test_driver_partition_read_failover_and_single_txn_outcome`，与第五十六轮的基础分区测试在同一专用CI Compose集群中执行。测试在确认Compose project/service标签后断开etcd1网络；每次HTTP POST均记录实际endpoint，读请求使用三endpoint client，事务则使用只包含隔离etcd1的单endpoint client。finally关闭client、恢复网络、等待三成员quorum，再用健康多数派endpoint线性一致读回Txn key；不重新发送事务。
+
+**真实观测：** [Live Run 45931474359](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)中的网络分区测试文件2项通过，耗时8.670秒。结构化日志显示：
+
+- 线性一致Range先触达隔离成员 `http://127.0.0.1:23791`，随后触达健康成员 `http://127.0.0.1:23792`，最终返回成功；这验证当前只读transport failover路径确实可从失联/不可线性一致的首endpoint转向健康多数派。
+- 少数派CAS Txn仅触达 `http://127.0.0.1:23791` 一次，Store结果为 `OUTCOME_UNKNOWN/ConnectionError`，没有第二endpoint写入尝试。
+- finally恢复网络后，线性一致读回Txn key不存在，日志为 `PARTITION_DRIVER_TXN_RECOVERY=not-committed`。因此本次请求初始结果未知，但事后核对确认没有提交；测试未重放事务。
+
+Live workflow所有后续mTLS、short-TTL token、auth/quorum、RBAC成员故障/Token传播、诊断和清理步骤均成功。Artifact [15168243294](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)。默认质量[Run 45931474322](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474322)通过：529项unittest（504 passed、25 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构和最终自检0 errors。SPAT 30包只是离线模拟，business_test_status仍NOT_RUN。
+
+**解释边界：** `OUTCOME_UNKNOWN`是发出写请求后连接丢失时的保守调用契约；恢复后未找到key，说明这一次没有提交。此测试没有控制“Raft已经提交、Gateway响应在返回客户端前丢失”的精确故障窗口，也没有将所有Gateway HTTP/gRPC状态重分类为transport错误。只读failover与写入单次发送的结果只针对当前etcd v3.7.0/etcd3gw 2.7.0测试环境。第五十七轮工程验收完成；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移。

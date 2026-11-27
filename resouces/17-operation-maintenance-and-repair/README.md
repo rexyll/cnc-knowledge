@@ -664,3 +664,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - [Live Run 45929955634](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634)成功；少数派本地线性一致Range/Put失败，多数派etcd2/etcd3完成Coordinator Store CAS写入和读回；finally恢复网络后，etcd1读到多数派提交的数据。专项测试1/1 PASS（8.248秒），Artifact [15168271744](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634/artifacts/15168271744)。
 - [Knowledge Quality Run 45930090004](https://github.com/rexyll/cnc-knowledge/actions/runs/45930090004)两个Job成功：528项unittest（504通过、24跳过）、CH12 143项、strict lint 0 errors/5项既有warning，结构/最终自检0 errors。
 - 该证据只覆盖一次性etcd v3.7.0/Compose三成员网络分区，不覆盖Driver层的少数派endpoint failover及Txn `OUTCOME_UNKNOWN` 语义；后续第五十七轮专门验证。ASSET-000092正式30项仍 `PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+## CH17-T004 少数派分区下Driver读取故障转移与Txn结果核验（第五十七轮）
+
+- Live [Run 45931474359](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)成功；网络分区测试文件2项PASS（8.670秒）。只读Range从隔离etcd1 endpoint `127.0.0.1:23791`切换到健康多数派`127.0.0.1:23792`成功；少数派CAS Txn只发送一次，结果`OUTCOME_UNKNOWN/ConnectionError`。
+- 网络恢复后线性一致读回为`not-committed`，未重放事务。Live后续mTLS、Token生命周期、quorum隔离、RBAC成员故障/Token传播和清理步骤全部成功；Artifact [15168243294](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359/artifacts/15168243294)。
+- Quality [Run 45931474322](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474322)成功：529 unittest（504通过、25跳过），CH12 143项，strict lint 0 errors/5 warnings，结构自检0 errors。
+- 工程测试没有模拟已提交后响应丢失的精确窗口；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。下一轮验证少数派下Lease KeepAlive、自然到期和Leader fencing。

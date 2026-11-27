@@ -131,3 +131,25 @@
 - **契约测试：** 增加Fake Gateway/记录型transport测试，证明read-only transport failover可用、认证/权限/请求错误不failover、Txn/Lease变更请求恰好发送一次、超时结果按既有存储端口契约保留。Live测试只报告真实etcd观测，不用Fake结果替代Raft证据。
 - **安全和隔离：** 仅操作本CI创建的 `cnc-knowledge-etcd-itest` Compose项目与网络；容器须通过Compose project/service标签复核；不修改宿主机iptables、不接触其他容器/网络；使用唯一临时key，不输出token、密码和证书私钥；所有网络恢复必须位于finally路径。
 - **验收：** Fake契约、真实三节点live测试、默认质量CI及CH12/strict lint/结构校验均通过；报告明确区分HTTP/gRPC响应、transport错误、Txn已知结果和 `OUTCOME_UNKNOWN`。本轮仍为工程supporting evidence，不批准或执行ASSET-000092正式30项。
+
+
+## CH17-T004 第五十七轮最终验收（2026-11-27）
+
+- Live [Run 45931474359](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)整个Disposable three-member etcd v3.7.0 integration Job成功；网络分区测试文件2项测试通过（8.670秒）。观察JSON：read endpoint attempts=`127.0.0.1:23791 -> 127.0.0.1:23792`，linearizable read成功；Txn endpoint只调用`127.0.0.1:23791`一次，结果`OUTCOME_UNKNOWN/ConnectionError`；恢复后Txn key线性一致读回为`not-committed`。
+- 该结果证明只读Range在隔离首endpoint后触达健康多数派；Txn未跨endpoint重试；初始未知结果经恢复后读回确认为本次未提交。测试未重放Txn，也未模拟已提交后响应丢失的时间窗。
+- Live workflow后续mTLS、short TTL token、auth/quorum isolation、mTLS RBAC member outage/token propagation、诊断采集、Compose/volumes清理与Artifact上传全部成功。Artifact [15168243294](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)。
+- 默认质量[Run 45931474322](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474322)两个Job成功：529 unittest（504 passed、25 skipped），CH12 143项，strict lint 0 errors/5 warnings，结构/最终自检0 errors。30个SPAT包模拟通过但business_test_status仍NOT_RUN，无外部连接或写入。
+- **状态：** 第五十七轮COMPLETED；CH17-T004总任务保持IN_PROGRESS。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator业务状态机未迁移。
+
+
+
+### 第五十八轮任务计划：Lease续租失败、租约到期与Leader Fencing的网络分区验证
+
+- **目标：** 基于第五十六/五十七轮三成员网络分区夹具，验证当持有Lease的协调器只能访问少数派时，KeepAlive不能被误认为成功；在多数派上观察租约到期、authority key删除及新Leader fencing epoch推进。
+- **初始状态：** 在多数派建立唯一短TTL Lease，将Leader/authority记录绑定Lease，并记录初始epoch、key和revision；所有key均用唯一临时前缀，测试开始前线性一致读回确认初始状态。
+- **分区操作：** 按Compose project/service labels确认etcd1身份，仅从专用测试网络断开etcd1。把Etcd3gwV3Client固定到隔离成员，执行LeaseKeepAlive；记录真实HTTP/Gateway/transport错误和调用结果。不得因请求未抛异常或本地定时器尚未到期而推断续租成功；Store报告Unavailable时，协调器必须按fail-closed语义停止依赖该Lease的leader授权。
+- **多数派观察：** 从etcd2/etcd3使用线性一致读取/LeaseTimeToLive观察TTL；不对少数派重复KeepAlive，不以健康endpoint替少数派客户端代发。等候租约自然到期，确认lease-bound authority key消失；用CAS建立更高epoch的新Leader记录，并验证旧epoch的授权写入被拒绝。
+- **恢复核对：** finally重新连接etcd1并等待三成员恢复；线性一致确认旧Lease/key不会复活，旧epoch CAS仍失败，新epoch值一致。测试不重放第一次KeepAlive或Leadership Txn。
+- **契约测试：** Fake覆盖KeepAlive transport timeout、Gateway明确拒绝、Lease状态到期、authority fail-closed及fencing CAS拒绝；写入/续租请求保持单次发送。准确区分已确认续租、明确失败和结果未知。
+- **安全边界：** 仅操作本CI一次性Compose项目/网络/容器；不修改宿主机iptables，不触碰其他容器/网络；所有恢复置于finally；临时凭据和key不得输出；不将本轮工程冒烟测试视作生产Leader HA验收。
+- **验收：** live三成员Lease分区场景、Fake契约、全库质量CI、CH12、strict lint和结构校验通过；日志包含隔离endpoint结果、quorum侧TTL/删除时序、新epoch与旧epoch fencing结果。ASSET-000092正式30项仍不得自动批准或标记执行。

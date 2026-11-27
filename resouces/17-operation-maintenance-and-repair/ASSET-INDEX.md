@@ -156,3 +156,11 @@
 - 诊断Artifact [15168271744](https://github.com/rexyll/cnc-knowledge/actions/runs/45929955634/artifacts/15168271744)。
 - [Knowledge Quality Run 45930090004](https://github.com/rexyll/cnc-knowledge/actions/runs/45930090004)：528项unittest（504 passed、24 skipped），CH12 143项，strict lint 0 errors/5项既有warning，结构与最终自检0 errors。
 - 该次CI是supporting engineering evidence，不是正式矩阵场景执行；ASSET-000092仍30项，`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+### ASSET-000092 supporting evidence — 第五十七轮
+
+- Live [Run 45931474359](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)整体成功；网络分区文件2项测试通过（8.670秒）。只读Range触达隔离etcd1 `127.0.0.1:23791`后切换健康多数派`127.0.0.1:23792`成功。
+- 少数派CAS Txn仅发起1次，Store报告`OUTCOME_UNKNOWN/ConnectionError`；恢复后线性一致读回为`not-committed`，没有重试或重复写入。
+- Diagnostics Artifact [15168243294](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)。
+- Quality [Run 45931474322](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474322)：529 unittest（504 passed、25 skipped），CH12 143，strict lint 0 errors/5既有warning，结构自检0 errors。
+- 该证据仅为engineering support，不等于正式30场景执行；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
