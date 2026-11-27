@@ -12,6 +12,8 @@ services:
       - --initial-cluster=etcd1=https://etcd1:2380,etcd2=https://etcd2:2380,etcd3=https://etcd3:2380
       - --initial-cluster-state=new
       - --initial-cluster-token=cnc-knowledge-etcd-mtls-itest
+      - --auth-token=simple
+      - --auth-token-ttl=${ETCD_AUTH_TOKEN_TTL:-300}
       - --cert-file=/etc/etcd/pki/server.crt
       - --key-file=/etc/etcd/pki/server.key
       - --trusted-ca-file=/etc/etcd/pki/ca.crt
@@ -53,6 +55,8 @@ services:
       - --initial-cluster=etcd1=https://etcd1:2380,etcd2=https://etcd2:2380,etcd3=https://etcd3:2380
       - --initial-cluster-state=new
       - --initial-cluster-token=cnc-knowledge-etcd-mtls-itest
+      - --auth-token=simple
+      - --auth-token-ttl=${ETCD_AUTH_TOKEN_TTL:-300}
       - --cert-file=/etc/etcd/pki/server.crt
       - --key-file=/etc/etcd/pki/server.key
       - --trusted-ca-file=/etc/etcd/pki/ca.crt
@@ -94,6 +98,8 @@ services:
       - --initial-cluster=etcd1=https://etcd1:2380,etcd2=https://etcd2:2380,etcd3=https://etcd3:2380
       - --initial-cluster-state=new
       - --initial-cluster-token=cnc-knowledge-etcd-mtls-itest
+      - --auth-token=simple
+      - --auth-token-ttl=${ETCD_AUTH_TOKEN_TTL:-300}
       - --cert-file=/etc/etcd/pki/server.crt
       - --key-file=/etc/etcd/pki/server.key
       - --trusted-ca-file=/etc/etcd/pki/ca.crt
