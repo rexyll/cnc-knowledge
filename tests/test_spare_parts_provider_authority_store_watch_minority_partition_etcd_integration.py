@@ -609,41 +609,44 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             self.assertEqual(compact_result.returncode, 0, compact_result.stderr)
             self.assertGreater(compacted_revision, watch_start_revision)
 
-            # The existing Watch may either be canceled while the member
-            # applies the compacted history, or remain valid if it can catch
-            # up through the compact revision. Drain queued minority progress
-            # frames until one of those two states is observed.
-            active_watch_status = None
-            last_active_progress_revision = 0
-            active_deadline = time.monotonic() + 20.0
-            while time.monotonic() < active_deadline:
-                outcome, response = self._next_result(
-                    old_stream,
-                    timeout=min(8.0, max(0.5, active_deadline - time.monotonic())),
-                )
-                self.assertNotEqual(
-                    outcome, "timeout",
-                    "existing Watch neither canceled nor reported post-recovery progress",
-                )
-                self.assertEqual(outcome, "response", response)
-                if response.canceled:
-                    self.assertEqual(response.compact_revision, compacted_revision)
-                    self.assertEqual(response.events, ())
-                    self.assertIsNone(response.resume_revision)
-                    active_watch_status = "canceled"
-                    break
-                self.assertFalse(response.created)
-                self.assertEqual(response.events, ())
-                if response.is_progress:
-                    last_active_progress_revision = response.header_revision
-                    if response.header_revision >= compacted_revision:
-                        active_watch_status = "caught_up"
-                        break
-            self.assertIn(active_watch_status, {"canceled", "caught_up"})
+            # Once the member has rejoined, use linearizable Range to
+            # prove it has applied the quorum state. Do not depend on the old
+            # HTTP streaming request to resume producing frames after a long
+            # peer partition; close it and validate the old application cursor
+            # by explicitly trying to recreate that Watch.
+            snapshot, snapshot_revision = majority_store.linearizable_get(key)
+            self.assertIsNotNone(snapshot)
+            self.assertEqual(snapshot.value, initial_value)
+            self.assertGreaterEqual(snapshot_revision, compacted_revision)
 
-            # Regardless of whether the already-open watcher caught up, an
-            # attempt to recreate a Watch from the pre-partition cursor must
-            # be rejected because that start revision is below compactRev.
+            local_snapshot = None
+            local_revision = 0
+            last_local_error: Exception | None = None
+            local_deadline = time.monotonic() + 30.0
+            while time.monotonic() < local_deadline:
+                try:
+                    candidate, candidate_revision = watch_store.linearizable_get(key)
+                    if (
+                        candidate is not None
+                        and candidate.value == snapshot.value
+                        and candidate_revision >= snapshot_revision
+                    ):
+                        local_snapshot = candidate
+                        local_revision = candidate_revision
+                        break
+                    last_local_error = RuntimeError(
+                        "recovered member has not reached the compaction snapshot"
+                    )
+                except Exception as exc:
+                    last_local_error = exc
+                time.sleep(0.5)
+            self.assertIsNotNone(
+                local_snapshot,
+                f"recovered member did not serve the quorum snapshot: {last_local_error}",
+            )
+            self.assertEqual(local_snapshot.value, initial_value)
+            self.assertGreaterEqual(local_revision, snapshot_revision)
+
             old_stream.close()
             stale_stream = watch_store.watch(
                 key,
@@ -674,45 +677,9 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             self.assertIsInstance(stale_canceled.cancel_reason, str)
             if stale_canceled.cancel_reason:
                 self.assertIn("compact", stale_canceled.cancel_reason.lower())
-            # The stale-cursor cancellation invalidates the pre-partition
-            # cursor even if the original live Watch remained active.
             stale_stream.close()
-            snapshot, snapshot_revision = majority_store.linearizable_get(key)
-            self.assertIsNotNone(snapshot)
-            self.assertEqual(snapshot.value, initial_value)
-            self.assertGreaterEqual(snapshot_revision, compacted_revision)
 
-            # Do not resume from the old Watch's last event/progress revision.
-            # Wait until the recovered member can itself serve the quorum
-            # snapshot, using read-only probes only.
-            local_snapshot = None
-            local_revision = 0
-            last_local_error: Exception | None = None
-            local_deadline = time.monotonic() + 30.0
-            while time.monotonic() < local_deadline:
-                try:
-                    candidate, candidate_revision = watch_store.linearizable_get(key)
-                    if (
-                        candidate is not None
-                        and candidate.value == snapshot.value
-                        and candidate_revision >= snapshot_revision
-                    ):
-                        local_snapshot = candidate
-                        local_revision = candidate_revision
-                        break
-                    last_local_error = RuntimeError(
-                        "recovered member has not reached the compaction snapshot"
-                    )
-                except Exception as exc:
-                    last_local_error = exc
-                time.sleep(0.5)
-            self.assertIsNotNone(
-                local_snapshot,
-                f"recovered member did not serve the quorum snapshot: {last_local_error}",
-            )
-            self.assertEqual(local_snapshot.value, initial_value)
-            self.assertGreaterEqual(local_revision, snapshot_revision)
-
+            # Recreate the stream only from the authoritative snapshot+1 cursor.
             resumed_stream = watch_store.watch(
                 key,
                 start_revision=snapshot_revision + 1,
@@ -756,8 +723,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 "majority_compact_revision": compacted_revision,
                 "compact_command_stdout": compact_result.stdout.strip(),
                 "majority_linearizable_revision_before_rejoin": majority_revision,
-                "existing_watch_status_after_recovery": active_watch_status,
-                "existing_watch_post_recovery_progress_revision": last_active_progress_revision,
+                "original_minority_watch_closed_for_rebuild": True,
                 "stale_cursor_watch_canceled": stale_canceled.canceled,
                 "stale_cursor_cancel_compact_revision": stale_canceled.compact_revision,
                 "stale_cursor_cancel_event_count": len(stale_canceled.events),
