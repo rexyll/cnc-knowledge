@@ -457,3 +457,10 @@
 - **不能分片对象：** terminal request indexes可分批；Unified Scheduler aggregate仍是单个KV值，最终发布Txn不满足预算时必须先重构schema/runtime，不能提前发布部分state。
 - **范围边界：** 本轮只实现纯只读协议模型与测试，没有连接etcd、执行Range/Txn、创建Lease、修改RBAC/凭证、启动应用、触发Provider操作或迁移生产数据。真实writer、checkpoint自动续跑和临时真实etcd故障注入仍未完成；MIG-04继续IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
 
+### 第七十八轮最终验收补记（2026-11-27）
+
+- **最终CI：** [Knowledge Quality Run 46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) completed/success，两个必需Job均success。全库unittest 594项（40 skipped、554 passed）；CH12 143项通过；knowledge lint 0 errors / 5 warnings；结构检查0 errors。
+- **实现提交：** staged protocol模型 c7dff4c971dec7065591d47e7dd774be6330937d；恢复/预算修正 7d17dcb679e4dfbdad353bd42d13d4433c7e0cd3、443ece3608be5c7f6c4a2a16696ffcf6b9e09687、46218e1b29097349194838c98287ffb15ca9c3d3；专用测试/增强 8903774e77b63ddb433423b8dd5b6c19ef0cb525、aac23a52d45b94ed5e55ccd5515c87bb4af8c623、dc27879fa23fbeb3242b0b9ac4984a51b26f40f1、c83d30abbf1fd426c08ed515044b4e861ff21b14。设计文档、README和计划同步提交见对应本轮main历史。
+- **测试覆盖：** 分批事务数量/字节门槛、request与checkpoint同Txn、state-last发布、零request、Scheduler aggregate不可分割、checkpoint初始化未知结果、batch未知结果commit/retry/quarantine、后续checkpoint推进证明前序batch、最终publish未知结果及应用访问屏障。
+- **最终安全边界：** 仅构造只读计划与恢复分类，不连接etcd、不执行Range/Txn/Lease操作、不创建/修改RBAC或凭证、不启动应用、不调用Provider。真实writer、自动续跑、临时etcd故障注入均未实现；MIG-04仍IN_PROGRESS，MIG-05/06待完成，MIG-07 BLOCKED；生产schema-v2 authority不变，ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
