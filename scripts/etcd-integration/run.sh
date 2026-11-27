@@ -58,6 +58,7 @@ PY
 
 for test_file in \
   test_spare_parts_provider_authority_store_etcd_integration.py \
+  test_spare_parts_provider_unified_coordinator_authority_etcd_integration.py \
   test_spare_parts_provider_authority_store_member_outage_etcd_integration.py \
   test_spare_parts_provider_authority_store_quorum_loss_etcd_integration.py \
   test_spare_parts_provider_authority_store_network_partition_etcd_integration.py \

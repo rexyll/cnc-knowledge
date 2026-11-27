@@ -1,7 +1,8 @@
 # Three-node etcd v3 integration environment
 
-This directory contains an opt-in local integration environment for the
-Etcd3gwV3Client and EtcdV3CoordinatorAuthorityStore adapters.
+This directory contains an opt-in disposable three-node etcd v3 integration
+environment for the HTTP Gateway driver, authority-store adapter, Watch
+stream, and Unified Admission/Coordinator business state machine.
 
 ## Run
 
@@ -14,12 +15,15 @@ From the repository root:
 
 The runner installs the optional client dependency, starts three independent
 etcd 3.7.0 members with separate named data volumes, waits for all three
-client endpoints and cluster membership, then runs only the live integration
-test module. The default exit handler removes the containers and volumes.
+client endpoints and cluster membership, then runs the opt-in live integration modules. These include low-level
+Range/Txn/Lease/Watch transport checks and business-level Unified Coordinator
+checks using the same schema-v2 aggregate through two independent HTTP clients. The default exit handler removes the containers and volumes.
 Set ETCD_KEEP_CLUSTER=1 to retain them for inspection.
 
-The test module is excluded from ordinary CI execution unless
-ETCD_INTEGRATION=1 is set. The default repository workflow tests the adapter
+The live test modules are excluded from ordinary CI execution unless
+ETCD_INTEGRATION=1 is set. The Unified Coordinator suite creates a unique key
+namespace per test and uses only the disposable Compose cluster; its synthetic
+Provider control plane remains in-memory. The default repository workflow tests the adapter
 mapping with a fake gateway transport; it does not launch Docker or claim a
 live etcd integration result.
 

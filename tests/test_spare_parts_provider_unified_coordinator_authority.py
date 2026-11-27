@@ -17,6 +17,7 @@ from scripts.spare_parts_fencing_attestation import (
     Ed25519PrivateKeySigner,
 )
 from scripts.spare_parts_provider_authority_store import (
+    DurableCoordinatorAuthorityBackend,
     EtcdV3CoordinatorAuthorityStore,
     InMemoryEtcdV3Client,
     SQLiteCoordinatorAuthorityStore,
@@ -61,6 +62,9 @@ class StoreBackedCoordinatorAuthorityContract:
 
     def setUpContract(self):
         raise NotImplementedError
+
+    def test_store_backed_authority_conforms_to_durable_backend_protocol(self):
+        self.assertIsInstance(self.authority, DurableCoordinatorAuthorityBackend)
 
     def task(self, request_id: str, tenant: str = "tenant-A"):
         return ProviderTaskContext(f"task-{request_id}", tenant)
