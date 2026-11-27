@@ -1257,3 +1257,15 @@
 - **实现：** 新增scripts/spare_parts_sqlite_candidate_import_plan.py与专用测试。对隔离目标的Scheduler aggregate、终态request索引、Leader不存在性条件进行确定性映射；所有目标键VERSION=0比较与全部Put被规划在同一个Txn中。
 - **验证：** [Knowledge Quality Run 46027837959](https://github.com/rexyll/cnc-knowledge/actions/runs/46027837959) success；582 unittest（40 skipped）、CH12 143项通过、knowledge lint 0 errors/5 warnings、结构检查0 errors。
 - **限制：** 预算来自操作者显式输入而非服务器探测；超限只会阻断，不自动拆批。没有执行etcd Range/Txn、Lease、RBAC或生产操作。MIG-04继续IN_PROGRESS（写入器与未知结果恢复未完成），MIG-05/06待完成，MIG-07 BLOCKED。
+
+### 第七十八轮任务计划：MIG-04 分阶段索引导入与checkpoint恢复协议
+
+- **目标：** 在不增加真实etcd写入器的前提下，形成可测的分阶段导入协议模型，解决大量终态request索引无法在单Txn导入、Txn响应未知及应用提前初始化空Scheduler的问题。
+- **协议：** 初始化checkpoint；request indexes按预算分批；每批将request Put与checkpoint CAS推进放在同一Txn；所有索引完整读回后，最后Txn发布唯一Scheduler aggregate state。Leader key始终比较不存在，不恢复旧Leader。
+- **Checkpoint：** 绑定candidate、namespace、state与完整request write-set digest；记录batch游标、完成数量、last batch digest与累积progress SHA-256。批次Txn比较精确前驱checkpoint值。
+- **恢复：** 初始化、batch和最终发布的未知Txn结果分别读回关键key与值；只有精确可证明已提交或完全未提交时才继续/重试，部分值或身份不匹配一律QUARANTINE。
+- **权限门禁：** staging期间应用身份不能访问目标prefix；Scheduler在state缺失时会创建空aggregate，故应用不得提前启动。发布与读回验证后先撤销迁移写身份，再仅开放业务键范围，staging路径不授权。
+- **容量限制：** request indexes可分批，Scheduler aggregate单KV不可分割；若最终单key/Txn预算不满足，应先重构schema/runtime，不得提前暴露部分aggregate。
+- **测试：** 验证分批大小、checkpoint/request同Txn、state-last、零request、预算边界、未知结果提交/重试/隔离、后续checkpoint证明前序batch及应用隔离屏障。
+- **安全边界：** 当前只做纯规划和恢复分类，没有etcd连接、Range/Txn写入、Lease/RBAC修改、应用启动或生产迁移。
+
