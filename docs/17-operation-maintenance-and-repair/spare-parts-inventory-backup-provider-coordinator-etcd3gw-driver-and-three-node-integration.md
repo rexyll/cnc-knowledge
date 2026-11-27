@@ -135,10 +135,10 @@ ASSET-000092包含30项拟议场景，均为PROPOSED_NOT_APPROVED / NOT_RUN。�
 | 项目 | 当前状态 | 下一步要求 |
 |---|---|---|
 | etcd3gw网络驱动 | Range/Txn/Lease与HTTP Watch server-streaming已实现；13项fake契约测试与8项真实etcd live测试通过（Run 45842517310） | 继续验证更复杂网络分区、mTLS/RBAC、长时流背压 |
-| endpoint failover | 只读请求/Watch建立阶段可跨endpoint尝试；已建立Watch流不自动迁移 | 测量连接建立与断线恢复策略，必须保持Range+R+1 |
+| endpoint failover | 只读Range/status/member-list与Watch建立阶段仅在真实transport/timeout错误时跨endpoint尝试；401/403/请求错误不触发failover；已建立Watch流不自动迁移 | 保持Range+R+1恢复；认证失败由调用方显式重新认证并调用set_auth_token，不做匿名回退 |
 | Watch/WatchProgress | Watch响应完整包络与PUT/DELETE/prev_kv可用；WatchProgress/WatchCancel双向请求不支持，取消仅关闭HTTP响应 | 如需显式进度/取消与服务端ack，改用原生gRPC双向流驱动并进行多主机/长期压力验收 |
-| TLS/mTLS | 构造参数已映射，未真实握手测试 | CA链、双向证书、过期/轮换及失败注入 |
-| RBAC/认证 | 未实现账户/角色集成 | 明确最小权限和认证材料注入方案 |
+| TLS/mTLS | etcd v3.7.0一次性三成员环境已验证双向证书、缺失客户端证书拒绝和不可信CA拒绝（Run 45918152363） | 企业PKI、证书轮换/吊销、生产密钥托管和长期压力仍需独立验收 |
+| RBAC/认证 | 已验证reader/writer最小权限、跨prefix拒绝、HTTP 401/403错误分类和显式Token替换；无自动refresh | 企业IAM、token provider、凭据轮换/撤销、审计和多实例并发刷新仍需独立设计验收 |
 | Raft/quorum | 已在一次性3成员集群验证1节点停机后2/3多数派读写，以及2节点停机时失去quorum、读写失败关闭和恢复；未测网络分区与磁盘故障 | 补充非对称网络分区、长时间失联、磁盘/快照恢复与选举/恢复时延测量 |
 | Coordinator迁移 | 业务服务仍使用既有SQLite实现 | 独立迁移设计、双读比对、灰度、回滚与批准 |
 | 生产权威 | 未启用 | 所有协议、故障、安全和业务迁移验收通过前保持关闭 |
@@ -248,3 +248,24 @@ etcd Gateway错误响应的协议依据补充如下：SRC-000413记录etcd v3.6+
 **默认质量CI：** [Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：全库526项unittest（504 passed、22项opt-in live skip），CH12 143项通过，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有warning；结构数据为22章、178 Markdown、260实体、240关系、412来源、584内部链接。
 
 **限制：** 本轮测试只覆盖etcd v3.7.0/etcd3gw 2.7.0的Gateway状态和一次性三节点环境。没有构建自动token provider/refresh；没有测试跨节点简单token复制的长期稳定性、认证请求在单节点实际停机时的独立切换、网络分区和生产IAM/审计/密钥管理。正式30项场景继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+
+## 15. 第五十五轮 mTLS + RBAC 单成员故障、Token传播与重启恢复（2026-11-27）
+
+新增 `tests/test_spare_parts_provider_authority_store_member_outage_auth_etcd_integration.py`，在一次性 etcd v3.7.0 三成员 mTLS + RBAC 集群中，创建最小权限 reader 身份，分别观测 Token 签发后即时状态和收敛状态；真实停止 etcd1，保留 etcd2/etcd3 两成员多数派；通过首个 endpoint 指向故障成员的 Etcd3gwV3Client 发起线性一致 Range；再直接访问两个健康成员区分 Token 接受与 driver failover；最后重启 etcd1 并测试旧 Token 和显式重新认证后的新 Token。
+
+**关键实测结果：** [Live Run 45927091505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505)在同一代码head的五个独立阶段全部成功：基础三成员etcd suite 6项、mTLS/RBAC suite 12项、短TTL token生命周期1项、auth/quorum隔离1项、单成员故障与Token传播1项。新增单成员故障测试1/1通过，输出结果：
+- Token签发后即时访问：member1/member2/member3均accepted；
+- 等待传播后访问：三个成员均accepted；
+- 停止etcd1后Driver从故障endpoint经transport failover成功完成Range；
+- etcd2和etcd3直接接受原Token，均HTTP 200；
+- 重启etcd1后，旧reader simple Token返回HTTP 401；
+- 从健康成员etcd2显式重新认证后，新Token在member1/member2/member3均accepted，Driver使用新Token恢复读取成功。
+
+诊断Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 `2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff`。本轮还修正runner诊断目录归档，使mTLS Compose成员日志和状态文件纳入CI Artifact。
+
+**默认质量CI：** [Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)在最终文档head成功：全库527项unittest通过；CH12 143项数值测试通过；strict knowledge lint 0 errors；fixture validator 0 errors / 5项既有治理warning；结构数据为22章、178 Markdown、260实体、240关系、412来源、584内部链接。
+
+**技术解释与限制：** 本次结果证明限定环境下存活成员可继续接受旧Token，Driver可从停机成员failover；但成员重启后旧simple Token在该成员返回401，而从健康成员重新认证得到的新Token在三个成员都可用。该结果只描述本次etcd v3.7.0/simple-token实验，不将原因扩展推断为所有etcd版本或JWT token行为。Driver仍不保存用户名/密码，不自动重新认证，不自动刷新Token；调用方必须通过受控凭据源显式重新认证并调用token替换接口。不得匿名回退，不得将401/403作为endpoint failover条件。
+
+**治理边界：** 本轮只是supporting engineering evidence，不执行或批准ASSET-000092正式30项场景；其`PROPOSED_NOT_APPROVED / NOT_RUN`保持不变。schema-v2仍是唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
