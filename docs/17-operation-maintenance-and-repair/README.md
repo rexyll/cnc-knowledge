@@ -372,3 +372,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 当前驱动使用Requests访问`/v3/watch`，没有原生gRPC双向Watch控制流；HTTP/2 gRPC PING不能直接套用于当前Requests客户端。`status()`的`/maintenance/status`也不替代线性一致Range探测。
 - `watch_read_timeout`继续默认None；在没有可靠且有界的流量间隔前，不为长时间静默Watch设置生产超时。TCP Keepalive、后台Quorum Scheduler、应用心跳写入和自动恢复状态机均未实现。
 - 本轮为设计决策记录，不新增生产代码或Live验收。后续实现需先明确生产网络/代理、消费调度模型、权限范围和SLO，再分别验证连接探测与Quorum探测。CH17-T004保持`IN_PROGRESS`。
+
+
+## CH17-T004 Watch Supervisor 与 Quorum Probe 生产接入边界审查（第七十轮）
+
+- 完成业务服务、KV/Txn/Lease端口、可选Watch端口、etcd适配器与HTTP Gateway驱动的代码路径审查。
+- 关键阻塞：底层etcd存储适配器已存在，但`DurableCoordinatorAuthorityBackend`当前业务服务仍是SQLite实现；Watch没有业务服务级生命周期owner。
+- 决策：先迁移业务状态机并定义运行时owner/并发模型，再实现每进程共享Quorum探测；本轮不新增后台线程、探测器、TCP/gRPC keepalive或自动重连。
+- 详细门禁：[Watch Supervisor与Quorum Probe生产接入边界审查](watch-supervisor-integration-readiness-review.md)。

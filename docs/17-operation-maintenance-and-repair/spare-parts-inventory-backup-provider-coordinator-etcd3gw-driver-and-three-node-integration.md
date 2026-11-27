@@ -606,3 +606,16 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 **实施约束：** 由于当前同步pull Watch的`next(stream)`可能阻塞，本轮建议未来将Watch消费者和Quorum探测调度器分开运行；探测器按进程共享结果，不为每条Watch各自高频请求。未获得生产Progress最大间隔、代理空闲时限、网络抖动和业务SLO之前，不设定生产read timeout数值；无可靠流量来源的长时间静默Watch继续使用默认`None`。本轮不增加TCP socket options、HTTP/2 gRPC client、自动重连、自动failover、Lease心跳写入或后台健康状态机。
 
 **验收与治理：** 本轮是架构决策记录，不增加新的Live测试或生产行为。机制定义依据etcd v3.7 Watch API / API reference / endpoint health文档、gRPC Keepalive与Requests timeout文档；第六十八轮的4秒静默和访问路径演练作为本仓库有限CI证据，不扩大解释为生产网络验收。CH17-T004仍为`IN_PROGRESS`；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机尚未迁移。
+
+
+## 31. 第七十轮：Watch Supervisor 与 Quorum Probe 生产接入边界审查
+
+本轮完成对Watch健康分层方案的代码接入审查，详细记录见[Watch Supervisor与Quorum Probe生产接入边界审查](watch-supervisor-integration-readiness-review.md)。
+
+**核心代码事实：** `CoordinatorAuthorityStore`是基础KV/Txn/Lease端口；`CoordinatorAuthorityWatchStore`是单独的可选Watch端口；`EtcdV3CoordinatorAuthorityStore`提供`linearizable_range()`与Watch适配；`Etcd3gwV3Client`提供底层HTTP gRPC-gateway请求与同步Watch响应流。业务层`DurableCoordinatorAuthorityBackend`仍由SQLite业务服务实现，尚没有基于etcd存储端口的完整业务Coordinator状态机。
+
+**本轮决定：** 不在存储适配器层直接添加后台Supervisor或Quorum探测线程。业务服务尚未迁移到Store Port，Watch也没有业务owner、启动/关闭责任、线程/任务模型；此时增加后台运行时会形成无人管理的生命周期和按Watch实例扩张的探测负载。下一阶段先完成业务状态机迁移与服务生命周期定义，再建立每进程共享的线性一致Range探测器。
+
+**配置与一致性边界：** `watch_read_timeout`保持默认`None`；不把Progress、TCP ACK或`/maintenance/status`当成Quorum健康证明；不增加自动重连/failover。任何Watch断流/Compaction恢复仍须用健康多数派线性一致Range获取snapshot revision R，整体替换旧投影，并从R+1继续。
+
+**本轮验收：** 完成接口/类职责核对、实现缺口清单、生产接入门禁和有序实施路线。没有新增运行时代码、自动化测试或Live实验，不将此轮描述为生产Watch健康能力交付。

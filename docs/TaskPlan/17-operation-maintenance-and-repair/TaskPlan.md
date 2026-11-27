@@ -1265,3 +1265,22 @@
 - **默认策略：** `watch_read_timeout`继续为None；没有证明最大Progress/控制流响应间隔前，不给长时间静默Watch配置有限read timeout。Quorum探测应共享调度而非每条Watch独立高频Range；Watch恢复仍从线性一致snapshot R整体替换并从R+1恢复。
 - **实现范围：** 本轮只交付架构决策，没有增加TCP socket选项、gRPC channel/PING、Lease心跳写入、后台健康探针、Supervisor或自动重连/failover。当前Requests Watch消费循环为同步pull，未来探测调度须与可能阻塞的`next(stream)`解耦。
 - **上游依据：** 决策记录引用etcd v3.7 API/Progress/endpoint health、gRPC Keepalive及Requests timeout官方文档；第六十八轮Compose实测只作为局部Supporting evidence，不推导生产网络SLO。
+
+
+### 第七十轮任务计划：Watch Supervisor 与 Quorum Probe 生产接入边界审查
+
+- **目标：** 在实施后台Watch Supervisor/Quorum探测前，核对业务服务、KV存储端口、可选Watch端口及HTTP Gateway驱动之间的真实调用关系，确定当前阻塞项和可进入实现阶段的门禁。
+- **范围：** 只审查仓库代码、接口、测试及现有技术决策；不新增运行时代码、线程、探测请求、指标或自动恢复逻辑。
+- **重点核查：** `DurableCoordinatorAuthorityBackend`是否已有etcd业务服务实现；`EtcdV3CoordinatorAuthorityStore`与`CoordinatorAuthorityWatchStore`的契约边界；同步Watch迭代器的阻塞/关闭语义；线性一致Range探测的权限、deadline、频率和共享调度前置条件。
+- **交付物：** 独立接入就绪审查文档；技术正文第31节、章节README、章节TaskPlan、根TaskPlan和每日TaskHistory同步。
+- **决策约束：** 在业务服务迁移、owner生命周期、消费并发模型、探测身份/权限和SLO未明确前，不实现后台Supervisor/探测器；`watch_read_timeout`继续默认`None`，不新增自动重连/failover。
+- **验收标准：** 每个接口层均有仓库代码路径作证；明确区分已实现/仅测试/未实现；列出BLOCKED前置条件和有序实施路线；不把Fake或一次性Compose Live证据夸大为生产验收。
+
+## 第七十轮结果记录：Watch Supervisor 与 Quorum Probe 生产接入边界审查（2026-11-27）
+
+- **任务状态：** DONE（代码路径审查与接入门禁设计；没有生产行为变更）。
+- **核心发现：** `CoordinatorAuthorityStore`是KV/Txn/Lease端口；`CoordinatorAuthorityWatchStore`是独立可选Watch能力；`EtcdV3CoordinatorAuthorityStore`提供线性一致Range和Watch适配；而`DurableCoordinatorAuthorityBackend`业务服务当前仍由SQLite实现，尚无完整etcd-backed业务状态机。
+- **运行时缺口：** Watch为同步pull迭代器，`next(stream)`可能阻塞；业务服务尚未拥有Watch生命周期，探测器也没有进程级共享调度、deadline、频率预算或指标出口。不能把底层驱动的存在视为Supervisor可直接落位。
+- **决策：** 本轮不加后台线程/探测器、不添加TCP keepalive/gRPC PING/Lease心跳、不启用自动恢复、不改变`watch_read_timeout=None`。先迁移业务状态机并定义服务owner，再实现每进程共享Quorum探测和Watch观测。
+- **边界：** 本轮只做静态源代码与测试路径核查，不声称新增测试通过、真实etcd在线验证或生产HA能力。详见独立审查文档。
+- **后续门禁：** 业务服务迁移与生命周期定义是下一阶段前置工作；正式场景矩阵ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威。

@@ -1154,3 +1154,11 @@
 - **默认策略：** `watch_read_timeout`保持None；没有可靠、有界的流量间隔时不为长时间静默Watch设置生产read timeout。未来探测需与同步pull Watch消费阻塞解耦；恢复一律quorum snapshot R整体替换并从R+1续接。
 - **提交：** 决策记录`9ddcd9af2b42fb2ec9be0ad3b4ed2ead27dca017`；正文/README/历史同步`f8be577dc12194a7b4022a438e0c3f3d2b30f214`、`077c07a82cafcf1a802735036257dca80da895dc`、`e82fd1a09e369ae871348e2fce8001996451a933`；本轮计划`93fa9a54d8c1032badd157b08d96621272033dbf`、`20d185945e599119e9f46505fc9500f4cdca4dbc`。所有操作均在`main`。
 - **范围边界：** 本轮只产出架构决策，没有实现TCP Keepalive、原生gRPC、Lease heartbeat、后台探针或自动恢复状态机；也未执行新的Live故障验收。CH17-T004仍`IN_PROGRESS`，ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移。
+
+
+### 第七十轮完成状态（2026-11-27）
+
+- **状态：** DONE（CH17-T004代码路径审查与生产接入门禁设计；无生产运行时代码变更）。
+- **交付：** 新增`docs/17-operation-maintenance-and-repair/watch-supervisor-integration-readiness-review.md`，同步CH17技术正文第31节、章节README与章节任务计划。
+- **核心结论：** etcd KV/Txn/Lease和可选Watch底层能力已存在，但业务层`DurableCoordinatorAuthorityBackend`仍由SQLite实现，尚未形成由业务服务持有的etcd Watch生命周期；因此不应先行添加后台Supervisor/探测线程。
+- **后续门禁：** 先迁移业务状态机并明确服务owner、消费并发模型、探测权限/deadline/频率预算及监控出口，再实现每进程共享Quorum探测和Watch观测。默认`watch_read_timeout=None`不变；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威。
