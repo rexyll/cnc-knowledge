@@ -594,6 +594,32 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
         stream.close()
         self.assertTrue(response.closed)
 
+    def test_watch_clean_eof_without_terminal_control_frame_is_a_disconnect(self):
+        client = self.by_port[23791]
+        created = {
+            "result": {
+                "header": {"revision": "20"},
+                "watch_id": "4",
+                "created": True,
+            }
+        }
+        response = FakeStreamingResponse([
+            __import__("json").dumps(created).encode("utf-8")
+        ])
+        client.session = FakeStreamingSession([response])
+
+        store = EtcdV3CoordinatorAuthorityStore(self.driver)
+        stream = store.watch(b"/watch/unexpected-eof", start_revision=20)
+        opened = next(stream)
+        self.assertTrue(opened.created)
+        self.assertEqual(opened.header_revision, 20)
+
+        # A clean TCP/HTTP EOF is not a normal Watch completion: etcd signals
+        # server-side cancellation with an explicit canceled WatchResponse.
+        with self.assertRaises(AuthorityStoreUnavailableError):
+            next(stream)
+        self.assertTrue(response.closed)
+
     def test_watch_compaction_cancel_without_gateway_header_is_preserved(self):
         client = self.by_port[23791]
         canceled_frame = {
