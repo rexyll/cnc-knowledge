@@ -242,3 +242,12 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - Live Run 45922792420：基础三节点/成员故障/quorum suite 8项、mTLS/RBAC suite 12项、短TTL token 1项、认证/quorum隔离1项通过。多数派丢失时有效token Range和重新认证都超时；恢复多数派后旧token Range成功。
 - 默认CI Run 45922792429：526项unittest（504通过、22项opt-in skip），CH12 143项，strict lint 0 errors；结构/数据0 errors，5项既有治理warning。
 - 认证错误结构化只在当前Gateway协议和etcd3gw 2.7.0范围内验证；生产IAM、自动token刷新、网络分区和认证服务HA仍未验证。正式ASSET-000092状态不变。
+
+
+## CH17-T004 etcd mTLS/RBAC 单成员故障与Token恢复（第五十五轮）
+
+- 新增专项live测试：`tests/test_spare_parts_provider_authority_store_member_outage_auth_etcd_integration.py`。覆盖Token即时/收敛传播、停止单成员后的2/3 quorum读访问、Driver transport failover、健康成员直接Token接受、节点重启后的旧Token行为和显式重新认证恢复。
+- Live [Run 45927091505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505)五个阶段全部成功：基础etcd 6项、mTLS/RBAC 12项、短TTL生命周期1项、auth/quorum隔离1项、member outage/token传播1项；诊断Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 `2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff`。
+- 实测：签发后立即和等待传播后3/3成员接受旧Token；停止etcd1时Driver failover成功，etcd2/3均HTTP 200；重启etcd1后旧Token返回HTTP 401；从健康成员重新认证得到的新Token在3/3成员可用，Driver恢复读取。
+- 默认质量[Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)成功：527项unittest、CH12 143项、strict lint 0 errors、fixture validator 0 errors/5项既有warning，知识结构22章/178 Markdown/260实体/240关系/412来源/584内部链接。
+- 边界：不自动刷新/重新认证、不匿名回退；simple Token重启后401只代表本次etcd v3.7.0实验，不外推JWT或生产环境。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
