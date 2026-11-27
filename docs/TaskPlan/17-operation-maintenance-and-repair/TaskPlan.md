@@ -1383,3 +1383,12 @@
 - Scheduler aggregate单key不可拆分；最终发布预算不满足时提前拒绝，要求先做runtime/schema sharding设计。
 - 当前只提交只读协议模型与测试；真实writer、自动resume、etcd故障注入与生产切换均不在本轮授权范围。
 
+### 第七十八轮完成记录：分阶段索引导入与checkpoint恢复协议
+
+- **状态：** DONE（只读协议计划与恢复判定）。
+- request indexes可按事务预算分批；每个batch在同Txn内写records并推进checkpoint，最终Txn才发布scheduler/state。
+- checkpoint progress digest绑定candidate、namespace、state及全量request write set；未知Txn响应必须读回，不能盲目重放。
+- staging期间应用身份拒绝访问；publish读回验证后撤销migration身份，只开放业务键范围并排除staging。
+- **CI：** [46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) success：594 unittest（40 skipped）、CH12 143项、lint 0 errors/5 warnings、结构0 errors。
+- **边界：** 没有真实etcd写入器、自动checkpoint续跑或临时集群故障注入；MIG-04继续IN_PROGRESS。
+
