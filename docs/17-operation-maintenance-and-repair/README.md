@@ -234,3 +234,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 新增显式token替换接口与短TTL集成测试入口：`Etcd3gwV3Client.set_auth_token()`可统一更新/清除各endpoint session的Authorization header，Watch复用相同session；driver不保存密码、不自动认证或刷新。etcd v3.7配置参考中的simple token默认TTL为300秒（`--auth-token-ttl`），JWT TTL独立配置；simple token为有状态开发/测试机制。短TTL测试单独启动临时mTLS集群，避免缩短既有RBAC套件token寿命。实时CI结果待验收补记。知识条目见[备件Coordinator etcd Gateway驱动与三节点集成](spare-parts-inventory-backup-provider-coordinator-etcd3gw-driver-and-three-node-integration.md)，来源SRC-000410～SRC-000412。
 
 实时验收补记：[Run 45920726761](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726761)成功，基础三节点suite 6项、mTLS/RBAC suite 8项、短TTL token生命周期1项全部通过；Artifact 15164208273（SHA-256 `0b66c69eb7f1ecc12e0d8bfbbf80ab0bf51de739ec31d8d2e9f3db878619e476`）。默认质量CI [Run 45920726730](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726730)成功：518项unittest（501通过、17项opt-in skip）、CH12 143项、strict lint 0 errors。simple token TTL=10秒的旧token过期拒绝、显式重新认证、全部endpoint session更新、KV Range和Watch created握手均通过。自动刷新仍未实现。
+
+
+### 第五十四轮补充：Gateway认证错误与quorum故障隔离
+
+- 驱动将Gateway 401/code16映射为AuthenticationError、403/code7映射为PermissionDeniedError，明确的错误密码消息也映射为AuthenticationError；普通参数错误归类为GatewayRequestError。只有连接/超时可触发只读endpoint failover。
+- Live Run 45922792420：基础三节点/成员故障/quorum suite 8项、mTLS/RBAC suite 12项、短TTL token 1项、认证/quorum隔离1项通过。多数派丢失时有效token Range和重新认证都超时；恢复多数派后旧token Range成功。
+- 默认CI Run 45922792429：526项unittest（504通过、22项opt-in skip），CH12 143项，strict lint 0 errors；结构/数据0 errors，5项既有治理warning。
+- 认证错误结构化只在当前Gateway协议和etcd3gw 2.7.0范围内验证；生产IAM、自动token刷新、网络分区和认证服务HA仍未验证。正式ASSET-000092状态不变。
