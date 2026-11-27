@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000414",
+  "source_type": "other",
+  "title": "etcd v3 RPC error types",
+  "publisher": "etcd Project — Official Source Code",
+  "author": null,
+  "url": "https://github.com/etcd-io/etcd/blob/main/api/v3rpc/rpctypes/error.go",
+  "version": "etcd API v3 rpctypes source; accessed 2026-11-27.",
+  "published_on": null,
+  "accessed_on": "2026-11-27",
+  "locator": "ErrGRPCInvalidAuthToken uses gRPC Unauthenticated; ErrGRPCPermissionDenied uses PermissionDenied; ErrGRPCNoLeader/LeaderChanged/Stopped/Timeout use Unavailable.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to distinguish identity/authorization failures from cluster availability failures. Source branch may advance; deployed live test version is etcd v3.7.0.",
+  "authority_tier": "A",
+  "evidence_kind": "official_source_code"
+}
