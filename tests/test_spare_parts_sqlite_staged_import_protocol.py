@@ -74,6 +74,14 @@ class StagedImportProtocolTests(unittest.TestCase):
         for batch in plan["transactions"]["request_batches"]:
             self.assertEqual(batch["budget"]["put_count"], batch["request_count"] + 1)
             self.assertEqual(batch["budget"]["compare_count"], batch["request_count"] + 3)
+            self.assertNotIn(plan["target"]["scheduler_state_key"], batch["request_keys"])
+
+    def test_state_is_last_and_checkpoint_is_outside_application_key_ranges(self):
+        plan = self.build()
+        self.assertTrue(plan["target"]["application_access_must_remain_disabled_until_publish_verified"])
+        self.assertIn("/staging/sqlite-import/", plan["target"]["checkpoint_key"])
+        self.assertTrue(any("exclude staging/" in item for item in plan["activation_barrier"]))
+        self.assertEqual(plan["transactions"]["publish_scheduler_state"]["budget"]["put_count"], 1)
 
     def test_zero_request_candidate_still_initializes_checkpoint_and_publishes_state(self):
         plan = self.build(multi_request_candidate(0))
@@ -173,6 +181,54 @@ class StagedImportProtocolTests(unittest.TestCase):
             observed_request_values=corrupt,
             expected_request_values=expected_values,
             observed_state_exists=False,
+            observed_leader_exists=False,
+        ), UNKNOWN_QUARANTINE)
+
+    def test_advanced_checkpoint_proves_earlier_batch_only_with_exact_values(self):
+        candidate = multi_request_candidate(5)
+        plan = self.build(candidate)
+        batches = plan["transactions"]["request_batches"]
+        first = batches[0]
+        final_checkpoint = batches[-1]["checkpoint_after"]
+        first_keys = [
+            PREFIX + item["key"].encode()
+            for item in candidate["terminal_request_indexes"][:first["request_count"]]
+        ]
+        first_values = {
+            PREFIX + item["key"].encode(): json.dumps(
+                item["record"], sort_keys=True, separators=(",", ":")
+            ).encode()
+            for item in candidate["terminal_request_indexes"][:first["request_count"]]
+        }
+        initial = plan["transactions"]["initialize_checkpoint"]["checkpoint_value"]
+        previous_bytes = json.dumps(initial, sort_keys=True, separators=(",", ":")).encode()
+        final_bytes = json.dumps(final_checkpoint, sort_keys=True, separators=(",", ":")).encode()
+        self.assertEqual(classify_batch_unknown(
+            plan_sha256=plan["plan_sha256"],
+            expected_previous_checkpoint=previous_bytes,
+            observed_checkpoint=final_bytes,
+            expected_completed_request_count=first["request_count"],
+            observed_request_values=first_values,
+            expected_request_values=first_values,
+            observed_state_exists=False,
+            observed_leader_exists=False,
+        ), UNKNOWN_COMMITTED)
+
+    def test_publish_unknown_conflicting_state_is_quarantined(self):
+        candidate = multi_request_candidate(0)
+        plan = self.build(candidate)
+        checkpoint = json.dumps(
+            plan["transactions"]["initialize_checkpoint"]["checkpoint_value"],
+            sort_keys=True, separators=(",", ":"),
+        ).encode()
+        expected_state = json.dumps(
+            candidate["state_template"], sort_keys=True, separators=(",", ":")
+        ).encode()
+        self.assertEqual(classify_publish_unknown(
+            observed_checkpoint=checkpoint,
+            expected_final_checkpoint=checkpoint,
+            observed_state=b"foreign-state",
+            expected_state=expected_state,
             observed_leader_exists=False,
         ), UNKNOWN_QUARANTINE)
 
