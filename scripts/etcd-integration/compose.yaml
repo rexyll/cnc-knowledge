@@ -12,6 +12,7 @@ services:
       - --initial-cluster=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
       - --initial-cluster-state=new
       - --initial-cluster-token=cnc-knowledge-etcd-v3-itest
+      - --watch-progress-notify-interval=1s
     ports:
       - "23791:2379"
     volumes:

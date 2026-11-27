@@ -544,6 +544,56 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
         self.assertEqual(len(second.session.calls), 1)
         self.assertTrue(response.closed)
 
+    def test_watch_preserves_progress_notification_without_events_and_cursor(self):
+        client = self.by_port[23791]
+        frames = [
+            {
+                "result": {
+                    "header": {"revision": "10"},
+                    "watch_id": "9",
+                    "created": True,
+                    "events": [],
+                }
+            },
+            {
+                "result": {
+                    "header": {"revision": "12"},
+                    "watch_id": "9",
+                    "events": [],
+                }
+            },
+        ]
+        response = FakeStreamingResponse([
+            __import__("json").dumps(frame).encode("utf-8") for frame in frames
+        ])
+        client.session = FakeStreamingSession([response])
+
+        store = EtcdV3CoordinatorAuthorityStore(self.driver)
+        stream = store.watch(
+            b"/watch/progress",
+            start_revision=11,
+            progress_notify=True,
+            prev_kv=True,
+        )
+        created = next(stream)
+        self.assertTrue(created.created)
+        self.assertEqual(created.watch_id, 9)
+
+        progress = next(stream)
+        self.assertTrue(progress.is_progress)
+        self.assertFalse(progress.created)
+        self.assertFalse(progress.canceled)
+        self.assertEqual(progress.watch_id, created.watch_id)
+        self.assertEqual(progress.header_revision, 12)
+        self.assertEqual(progress.events, ())
+        self.assertEqual(progress.resume_revision, 13)
+
+        url, kwargs = client.session.calls[0]
+        self.assertTrue(url.endswith("/v3/watch"))
+        self.assertIs(kwargs["json"]["create_request"]["progress_notify"], True)
+        stream.close()
+        self.assertTrue(response.closed)
+
     def test_watch_compaction_cancel_without_gateway_header_is_preserved(self):
         client = self.by_port[23791]
         canceled_frame = {

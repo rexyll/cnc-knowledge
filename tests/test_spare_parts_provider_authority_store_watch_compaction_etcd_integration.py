@@ -253,5 +253,107 @@ class Etcd3gwLiveWatchCompactionTests(unittest.TestCase):
             driver.close()
 
 
+    def test_watch_progress_notification_is_empty_and_range_snapshot_is_authoritative(self):
+        suffix = uuid4().hex
+        watched_key = f"/cnc-knowledge-it/watch-progress/{suffix}/watched".encode()
+        marker_key = f"/cnc-knowledge-it/watch-progress/{suffix}/unrelated".encode()
+        watched_value = f"watched-value-{suffix}".encode()
+        marker_value = f"unrelated-marker-{suffix}".encode()
+
+        progress_endpoint = next(
+            (endpoint for endpoint in self.endpoints if endpoint.rstrip("/").endswith(":23791")),
+            None,
+        )
+        self.assertIsNotNone(progress_endpoint, "etcd1 progress-test endpoint is required")
+        self._container_id("etcd1")
+
+        driver = Etcd3gwV3Client([progress_endpoint], timeout=3.0)
+        store = EtcdV3CoordinatorAuthorityStore(driver)
+        stream = None
+        try:
+            initial = store.transact([], [AuthorityStorePut(watched_key, watched_value)])
+            self.assertTrue(initial.succeeded)
+            current, baseline_read_revision = store.linearizable_get(watched_key)
+            self.assertIsNotNone(current)
+            self.assertEqual(current.value, watched_value)
+
+            stream = store.watch(
+                watched_key,
+                start_revision=baseline_read_revision + 1,
+                progress_notify=True,
+                prev_kv=True,
+            )
+            created_result = self._next_result(stream, timeout=8.0)
+            self.assertEqual(created_result[0], "response", created_result[1])
+            created = created_result[1]
+            self.assertTrue(created.created)
+            self.assertGreater(created.watch_id, 0)
+            self.assertEqual(created.events, ())
+
+            # Advance the cluster revision with a key outside this exact-key Watch.
+            marker = store.transact([], [AuthorityStorePut(marker_key, marker_value)])
+            self.assertTrue(marker.succeeded)
+            self.assertGreater(marker.revision, created.header_revision)
+
+            progress_result = self._next_result(stream, timeout=8.0)
+            self.assertEqual(progress_result[0], "response", progress_result[1])
+            progress = progress_result[1]
+            self.assertTrue(progress.is_progress)
+            self.assertFalse(progress.created)
+            self.assertFalse(progress.canceled)
+            self.assertEqual(progress.watch_id, created.watch_id)
+            self.assertEqual(progress.events, ())
+            self.assertGreaterEqual(progress.header_revision, marker.revision)
+            self.assertEqual(progress.resume_revision, progress.header_revision + 1)
+
+            # Progress is a node-local revision watermark, not a KV snapshot.
+            snapshot = store.linearizable_range(watched_key)
+            self.assertGreaterEqual(snapshot.revision, progress.header_revision)
+            self.assertEqual(len(snapshot.entries), 1)
+            self.assertEqual(snapshot.entries[0].key, watched_key)
+            self.assertEqual(snapshot.entries[0].value, watched_value)
+            self.assertEqual(snapshot.entries[0].mod_revision, current.mod_revision)
+
+            print(
+                "WATCH_PROGRESS_OBSERVATION "
+                + json.dumps(
+                    {
+                        "watch_endpoint": progress_endpoint,
+                        "created_watch_id": created.watch_id,
+                        "created_header_revision": created.header_revision,
+                        "unrelated_marker_revision": marker.revision,
+                        "progress_watch_id": progress.watch_id,
+                        "progress_header_revision": progress.header_revision,
+                        "progress_event_count": len(progress.events),
+                        "progress_resume_revision": progress.resume_revision,
+                        "linearizable_snapshot_revision": snapshot.revision,
+                        "snapshot_contains_expected_watched_key": (
+                            len(snapshot.entries) == 1
+                            and snapshot.entries[0].key == watched_key
+                            and snapshot.entries[0].value == watched_value
+                        ),
+                        "snapshot_revision_at_least_progress_revision": (
+                            snapshot.revision >= progress.header_revision
+                        ),
+                    },
+                    sort_keys=True,
+                )
+            )
+        finally:
+            if stream is not None:
+                stream.close()
+            try:
+                cleanup = []
+                for key in (watched_key, marker_key):
+                    current_entry, _ = store.linearizable_get(key)
+                    if current_entry is not None:
+                        cleanup.append(AuthorityStoreDelete(key))
+                if cleanup:
+                    store.transact([], cleanup)
+            except Exception:
+                pass
+            driver.close()
+
+
 if __name__ == "__main__":
     unittest.main()
