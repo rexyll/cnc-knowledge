@@ -623,3 +623,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - Gateway client cert采用无CN证书，仍由CA签名并强制mTLS；RBAC用户名/密码认证换取token，避免使用Gateway不支持的证书CN用户映射。
 - 默认 [Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)：515项unittest（499通过、16项opt-in skip），CH12 143项，strict lint 0 errors，结构/数据0 errors、5项既有warning。
 - 限制：token自动刷新/续期、企业IAM、审计、生产密钥托管未验证；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+
+## 第五十三轮：etcd Authentication Token 生命周期（2026-11-27）
+
+- 本轮没有新增需长期归档的证书、密钥或第三方文档副本；官方资料采用链接元数据方式登记为SRC-000410（v3.7配置与simple token TTL）、SRC-000411（认证设计与simple/JWT差异）、SRC-000412（RBAC范围与Gateway限制）。
+- 短TTL集成环境在CI runner临时生成CA/客户端证书/密码/token，运行结束清理；不得将这些临时凭据或日志中的敏感值复制到资源目录。
+- 本轮代码交付为显式token更新接口和短TTL测试，不代表生产自动刷新、企业IAM或凭据轮换已实现。
