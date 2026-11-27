@@ -71,6 +71,16 @@
   - quorum isolation、基础 mTLS、short-TTL token lifecycle 之前置阶段均成功。
 - 首次失败证据：重启 etcd1 后，原 reader simple Token 返回 HTTP 401；旧 Token 恢复轮询最终得到 `http-401`。这与 Token TTL=300秒的过期时间无关（单次测试约92秒），但仍需在下一次 live run 验证 fresh re-auth 行为。
 - 修正：新增重启后旧 Token 状态的明确断言；随后从健康成员 etcd2 重新认证 reader，验证 fresh token 是否在三个成员都能访问，并验证 Driver 使用 fresh token 可读取。对 HTTP 401 立即停止恢复轮询，避免无意义等待90秒。
-- 质量 CI： [45926442759](https://github.com/rexyll/cnc-knowledge/actions/runs/45926442759) 在提交 `f2e6ae20a73412e48ba149ba65af20fee0e4cb2e` 成功；全库 unittest 527项通过，CH12数值测试143项通过，strict knowledge lint 0 errors，fixture validator 0 errors / 5 warnings。fixture 仍明确标记30个正式场景NOT_RUN。
+- 质量 CI： [45926442759](https://github.com/rexyll/cnc-knowledge/actions/runs/45926442759) 在提交 `f2e6ae20a73412e48ba149ba65af20fee0e4cb2e` 成功；全库 unittest 527项（504 passed、23 skipped），CH12数值测试143项通过，strict knowledge lint 0 errors，fixture validator 0 errors / 5 warnings。fixture 仍明确标记30个正式场景NOT_RUN。
 - 增强诊断：修改 `run-mtls.sh` 将每轮mTLS Compose日志保存在runner临时目录，并纳入workflow artifact，避免下一轮仅有最终断言而缺少etcd成员日志。
 - 后续提交：测试修正 `022c538f`、`57cb1553`；计划补充 `042a1884`、`1406f9ad`；诊断归档 `cd8c891c`、`412f5636`。待新 live workflow 和最新 HEAD quality CI 完成后再判定任务状态。
+
+
+### 第五十五轮最终验收（2026-11-27）
+
+- 最终Live [Run 45927091505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505)成功，五个阶段全部完成：普通三节点etcd 6项、mTLS/RBAC 12项、10秒simple-token生命周期1项、认证/quorum隔离1项、单成员故障与Token传播1项；第五十五轮专项测试1/1 PASS。
+- 实测结果：reader Token签发后立即3/3成员接受，等待传播后仍3/3；停止etcd1后只读Range从故障首endpoint transport failover成功；etcd2/3直接访问旧Token均HTTP 200；重启etcd1后旧simple Token HTTP 401；从健康成员etcd2显式重新认证取得的新Token在3/3成员均accepted，Driver读取恢复成功。
+- Live诊断Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff。mTLS runner的Compose日志/状态已加入Artifact归档；临时证书、密钥、密码、token和volumes均清理。
+- 最终文档head质量CI [Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)成功：527项unittest（504 passed、23 skipped），CH12 143项通过，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有治理warning，22章、178 Markdown、260实体、240关系、412来源、584内部链接。
+- 已同步CH17技术正文第15节、章节README、资源README、ASSET索引、KNOW-000061、ASSET-000092 supporting evidence。ASSET-000092正式场景数量仍30，审批状态PROPOSED_NOT_APPROVED，执行状态NOT_RUN，未因工程冒烟测试改变。
+- 本轮状态：COMPLETED。重要限制：当前Etcd3gwV3Client不自动重新认证/刷新；旧simple Token在本次etcd v3.7.0成员重启实验中返回401，显式重新认证后新Token恢复3/3成员访问。该现象不外推为JWT或其他版本行为。schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004仍IN_PROGRESS。
