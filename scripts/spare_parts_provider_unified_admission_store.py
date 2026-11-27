@@ -73,6 +73,7 @@ class StoreBackedProviderAdmissionCoordinator:
         poll_interval_seconds: float = 0.02,
         clock_fn: Callable[[], float] = time.time,
         monotonic_fn: Callable[[], float] = time.monotonic,
+        namespace_prefix: bytes | None = None,
     ):
         required = ("linearizable_get", "transact", "lease_grant", "lease_keepalive", "lease_revoke")
         if any(not callable(getattr(store, name, None)) for name in required):
@@ -103,6 +104,24 @@ class StoreBackedProviderAdmissionCoordinator:
         if not callable(clock_fn) or not callable(monotonic_fn):
             raise BackupStorageError("clock functions must be callable")
 
+        if namespace_prefix is not None:
+            if (
+                not isinstance(namespace_prefix, bytes)
+                or not namespace_prefix.startswith(b"/cnc/migration/isolated/")
+                or not namespace_prefix.endswith(b"/")
+                or namespace_prefix == self._PREFIX
+                or b".." in namespace_prefix
+                or any(byte < 0x21 or byte > 0x7e for byte in namespace_prefix)
+            ):
+                raise BackupStorageError(
+                    "custom namespace must be a printable, slash-terminated "
+                    "isolated migration prefix under /cnc/migration/isolated/"
+                )
+            namespace_id = namespace_prefix[len(b"/cnc/migration/isolated/"):-1]
+            if not namespace_id or b"/" in namespace_id:
+                raise BackupStorageError("isolated migration namespace must have one identifier segment")
+        self._PREFIX = self._PREFIX if namespace_prefix is None else namespace_prefix
+        self._STATE_KEY = self._PREFIX + b"scheduler/state"
         self.store = store
         self.global_limits = defaults
         self.tenant_limits = tenants
@@ -132,13 +151,11 @@ class StoreBackedProviderAdmissionCoordinator:
     def _digest(cls, value: str) -> bytes:
         return hashlib.sha256(value.encode("utf-8")).hexdigest().encode("ascii")
 
-    @classmethod
-    def _lease_key(cls, lease_id: str) -> bytes:
-        return cls._PREFIX + b"leases/" + cls._digest(lease_id)
+    def _lease_key(self, lease_id: str) -> bytes:
+        return self._PREFIX + b"leases/" + self._digest(lease_id)
 
-    @classmethod
-    def _request_key(cls, request_id: str) -> bytes:
-        return cls._PREFIX + b"requests/" + cls._digest(request_id)
+    def _request_key(self, request_id: str) -> bytes:
+        return self._PREFIX + b"requests/" + self._digest(request_id)
 
     @staticmethod
     def _encode(value: dict[str, Any]) -> bytes:
