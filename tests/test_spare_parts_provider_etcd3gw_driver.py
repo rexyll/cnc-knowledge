@@ -620,6 +620,54 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
             next(stream)
         self.assertTrue(response.closed)
 
+    def test_watch_read_timeout_is_applied_and_surfaces_transport_stall(self):
+        client = self.by_port[23791]
+        created = {
+            "result": {
+                "header": {"revision": "20"},
+                "watch_id": "4",
+                "created": True,
+            }
+        }
+        response = FakeStreamingResponse(
+            [__import__("json").dumps(created).encode("utf-8")],
+            failure=TimeoutError("watch response read timed out"),
+        )
+        client.session = FakeStreamingSession([response])
+
+        driver = Etcd3gwV3Client(
+            ["http://127.0.0.1:23791"],
+            timeout=1.75,
+            watch_read_timeout=4.5,
+            client_factory=lambda **kwargs: client,
+        )
+        store = EtcdV3CoordinatorAuthorityStore(driver)
+        stream = store.watch(
+            b"/watch/read-timeout",
+            start_revision=20,
+            progress_notify=True,
+        )
+        opened = next(stream)
+        self.assertTrue(opened.created)
+        with self.assertRaises(AuthorityStoreUnavailableError):
+            next(stream)
+
+        _, request = client.session.calls[0]
+        self.assertEqual(request["timeout"], (1.75, 4.5))
+        self.assertTrue(request["json"]["create_request"]["progress_notify"])
+        self.assertTrue(response.closed)
+        driver.close()
+
+    def test_watch_read_timeout_must_be_positive_or_none(self):
+        for value in (0, -1, True, "4"):
+            with self.subTest(value=value):
+                with self.assertRaises(Etcd3gwConfigurationError):
+                    Etcd3gwV3Client(
+                        "http://127.0.0.1:23791",
+                        watch_read_timeout=value,
+                        client_factory=lambda **kwargs: None,
+                    )
+
     def test_watch_compaction_cancel_without_gateway_header_is_preserved(self):
         client = self.by_port[23791]
         canceled_frame = {
