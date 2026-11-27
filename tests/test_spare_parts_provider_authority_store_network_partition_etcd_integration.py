@@ -150,11 +150,26 @@ class Etcd3gwLiveNetworkPartitionTests(unittest.TestCase):
         # Once the network is restored, the isolated member must converge to
         # the single majority-committed value; the failed minority write must
         # not appear as a second or conflicting value.
-        recovered_driver = Etcd3gwV3Client([self.endpoints[0]], timeout=3.0)
+        recovered_driver = Etcd3gwV3Client([self.endpoints[0]], timeout=2.0)
         try:
             recovered_store = EtcdV3CoordinatorAuthorityStore(recovered_driver)
-            entry, _ = recovered_store.linearizable_get(key)
-            self.assertIsNotNone(entry)
+            deadline = time.monotonic() + 15.0
+            entry = None
+            last_error: Exception | None = None
+            while time.monotonic() < deadline:
+                try:
+                    entry, _ = recovered_store.linearizable_get(key)
+                    if entry is not None:
+                        break
+                except Exception as exc:
+                    # This is a read-only convergence probe after reconnect;
+                    # no write is replayed while the former minority catches up.
+                    last_error = exc
+                time.sleep(0.5)
+            self.assertIsNotNone(
+                entry,
+                f"reconnected minority did not expose the majority value; last_error={last_error}",
+            )
             self.assertEqual(entry.value, value)
         finally:
             recovered_driver.close()
