@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from scripts.spare_parts_backup_storage_adapter import (
+    BackupStorageError,
     ProviderAdmissionQueueFullError,
     ProviderBulkheadFullError,
     ProviderTaskContext,
@@ -31,6 +32,42 @@ class MutableClock:
 
     def advance(self, seconds: float) -> None:
         self.value += seconds
+
+
+class IsolatedNamespaceTests(unittest.TestCase):
+    def test_custom_namespaces_are_disjoint_and_default_prefix_is_unchanged(self):
+        store = EtcdV3CoordinatorAuthorityStore(InMemoryEtcdV3Client())
+        policy = {
+            "global_limits": {"read": 2},
+            "max_waiters": 0,
+            "namespace_prefix": b"/cnc/migration/isolated/drill-a/",
+        }
+        first = StoreBackedProviderAdmissionCoordinator(store, **policy)
+        second = StoreBackedProviderAdmissionCoordinator(
+            store, **{**policy, "namespace_prefix": b"/cnc/migration/isolated/drill-b/"}
+        )
+        self.assertNotEqual(first._STATE_KEY, second._STATE_KEY)
+        self.assertEqual(first._PREFIX, b"/cnc/migration/isolated/drill-a/")
+        self.assertEqual(second._PREFIX, b"/cnc/migration/isolated/drill-b/")
+        self.assertEqual(
+            StoreBackedProviderAdmissionCoordinator._PREFIX,
+            b"/cnc/admission/unified/v2/",
+        )
+
+    def test_custom_namespace_rejects_production_and_ambiguous_prefixes(self):
+        store = EtcdV3CoordinatorAuthorityStore(InMemoryEtcdV3Client())
+        for prefix in (
+            b"/cnc/admission/unified/v2/",
+            b"/cnc/migration/isolated/",
+            b"/cnc/migration/isolated/a/b/",
+            b"/cnc/migration/isolated/../prod/",
+            "/cnc/migration/isolated/unicode-测试/".encode(),
+        ):
+            with self.subTest(prefix=prefix):
+                with self.assertRaises(BackupStorageError):
+                    StoreBackedProviderAdmissionCoordinator(
+                        store, namespace_prefix=prefix
+                    )
 
 
 class StoreBackedAdmissionSchedulerContract:
