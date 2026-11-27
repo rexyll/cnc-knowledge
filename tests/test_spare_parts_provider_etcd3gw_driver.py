@@ -236,6 +236,186 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
         self.assertEqual(len(first.calls), 1)
         self.assertEqual(second.calls, [])
 
+    def test_lease_mutations_dispatch_once_and_map_transport_failures(self):
+        cases = (
+            ("lease_grant", "lease/grant", AuthorityStoreOutcomeUnknownError),
+            ("lease_keepalive", "lease/keepalive", AuthorityStoreUnavailableError),
+            ("lease_revoke", "kv/lease/revoke", AuthorityStoreOutcomeUnknownError),
+        )
+        for method, path, expected_error in cases:
+            with self.subTest(method=method):
+                clients = {}
+
+                def factory(**kwargs):
+                    client = FakeGatewayClient(**kwargs)
+                    clients[kwargs["port"]] = client
+                    return client
+
+                driver = Etcd3gwV3Client(
+                    ["http://127.0.0.1:23791", "http://127.0.0.1:23792"],
+                    timeout=1.0,
+                    client_factory=factory,
+                )
+                first = clients[23791]
+                second = clients[23792]
+                first.failures[path] = TimeoutError("synthetic response timeout")
+                store = EtcdV3CoordinatorAuthorityStore(driver)
+                with self.assertRaises(expected_error):
+                    if method == "lease_grant":
+                        store.lease_grant(30)
+                    elif method == "lease_keepalive":
+                        store.lease_keepalive(7001)
+                    else:
+                        store.lease_revoke(7001)
+                self.assertEqual(len(first.calls), 1)
+                self.assertTrue(first.calls[0][0].endswith(f"/v3/{path}"))
+                self.assertEqual(second.calls, [])
+                driver.close()
+
+    def test_lease_mutations_keep_gateway_auth_permission_and_request_errors_typed(self):
+        class Etcd3Exception(Exception):
+            pass
+
+        cases = (
+            (
+                "lease/grant",
+                '{"code":16,"message":"etcdserver: invalid auth token"}',
+                Etcd3gwAuthenticationError,
+                "lease_grant",
+            ),
+            (
+                "lease/keepalive",
+                '{"code":7,"message":"etcdserver: permission denied"}',
+                Etcd3gwPermissionDeniedError,
+                "lease_keepalive",
+            ),
+            (
+                "kv/lease/revoke",
+                '{"code":3,"message":"etcdserver: key is empty"}',
+                Etcd3gwRequestError,
+                "lease_revoke",
+            ),
+        )
+        for path, body, expected_error, method in cases:
+            with self.subTest(path=path):
+                clients = {}
+
+                def factory(**kwargs):
+                    client = FakeGatewayClient(**kwargs)
+                    clients[kwargs["port"]] = client
+                    return client
+
+                driver = Etcd3gwV3Client(
+                    ["http://127.0.0.1:23791", "http://127.0.0.1:23792"],
+                    timeout=1.0,
+                    client_factory=factory,
+                )
+                first = clients[23791]
+                second = clients[23792]
+                original = Etcd3Exception(body)
+                first.failures[path] = original
+                with self.assertRaises(expected_error) as caught:
+                    if method == "lease_grant":
+                        driver.lease_grant(30)
+                    elif method == "lease_keepalive":
+                        driver.lease_keepalive(7001)
+                    else:
+                        driver.lease_revoke(7001)
+                self.assertIs(caught.exception.__cause__, original)
+                self.assertEqual(len(first.calls), 1)
+                self.assertEqual(second.calls, [])
+                driver.close()
+
+    def test_lease_mutations_dispatch_once_and_map_transport_failures(self):
+        cases = (
+            ("lease_grant", "lease/grant", AuthorityStoreOutcomeUnknownError),
+            ("lease_keepalive", "lease/keepalive", AuthorityStoreUnavailableError),
+            ("lease_revoke", "kv/lease/revoke", AuthorityStoreOutcomeUnknownError),
+        )
+        for method, path, expected_error in cases:
+            with self.subTest(method=method):
+                clients = {}
+
+                def factory(**kwargs):
+                    client = FakeGatewayClient(**kwargs)
+                    clients[kwargs["port"]] = client
+                    return client
+
+                driver = Etcd3gwV3Client(
+                    ["http://127.0.0.1:23791", "http://127.0.0.1:23792"],
+                    timeout=1.0,
+                    client_factory=factory,
+                )
+                first = clients[23791]
+                second = clients[23792]
+                first.failures[path] = TimeoutError("synthetic response timeout")
+                store = EtcdV3CoordinatorAuthorityStore(driver)
+                with self.assertRaises(expected_error):
+                    if method == "lease_grant":
+                        store.lease_grant(30)
+                    elif method == "lease_keepalive":
+                        store.lease_keepalive(7001)
+                    else:
+                        store.lease_revoke(7001)
+                self.assertEqual(len(first.calls), 1)
+                self.assertTrue(first.calls[0][0].endswith(f"/v3/{path}"))
+                self.assertEqual(second.calls, [])
+                driver.close()
+
+    def test_lease_mutations_keep_gateway_auth_permission_and_request_errors_typed(self):
+        class Etcd3Exception(Exception):
+            pass
+
+        cases = (
+            (
+                "lease/grant",
+                '{"code":16,"message":"etcdserver: invalid auth token"}',
+                Etcd3gwAuthenticationError,
+                "lease_grant",
+            ),
+            (
+                "lease/keepalive",
+                '{"code":7,"message":"etcdserver: permission denied"}',
+                Etcd3gwPermissionDeniedError,
+                "lease_keepalive",
+            ),
+            (
+                "kv/lease/revoke",
+                '{"code":3,"message":"etcdserver: key is empty"}',
+                Etcd3gwRequestError,
+                "lease_revoke",
+            ),
+        )
+        for path, body, expected_error, method in cases:
+            with self.subTest(path=path):
+                clients = {}
+
+                def factory(**kwargs):
+                    client = FakeGatewayClient(**kwargs)
+                    clients[kwargs["port"]] = client
+                    return client
+
+                driver = Etcd3gwV3Client(
+                    ["http://127.0.0.1:23791", "http://127.0.0.1:23792"],
+                    timeout=1.0,
+                    client_factory=factory,
+                )
+                first = clients[23791]
+                second = clients[23792]
+                original = Etcd3Exception(body)
+                first.failures[path] = original
+                with self.assertRaises(expected_error) as caught:
+                    if method == "lease_grant":
+                        driver.lease_grant(30)
+                    elif method == "lease_keepalive":
+                        driver.lease_keepalive(7001)
+                    else:
+                        driver.lease_revoke(7001)
+                self.assertIs(caught.exception.__cause__, original)
+                self.assertEqual(len(first.calls), 1)
+                self.assertEqual(second.calls, [])
+                driver.close()
+
     def test_watch_preserves_complete_envelope_and_decodes_event_bytes(self):
         client = self.by_port[23791]
         key = b"/watch/a"
