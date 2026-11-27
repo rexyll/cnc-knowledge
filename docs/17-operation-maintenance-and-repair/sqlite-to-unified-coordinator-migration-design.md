@@ -279,12 +279,12 @@ Unified Admission Scheduler新增可选构造参数`namespace_prefix`：
 CLI要求调用者明确提供`--max-txn-ops`和`--max-txn-bytes`，不会猜测或自动读取目标etcd服务端配置：
 
 ```bash
-python scripts/spare_parts_sqlite_candidate_import_plan.py \\
-  --candidate /secure/path/unified-candidate-bundle.json \\
-  --namespace /cnc/migration/isolated/rehearsal-unique-id/ \\
-  --max-txn-ops 100 \\
-  --max-txn-bytes 1048576 \\
-  --wire-safety-margin-bytes 4096 \\
+python scripts/spare_parts_sqlite_candidate_import_plan.py \
+  --candidate /secure/path/unified-candidate-bundle.json \
+  --namespace /cnc/migration/isolated/rehearsal-unique-id/ \
+  --max-txn-ops 100 \
+  --max-txn-bytes 1048576 \
+  --wire-safety-margin-bytes 4096 \
   --output /secure/path/unified-import-plan.json
 ```
 
