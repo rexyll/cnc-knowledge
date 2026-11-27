@@ -1122,3 +1122,10 @@
 - **实现提交：** `bdcf7b385ef42a02e56ea74db83e14b38225d9c7`、`13f393f53bdab3f752b32b16765c0a68014ae805`、`00e99b649e04735099ea63535a5018d038b138df`、章节计划`91e80622ead2f964065c6b759161fa738019ae2d`。所有工作均在`main`，没有创建分支。
 - **验收入口：** [Live Run 45982644017](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017)、[Quality Run 45982644355](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644355)均success。Quality：545 unittest（36 skipped）、CH12 143项、strict lint 0 errors/5 warnings、结构/data检查0 errors。Live诊断Artifact [15190500314](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017/artifacts/15190500314)，SHA-256 `364c70b27a0ac0cca5da2d2c1930513885cefe2706a09ddcdfc2e41adce2e04e`。
 - **能力边界：** 不代表生产HA、网络代理超时/长尾延迟、无限期耐久性、背压或容量SLO。Watch仍为单向HTTP server-streaming，不支持双向`WatchProgress`/`WatchCancel`；没有自动重连/failover。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威；SQLite Coordinator业务状态机尚未迁移；CH17-T004总体继续`IN_PROGRESS`。
+
+### 第六十八轮任务计划：Watch空闲Progress与连接路径存活检测
+
+- **目标：** 在目标KV前缀没有事件期间验证Watch Progress流活性，并补充可配置的HTTP Watch读取空闲超时，识别客户端到成员的连接路径失联。
+- **实现：** `Etcd3gwV3Client`新增可选`watch_read_timeout`，默认None保持兼容；配置后只约束HTTP Watch response body的read inactivity timeout，connect timeout仍使用原`timeout`。超时转换为不可用错误，不自动重连或切换endpoint。
+- **Live：** 以etcd1一秒Progress interval建立Watch，在目标前缀无KV事件时等待空Progress帧；然后仅断开到etcd1的专用宿主机访问bridge，保留节点运行及Raft网络，记录流终止类型和检测时长。
+- **验收边界：** 网络断开可能被内核快速复位，也可能等待配置读超时；以真实观察为准，不把Docker路径断开夸大成真实WAN半开丢包。Progress不是Range快照，默认read timeout仍为None；生产需要依据服务端Progress间隔和网络抖动配置阈值。
