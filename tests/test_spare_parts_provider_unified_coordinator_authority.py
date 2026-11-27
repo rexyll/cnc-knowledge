@@ -89,6 +89,31 @@ class GrantedLeaseTtlTests(unittest.TestCase):
         self.assertEqual(authority.leader_snapshot()["expires_at"], renewed.expires_at)
 
 
+class IsolatedCoordinatorNamespaceTests(unittest.TestCase):
+    def test_leader_ttl_key_uses_the_scheduler_namespace(self):
+        clock = MutableClock()
+        etcd = InMemoryEtcdV3Client(clock_fn=clock)
+        store = EtcdV3CoordinatorAuthorityStore(etcd)
+        scheduler = StoreBackedProviderAdmissionCoordinator(
+            store,
+            namespace_prefix=b"/cnc/migration/isolated/coordinator-test/",
+            global_limits={"read": 2},
+            max_waiters=0,
+            clock_fn=clock,
+        )
+        authority = StoreBackedCoordinatorAuthority(scheduler, clock_fn=clock)
+        authority.claim_leadership("isolated-leader", ttl_seconds=10)
+        isolated_key, _ = store.linearizable_get(
+            b"/cnc/migration/isolated/coordinator-test/coordinator/leader"
+        )
+        production_key, _ = store.linearizable_get(
+            b"/cnc/admission/unified/v2/coordinator/leader"
+        )
+        self.assertIsNotNone(isolated_key)
+        self.assertIsNone(production_key)
+        self.assertEqual(authority._LEADER_KEY, isolated_key.key)
+
+
 class StoreBackedCoordinatorAuthorityContract:
     SCOPE = "tenants/tenant-A/cnc/ch17/spares/pkg-001"
 
