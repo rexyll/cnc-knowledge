@@ -938,3 +938,13 @@
 - **安全边界：** 不打印token/密码、不匿名降级、不将mTLS CN当作HTTP Gateway RBAC身份；写事务不跨endpoint自动重试；临时凭据和证书仅在runner内存/临时目录并清理。
 - **验收：** Fake和live CI、默认全库质量CI均通过；本轮不等于企业IAM或生产HA认证服务验收。
 - **治理：** ASSET-000092正式30项保持PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+
+### 6.24.1 第五十四轮执行结果（2026-11-27）
+
+- 新增SRC-000413～SRC-000415，记录Gateway错误JSON、etcd rpctypes code 16/7和etcd3gw 2.7.0错误映射。
+- 驱动错误规范化：401/code16为AuthenticationError，403/code7为PermissionDeniedError，明确错误密码消息识别为AuthenticationError，其他客户端请求错误为RequestError；只读failover仅限连接/超时。Fake driver测试20项。
+- Live [Run 45922792420](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792420)成功：普通三节点/成员故障/quorum suite 8项、mTLS/RBAC 12项、短TTL token 1项、认证/quorum隔离1项通过；Artifact 15165755534，SHA-256 `c3b8d8e25e91cc7bff7e3d2893a55688de0b2567836052a20cb887fd2bcc7608`。
+- quorum loss时已有token Range和重新认证均超时；恢复quorum后旧token成功。此结果没有证明认证API在无quorum时独立可用。
+- 默认质量[Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：526项unittest（504通过、22项opt-in skip），CH12 143项、strict lint 0 errors、fixture validator 0 errors/5项既有warning。
+- **未完成项：** 自动刷新、企业IAM/JWT密钥管理、生产凭据轮换/撤销/审计、网络分区、认证服务HA及多节点simple token长期传播未验证。正式ASSET-000092状态不变；CH17-T004保持IN_PROGRESS。
