@@ -437,3 +437,11 @@
 - **容量策略：** 操作者显式提供max_txn_ops/max_txn_bytes；规划器报告compare/put计数、Base64 HTTP Gateway JSON估算字节与额外余量。预算超限标记CAPACITY_EXCEEDED，不自动分批、不删减幂等历史。工具不查询服务器配置，最终限制仍需在临时目标环境核对。
 - **测试：** 新增`tests/test_spare_parts_sqlite_candidate_import_plan.py`，覆盖单Txn键布局、候选摘要篡改、request key错配、活动/非终态request、scope遗留Lease identity及操作/字节预算超限。Quality CI结果待最终验收补记。
 - **范围边界：** 只读计划，无etcd连接、Range、Txn、Lease Grant/Revoke或RBAC变更；不写入生产namespace，不进行迁移/cutover。超限场景的分批checkpoint、unknown-outcome恢复与应用启动隔离协议尚未实现；MIG-04继续IN_PROGRESS，MIG-05/06未完成，MIG-07 BLOCKED。
+
+### 第七十七轮最终验收补记（2026-11-27）
+
+- **验收：** [Knowledge Quality Run 46027837959](https://github.com/rexyll/cnc-knowledge/actions/runs/46027837959)整体success，两个必需Job均success。全库unittest运行582项，40项skip，其余542项通过；CH12数值资源测试143项通过；knowledge lint 0 errors / 5 warnings；结构检查0 errors。
+- **关键测试：** 新增8项导入计划测试全部通过，验证单Txn完整写集合、所有目标键VERSION=0比较、候选摘要与request key派生、拒绝活动/非终态request与残留scope lease identity、操作预算和字节预算超限。
+- **提交：** planner eed93616df7d900ace816887682b6431cd49e5c4；测试与修正 7cd3b2d5c8b9dfe53b90cb457a6c315abf273f3d、455656e5faa13f127177521c6af88abfa21953f0、1b95efb8cd7646934578809e91887ad1eb945909、2d62563c0d2e112ffda4b9f46b038d1ac63e3a8b；计划/文档同步 462e27364cba3f263c530fbcfb5416dcc7fdd862、13629977bbec77936d51cae7885b1cd5074daf56、243f668d9f729ea81b1a4320de325650c1f5c056、8c41a71bbd6bf227595a3dff08ac39436fed9476、aab5a6c7341628e44ec246d13bc2c1f613802879；本轮最终计划状态记录随后追加至main。
+- **范围边界：** 规划器只构造并估算单Txn，不连接etcd。它不读取服务端max-txn-ops/max-request-bytes配置；预算由操作者提供。无目标KV写入、Lease Grant/Revoke、RBAC或生产数据操作。单Txn容量超限时当前流程只阻断，分批checkpoint/未知结果恢复和应用访问屏障仍待后续设计与演练。
+- **状态：** 第七十七轮只读规划任务DONE；MIG-04仍IN_PROGRESS（真实写入器、批次/unknown-outcome恢复未完成），MIG-05/06未完成，MIG-07 BLOCKED。生产schema-v2 authority不变；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。
