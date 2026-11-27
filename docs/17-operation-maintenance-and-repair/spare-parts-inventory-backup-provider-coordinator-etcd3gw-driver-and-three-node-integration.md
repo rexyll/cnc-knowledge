@@ -321,3 +321,20 @@ etcd Gateway错误响应的协议依据补充如下：SRC-000413记录etcd v3.6+
 Live workflow所有后续mTLS、short-TTL token、auth/quorum、RBAC成员故障/Token传播、诊断和清理步骤均成功。Artifact [15168243294](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)。默认质量[Run 45931474322](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474322)通过：529项unittest（504 passed、25 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构和最终自检0 errors。SPAT 30包只是离线模拟，business_test_status仍NOT_RUN。
 
 **解释边界：** `OUTCOME_UNKNOWN`是发出写请求后连接丢失时的保守调用契约；恢复后未找到key，说明这一次没有提交。此测试没有控制“Raft已经提交、Gateway响应在返回客户端前丢失”的精确故障窗口，也没有将所有Gateway HTTP/gRPC状态重分类为transport错误。只读failover与写入单次发送的结果只针对当前etcd v3.7.0/etcd3gw 2.7.0测试环境。第五十七轮工程验收完成；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移。
+
+
+## 18. 第五十八轮：少数派Lease KeepAlive失败、自然过期与Leader fencing
+
+新增 `tests/test_spare_parts_provider_authority_store_lease_partition_etcd_integration.py`。测试只操作一次性三成员Compose集群：首先经健康多数派创建TTL=8秒Lease，使用单个CAS Txn将唯一leader authority key绑定Lease，并在非租约epoch key上记录epoch=1；随后仅从专用Compose网络断开etcd1，并校验容器的Compose project/service标签。
+
+**KeepAlive实际请求路径：** 客户端配置三个endpoint，顺序为etcd1/23791、etcd2/23792、etcd3/23793；通过记录型HTTP post包装捕获LeaseKeepAlive的dispatch。网络隔离后对旧Lease调用KeepAlive，Store返回`AuthorityStoreUnavailableError`，记录的实际endpoint尝试只有`127.0.0.1:23791`一次，没有自动failover至健康多数派。多数派etcdctl LeaseTimeToLive显示TTL从7秒下降至5秒，证明本次续租失败没有重置租约。
+
+**自然过期和authority清理：** 多数派LeaseTimeToLive随后报告`ttl=-1`。测试不调用LeaseRevoke来制造过期，而是继续通过多数派线性一致Range轮询，直至绑定Lease的leader authority key实际消失；独立epoch key仍为1。将TTL报告与key删除分开验证，避免把过期计时器状态误作KV删除已完成。
+
+**新Leader与fencing：** 多数派签发新的Lease，并以一个CAS事务比较leader key不存在、epoch值仍为1，再写入新owner/Lease及epoch=2。旧owner尝试同时比较旧owner值和epoch=1后写入fencing保护key，Txn返回`succeeded=false`，旧写入key不存在；新owner按epoch=2进行比较写入则成功。恢复网络并等待三成员quorum后，通过原etcd1 endpoint线性一致读取，确认新owner、新Lease、epoch=2和新epoch写入均可见，旧fenced key不存在。
+
+**实时证据：** [Live Run 45933111643](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643)整个Job success。Lease专项1/1 PASS（14.526秒），网络分区测试文件2项通过，后续mTLS、短TTL Token、auth/quorum隔离、RBAC成员故障与Token传播、诊断收集、容器与volumes清理全部成功。诊断Artifact [15169352034](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643/artifacts/15169352034)。
+
+**质量门禁：** [Knowledge Quality Run 45933111606](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111606)两个Job成功：全库530项unittest（504 passed、26 skipped），CH12 143项通过，strict knowledge lint 0 errors / 5既有warning，结构和最终自检0 errors。SPAT 30包只是离线模拟，`business_test_status=NOT_RUN`、无外部连接、无写入。
+
+**限制：** 这是etcd v3.7.0/etcd3gw 2.7.0一次性Compose集成证据；fencing写入由Store KV compare事务模拟，未证明现有SQLite业务Coordinator已迁移并在所有业务写入口检查epoch。该实验不等同生产Leader HA、跨机房故障演练或正式30项矩阵执行。第五十八轮工程任务完成，CH17-T004总体仍IN_PROGRESS。

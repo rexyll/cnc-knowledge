@@ -267,3 +267,12 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 网络恢复后线性一致读回为`not-committed`，未重放事务。Live后续mTLS、Token生命周期、quorum隔离、RBAC成员故障/Token传播和清理步骤全部成功；Artifact [15168243294](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359/artifacts/15168243294)。
 - Quality [Run 45931474322](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474322)成功：529 unittest（504通过、25跳过），CH12 143项，strict lint 0 errors/5 warnings，结构自检0 errors。
 - 工程测试没有模拟已提交后响应丢失的精确窗口；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。下一轮验证少数派下Lease KeepAlive、自然到期和Leader fencing。
+
+
+## CH17-T004 少数派Lease KeepAlive失败、自然过期与Leader fencing（第五十八轮）
+
+- Live [Run 45933111643](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643)整体成功；Lease专项1/1 PASS（14.526秒）。KeepAlive客户端配置全部3个endpoint，但隔离后只触达etcd1 `127.0.0.1:23791` 一次，Store返回`AuthorityStoreUnavailableError`，没有自动切换多数派续租。
+- 多数派Lease TTL从7秒降至5秒；Lease自然过期后TTL=-1，线性一致Range确认旧authority key已删除。新Leader epoch从1提升至2；旧epoch fencing CAS失败，新epoch写成功，恢复成员读到epoch 2。
+- 诊断Artifact [15169352034](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643/artifacts/15169352034)。
+- Quality [Run 45933111606](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111606)成功：530 unittest（504通过、26跳过），CH12 143项，strict lint 0 errors/5项既有warning，结构自检0 errors。
+- 此证据只验证一次性etcd集群和KV compare fencing，不证明SQLite业务Coordinator已经迁移或生产HA验收。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。下一轮验证LeaseRevoke未知结果与恢复后核对。

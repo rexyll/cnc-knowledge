@@ -1024,3 +1024,25 @@
 - **契约测试：** Fake覆盖KeepAlive transport timeout、Gateway明确拒绝、Lease状态到期、authority fail-closed及fencing CAS拒绝；写入/续租请求保持单次发送。准确区分已确认续租、明确失败和结果未知。
 - **安全边界：** 仅操作本CI一次性Compose项目/网络/容器；不修改宿主机iptables，不触碰其他容器/网络；所有恢复置于finally；临时凭据和key不得输出；不将本轮工程冒烟测试视作生产Leader HA验收。
 - **验收：** live三成员Lease分区场景、Fake契约、全库质量CI、CH12、strict lint和结构校验通过；日志包含隔离endpoint结果、quorum侧TTL/删除时序、新epoch与旧epoch fencing结果。ASSET-000092正式30项仍不得自动批准或标记执行。
+
+
+### 第五十八轮最终验收结果（2026-11-27）
+
+- Live [Run 45933111643](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643)完整Job success；新增 `test_minority_cannot_renew_lease_majority_expires_and_fences_old_epoch` 1/1 PASS，耗时14.526秒。一次性三成员etcd v3.7.0环境中，初始Lease TTL=8秒，leader authority key绑定该Lease，epoch=1。
+- 网络断开etcd1后，KeepAlive客户端配置全部三个endpoint（23791/23792/23793），但实际只向隔离的首endpoint `127.0.0.1:23791` 发送一次请求；Store返回 `AuthorityStoreUnavailableError`，没有向健康多数派endpoint自动切换。多数派的LeaseTimeToLive从7秒下降至5秒，证明这次失败续租没有重置租约。
+- Lease自然到期后，TTL接口报告 `ttl=-1`；测试继续通过多数派线性一致Range等待leader authority key真正删除，epoch key仍保持1。新Leader通过单个CAS事务创建新的Lease-bound leader key并将epoch推进到2。
+- 旧Leader以owner/epoch=1提交fencing保护的写事务，比较失败（`succeeded=false`），受保护key没有出现；新Leader以epoch=2执行写入成功。恢复etcd1网络后，在该成员上核实leader owner、新Lease ID、epoch=2及新epoch写入均已收敛，旧fenced key不存在。
+- 同一live run中网络分区文件2项测试也通过（只读Range failover、Txn单次发送/OUTCOME_UNKNOWN及基础多数派恢复），mTLS、短TTL Token、auth/quorum隔离、RBAC成员故障与Token传播阶段全部成功。诊断Artifact [15169352034](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643/artifacts/15169352034)。
+- 默认质量 [Run 45933111606](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111606)两个Job均success：全库530项unittest（504 passed、26 skipped），CH12 143项通过，strict knowledge lint 0 errors / 5项既有warning，结构/最终自检0 errors。SPAT 30包仅离线模拟，`business_test_status=NOT_RUN`、无外部连接、无写入。
+- **状态：** 第五十八轮工程任务 `COMPLETED`。该证据只证明一次性etcd v3.7.0/etcd3gw 2.7.0集成夹具中的Lease KeepAlive失败关闭、自然过期、authority key删除与KV CAS fencing；不等同于当前SQLite业务Coordinator已迁移或生产Leader HA验收。CH17-T004总任务仍`IN_PROGRESS`，schema-v2仍唯一生产权威。
+
+
+### 第五十九轮任务计划：少数派分区下LeaseRevoke未知结果与恢复后核对
+
+- **目标：** 验证变更型LeaseRevoke在隔离首endpoint上的单次发送和结果未知语义，确认恢复后通过LeaseTimeToLive与lease-bound authority key状态核对结果；禁止自动跨endpoint重试。
+- **初始状态：** 在健康多数派创建唯一短TTL Lease，并将唯一authority key绑定该Lease；记录lease ID、TTL、key revision及三成员状态。
+- **分区操作：** 仅从专用CI Compose网络断开etcd1，客户端配置全部三个endpoint且将etcd1置于首位；通过记录型HTTP post捕捉LeaseRevoke真实调用路径。验证请求只触达首endpoint，不会自动转向健康多数派；记录Store返回的OutcomeUnknown/Unavailable或其他实际Gateway分类，不预设错误类型。
+- **恢复核对：** finally恢复网络并确认三成员quorum；不重放首次Revoke。通过健康多数派的LeaseTimeToLive和线性一致Range判断原Lease是否仍存在、authority key是否仍绑定；区分“撤销已完成但响应丢失”与“撤销未提交”。如仍存在，只有完成首次结果读取记录后，才由测试显式发起一次新的多数派Revoke清理并验证key删除。
+- **契约测试：** 对LeaseGrant/KeepAlive/Revoke增加记录型Fake Gateway断言：每个变更RPC至多一次endpoint dispatch；连接响应丢失映射遵循Store端口的OUTCOME_UNKNOWN/Unavailable定义；HTTP认证、权限与请求错误不伪装为传输超时。
+- **安全边界：** 仅操作本CI一次性Compose项目/网络及通过标签校验的容器；不修改宿主机iptables，不接触其他容器；所有网络恢复在finally路径，临时key唯一，日志不得包含凭据。
+- **验收：** Live三节点分区测试、Fake契约、全库质量CI、CH12、strict lint与结构校验通过；报告需记录endpoint attempts、首次Revoke结果分类、恢复后Lease/key状态及显式清理动作。ASSET-000092正式30项仍不得自动批准或标记执行。

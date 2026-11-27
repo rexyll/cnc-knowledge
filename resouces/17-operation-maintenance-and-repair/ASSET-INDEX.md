@@ -164,3 +164,11 @@
 - Diagnostics Artifact [15168243294](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474359)。
 - Quality [Run 45931474322](https://github.com/rexyll/cnc-knowledge/actions/runs/45931474322)：529 unittest（504 passed、25 skipped），CH12 143，strict lint 0 errors/5既有warning，结构自检0 errors。
 - 该证据仅为engineering support，不等于正式30场景执行；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+### ASSET-000092 supporting evidence — 第五十八轮
+
+- Live [Run 45933111643](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643)成功：新增Lease partition/fencing测试1/1 PASS（14.526秒）。客户端配置3个endpoint，KeepAlive只向隔离etcd1 `127.0.0.1:23791`发送一次，Store返回`AuthorityStoreUnavailableError`。
+- 多数派TTL由7秒下降至5秒；Lease自然过期后TTL=-1，并通过线性一致Range确认旧leader key删除。新epoch=2；旧epoch=1 fencing写入被拒绝，新epoch写入成功；恢复成员观察到epoch=2。
+- Artifact [15169352034](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643/artifacts/15169352034)。
+- Quality [Run 45933111606](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111606)：530 unittest（504 passed、26 skipped），CH12 143，strict lint 0 errors/5 warning，结构自检0 errors。
+- 仅supporting engineering evidence；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
