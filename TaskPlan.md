@@ -1145,3 +1145,12 @@
 - **交付：** 独立决策记录，包含当前实现事实、机制能力/盲区/成本对比、组合状态机、保守配置策略、指标建议、实施阶段与未实现清单。默认read timeout为None，不引入自动重连和自动failover。
 - **范围：** 本轮只做架构决策和文档，不在未确定生产SLO与运行时模型前增加socket keepalive、gRPC transport、lease heartbeat或后台健康探针代码。
 - **验收：** CH17决策记录、章节README、章节TaskPlan和TaskHistory同步；最终main head Quality两个必需Job成功。
+
+### 第六十九轮完成状态（2026-11-27）
+
+- **状态：** DONE（设计决策记录）。新增[Watch连接健康与存活检测策略决策记录](docs/17-operation-maintenance-and-repair/watch-connection-health-and-liveness-decision-record.md)，CH17技术正文第30节、章节README和当日TaskHistory均已同步。
+- **决策：** 采用Watch流状态、进程级共享Quorum线性一致Range探测和可选应用端到端心跳三层观测；不把Progress、本地TCP状态或`maintenance/status`单独当作集群健康。
+- **当前适用性：** 现有客户端经Requests访问`/v3/watch`，不具备原生gRPC Watch双向控制流；gRPC HTTP/2 PING不直接适用。独立Range使用线性一致语义但不证明既有Watch连接活跃。Lease心跳默认不启用，避免无业务SLO依据的revision/事件写入负担。
+- **默认策略：** `watch_read_timeout`保持None；没有可靠、有界的流量间隔时不为长时间静默Watch设置生产read timeout。未来探测需与同步pull Watch消费阻塞解耦；恢复一律quorum snapshot R整体替换并从R+1续接。
+- **提交：** 决策记录`9ddcd9af2b42fb2ec9be0ad3b4ed2ead27dca017`；正文/README/历史同步`f8be577dc12194a7b4022a438e0c3f3d2b30f214`、`077c07a82cafcf1a802735036257dca80da895dc`、`e82fd1a09e369ae871348e2fce8001996451a933`；本轮计划`93fa9a54d8c1032badd157b08d96621272033dbf`、`20d185945e599119e9f46505fc9500f4cdca4dbc`。所有操作均在`main`。
+- **范围边界：** 本轮只产出架构决策，没有实现TCP Keepalive、原生gRPC、Lease heartbeat、后台探针或自动恢复状态机；也未执行新的Live故障验收。CH17-T004仍`IN_PROGRESS`，ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移。
