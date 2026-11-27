@@ -320,7 +320,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             # Rejoin etcd1 to the exact Compose network; no host firewall or
             # unrelated container/network is modified.
             self._run([
-                "docker", "network", "connect",
+                "docker", "network", "connect", "--ip", "172.29.64.11",
                 self.cluster_network, container_id,
             ])
             cluster_network_disconnected = False
@@ -756,7 +756,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 memberships = self._network_memberships(etcd1_container)
                 if self.cluster_network not in memberships:
                     self._run([
-                        "docker", "network", "connect",
+                        "docker", "network", "connect", "--ip", "172.29.64.11",
                         self.cluster_network, etcd1_container,
                     ])
                 self._wait_for_quorum(timeout=60.0)
