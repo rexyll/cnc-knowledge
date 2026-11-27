@@ -63,7 +63,8 @@ for test_file in \
   test_spare_parts_provider_authority_store_network_partition_etcd_integration.py \
   test_spare_parts_provider_authority_store_lease_partition_etcd_integration.py \
   test_spare_parts_provider_authority_store_lease_revoke_partition_etcd_integration.py \
-  test_spare_parts_provider_authority_store_lease_watch_recovery_etcd_integration.py
+  test_spare_parts_provider_authority_store_lease_watch_recovery_etcd_integration.py \
+  test_spare_parts_provider_authority_store_watch_compaction_etcd_integration.py
 do
   ETCD_INTEGRATION=1 python3 -m unittest discover -s tests -p "$test_file" -v
 done

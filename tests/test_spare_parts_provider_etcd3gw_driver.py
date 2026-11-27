@@ -508,6 +508,7 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
         self.assertTrue(canceled.canceled)
         self.assertEqual(canceled.compact_revision, 7)
         self.assertEqual(canceled.cancel_reason, "required revision has been compacted")
+        self.assertIsNone(canceled.resume_revision)
         with self.assertRaises(StopIteration):
             next(stream)
         self.assertTrue(response.closed)
