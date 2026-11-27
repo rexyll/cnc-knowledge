@@ -958,4 +958,4 @@
 - **错误边界：** 仅连接/超时可触发只读failover；401/403/请求错误不重试；写事务不跨endpoint重放。token传播失败必须与transport错误分开记录，禁止匿名回退和无界重试。
 - **安全边界：** 临时密码/token/CA/证书私钥只存内存或runner临时目录；不输出秘密；Compose成员在finally中恢复，runner结束销毁volume。只对本测试Compose集群执行stop/start。
 - **验收：** 实际2/3成员quorum持续可用；有效reader token对健康成员的实际结果被独立观测；driver failover成功/失败有准确证据；越权仍拒绝且不触发错误重试；节点恢复后三成员重新健康；live和默认质量CI通过。
-- **状态：** 本任务仅增加supporting engineering evidence；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+- **任务状态：** IN_PROGRESS。当前已完成计划、专用opt-in live suite和CI阶段；等待真实mTLS三成员集群执行与质量门禁。该任务仅增加supporting engineering evidence；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
