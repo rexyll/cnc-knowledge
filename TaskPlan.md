@@ -1250,3 +1250,10 @@
 - **容量：** 必须由操作者显式提供max transaction ops/bytes预算；采用compare+put总数的保守操作预算；超限标记CAPACITY_EXCEEDED并退出，不擅自分批或丢弃幂等索引。
 - **测试：** 覆盖candidate digest、state/request schema与key派生、scope high-water、非终态/活动Lease、预算超限和确定性write-set摘要。
 - **安全边界：** 规划器无etcd连接与写路径。后续实写仍需要一次性临时集群或服务端RBAC、线性一致空prefix重检、应用访问屏障、Txn未知结果验证、Provider外部fencing floor核对；超限后的checkpoint协议须另行设计和演练。
+
+### 第七十七轮完成状态（2026-11-27）
+
+- **状态：** DONE（只读单Txn导入映射与容量计划；不代表实际导入）。
+- **实现：** 新增scripts/spare_parts_sqlite_candidate_import_plan.py与专用测试。对隔离目标的Scheduler aggregate、终态request索引、Leader不存在性条件进行确定性映射；所有目标键VERSION=0比较与全部Put被规划在同一个Txn中。
+- **验证：** [Knowledge Quality Run 46027837959](https://github.com/rexyll/cnc-knowledge/actions/runs/46027837959) success；582 unittest（40 skipped）、CH12 143项通过、knowledge lint 0 errors/5 warnings、结构检查0 errors。
+- **限制：** 预算来自操作者显式输入而非服务器探测；超限只会阻断，不自动拆批。没有执行etcd Range/Txn、Lease、RBAC或生产操作。MIG-04继续IN_PROGRESS（写入器与未知结果恢复未完成），MIG-05/06待完成，MIG-07 BLOCKED。
