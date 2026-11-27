@@ -36,7 +36,7 @@
   "lifecycle_status": "active",
   "verification_status": "in_review",
   "created_at": "2026-11-26T22:40:00+08:00",
-  "updated_at": "2026-11-26T22:40:00+08:00",
+  "updated_at": "2026-11-27T08:45:00+08:00",
   "verified_at": null,
   "valid_from": null,
   "valid_to": null,
@@ -66,12 +66,12 @@
     "code_commit": "2ed3927e63ca28a643055835568f7d7a83543323",
     "ci_run": 45842517156,
     "ci_status": "completed/success",
-    "repository_unit_test_count": 505,
-    "repository_unit_test_passed": 497,
-    "repository_unit_test_skipped": 8,
+    "repository_unit_test_count": 508,
+    "repository_unit_test_passed": 508,
+    "repository_unit_test_skipped": 0,
     "ch12_numerical_test_count": 143,
     "strict_knowledge_lint": "PASS_0_ERRORS",
-    "knowledge_structure_quality": "PASS_0_ERRORS",
+    "knowledge_structure_quality": "PASS_0_ERRORS_5_EXISTING_WARNINGS",
     "synthetic_fixture_validation": "PASS_0_ERRORS_5_EXPECTED_WARNINGS",
     "synthetic_fixture_validation_warnings": [
       "dataset status is DRAFT",
@@ -92,7 +92,18 @@
     "watch_cancel_request_available": false,
     "watch_live_integration_status": "PASS",
     "watch_live_test_case": "created handshake; PUT/DELETE events; prev_kv; stream close",
-    "watch_contract_test_methods": 4
+    "watch_contract_test_methods": 4,
+    "mtls_live_test_methods": 3,
+    "mtls_live_integration_status": "PASS_3_OF_3_DISPOSABLE_CI_SMOKE",
+    "mtls_valid_client_status": "PASS",
+    "mtls_missing_client_certificate_rejection": "PASS",
+    "mtls_untrusted_ca_rejection": "PASS",
+    "mtls_ephemeral_certificates": true,
+    "mtls_live_integration_run": 45918152363,
+    "mtls_live_integration_run_url": "https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363",
+    "mtls_live_integration_artifact_id": 15163390323,
+    "mtls_live_integration_artifact_sha256": "91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74",
+    "default_ci_run": 45918152436
   },
-  "notes": "全部30项正式场景目前PROPOSED_NOT_APPROVED / NOT_RUN。驱动映射单测使用fake gateway transport，不等于实时网络集成；5项集成测试需显式启动etcd v3.7.0三节点环境。不得将普通CI中的skip记为PASS。 Default CI Run 45832644686 passed with 499 tests completed (494 passed, 5 live-etcd integration tests skipped), CH12 143 tests and strict knowledge lint and entity checks; separate fixture validator 0 errors/5 existing draft-and-approval warnings; this does not execute any of the 30 formal scenarios or start the cluster. Supporting live smoke evidence was added without changing formal matrix governance: Run 45839556952 used a disposable three-member etcd v3.7.0 cluster and passed 6/6 live tests, including single-member outage, 2/3 quorum linearizable read/write and member restoration. Artifact 15127610627. Formal ASSET-000092 scenario_count=30 remains PROPOSED_NOT_APPROVED / NOT_RUN; smoke tests are not approval or formal scenario execution. Default CI Run 45839557095: 500 tests (494 passed, 6 live tests skipped by default), CH12 143 pass, strict lint 0 errors. Supporting live integration smoke evidence (not formal matrix execution): Run 45840903997 used a disposable three-member etcd v3.7.0 cluster and passed 7/7 tests, including one-member outage, two-member loss of quorum, fail-closed I/O, quorum restoration and fresh CAS write/readback. Artifact 15128755397. Formal ASSET-000092 scenario_count=30 remains PROPOSED_NOT_APPROVED / NOT_RUN. Default CI Run 45840904137: 501 tests (494 passed, 7 opt-in live tests skipped), CH12 143 pass, strict lint 0 errors. Supporting Watch live evidence: Run 45842517310 started a disposable three-member etcd v3.7.0 cluster and passed 8/8 live tests, including Watch created/PUT/DELETE/prev_kv/stream close, single-member outage and two-member quorum loss/recovery. Diagnostics Artifact 15128407498 (SHA-256 9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9). Default CI Run 45842517156 passed 505 tests (497 passed, 8 opt-in live tests skipped), CH12 143 tests, strict lint 0 errors and structure/data 0 errors. WatchProgress/WatchCancel bidirectional controls remain unsupported; the 30 formal scenarios remain PROPOSED_NOT_APPROVED / NOT_RUN."
+  "notes": "全部30项正式场景目前PROPOSED_NOT_APPROVED / NOT_RUN。驱动映射单测使用fake gateway transport，不等于实时网络集成；5项集成测试需显式启动etcd v3.7.0三节点环境。不得将普通CI中的skip记为PASS。 Default CI Run 45832644686 passed with 499 tests completed (494 passed, 5 live-etcd integration tests skipped), CH12 143 tests and strict knowledge lint and entity checks; separate fixture validator 0 errors/5 existing draft-and-approval warnings; this does not execute any of the 30 formal scenarios or start the cluster. Supporting live smoke evidence was added without changing formal matrix governance: Run 45839556952 used a disposable three-member etcd v3.7.0 cluster and passed 6/6 live tests, including single-member outage, 2/3 quorum linearizable read/write and member restoration. Artifact 15127610627. Formal ASSET-000092 scenario_count=30 remains PROPOSED_NOT_APPROVED / NOT_RUN; smoke tests are not approval or formal scenario execution. Default CI Run 45839557095: 500 tests (494 passed, 6 live tests skipped by default), CH12 143 pass, strict lint 0 errors. Supporting live integration smoke evidence (not formal matrix execution): Run 45840903997 used a disposable three-member etcd v3.7.0 cluster and passed 7/7 tests, including one-member outage, two-member loss of quorum, fail-closed I/O, quorum restoration and fresh CAS write/readback. Artifact 15128755397. Formal ASSET-000092 scenario_count=30 remains PROPOSED_NOT_APPROVED / NOT_RUN. Default CI Run 45840904137: 501 tests (494 passed, 7 opt-in live tests skipped), CH12 143 pass, strict lint 0 errors. Supporting Watch live evidence: Run 45842517310 started a disposable three-member etcd v3.7.0 cluster and passed 8/8 live tests, including Watch created/PUT/DELETE/prev_kv/stream close, single-member outage and two-member quorum loss/recovery. Diagnostics Artifact 15128407498 (SHA-256 9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9). Default CI Run 45842517156 passed 505 tests (497 passed, 8 opt-in live tests skipped), CH12 143 tests, strict lint 0 errors and structure/data 0 errors. WatchProgress/WatchCancel bidirectional controls remain unsupported; the 30 formal scenarios remain PROPOSED_NOT_APPROVED / NOT_RUN. mTLS live evidence: Run 45918152363 passed 3/3 disposable etcd v3.7.0 mTLS tests: valid mutual TLS membership/CAS Txn/linearizable readback, missing client certificate rejected, and untrusted server CA rejected. Diagnostics Artifact 15163390323 (SHA-256 91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74). Default CI Run 45918152436 passed 508 repository unittest cases, CH12 143 tests, strict knowledge lint 0 errors, structure/data 0 errors and 5 existing governance warnings. Ephemeral certificates/keys and mTLS volumes were cleaned by the runner. This is disposable integration evidence only, not enterprise PKI, certificate rotation/revocation, production key custody, RBAC or production acceptance; formal ASSET-000092 30 scenarios remain PROPOSED_NOT_APPROVED / NOT_RUN."
 }
