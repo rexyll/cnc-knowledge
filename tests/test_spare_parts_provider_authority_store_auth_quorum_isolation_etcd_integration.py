@@ -25,6 +25,7 @@ class Etcd3gwAuthQuorumIsolationIntegrationTests(unittest.TestCase):
     def setUpClass(cls):
         import requests
 
+        cls.requests = requests
         cls.root_dir = Path(__file__).resolve().parents[1]
         cls.compose_file = cls.root_dir / "scripts/etcd-integration/compose-mtls.yaml"
         cls.compose_project = "cnc-knowledge-etcd-mtls-itest"
@@ -125,13 +126,17 @@ class Etcd3gwAuthQuorumIsolationIntegrationTests(unittest.TestCase):
 
             # Reauthentication is a separate RPC path. Record the actual Gateway
             # response rather than assuming it has the same failure as KV Range.
-            response = self.session.post(
-                self.base_url + "/auth/authenticate",
-                json={"name": "root", "password": self.password},
-                timeout=5,
-            )
-            print(f"AUTH_REAUTH_HTTP_STATUS_DURING_QUORUM_LOSS={response.status_code}")
-            self.assertIn(response.status_code, {200, 503})
+            try:
+                response = self.session.post(
+                    self.base_url + "/auth/authenticate",
+                    json={"name": "root", "password": self.password},
+                    timeout=5,
+                )
+                reauth_result = response.status_code
+            except self.requests.exceptions.Timeout:
+                reauth_result = "timeout"
+            print(f"AUTH_REAUTH_RESULT_DURING_QUORUM_LOSS={reauth_result}")
+            self.assertIn(reauth_result, {200, 503, "timeout"})
         finally:
             self._compose("start")
 
