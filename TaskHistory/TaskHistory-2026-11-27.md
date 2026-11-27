@@ -419,3 +419,12 @@
 - **测试：** 增加隔离prefix与默认prefix检查、非法prefix fail-closed测试，以及Leader TTL key隔离检查。当前仅记录测试已加入代码，CI尚未完成，不能据此宣称测试通过。
 - **安全边界：** namespace字符串校验不等于etcd RBAC隔离；后续写入器仍必须使用一次性临时etcd集群/凭证、线性一致空prefix检查、原生Lease策略、Txn容量/分批checkpoint与unknown-outcome读回恢复。
 - **状态：** MIG-04继续IN_PROGRESS。当前不写etcd、不导入候选包、不触达生产namespace；MIG-05/06未完成，MIG-07 BLOCKED。schema-v2仍唯一生产权威，ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+## CH17-T004：MIG-04 隔离目标空空间预检（全局第七十六轮，2026-11-27）
+
+- **代码提交：** namespace预检helper `76342751d5a08a02eb98b077fae0af4dd859bb8d`；内存etcd客户端prefix Range语义 `8897ed9e338c50b3882a2432bd0d25f40cf34f8f`；预检测试 `0da1ef5df99eabbf9e0adc8dca89d0316a3f2ec2`；测试通过authority-store事务API写入fixture `d76802e2de0296782a490d7c513a20641b0c188d`。
+- **实现：** 新增`scripts/spare_parts_migration_namespace.py`，严格验证隔离namespace，并通过线性一致prefix Range检查空空间；非空、连接失败均拒绝继续，成功结果保留Range revision。
+- **测试设计：** 覆盖prefix空空间、已存在键阻断、相邻namespace不误报、namespace格式校验、后端不可用fail-closed。
+- **客户端修正：** `InMemoryEtcdV3Client.range()`支持`range_end`，避免此前fake只读精确键而无法验证prefix范围。
+- **验证状态：** 已提交测试代码，但GitHub Combined Status当前返回空statuses；尚无可确认的Quality CI结论，不宣称测试通过。
+- **安全边界：** 预检不是锁；必须后续配合一次性临时etcd或服务端RBAC防止竞态。当前没有KV写入、Lease创建、候选包导入或生产变更。MIG-04 IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
