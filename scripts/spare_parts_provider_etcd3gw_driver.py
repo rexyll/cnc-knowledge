@@ -263,6 +263,7 @@ class Etcd3gwV3Client:
         ca_cert: str | None = None,
         cert_key: str | None = None,
         cert_cert: str | None = None,
+        auth_token: str | None = None,
         client_factory: Callable[..., Any] | None = None,
     ) -> None:
         if isinstance(endpoints, str):
@@ -275,6 +276,10 @@ class Etcd3gwV3Client:
             raise Etcd3gwConfigurationError("timeout must be a positive number")
         if bool(cert_key) != bool(cert_cert):
             raise Etcd3gwConfigurationError("mTLS requires both cert_key and cert_cert")
+        if auth_token is not None and (
+            not isinstance(auth_token, str) or not auth_token.strip()
+        ):
+            raise Etcd3gwConfigurationError("auth_token must be a non-empty string")
 
         if client_factory is None:
             try:
@@ -308,6 +313,14 @@ class Etcd3gwV3Client:
                 client = client_factory(**kwargs)
             except TypeError:
                 raise
+            if auth_token is not None:
+                session = getattr(client, "session", None)
+                headers = getattr(session, "headers", None)
+                if headers is None or not hasattr(headers, "__setitem__"):
+                    raise Etcd3gwConfigurationError(
+                        "authenticated clients require a mutable HTTP session headers mapping"
+                    )
+                headers["Authorization"] = auth_token
             self._clients.append(client)
 
     @classmethod
