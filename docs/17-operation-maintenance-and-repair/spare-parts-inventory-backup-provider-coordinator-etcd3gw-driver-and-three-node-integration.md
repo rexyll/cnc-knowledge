@@ -199,3 +199,16 @@ etcd集群的三节点成员数量不自动代表业务高可用已验收；读�
 **默认CI：** [Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)两个必需Job成功；全库508项unittest通过，CH12 143项通过，strict knowledge lint 0 errors，结构/数据校验0 errors、5项既有治理warning。
 
 **能力边界：** 这是指定版本和一次性Compose环境的TLS握手/CA信任/客户端证书认证证据，不代表企业PKI接入、证书轮换或吊销、生产密钥托管、etcd RBAC、长期压力或生产环境验收。`etcd3gw` 对TLS底层异常可能包装成无文本ConnectionError，负向测试验证连接失败并以有效证书用例作为健康基线。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍是唯一生产权威。
+
+
+## 12. 第五十二轮 etcd Gateway RBAC 与最小权限账户验证（2026-11-27）
+
+Etcd3gwV3Client新增可选auth_token参数，将token写入各endpoint底层HTTP session的Authorization header；没有自动用户名密码持久化、匿名回退或明文降级。新增`tests/test_spare_parts_provider_authority_store_rbac_mtls_etcd_integration.py`，通过一次性三成员mTLS集群验证etcd原生Authentication/RBAC。
+
+**真实验证：** [Run 45919206834](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206834)成功，mTLS suite 8/8通过（原mTLS 3项 + RBAC 5项）：reader在授权prefix内Range成功，写入及越权Range被拒绝；writer在授权prefix内Range/CAS成功，未授权prefix读写被拒绝；无token及错误密码认证失败。普通三成员live suite 8项也全部通过。诊断Artifact 15163741056，SHA-256 `b7e7476a08e1e9c4a77e4bb02e2b80727dd09e1baadc1b66866b6a54b72c8ee0`。
+
+**Gateway证书身份限制：** 初次联测发现etcd HTTP gRPC-Gateway拒绝将非空mTLS客户端证书CN作为用户身份。runner因此生成无CN但仍由临时CA签发的客户端证书；TLS链校验与客户端证书强制认证继续开启。RBAC身份通过用户名/密码调用`/v3/auth/authenticate`取得token，再由Authorization头传递。mTLS和RBAC是两层不同控制，不得把客户端证书CN映射宣称为此Gateway的用户认证能力。
+
+**默认质量：** [Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)两个Job成功；515项unittest（499通过、16项opt-in live skip），CH12 143项通过，strict knowledge lint 0 errors，结构/数据校验0 errors、5项既有治理warning。
+
+**能力边界：** token由调用方显式提供并在内存中应用，本轮没有token自动刷新/过期续期。企业IAM、密码/凭据轮换、撤销、审计、生产密钥托管、跨租户身份治理均未验证。/health端点不等同于KV数据面授权证据。ASSET-000092的30项正式场景继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机未迁移。
