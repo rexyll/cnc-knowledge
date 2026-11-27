@@ -10,7 +10,6 @@ from uuid import uuid4
 
 
 from scripts.spare_parts_provider_etcd3gw_driver import (
-    Etcd3gwAuthenticationError,
     Etcd3gwPermissionDeniedError,
     Etcd3gwV3Client,
 )
@@ -80,6 +79,14 @@ class Etcd3gwLiveMemberOutageAuthIntegrationTests(unittest.TestCase):
             "/auth/user/grant", {"user": "cnc-reader", "role": "cnc-reader"}
         )
         cls.reader_token = cls._authenticate("cnc-reader", cls.reader_password)
+
+        # Probe immediately after issuance, before fixture writes add latency.
+        # A successful empty Range is sufficient to prove token acceptance.
+        cls.immediate_token_observations = cls._observe_token_on_members()
+        print(
+            "MEMBER_OUTAGE_TOKEN_PROPAGATION_IMMEDIATE="
+            + ",".join(f"member{index + 1}:{state}" for index, state in cls.immediate_token_observations)
+        )
         cls.root_client = cls._client(cls.root_token)
         seeded = cls.root_client.txn(
             compare=[{"key": cls.seed_key, "target": "VERSION", "result": "EQUAL", "version": 0}],
@@ -89,19 +96,12 @@ class Etcd3gwLiveMemberOutageAuthIntegrationTests(unittest.TestCase):
         if not seeded.get("succeeded"):
             raise RuntimeError("failed to seed member-outage RBAC fixture")
 
-        # Wait for the simple token's auth state to be accepted by every member
-        # before introducing the outage. Record immediate observations without
-        # assuming that Raft apply timing is identical on all members.
-        cls.immediate_token_observations = cls._observe_token_on_members()
-        print(
-            "MEMBER_OUTAGE_TOKEN_PROPAGATION_IMMEDIATE="
-            + ",".join(f"member{index + 1}:{state}" for index, state in cls.immediate_token_observations)
-        )
         cls.converged_token_observations = cls._wait_for_token_on_healthy_members()
         print(
             "MEMBER_OUTAGE_TOKEN_PROPAGATION_CONVERGED="
             + ",".join(f"member{index + 1}:{state}" for index, state in cls.converged_token_observations)
         )
+
 
     @classmethod
     def tearDownClass(cls):
