@@ -909,3 +909,12 @@
 - **安全约束：** 所有密码、token、证书仅由CI临时生成并存放于内存/临时目录；不打印token/密码，不提交密钥；不允许HTTP明文、匿名回退或权限错误时跨endpoint重试。认证服务故障不得导致无凭据请求继续执行。
 - **验收：** 明确记录etcd版本、token类型、TTL参数与实测有效期；expired/invalid token、wrong credentials、permission denied、TLS/transport failure具有可区分行为；有效重新认证后的token可访问授权范围；所有endpoint及Watch一致携带当前token；Live mTLS/RBAC和默认质量CI通过。
 - **治理边界：** 一次性集成证据不构成企业IAM、生产凭据轮换/撤销、审计、HA认证服务或生产密钥托管验收。ASSET-000092正式30项继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持IN_PROGRESS。
+
+
+## 第五十三轮执行进展（2026-11-27）：etcd Gateway Token 生命周期
+
+- 新增SRC-000410～SRC-000412，登记etcd v3.7官方配置、认证设计和RBAC文档；文档默认simple token TTL为300秒，JWT TTL通过JWT选项独立配置。
+- Etcd3gwV3Client增加显式set_auth_token(token|None)，对所有endpoint session同步替换/清除Authorization header；Watch复用相同session。没有保存用户名/密码，也没有自动认证/刷新。
+- 新增Fake Gateway token更新/清除、认证异常不failover契约测试；mTLS Compose和runner支持短TTL参数，工作流新增独立10秒simple-token生命周期集成阶段，覆盖过期拒绝、显式重新认证、全部endpoint更新、Range及Watch创建。
+- 更新KNOW-000061、ASSET-000092 supporting evidence、CH17正文/README、资源README/索引和TaskHistory。正式30场景仍PROPOSED_NOT_APPROVED / NOT_RUN，schema-v2仍唯一生产权威，SQLite Coordinator未迁移。
+- **状态：** 实现和文档已提交main；live token lifecycle与最终质量CI尚待验收，未将本轮标记完成。自动刷新、企业IAM/JWT密钥管理、凭据撤销轮换和审计仍未实现/验证。
