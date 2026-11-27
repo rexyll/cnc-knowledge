@@ -318,3 +318,13 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - [Quality Run 45946092822](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092822)两个Job均success：540 unittest（32 skipped），CH12数值测试143项通过，strict knowledge lint通过，结构/data检查0 errors。
 - Progress revision取自Watch连接的本地成员；少数派时可能低于quorum线性一致Range。恢复后必须通过线性一致快照确定权威状态，并从R+1续接。当前仍只验证周期性`progress_notify=true`，不代表双向WatchProgress/WatchCancel已实现。
 - 本轮是一次性etcd v3.7.0 / etcd3gw 2.7.0 supporting evidence；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004仍`IN_PROGRESS`。
+
+
+## CH17-T004 少数派Watch Compaction与旧游标快照恢复（第六十四轮）
+
+- 新增Live场景：etcd1上的Watch从revision=39建立并与peer网络隔离；etcd2/etcd3多数派更新独立marker revision=40、41，并执行`compact 41`。被Watch的leader key保持原值，确保旧游标保持落后。
+- 恢复后显式以静态IP `172.29.64.11`将etcd1接回Compose peer网络；由健康多数派取得线性一致快照revision=41，再以旧游标39重建Watch，服务端返回`canceled=true`、`compact_revision=41`、0 events、`resume_revision=None`。原HTTP Watch流是否自动取消不作为前置假设。
+- 新Watch从snapshot+1=42在健康多数派建立；快照后的新PUT revision=42仅投递一次，`prev_kv`匹配快照值；revision 40–41未重放。观测标志`no_compacted_event_replayed_after_snapshot=true`、`post_snapshot_event_delivered_once=true`。
+- Compose三节点Raft peer使用固定地址`172.29.64.11/.12/.13`；所有分区恢复路径显式恢复etcd1静态IP，避免Docker断开/重连后动态地址与Raft peer advertisement不一致。
+- [Live Run 45949089875](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089875)整体success；watch minority测试文件2项通过（7.292s），普通网络/Lease分区、mTLS、短TTL Token、auth/quorum和RBAC成员故障阶段均success；诊断Artifact [15176311979](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089875/artifacts/15176311979)。[Quality Run 45949089930](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089930)两个Job均success。
+- 本轮是一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting evidence，不代表生产HA或正式矩阵验收；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004整体`IN_PROGRESS`。
