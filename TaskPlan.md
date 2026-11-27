@@ -888,3 +888,13 @@
 - **安全约束：** root凭据仅runner临时目录/环境；启用auth前先创建root user并授予root role；禁止提交密码、token、私钥；测试完成后销毁Compose volumes和临时材料；不把/health未受RBAC保护误认为KV数据面授权。mTLS Common Name认证与gRPC-gateway存在限制，采用用户名/密码换取token并通过HTTP Authorization头传递，避免将mTLS client CN误当作etcd用户身份。
 - **验收标准：** 合法reader读授权前缀成功、读未授权前缀失败、写入被拒绝；合法writer在授权前缀内Range/CAS成功、越权前缀读写失败；无凭证/错误密码认证失败；mTLS CA/client cert仍强制校验；adapter对PermissionDenied不重试、不降级、不吞错；live证据与默认回归CI均通过。
 - **限制：** 仅是一次性etcd v3.7.0/etcd3gw 2.7.0环境的工程验证，不等于企业身份源、密码轮换、token自动刷新/撤销、审计系统、网络隔离或生产密钥托管验收。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+### 第五十二轮 RBAC + mTLS 实时验收补记（2026-11-27）
+
+- 驱动提交：`372ff7674bcbca7108954d9e7b2164ec79e34507`，为Etcd3gwV3Client增加可选auth_token，并将Authorization头应用于每个endpoint的HTTP session；Fake Gateway新增token传播与空token配置测试。
+- 集成测试：`tests/test_spare_parts_provider_authority_store_rbac_mtls_etcd_integration.py`，使用临时root/reader/writer身份、角色和key-prefix权限。
+- 真实集成：[Run 45919206834](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206834) completed/success。普通三节点集成8项通过；mTLS suite 8项通过，其中原mTLS 3项和RBAC 5项全部PASS。RBAC覆盖reader授权前缀Range成功、reader写入/越权Range拒绝、writer授权前缀Range/CAS成功、writer越权前缀读写拒绝、无token/错误密码失败。诊断Artifact 15163741056，SHA-256 `b7e7476a08e1e9c4a77e4bb02e2b80727dd09e1baadc1b66866b6a54b72c8ee0`。
+- Gateway身份限制：首次测试发现etcd gRPC-Gateway拒绝带非空CN的mTLS客户端证书（CommonName不能用于Gateway用户映射）；runner改为生成无CN但仍由测试CA签发的client cert，继续验证CA与客户端证书强制校验；RBAC身份单独由用户名/密码认证取得token，并通过HTTP Authorization头传递。不得将mTLS CN映射当作本Gateway认证方案。
+- 默认质量CI：[Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)两个Job均success；全库515项unittest，499通过、16项opt-in live测试按设计skip；CH12 143项通过；strict knowledge lint 0 errors；结构/数据校验0 errors、5项既有治理warning。
+- 安全边界：密码、token、CA及证书私钥仅在runner内存/临时目录，Compose volumes和证书目录由runner清理。token本轮为显式静态注入，不包含刷新/过期自动续签机制；企业IAM、凭据轮换、审计和生产密钥托管未验证。HTTP /health与KV数据面RBAC不同，不以health成功作为授权证据。
+- 治理边界：ASSET-000092正式30项场景继续PROPOSED_NOT_APPROVED / NOT_RUN；本轮是supporting disposable integration evidence，不批准或执行正式矩阵。schema-v2仍为唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
