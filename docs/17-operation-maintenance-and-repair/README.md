@@ -354,3 +354,13 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - [Live Run 45982644017](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017)整体success；Lease Watch recovery文件3项测试（3.930s）和Watch minority文件4项测试（13.314s）均通过。诊断Artifact [15190500314](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017/artifacts/15190500314)，SHA-256 `364c70b27a0ac0cca5da2d2c1930513885cefe2706a09ddcdfc2e41adce2e04e`。
 - [Quality Run 45982644355](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644355)两个Job均success：545项unittest（36 skipped）、CH12 143项、strict lint 0 errors / 5 warnings、结构/data检查0 errors（260实体、240关系、412来源、178 Markdown）。SPAT 30包只完成离线模拟，`business_test_status=NOT_RUN`。
 - 证据只适用于一次性etcd v3.7.0 / etcd3gw 2.7.0三节点Compose实验；不代表生产网络耐久性、代理超时、长尾延迟、背压或内存容量验收。Watch仍为单向HTTP server-streaming；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
+
+## CH17-T004 Watch空闲Progress、读超时与访问路径失联（第六十八轮）
+
+- `Etcd3gwV3Client`新增可选`watch_read_timeout`，默认`None`保持旧行为；启用后设置HTTP Watch response的read inactivity timeout，异常映射为`AuthorityStoreUnavailableError`，不自动重连/failover。
+- 初始snapshot revision=38，Watch从39建立，read timeout=4秒。全局无revision推进时没有收到Progress；在`4.0045s`后返回Unavailable，但etcd1仍running、仍在Raft网络且Quorum健康，目标prefix完全未变。这证明读取超时是流静默阈值，不是节点健康判断。
+- prefix外marker写revision 39、40后，Watch收到空Progress header revision 39、39，未收到prefix KV事件。第二个marker已推进到40但Progress仍为39，故Progress不能作为quorum最新revision或权威快照。
+- 断开etcd1专用客户端访问bridge、保留节点及Raft网络后，既有HTTP Watch在`4.0045s`后被识别为Unavailable；etcd1仍运行且Quorum恢复健康。该实验不是WAN/NAT/代理的真实TCP半开验收。
+- [Live Run 45987534125](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125)整体success；Watch minority测试文件5项通过（24.605s），所有后续mTLS、Token、auth/quorum、RBAC阶段及容器/volumes清理成功。Artifact [15192246652](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125/artifacts/15192246652)，SHA-256 `e9f2dbb141dc55a60f3988876df8eaa86eb02b4b26dda3f43c76f0a4a0b30663`。
+- [Quality Run 45987533954](https://github.com/rexyll/cnc-knowledge/actions/runs/45987533954)两个Job success：548 unittest（37 skipped）、CH12 143项、strict lint 0 errors / 5 warnings、结构/data 0 errors（260实体、240关系、412来源、178 Markdown）。
+- 运维边界：未配置read timeout时仍可能无限等待；完全静默的Watch若配置read timeout会被判为Unavailable，不能在没有可靠心跳的前提下盲目启用。ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
