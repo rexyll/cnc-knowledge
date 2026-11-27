@@ -219,14 +219,20 @@ def _normalize_watch_response(envelope: Mapping[str, Any]) -> dict[str, Any]:
 
     raw_header = result.get("header")
     if not isinstance(raw_header, Mapping):
-        raise Etcd3gwProtocolError(
-            "etcd Watch response is missing its response header"
-        )
+        # The HTTP Gateway may omit ResponseHeader on a compacted terminal
+        # Watch control frame. Revision zero means the server supplied none.
+        if not bool(result.get("canceled", False)):
+            raise Etcd3gwProtocolError(
+                "etcd Watch response is missing its response header"
+            )
+        raw_header = {}
     revision = _field(raw_header, "revision")
     if revision is None:
-        raise Etcd3gwProtocolError(
-            "etcd Watch response header is missing revision"
-        )
+        if not bool(result.get("canceled", False)):
+            raise Etcd3gwProtocolError(
+                "etcd Watch response header is missing revision"
+            )
+        revision = 0
     header = dict(raw_header)
     header["revision"] = int(revision)
 

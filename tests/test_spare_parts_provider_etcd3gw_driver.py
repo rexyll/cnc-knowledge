@@ -544,6 +544,33 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
         self.assertEqual(len(second.session.calls), 1)
         self.assertTrue(response.closed)
 
+    def test_watch_compaction_cancel_without_gateway_header_is_preserved(self):
+        client = self.by_port[23791]
+        canceled_frame = {
+            "result": {
+                "watch_id": "10",
+                "canceled": True,
+                "compact_revision": "27",
+                "cancel_reason": "required revision has been compacted",
+            }
+        }
+        response = FakeStreamingResponse([
+            __import__("json").dumps(canceled_frame).encode("utf-8")
+        ])
+        client.session = FakeStreamingSession([response])
+
+        store = EtcdV3CoordinatorAuthorityStore(self.driver)
+        stream = store.watch(b"/watch/compacted", start_revision=20)
+        canceled = next(stream)
+        self.assertTrue(canceled.canceled)
+        self.assertEqual(canceled.compact_revision, 27)
+        self.assertIn("compacted", canceled.cancel_reason)
+        self.assertEqual(canceled.header_revision, 0)
+        self.assertIsNone(canceled.resume_revision)
+        with self.assertRaises(StopIteration):
+            next(stream)
+        self.assertTrue(response.closed)
+
     def test_watch_close_before_first_frame_releases_http_response(self):
         client = self.by_port[23791]
         response = FakeStreamingResponse([])
