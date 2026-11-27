@@ -134,7 +134,7 @@ class CandidateImportPlanTests(unittest.TestCase):
         self.assertTrue(plan["not_performed"])
 
     def test_rejects_production_namespace(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(ImportPlanError):
             build_import_plan(
                 self.candidate(), b"/cnc/admission/unified/v2/",
                 max_txn_ops=100, max_txn_bytes=1_000_000,
