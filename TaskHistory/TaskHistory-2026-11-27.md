@@ -410,3 +410,12 @@
 - **提交：** importer初版`5017d8994260fa6f2f4cd0f4f2089b5819e0a560`；后续安全/编码修正`3cfce5414889db6685abb32fa0ec2842dbb20321`、`82aede29b3ce0af0bbb8bc22211526461f8a4ec9`、`37654ce5b83d89a32df65d5bf168bcf2e6f983c5`；测试`b4de323528ff394fdbc8242ff92d485ce2d3d440`；TaskPlan/README/设计文档同步见本轮后续提交。
 - **状态：** MIG-04 IN_PROGRESS（候选包生成首阶段实现；隔离namespace写入器、Lease创建、事务分批/checkpoint、unknown-outcome恢复和真实临时etcd演练尚未实现）。MIG-05/06 TODO，MIG-07 BLOCKED。
 - **生产边界：** 未访问生产SQLite，未写etcd/Provider，未迁移生产状态，未执行冻结、双写或cutover；schema-v2仍为唯一生产权威，ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+## CH17-T004：MIG-04 Unified Store 隔离命名空间注入（全局第七十五轮，2026-11-27）
+
+- **分支与提交：** 全部变更只提交到`main`；Admission namespace注入提交`8ca6724bb8ebd68622ade9fe03122b79ffff066b`，Coordinator Leader key路由提交`00421dc9808f4d6e59c0294842263ed5421efc3d`，隔离测试提交`5248271b57a7edfd3b358571d2cb2470fbd0e50f`和`05ccc42d1396ce6308a1c3871b8f88b61af5c597`。
+- **实现：** Unified Admission Scheduler新增可选`namespace_prefix`；默认`/cnc/admission/unified/v2/`不变。自定义prefix限制在`/cnc/migration/isolated/{单一标识}/`，拒绝生产prefix、空/多段标识、路径穿越和非ASCII/控制字符。State、Lease和Request key从实例prefix派生。
+- **Coordinator：** Leader TTL key从Scheduler实例prefix派生，保证Coordinator Leader与Admission aggregate同namespace；默认生产路径仍兼容。
+- **测试：** 增加隔离prefix与默认prefix检查、非法prefix fail-closed测试，以及Leader TTL key隔离检查。当前仅记录测试已加入代码，CI尚未完成，不能据此宣称测试通过。
+- **安全边界：** namespace字符串校验不等于etcd RBAC隔离；后续写入器仍必须使用一次性临时etcd集群/凭证、线性一致空prefix检查、原生Lease策略、Txn容量/分批checkpoint与unknown-outcome读回恢复。
+- **状态：** MIG-04继续IN_PROGRESS。当前不写etcd、不导入候选包、不触达生产namespace；MIG-05/06未完成，MIG-07 BLOCKED。schema-v2仍唯一生产权威，ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。
