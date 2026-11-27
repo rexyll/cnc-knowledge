@@ -321,7 +321,7 @@ class Etcd3gwLiveLeasePartitionTests(unittest.TestCase):
                     memberships = self._network_memberships(minority_container)
                     if self.network not in memberships:
                         self._run([
-                            "docker", "network", "connect",
+                            "docker", "network", "connect", "--ip", "172.29.64.11",
                             self.network, minority_container,
                         ])
                 self._wait_for_quorum()
