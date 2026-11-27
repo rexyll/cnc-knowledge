@@ -959,3 +959,8 @@
 - **安全边界：** 临时密码/token/CA/证书私钥只存内存或runner临时目录；不输出秘密；Compose成员在finally中恢复，runner结束销毁volume。只对本测试Compose集群执行stop/start。
 - **验收：** 实际2/3成员quorum持续可用；有效reader token对健康成员的实际结果被独立观测；driver failover成功/失败有准确证据；越权仍拒绝且不触发错误重试；节点恢复后三成员重新健康；live和默认质量CI通过。
 - **任务状态：** IN_PROGRESS。当前已完成计划、专用opt-in live suite和CI阶段；等待真实mTLS三成员集群执行与质量门禁。该任务仅增加supporting engineering evidence；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+
+### 第五十五轮验收补充：重启后的 simple Token 语义
+
+首次 live 运行结果显示，停止 etcd1 前后，reader Token 在三个成员均可用；停止 etcd1 后 Driver 的只读 Range 从健康成员成功；但重启 etcd1 后，原 Token 返回 HTTP 401。新增验证步骤：记录旧 Token 的确定性 401，随后从健康成员显式重新认证，检查新 Token 在三个成员是否均被接受，并验证 driver 使用新 Token 恢复读取。该实验只描述 etcd v3.7.0 本次实测行为，不外推为其他 token provider、etcd 版本或生产集群的通用结论。
