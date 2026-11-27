@@ -414,6 +414,50 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
                 client_factory=lambda **kwargs: FakeGatewayClient(**kwargs),
             )
 
+    def test_auth_token_can_be_rotated_and_cleared_on_every_endpoint(self):
+        clients = {}
+
+        def factory(**kwargs):
+            client = FakeGatewayClient(**kwargs)
+            clients[kwargs["port"]] = client
+            return client
+
+        driver = Etcd3gwV3Client(
+            ["https://127.0.0.1:23791", "https://127.0.0.1:23792"],
+            auth_token="old-token",
+            client_factory=factory,
+        )
+        self.assertEqual(
+            [client.session.headers["Authorization"] for client in clients.values()],
+            ["old-token", "old-token"],
+        )
+        driver.set_auth_token("new-token")
+        self.assertEqual(
+            [client.session.headers["Authorization"] for client in clients.values()],
+            ["new-token", "new-token"],
+        )
+        driver.set_auth_token(None)
+        self.assertTrue(
+            all("Authorization" not in client.session.headers for client in clients.values())
+        )
+        with self.assertRaises(Etcd3gwConfigurationError):
+            driver.set_auth_token(" ")
+        driver.close()
+
+    def test_authentication_exception_is_not_treated_as_transport_failover(self):
+        class Etcd3Exception(Exception):
+            pass
+
+        first = self.by_port[23791]
+        second = self.by_port[23792]
+        first.failures["kv/range"] = Etcd3Exception(
+            '{"code":16,"message":"etcdserver: invalid auth token"}'
+        )
+        with self.assertRaises(Etcd3Exception):
+            self.driver.range(b"/protected")
+        self.assertEqual(len(first.calls), 0)
+        self.assertEqual(second.calls, [])
+
     def test_from_env_requires_explicit_endpoint_list(self):
         with self.assertRaises(Etcd3gwConfigurationError):
             Etcd3gwV3Client.from_env(env_var="NON_EXISTENT_ETCD_ENDPOINTS_FOR_TEST")
