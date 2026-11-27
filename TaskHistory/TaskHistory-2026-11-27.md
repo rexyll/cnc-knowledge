@@ -406,7 +406,7 @@
 - **排空门禁：** ACTIVE request、waiter、pending operation、expired-but-ACTIVE行均拒绝；非IDLE/REVOKED scope进入RECOVERY_REQUIRED；外部Provider fencing floor保持REQUIRED/null，不从SQLite推测。
 - **命名空间安全：** 候选包中的request key为namespace-relative key；target namespace留空并要求后续显式指定。当前Unified Store仍使用固定prefix，尚未实现可注入隔离namespace，因此本轮不写etcd/AuthorityStore，不具备生产写入路径。
 - **特殊兼容：** Unified request record schema要求正backend_lease_id；候选包仅对终态request使用保留占位值1，并明确其不是原生Lease ID，不得附着或撤销Lease。活动Lease不导入。
-- **测试：** 新增`tests/test_spare_parts_sqlite_candidate_importer.py`，覆盖正常候选生成/确定性摘要、records篡改、policy不匹配、活动Lease/waiter、pending operation、源扫描变化和非空闲scope隔离标记。代码已提交，但本轮尚未取得CI运行结果，不能据此宣称测试通过。
+- **测试：** 新增`tests/test_spare_parts_sqlite_candidate_importer.py`，覆盖正常候选生成/确定性摘要、records篡改、policy不匹配、活动Lease/waiter、pending operation、源扫描变化和非空闲scope隔离标记。代码已提交，但[Knowledge Quality Run 46004441510](https://github.com/rexyll/cnc-knowledge/actions/runs/46004441510)成功：566项unittest（40 skipped）、CH12数值资源Job通过，CH17各既有自检与repository knowledge lint步骤通过。
 - **提交：** importer初版`5017d8994260fa6f2f4cd0f4f2089b5819e0a560`；后续安全/编码修正`3cfce5414889db6685abb32fa0ec2842dbb20321`、`82aede29b3ce0af0bbb8bc22211526461f8a4ec9`、`37654ce5b83d89a32df65d5bf168bcf2e6f983c5`；测试`b4de323528ff394fdbc8242ff92d485ce2d3d440`；TaskPlan/README/设计文档同步见本轮后续提交。
 - **状态：** MIG-04 IN_PROGRESS（候选包生成首阶段实现；隔离namespace写入器、Lease创建、事务分批/checkpoint、unknown-outcome恢复和真实临时etcd演练尚未实现）。MIG-05/06 TODO，MIG-07 BLOCKED。
 - **生产边界：** 未访问生产SQLite，未写etcd/Provider，未迁移生产状态，未执行冻结、双写或cutover；schema-v2仍为唯一生产权威，ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。
