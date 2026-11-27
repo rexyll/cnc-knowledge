@@ -139,6 +139,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
         suffix = uuid4().hex
         key = f"/cnc-knowledge-it/watch-minority/{suffix}/leader".encode()
         initial_value = f"leader-before-partition-{suffix}".encode()
+        baseline_marker_key = f"/cnc-knowledge-it/watch-minority/{suffix}/baseline".encode()
         partition_values = [
             f"leader-majority-update-{index}-{suffix}".encode()
             for index in range(1, 4)
@@ -199,14 +200,30 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 [], [AuthorityStorePut(key, initial_value)]
             )
             self.assertTrue(created_result.succeeded)
-            current, baseline_revision = majority_store.linearizable_get(key)
+            # Advance the baseline beyond the watched-key PUT with an
+            # unrelated key. Then a linearizable read through etcd1 forces
+            # that member to apply the baseline revision before watch creation.
+            marker_result = majority_store.transact(
+                [], [AuthorityStorePut(baseline_marker_key, b"baseline")]
+            )
+            self.assertTrue(marker_result.succeeded)
+            current, majority_baseline_revision = majority_store.linearizable_get(key)
             self.assertIsNotNone(current)
             self.assertEqual(current.value, initial_value)
-            self.assertGreaterEqual(baseline_revision, created_result.revision)
+            local_current, local_baseline_revision = watch_store.linearizable_get(key)
+            self.assertIsNotNone(local_current)
+            self.assertEqual(local_current.value, initial_value)
+            self.assertGreaterEqual(majority_baseline_revision, marker_result.revision)
+            self.assertGreaterEqual(local_baseline_revision, marker_result.revision)
+            baseline_revision = local_baseline_revision
 
             partition_stream = watch_store.watch(
                 key,
-                start_revision=baseline_revision + 1,
+                # Watch start_revision is inclusive. The selected baseline is
+                # later than the watched-key PUT and contains only an unrelated
+                # marker, so it creates a synced watcher without replaying a
+                # watched-key event. This is required for a local progress frame.
+                start_revision=baseline_revision,
                 progress_notify=True,
                 prev_kv=True,
             )
@@ -271,7 +288,11 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             observations = {
                 "watch_endpoint": access_endpoint,
                 "created_watch_id": created.watch_id,
-                "baseline_revision": baseline_revision,
+                "watched_key_put_revision": created_result.revision,
+                "baseline_marker_revision": marker_result.revision,
+                "majority_baseline_revision": majority_baseline_revision,
+                "local_baseline_revision": local_baseline_revision,
+                "watch_start_revision": baseline_revision,
                 "majority_partition_revisions": partition_results,
                 "majority_linearizable_revision": majority_revision,
                 "isolated_progress_revision": progress.header_revision,
@@ -392,9 +413,13 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             finally:
                 if majority_store is not None:
                     try:
-                        current, _ = majority_store.linearizable_get(key)
-                        if current is not None:
-                            majority_store.transact([], [AuthorityStoreDelete(key)])
+                        cleanup = []
+                        for cleanup_key in (key, baseline_marker_key):
+                            current, _ = majority_store.linearizable_get(cleanup_key)
+                            if current is not None:
+                                cleanup.append(AuthorityStoreDelete(cleanup_key))
+                        if cleanup:
+                            majority_store.transact([], cleanup)
                     except Exception:
                         pass
                 if watch_driver is not None:
