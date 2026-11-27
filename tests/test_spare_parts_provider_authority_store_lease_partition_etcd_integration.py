@@ -149,7 +149,7 @@ class Etcd3gwLiveLeasePartitionTests(unittest.TestCase):
         self, driver: Etcd3gwV3Client
     ) -> list[str]:
         attempts: list[str] = []
-        for endpoint, client in zip(self.endpoints[:1], driver._clients):
+        for endpoint, client in zip(self.endpoints, driver._clients):
             original_post = client.post
 
             def tracked_post(url, *args, _endpoint=endpoint, _original=original_post, **kwargs):
@@ -222,7 +222,7 @@ class Etcd3gwLiveLeasePartitionTests(unittest.TestCase):
                 )
 
                 keepalive_driver = Etcd3gwV3Client(
-                    [self.endpoints[0]], timeout=2.0
+                    self.endpoints, timeout=2.0
                 )
                 keepalive_attempts = self._track_lease_keepalive_attempts(
                     keepalive_driver
