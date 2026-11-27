@@ -5,7 +5,6 @@ import os
 import unittest
 from uuid import uuid4
 
-import requests
 
 from scripts.spare_parts_provider_authority_store import (
     AuthorityStoreCompare,
@@ -30,6 +29,8 @@ def _prefix_end(prefix: bytes) -> bytes:
 class Etcd3gwLiveRbacMtlsIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        import requests
+
         cls.endpoints = [
             item.strip()
             for item in os.environ.get("ETCD_MTLS_ENDPOINTS", "").split(",")
