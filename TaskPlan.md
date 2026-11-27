@@ -1137,3 +1137,11 @@
 - **Live观察：** baseline revision=38，Watch cursor=39；全局无新revision时4秒读超时在4.0045秒触发，但etcd1仍健康、Quorum正常、目标prefix不变。prefix外marker revisions=[39,40]触发两个空Progress响应，header=[39,39]且目标prefix没有KV事件；Progress不可视为当前quorum revision。断开etcd1专用客户端bridge、保留其进程及Raft网络后，Watch在4.0045秒结束为ConnectionError/Unavailable。
 - **验收入口：** [Live Run 45987534125](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125)与[Quality Run 45987533954](https://github.com/rexyll/cnc-knowledge/actions/runs/45987533954)均success。Quality：548 unittest（37 skipped）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors。Live Artifact [15192246652](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125/artifacts/15192246652)，SHA-256 `e9f2dbb141dc55a60f3988876df8eaa86eb02b4b26dda3f43c76f0a4a0b30663`。
 - **边界：** read timeout测量流的无字节时间，不判断成员是否健康；长期静默Watch若启用会误触发，默认None。没有实现可靠心跳源、TCP keepalive、后台探针、自动重连或生产WAN半开验收。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总体仍`IN_PROGRESS`。
+
+### 第六十九轮任务计划：Watch健康分层与生产连接存活策略
+
+- **目标：** 比较Progress、TCP Keepalive、HTTP/2 gRPC Keepalive、独立线性一致Range和应用层心跳，形成适用于当前HTTP gRPC-gateway Watch驱动的生产健康判定策略。
+- **关键原则：** Watch transport可达、节点本地Watch revision、Quorum线性一致Range能力和应用心跳是不同健康维度；不能用单个Progress、socket ACK或HTTP成功响应代表全部状态。
+- **交付：** 独立决策记录，包含当前实现事实、机制能力/盲区/成本对比、组合状态机、保守配置策略、指标建议、实施阶段与未实现清单。默认read timeout为None，不引入自动重连和自动failover。
+- **范围：** 本轮只做架构决策和文档，不在未确定生产SLO与运行时模型前增加socket keepalive、gRPC transport、lease heartbeat或后台健康探针代码。
+- **验收：** CH17决策记录、章节README、章节TaskPlan和TaskHistory同步；最终main head Quality两个必需Job成功。
