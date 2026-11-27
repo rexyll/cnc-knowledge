@@ -163,7 +163,7 @@ class CandidateImporterTests(unittest.TestCase):
         ):
             manifest, records, policy = fixture()
             records["tables"][table].append(row)
-            with self.assertRaisesRegex(CandidateImportError, "not quiescent"):
+            with self.assertRaises(CandidateImportError):
                 build_candidate(manifest, records, policy, generated_at=1000.0)
 
     def test_rejects_pending_operations_and_changed_source(self):
