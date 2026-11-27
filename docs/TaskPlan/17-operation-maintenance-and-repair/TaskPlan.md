@@ -902,3 +902,11 @@
 - **测试：** Fake transport验证Authorization header注入和fail-closed；独立live suite通过 /v3/auth/authenticate 取得临时token，再对真实etcd三成员集群执行Range/Txn正反向权限断言。所有CA、证书、密码和token均由CI临时生成/注入并清理。
 - **验收：** 合法角色在授权范围内成功；读写和前缀越权均由etcd返回拒绝；无凭证/错误密码认证失败；TLS验证仍有效；权限拒绝不触发网络failover、不吞错、不降级。
 - **状态边界：** 这是一次性集成验证，不代表企业IAM/密码管理/token轮换撤销/审计/生产RBAC验收。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；CH17-T004保持IN_PROGRESS。
+
+### 第五十二轮执行结果（2026-11-27）
+
+- Etcd3gwV3Client增加可选auth_token，给每个endpoint session注入Authorization header；Fake Gateway验证token传播和空token拒绝。
+- Live [Run 45919206834](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206834)成功：mTLS suite 8/8（原mTLS 3项 + RBAC 5项），普通三节点suite 8项全部通过。RBAC实测reader只读授权prefix、writer只读写授权prefix、跨prefix越权拒绝、无token/错误密码失败。Artifact 15163741056，SHA-256 `b7e7476a08e1e9c4a77e4bb02e2b80727dd09e1baadc1b66866b6a54b72c8ee0`。
+- etcd gRPC-Gateway不接受通过非空客户端证书CN映射用户；最终使用无CN的CA签名client cert继续强制mTLS，RBAC身份通过用户名/密码换token和Authorization header实现。
+- 默认CI [Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)成功：515项unittest（499通过、16项opt-in live skip）、CH12 143项、strict lint 0 errors、结构/数据0 errors/5项既有warning。
+- token只显式注入并保存在内存，本轮不实现自动刷新/续期；企业IAM、凭据轮换、审计及生产密钥托管仍未验证。ASSET-000092正式30项继续PROPOSED_NOT_APPROVED / NOT_RUN；CH17-T004仍IN_PROGRESS。
