@@ -125,7 +125,19 @@ class Etcd3gwLiveWatchCompactionTests(unittest.TestCase):
                 progress_notify=False,
                 prev_kv=True,
             )
-            canceled_result = self._next_result(old_stream)
+            first_result = self._next_result(old_stream)
+            self.assertEqual(first_result[0], "response", first_result[1])
+            first_response = first_result[1]
+            created_frame_observed = first_response.created
+            if created_frame_observed:
+                self.assertFalse(first_response.canceled)
+                self.assertEqual(first_response.events, ())
+
+                # etcd may emit the create acknowledgement before the compacted
+                # revision cancellation control frame.
+                canceled_result = self._next_result(old_stream)
+            else:
+                canceled_result = first_result
             self.assertEqual(canceled_result[0], "response", canceled_result[1])
             canceled = canceled_result[1]
             self.assertTrue(canceled.canceled)
@@ -179,6 +191,7 @@ class Etcd3gwLiveWatchCompactionTests(unittest.TestCase):
                     {
                         "old_watch_start_revision": old_revision,
                         "compacted_revision": compacted_revision,
+                        "created_frame_before_cancel": created_frame_observed,
                         "canceled": True,
                         "cancel_reason": canceled.cancel_reason,
                         "canceled_watch_event_count": len(canceled.events),
