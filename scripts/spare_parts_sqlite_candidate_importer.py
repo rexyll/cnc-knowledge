@@ -225,9 +225,15 @@ def build_candidate(
         }
 
     operations: dict[str, Any] = {}
+    valid_operation_states = {
+        "PENDING_ACTIVATION", "ACTIVE", "REVOKING", "REVOKED",
+        "PENDING_PUBLISH", "COMMITTED", "RECOVERY_REVIEW",
+    }
     for row in tables["coordinator_authority_operations"]:
         scope = row["scope"]
         idem = row["idempotency_key"]
+        if row["state"] not in valid_operation_states:
+            raise CandidateImportError(f"unsupported Coordinator operation state: {row['state']}")
         if scope not in scopes:
             raise CandidateImportError(f"operation references missing scope: {scope}")
         key = _sha256((scope + "\x00" + idem).encode("utf-8"))
