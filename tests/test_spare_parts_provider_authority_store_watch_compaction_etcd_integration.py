@@ -114,10 +114,10 @@ class Etcd3gwLiveWatchCompactionTests(unittest.TestCase):
                 "--endpoints=http://127.0.0.1:2379",
                 "--dial-timeout=2s",
                 "--command-timeout=10s",
-                "compact", str(old_revision),
+                "compact", str(advanced.revision),
             ], timeout=15.0)
             self.assertEqual(compact.returncode, 0, compact.stderr)
-            compacted_revision = old_revision
+            compacted_revision = advanced.revision
 
             old_stream = store.watch(
                 key,
@@ -140,6 +140,33 @@ class Etcd3gwLiveWatchCompactionTests(unittest.TestCase):
                 canceled_result = first_result
             self.assertEqual(canceled_result[0], "response", canceled_result[1])
             canceled = canceled_result[1]
+            if not canceled.canceled:
+                def describe(frame):
+                    return {
+                        "created": frame.created,
+                        "canceled": frame.canceled,
+                        "header_revision": frame.header_revision,
+                        "compact_revision": frame.compact_revision,
+                        "cancel_reason": frame.cancel_reason,
+                        "events": [
+                            {"type": event.event_type, "revision": event.revision}
+                            for event in frame.events
+                        ],
+                    }
+
+                print(
+                    "WATCH_COMPACTION_UNEXPECTED_FRAME "
+                    + json.dumps(
+                        {
+                            "compact_command_stdout": compact.stdout.strip(),
+                            "requested_compaction_revision": compacted_revision,
+                            "old_watch_start_revision": old_revision,
+                            "first_frame": describe(first_response),
+                            "next_frame": describe(canceled),
+                        },
+                        sort_keys=True,
+                    )
+                )
             self.assertTrue(canceled.canceled)
             self.assertFalse(canceled.created)
             self.assertEqual(canceled.compact_revision, compacted_revision)
@@ -191,6 +218,7 @@ class Etcd3gwLiveWatchCompactionTests(unittest.TestCase):
                     {
                         "old_watch_start_revision": old_revision,
                         "compacted_revision": compacted_revision,
+                        "compaction_target_revision": advanced.revision,
                         "created_frame_before_cancel": created_frame_observed,
                         "canceled": True,
                         "cancel_reason": canceled.cancel_reason,
