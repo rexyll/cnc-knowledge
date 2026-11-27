@@ -1162,3 +1162,4 @@
 - **交付：** 新增`docs/17-operation-maintenance-and-repair/watch-supervisor-integration-readiness-review.md`，同步CH17技术正文第31节、章节README与章节任务计划。
 - **核心结论：** etcd KV/Txn/Lease和可选Watch底层能力已存在，但业务层`DurableCoordinatorAuthorityBackend`仍由SQLite实现，尚未形成由业务服务持有的etcd Watch生命周期；因此不应先行添加后台Supervisor/探测线程。
 - **后续门禁：** 先迁移业务状态机并明确服务owner、消费并发模型、探测权限/deadline/频率预算及监控出口，再实现每进程共享Quorum探测和Watch观测。默认`watch_read_timeout=None`不变；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威。
+- **核心交付提交：** `1de73f780904d090f16f2d298a877fc18b4e8828`。

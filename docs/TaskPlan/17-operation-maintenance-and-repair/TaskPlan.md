@@ -1284,3 +1284,4 @@
 - **决策：** 本轮不加后台线程/探测器、不添加TCP keepalive/gRPC PING/Lease心跳、不启用自动恢复、不改变`watch_read_timeout=None`。先迁移业务状态机并定义服务owner，再实现每进程共享Quorum探测和Watch观测。
 - **边界：** 本轮只做静态源代码与测试路径核查，不声称新增测试通过、真实etcd在线验证或生产HA能力。详见独立审查文档。
 - **后续门禁：** 业务服务迁移与生命周期定义是下一阶段前置工作；正式场景矩阵ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威。
+- **核心交付提交：** `1de73f780904d090f16f2d298a877fc18b4e8828`（审查文档及根/章节计划、README、技术正文同步）。

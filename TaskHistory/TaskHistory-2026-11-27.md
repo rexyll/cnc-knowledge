@@ -337,3 +337,13 @@
 - **配置决策：** `watch_read_timeout`默认None。生产read timeout需要先证明受控且有界的流量最大间隔，并依据代理/NAT空闲时限、网络抖动与业务SLO推导；本轮未给出未经验证的生产秒数，也未新增TCP socket options、原生gRPC channel、自动重连、Lease heartbeat写入或后台健康状态机。
 - **上游依据：** etcd v3.7 API明确Watch是双向gRPC stream，`progress_notify`由服务器按当前负载决定通知频率，Progress revision来自连接的本地成员；gRPC Keepalive使用HTTP/2 PING并有服务端最小间隔/限流约束；Requests read timeout衡量底层socket无字节间隔而非整个响应总时长。相关官方链接均列入决策记录。
 - **证据范围：** 本轮为架构决策记录，无新增Live测试或运行行为。第六十八轮4秒静默和路径断开实测是一次性Compose supporting evidence，不等同于生产网络半开、TCP Keepalive或HTTP/2 PING验收。CH17-T004仍`IN_PROGRESS`；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威；SQLite Coordinator业务状态机尚未迁移。
+
+
+## 第七十轮：Watch Supervisor 与 Quorum Probe 生产接入边界审查（2026-11-27）
+
+- **任务ID与完成时间：** CH17-T004-R070；2026-11-27T19:26:00+08:00；分支`main`。
+- **目标与交付：** 审查业务Coordinator服务、KV/Txn/Lease Port、可选Watch Port、etcd适配器与HTTP Gateway驱动的真实调用链；新增`docs/17-operation-maintenance-and-repair/watch-supervisor-integration-readiness-review.md`，并同步CH17技术正文第31节、章节README、章节TaskPlan和根TaskPlan。
+- **关键发现：** `CoordinatorAuthorityStore`是基础存储契约，`CoordinatorAuthorityWatchStore`是独立可选能力，`EtcdV3CoordinatorAuthorityStore`已具备线性一致Range/Watch适配；但业务层`DurableCoordinatorAuthorityBackend`当前仍由SQLite WAL实现，缺少基于etcd Port的完整业务状态机。同步Watch `next(stream)`可能阻塞，尚无业务owner、启动/关闭责任、共享探测调度、deadline/频率预算和监控出口。
+- **本轮决策：** 不增加后台线程、Quorum Probe、Watch Supervisor、TCP keepalive、原生gRPC PING、Lease heartbeat、自动重连或自动failover；`watch_read_timeout`继续默认`None`。后续先完成业务状态机迁移和服务生命周期定义，再实现每进程共享探测。
+- **验收与范围：** 静态代码及测试路径审查完成；没有新增代码、单元测试或Live测试，不宣称生产HA、etcd业务服务迁移或生产Watch健康能力。恢复原则保持Quorum线性一致快照revision R整体替换，并从R+1恢复。ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威。
+- **提交与证据：** 核心交付提交`1de73f780904d090f16f2d298a877fc18b4e8828`；[GitHub Commit](https://github.com/rexyll/cnc-knowledge/commit/1de73f780904d090f16f2d298a877fc18b4e8828)。工作区通过GitHub API直接提交至`main`，未创建分支。
