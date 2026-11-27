@@ -450,3 +450,22 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 **官方语义与能力边界：** [etcd v3.7交互指南](https://etcd.io/docs/v3.7/dev-guide/interacting_v3/)说明Progress Notification的revision来自Watch所连接的本地成员；当该成员失去quorum时，其revision可能落后于多数派读。[etcd v3.7 API](https://etcd.io/docs/v3.7/learning/api/)中Range默认采用线性一致读取，因此恢复流程以线性一致Range快照作为权威状态并从R+1续接。本轮只验证WatchCreate的周期性`progress_notify=true`通知，不表示HTTP Gateway适配器实现了双向`WatchProgress`请求或`WatchCancel`。
 
 **安全与治理：** 测试只改变本次一次性Compose项目的网络连接；恢复后移除临时专用网络，最终由Runner清理三节点容器、volumes和Compose网络。没有修改宿主机iptables或触碰其他容器。结果是一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting engineering evidence，不等同生产HA或业务Coordinator迁移验收；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004保持`IN_PROGRESS`。
+
+
+## 25. 第六十四轮：少数派Watch期间多数派Compaction与旧游标恢复
+
+新增Live测试`test_minority_watch_is_canceled_by_quorum_compaction_then_snapshot_resumes`，并纳入现有`tests/test_spare_parts_provider_authority_store_watch_minority_partition_etcd_integration.py`与`scripts/etcd-integration/run.sh`。测试在一次性三节点etcd v3.7.0集群和etcd3gw 2.7.0上运行。它将少数派Watch、多数派Compaction、旧游标拒绝和快照恢复串联起来，避免把Progress通知或旧HTTP流的连接状态当成KV权威状态。
+
+**分区及Compaction准备：** 为etcd1增加经项目/用途标签校验的临时bridge网络，使客户端Watch HTTP流仍可访问etcd1；随后仅断开etcd1与Compose peer网络，etcd2/etcd3保持多数派。旧Watch在etcd1上从revision=39建立。分区期间多数派只更新不属于该Watch key范围的compaction-marker key，产生revision=40、41；被监视的leader key保持原值，从而确保原Watch游标不会因收到这些KV事件而推进。由标签核验后的本次Compose etcd2容器执行`etcdctl compact 41`，命令输出`compacted revision 41`。
+
+**固定peer地址与网络恢复：** 三节点Compose默认网络采用固定Raft peer地址：etcd1=`172.29.64.11`、etcd2=`172.29.64.12`、etcd3=`172.29.64.13`，子网为`172.29.64.0/24`。每条分区测试的网络恢复路径显式用Docker `network connect --ip 172.29.64.11`重连etcd1，避免重连时动态IP与成员通告的静态peer地址不一致。第六十四轮测试在恢复后断言etcd1的实际Compose网络IP仍为`172.29.64.11`。
+
+**原Watch流与旧游标取消的区别：** 本轮没有假设分区期间已建立的原HTTP Watch流在重连后必然收到取消帧；网络连接恢复、成员Raft追赶和ReadIndex可用并非同一时刻。测试主动关闭原流，再从健康多数派获取线性一致Range快照revision=41。之后在健康多数派上重新建立旧游标`start_revision=39`，服务端明确返回`canceled=true`、`compact_revision=41`、events=0、`resume_revision=None`。Gateway返回的`cancel_reason`为空字符串，因此不能以该可选字段是否有文本作为取消判断依据。
+
+**快照和snapshot+1续接：** 以revision=41的quorum线性一致Range作为权威快照；旧cursor因低于compact revision而被拒绝。恢复Watch从`snapshot_revision+1=42`在健康多数派建立。随后对被监视key提交新的PUT revision=42，恢复Watch仅收到一条revision=42事件，`prev_kv`与snapshot中的初始值相同，事件resume cursor推进到43。观测JSON记录`no_compacted_event_replayed_after_snapshot=true`和`post_snapshot_event_delivered_once=true`，没有重放被压缩覆盖的revision 40–41，也没有重复投递revision 42。
+
+**Live证据：** [Run 45949089875](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089875)整体success；Watch少数派测试文件2项测试PASS（7.292秒），以及其他network/lease故障、mTLS、短TTL Token、auth/quorum、mTLS RBAC成员故障/Token传播阶段均success；诊断采集、Compose容器和volumes清理、Artifact上传与后置清理全部success。诊断Artifact [15176311979](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089875/artifacts/15176311979)，SHA-256 `617e83d2321f82be8396e80bf362638100672d4a32f80ceea4e96b1ddd94ad69`。
+
+**质量门禁：** [Quality Run 45949089930](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089930)的Knowledge structure and data quality与CH12 numerical resource tests两个Job均success。
+
+**实现与实验边界：** 分区网络、etcd容器及临时key均限定在一次性Compose项目内；没有修改宿主机iptables或其他容器/网络。上述结果仅证明etcd v3.7.0 / etcd3gw 2.7.0一次性CI场景中的协议与恢复路径，不表示生产HA验收。Watch仍是单向HTTP server-streaming，本轮未实现双向`WatchProgress`/`WatchCancel`。ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威；SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
