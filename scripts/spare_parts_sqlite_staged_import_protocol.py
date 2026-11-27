@@ -12,7 +12,6 @@ import argparse
 import base64
 import hashlib
 import json
-import math
 import os
 import tempfile
 from pathlib import Path
@@ -197,6 +196,24 @@ def build_staged_import_plan(
     )
     initial_checkpoint_value = _canonical(initial_checkpoint)
 
+    # Fail early when the indivisible scheduler aggregate cannot be published.
+    preliminary_publish = _budget(
+        [
+            _value_compare(checkpoint_key, initial_checkpoint_value),
+            _version_zero_compare(state_key),
+            _version_zero_compare(leader_key),
+        ],
+        [(state_key, state_value)],
+        max_txn_ops=max_ops,
+        max_txn_bytes=max_bytes,
+        margin=margin,
+    )
+    if not preliminary_publish["fits"]:
+        raise StagedImportPlanError(
+            "scheduler aggregate cannot fit in the final single-key publish Txn; "
+            "the schema/runtime must be redesigned before staging"
+        )
+
     # Initialization claims a unique checkpoint while guarding both publish keys.
     initialize_compares = [
         _version_zero_compare(checkpoint_key),
@@ -215,7 +232,6 @@ def build_staged_import_plan(
 
     batches: list[dict[str, Any]] = []
     current_pairs: list[tuple[bytes, bytes]] = []
-    previous_checkpoint = initial_checkpoint
     previous_checkpoint_value = initial_checkpoint_value
     completed = 0
 
@@ -269,7 +285,6 @@ def build_staged_import_plan(
             raise StagedImportPlanError("internal batch segmentation exceeded its computed budget")
         batches.append(descriptor)
         completed += len(current_pairs)
-        previous_checkpoint = next_checkpoint
         previous_checkpoint_value = next_value
         current_pairs = [pair]
         descriptor, next_value, next_checkpoint, compares, puts = make_batch(current_pairs)
@@ -284,7 +299,6 @@ def build_staged_import_plan(
             raise StagedImportPlanError("final checkpointed batch exceeds the supplied budget")
         batches.append(descriptor)
         completed += len(current_pairs)
-        previous_checkpoint = next_checkpoint
         previous_checkpoint_value = next_value
 
     if completed != len(request_pairs):
@@ -436,7 +450,9 @@ def classify_batch_unknown(
         or checkpoint.get("format") != CHECKPOINT_FORMAT
         or checkpoint.get("plan_sha256") != plan_sha256
         or not isinstance(checkpoint.get("next_batch_index"), int)
+        or isinstance(checkpoint.get("next_batch_index"), bool)
         or not isinstance(checkpoint.get("completed_request_count"), int)
+        or isinstance(checkpoint.get("completed_request_count"), bool)
         or checkpoint["completed_request_count"] < expected_completed_request_count
         or checkpoint["next_batch_index"] < 1
     ):
