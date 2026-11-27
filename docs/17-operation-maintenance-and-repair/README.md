@@ -227,3 +227,8 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 ## CH17-T004 etcd Gateway RBAC + mTLS 最小权限验证（第五十二轮）
 
 Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Authorization header。真实 [Run 45919206834](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206834)成功：mTLS suite 8/8通过（基础mTLS 3项 + RBAC 5项），reader仅能读取授权prefix、writer仅能读写授权prefix，跨prefix访问和无token/错误密码均被拒绝；普通三节点live suite 8项通过。Artifact 15163741056。默认 [Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)成功：515项unittest（499通过、16项opt-in skip）、CH12 143项、strict lint 0 errors、结构/数据0 errors/5项既有warning。Gateway mTLS客户端证书不使用CN映射用户，RBAC由认证token独立承载。token自动刷新、企业IAM/审计/生产凭据管理尚未验证；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## CH17-T004 etcd Gateway Token 生命周期（第五十三轮）
+
+新增显式token替换接口与短TTL集成测试入口：`Etcd3gwV3Client.set_auth_token()`可统一更新/清除各endpoint session的Authorization header，Watch复用相同session；driver不保存密码、不自动认证或刷新。etcd v3.7配置参考中的simple token默认TTL为300秒（`--auth-token-ttl`），JWT TTL独立配置；simple token为有状态开发/测试机制。短TTL测试单独启动临时mTLS集群，避免缩短既有RBAC套件token寿命。实时CI结果待验收补记。知识条目见[备件Coordinator etcd Gateway驱动与三节点集成](spare-parts-inventory-backup-provider-coordinator-etcd3gw-driver-and-three-node-integration.md)，来源SRC-000410～SRC-000412。
