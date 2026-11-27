@@ -932,3 +932,14 @@
 - **文档和资源：** 更新CH17技术正文、README、KNOW-000061、ASSET-000092 supporting evidence、来源、TaskHistory、资源README和ASSET索引。所有证据均标注etcd v3.7.0 / etcd3gw 2.7.0 / 临时环境范围。
 - **验收标准：** fake分类契约全部通过；live 401/403/transport差异测试通过；默认全库CI、CH12、strict lint、fixture validator通过；无密钥/凭据入库。
 - **治理边界：** 仅工程适配器和一次性集成测试，不执行正式30项UAT。ASSET-000092保持PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威；SQLite Coordinator业务状态机未迁移；CH17-T004保持IN_PROGRESS。
+
+
+### 第五十四轮执行结果（2026-11-27）：Gateway认证错误规范化与故障隔离
+
+- 新增SRC-000413～SRC-000415，核对Gateway错误JSON、etcd rpctypes状态码及etcd3gw 2.7.0 HTTP异常映射。
+- 驱动新增AuthenticationError、PermissionDeniedError、RequestError；401/code16、403/code7和明确错误密码消息可区分，普通参数错误不误判；只有真实连接/超时允许只读failover，认证/授权拒绝不会切换endpoint。Watch建立错误同样分类。
+- Live [Run 45922792420](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792420)成功：普通三节点/成员故障/quorum suite 8项、mTLS/RBAC 12项、短TTL token 1项、认证/quorum隔离1项通过；Artifact 15165755534，SHA-256 `c3b8d8e25e91cc7bff7e3d2893a55688de0b2567836052a20cb887fd2bcc7608`。
+- 两成员停止时，有效token Range和重新认证均超时；恢复quorum后旧token重新Range成功。该结果不代表认证服务可在无quorum时独立工作。
+- 默认质量[Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：526项unittest（504通过、22项opt-in skip），CH12 143项，strict lint 0 errors，fixture validator 0 errors/5项既有warning。
+- 更新CH17正文/README、资源README/ASSET索引、KNOW-000061、ASSET-000092和TaskHistory。正式30场景仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+- **状态：** 本轮工程任务验收通过；自动token刷新、企业IAM/JWT密钥管理、生产凭据轮换/撤销/审计、网络分区与认证服务HA仍未验证。
