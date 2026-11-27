@@ -140,3 +140,12 @@
 | spare-parts-coordinator-etcd-driver-integration-matrix-v1.csv | CSV Coordinator etcd3gw 驱动与三节点 etcd 集成正式验证矩阵 / ASSET-000092 | 项目原创合成场景 | 2026-11-27 | 项目原创，待企业批准 | CH17-T004 / KNOW-000061 | 30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。Supporting live evidence：Run 45842517310 Watch/故障集成8/8 PASS（Artifact 15128407498）；Run 45918152363 mTLS 3/3 PASS（Artifact 15163390323）；Run 45919206834普通三节点suite 8项、mTLS/RBAC suite 8/8 PASS（Artifact 15163741056）。第五十三轮新增显式token替换接口、Fake Gateway轮换/清除与认证错误不failover测试，以及独立短TTL mTLS live suite（TTL=10秒）：Run 45920726761成功，基础三节点6项、mTLS/RBAC 8项、token生命周期1项全部通过（Artifact 15164208273，SHA-256 0b66c69eb7f1ecc12e0d8bfbbf80ab0bf51de739ec31d8d2e9f3db878619e476）。默认质量CI Run 45920726730成功：518项unittest（501通过、17项opt-in skip）、CH12 143项、strict lint 0 errors。第五十四轮：Live Run 45922792420成功，基础/故障suite 8项、mTLS/RBAC 12项、token生命周期1项、认证/quorum隔离1项全部通过（Artifact 15165755534，SHA-256 c3b8d8e25e91cc7bff7e3d2893a55688de0b2567836052a20cb887fd2bcc7608）。覆盖HTTP 401/code16认证失败、403/code7权限拒绝、错误密码分类、transport failover；quorum loss时Range和重新认证均超时，恢复后旧token可用。默认质量Run 45922792429：526项unittest（504通过、22项opt-in skip）、CH12 143项、strict lint 0 errors。工程冒烟证据不改变正式场景审批/执行状态。 |
 
 
+
+
+### ASSET-000092 supporting evidence — 第五十五轮
+
+- Live [Run 45927091505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505)通过：基础三成员6项、mTLS/RBAC 12项、短TTL生命周期1项、auth/quorum隔离1项、单成员故障/Token传播1项；单成员专项1/1 PASS。
+- Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 `2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff`。
+- 证据：Token签发后即时和收敛后3/3成员接受；单成员停止期间driver只读failover成功；重启成员后旧simple Token HTTP 401；从健康成员显式重新认证的新Token在3/3成员接受。
+- 默认质量Run 45927138505：527 unittest、CH12 143、strict lint 0 errors、fixture validator 0 errors/5 warnings。
+- 此处仅登记supporting evidence；正式矩阵仍30项，`PROPOSED_NOT_APPROVED / NOT_RUN`，不得更改审批或执行状态。
