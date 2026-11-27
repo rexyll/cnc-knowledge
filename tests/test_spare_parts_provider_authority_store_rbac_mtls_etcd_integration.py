@@ -11,7 +11,12 @@ from scripts.spare_parts_provider_authority_store import (
     AuthorityStorePut,
     EtcdV3CoordinatorAuthorityStore,
 )
-from scripts.spare_parts_provider_etcd3gw_driver import Etcd3gwV3Client
+from scripts.spare_parts_provider_etcd3gw_driver import (
+    Etcd3gwAuthenticationError,
+    Etcd3gwPermissionDeniedError,
+    Etcd3gwV3Client,
+    _gateway_error_from_response,
+)
 
 
 def _b64(value: bytes) -> str:
@@ -253,6 +258,44 @@ class Etcd3gwLiveRbacMtlsIntegrationTests(unittest.TestCase):
             timeout=5,
         )
         self.assertGreaterEqual(response.status_code, 400)
+
+
+    def test_invalid_token_is_normalized_as_unauthenticated(self):
+        invalid_client = self._client("definitely-invalid-token")
+        try:
+            with self.assertRaises(Etcd3gwAuthenticationError):
+                invalid_client.range(self.authorized_prefix + b"seed")
+        finally:
+            invalid_client.close()
+
+    def test_reader_permission_denial_is_normalized(self):
+        with self.assertRaises(Etcd3gwPermissionDeniedError):
+            self.reader_client.range(self.outside_prefix + b"seed")
+
+    def test_invalid_password_gateway_status_is_normalized(self):
+        response = self.session.post(
+            self.base_url + "/auth/authenticate",
+            json={"name": "cnc-reader", "password": "incorrect-password"},
+            timeout=5,
+        )
+        self.assertGreaterEqual(response.status_code, 400)
+        normalized = _gateway_error_from_response(response.status_code, response.text)
+        self.assertIsInstance(normalized, Etcd3gwAuthenticationError)
+
+    def test_transport_failure_fails_over_but_auth_errors_do_not(self):
+        client = Etcd3gwV3Client(
+            ["https://127.0.0.1:24999", self.endpoints[0]],
+            timeout=0.5,
+            ca_cert=self.ca,
+            cert_cert=self.client_cert,
+            cert_key=self.client_key,
+            auth_token=self.reader_token,
+        )
+        try:
+            response = client.range(self.authorized_prefix + b"seed")
+            self.assertEqual(response["kvs"][0]["value"], b"reader-can-see")
+        finally:
+            client.close()
 
 
 if __name__ == "__main__":
