@@ -94,3 +94,11 @@
 - 本轮先补充根TaskPlan与CH17专项TaskPlan，定义真实网络分区的测试边界：只允许操作本CI创建的三成员Compose默认网络，不修改宿主机iptables，不触碰其他容器/网络。
 - 下一步新增opt-in live test：隔离etcd1网络，分别验证etcd2/etcd3多数派的linearizable Range/Txn与etcd1少数派的失败关闭/OUTCOME_UNKNOWN；在finally恢复网络，检查三成员恢复和多数派写入收敛。
 - **当前状态：** 计划已登记，live测试和CI证据尚未完成；不得标记DONE。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator未迁移。
+
+
+### 第五十六轮实现进展（2026-11-27）
+
+- 新增 `tests/test_spare_parts_provider_authority_store_network_partition_etcd_integration.py`：通过Compose项目/服务标签校验etcd1容器身份，将其从专用默认网络断开；使用容器内etcdctl验证少数派线性一致读写失败；通过etcd2/etcd3多数派执行Coordinator Store CAS事务和线性一致读回；finally重连网络并等待三成员恢复，再验证多数派提交值在etcd1可读。
+- 更新 `scripts/etcd-integration/run.sh`，将新测试加入一次性三节点集成套件。工作流已有对 `tests/test_*etcd_integration.py` 与runner路径的push触发规则，无需创建分支或新增第二套workflow。
+- 代码提交：测试 `00cef471bb5fb247b9def0511534ba8546d0a3fd`；runner `50c5127e6cacac0a8df833c3404bdb8213c4399d`；测试导入清理 `77c4d450582dd149a2a6984ee5286ab7d61d1d22`。
+- **待验收：** 本轮live workflow与最新默认质量CI尚无可核验结果；不得将测试代码存在等同于网络分区场景通过。需检查少数派行为、finally网络恢复及全库质量门禁后，再更新知识正文/实体/资源索引并决定任务状态。
