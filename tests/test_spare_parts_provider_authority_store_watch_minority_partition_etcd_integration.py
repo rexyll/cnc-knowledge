@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import os
 import queue
@@ -775,6 +776,425 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                     self._remove_access_network(
                         access_network, purpose="watch-minority-compaction"
                     )
+
+
+    def test_long_running_watch_rebuilds_client_cache_across_periodic_compactions(self):
+        suffix = uuid4().hex
+        prefix = f"/cnc-knowledge-it/watch-long-running/{suffix}/".encode()
+        range_end = prefix[:-1] + b"0"
+        keys = [prefix + f"state-{index}".encode() for index in range(4)]
+        initial_values = [
+            f"initial-{index}-{suffix}".encode() for index in range(len(keys))
+        ]
+        etcd2_container = self._container_id("etcd2")
+
+        majority_driver = Etcd3gwV3Client(self.endpoints[1:], timeout=3.0)
+        majority_store = EtcdV3CoordinatorAuthorityStore(majority_driver)
+        streams = []
+        gap_thread = None
+        gap_release = threading.Event()
+        gap_first_write = threading.Event()
+        gap_results: list[int] = []
+        gap_errors: list[BaseException] = []
+        seen_events: set[tuple[int, bytes, str]] = set()
+        event_revisions: list[int] = []
+        cache: dict[bytes, bytes] = {}
+        snapshot_revisions: list[int] = []
+        compact_revisions: list[int] = []
+        progress_revisions: list[int] = []
+
+        def take_snapshot() -> tuple[int, dict[bytes, bytes]]:
+            result = majority_store.linearizable_range(
+                prefix, range_end=range_end
+            )
+            snapshot_revisions.append(result.revision)
+            return result.revision, {
+                entry.key: entry.value for entry in result.entries
+            }
+
+        def assert_cache_matches_snapshot(
+            expected: dict[bytes, bytes], actual: dict[bytes, bytes]
+        ) -> None:
+            self.assertEqual(actual, expected)
+
+        def open_watch(start_revision: int):
+            stream = majority_store.watch(
+                prefix,
+                start_revision=start_revision,
+                range_end=range_end,
+                progress_notify=True,
+                prev_kv=True,
+            )
+            opened = self._next_result(stream, timeout=10.0)
+            self.assertEqual(opened[0], "response", opened[1])
+            response = opened[1]
+            self.assertTrue(response.created)
+            self.assertFalse(response.canceled)
+            self.assertEqual(response.events, ())
+            self.assertIsNone(response.resume_revision)
+            streams.append(stream)
+            return stream
+
+        def consume_events(stream, expected_count: int) -> list[int]:
+            received_revisions: list[int] = []
+            last_event_revision = 0
+            last_progress_revision = 0
+            while len(received_revisions) < expected_count:
+                outcome = self._next_result(stream, timeout=12.0)
+                self.assertEqual(outcome[0], "response", outcome[1])
+                response = outcome[1]
+                self.assertFalse(response.canceled)
+                self.assertFalse(response.created)
+                self.assertFalse(
+                    response.fragment,
+                    "the client cache must not apply an incomplete fragmented response",
+                )
+                if response.is_progress:
+                    self.assertEqual(response.events, ())
+                    self.assertGreaterEqual(
+                        response.header_revision, last_progress_revision
+                    )
+                    last_progress_revision = response.header_revision
+                    progress_revisions.append(response.header_revision)
+                    continue
+                self.assertTrue(response.events)
+                self.assertEqual(
+                    response.resume_revision, response.header_revision + 1
+                )
+                for event in response.events:
+                    self.assertGreaterEqual(event.revision, last_event_revision)
+                    last_event_revision = event.revision
+                    self.assertTrue(prefix <= event.key < range_end)
+                    identity = (event.revision, event.key, event.event_type)
+                    self.assertNotIn(
+                        identity, seen_events,
+                        "a Watch event was delivered more than once across rebuilds",
+                    )
+                    seen_events.add(identity)
+                    event_revisions.append(event.revision)
+                    received_revisions.append(event.revision)
+
+                    previous = event.previous_entry
+                    if previous is not None:
+                        self.assertEqual(cache.get(event.key), previous.value)
+                    if event.event_type == "PUT":
+                        self.assertIsNotNone(event.entry)
+                        cache[event.key] = event.entry.value
+                    elif event.event_type == "DELETE":
+                        self.assertIsNone(event.entry)
+                        self.assertIsNotNone(previous)
+                        self.assertIn(event.key, cache)
+                        del cache[event.key]
+                    else:
+                        self.fail(f"unexpected Watch event type: {event.event_type!r}")
+            return received_revisions
+
+        def write_parallel(groups):
+            barrier = threading.Barrier(len(groups))
+
+            def write_group(endpoint: str, operations):
+                driver = Etcd3gwV3Client([endpoint], timeout=4.0)
+                store = EtcdV3CoordinatorAuthorityStore(driver)
+                revisions = []
+                try:
+                    barrier.wait(timeout=8.0)
+                    for kind, key, value in operations:
+                        operation = (
+                            AuthorityStorePut(key, value)
+                            if kind == "PUT"
+                            else AuthorityStoreDelete(key)
+                        )
+                        result = store.transact([], [operation])
+                        if not result.succeeded:
+                            raise AssertionError(
+                                f"concurrent {kind} transaction failed for {key!r}"
+                            )
+                        revisions.append(result.revision)
+                    return revisions
+                finally:
+                    driver.close()
+
+            expected_events = sum(len(operations) for _, operations in groups)
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=len(groups)
+            ) as pool:
+                futures = [
+                    pool.submit(write_group, endpoint, operations)
+                    for endpoint, operations in groups
+                ]
+                received = consume_events(active_stream, expected_events)
+                revisions = [
+                    revision
+                    for future in futures
+                    for revision in future.result(timeout=25.0)
+                ]
+            self.assertEqual(sorted(received), sorted(revisions))
+            return revisions
+
+        def compact_at(revision: int) -> str:
+            compact_result = self._run(
+                [
+                    "docker", "exec", etcd2_container,
+                    "/usr/local/bin/etcdctl",
+                    "--endpoints=http://127.0.0.1:2379",
+                    "--dial-timeout=2s",
+                    "--command-timeout=10s",
+                    "compact", str(revision),
+                ],
+                timeout=15.0,
+            )
+            self.assertEqual(compact_result.returncode, 0, compact_result.stderr)
+            self.assertIn("compacted revision", compact_result.stdout.lower())
+            compact_revisions.append(revision)
+            return compact_result.stdout.strip()
+
+        def assert_old_cursor_canceled(start_revision: int, compact_revision: int):
+            stale = majority_store.watch(
+                prefix,
+                start_revision=start_revision,
+                range_end=range_end,
+                progress_notify=False,
+                prev_kv=True,
+            )
+            try:
+                first = self._next_result(stale, timeout=10.0)
+                self.assertEqual(first[0], "response", first[1])
+                canceled = first[1]
+                if canceled.created:
+                    self.assertFalse(canceled.canceled)
+                    self.assertEqual(canceled.events, ())
+                    next_result = self._next_result(stale, timeout=10.0)
+                    self.assertEqual(next_result[0], "response", next_result[1])
+                    canceled = next_result[1]
+                self.assertTrue(canceled.canceled)
+                self.assertFalse(canceled.created)
+                self.assertGreaterEqual(
+                    canceled.compact_revision, compact_revision
+                )
+                self.assertEqual(canceled.events, ())
+                self.assertIsNone(canceled.resume_revision)
+            finally:
+                stale.close()
+
+        def write_gap_after_snapshot():
+            driver = Etcd3gwV3Client([self.endpoints[2]], timeout=4.0)
+            store = EtcdV3CoordinatorAuthorityStore(driver)
+            try:
+                before = store.transact(
+                    [], [AuthorityStorePut(keys[0], b"gap-before-snapshot")]
+                )
+                if not before.succeeded:
+                    raise AssertionError("pre-snapshot gap write failed")
+                gap_results.append(before.revision)
+                gap_first_write.set()
+                if not gap_release.wait(timeout=15.0):
+                    raise TimeoutError("snapshot did not release the gap writer")
+                for key, value in (
+                    (keys[1], b"gap-after-snapshot-1"),
+                    (keys[2], b"gap-after-snapshot-2"),
+                ):
+                    result = store.transact([], [AuthorityStorePut(key, value)])
+                    if not result.succeeded:
+                        raise AssertionError("post-snapshot gap write failed")
+                    gap_results.append(result.revision)
+            except BaseException as exc:
+                gap_errors.append(exc)
+                gap_first_write.set()
+            finally:
+                driver.close()
+
+        try:
+            seed = majority_store.transact(
+                [],
+                [
+                    AuthorityStorePut(key, value)
+                    for key, value in zip(keys, initial_values)
+                ],
+            )
+            self.assertTrue(seed.succeeded)
+
+            initial_snapshot_revision, cache = take_snapshot()
+            self.assertEqual(set(cache), set(keys))
+            first_cursor = initial_snapshot_revision + 1
+            active_stream = open_watch(first_cursor)
+
+            # Keep the stream open across an idle interval and confirm that a
+            # periodic Progress frame is not mistaken for a KV cache mutation.
+            time.sleep(1.15)
+            progress = self._next_result(active_stream, timeout=6.0)
+            self.assertEqual(progress[0], "response", progress[1])
+            self.assertTrue(progress[1].is_progress)
+            self.assertEqual(progress[1].events, ())
+            progress_revisions.append(progress[1].header_revision)
+            cache_before_progress = dict(cache)
+            self.assertEqual(cache, cache_before_progress)
+
+            first_writes = write_parallel(
+                [
+                    (
+                        self.endpoints[1],
+                        [
+                            ("PUT", keys[0], b"cycle-1-a"),
+                            ("PUT", keys[1], b"cycle-1-b"),
+                        ],
+                    ),
+                    (
+                        self.endpoints[2],
+                        [
+                            ("PUT", keys[2], b"cycle-1-c"),
+                            ("PUT", keys[3], b"cycle-1-d"),
+                        ],
+                    ),
+                ]
+            )
+            self.assertEqual(len(first_writes), 4)
+            first_live_snapshot_revision, first_live_snapshot = take_snapshot()
+            assert_cache_matches_snapshot(first_live_snapshot, cache)
+
+            active_stream.close()
+            active_stream = None
+            first_compact_output = compact_at(first_live_snapshot_revision)
+            assert_old_cursor_canceled(first_cursor, first_live_snapshot_revision)
+
+            # A background writer straddles snapshot/re-watch reconstruction:
+            # the first update is included in the snapshot; the next two occur
+            # after R and must replay from the new watch's inclusive R+1 cursor.
+            gap_thread = threading.Thread(
+                target=write_gap_after_snapshot, daemon=True
+            )
+            gap_thread.start()
+            self.assertTrue(
+                gap_first_write.wait(timeout=10.0),
+                "gap writer did not commit its pre-snapshot update",
+            )
+            if gap_errors:
+                raise gap_errors[0]
+
+            second_snapshot_revision, cache = take_snapshot()
+            self.assertIn(keys[0], cache)
+            self.assertEqual(cache[keys[0]], b"gap-before-snapshot")
+            gap_release.set()
+            gap_thread.join(timeout=20.0)
+            self.assertFalse(gap_thread.is_alive(), "gap writer did not finish")
+            if gap_errors:
+                raise gap_errors[0]
+            self.assertEqual(len(gap_results), 3)
+            self.assertLessEqual(gap_results[0], second_snapshot_revision)
+            self.assertTrue(
+                all(revision > second_snapshot_revision for revision in gap_results[1:])
+            )
+
+            second_cursor = second_snapshot_revision + 1
+            active_stream = open_watch(second_cursor)
+            gap_event_revisions = consume_events(active_stream, 2)
+            self.assertEqual(sorted(gap_event_revisions), sorted(gap_results[1:]))
+            after_gap_revision, after_gap_snapshot = take_snapshot()
+            assert_cache_matches_snapshot(after_gap_snapshot, cache)
+            self.assertGreaterEqual(after_gap_revision, gap_results[-1])
+
+            # Continue consuming a live stream while two independent writers
+            # update/delete different keys concurrently.
+            second_writes = write_parallel(
+                [
+                    (
+                        self.endpoints[1],
+                        [
+                            ("PUT", keys[0], b"cycle-2-a"),
+                            ("DELETE", keys[1], None),
+                        ],
+                    ),
+                    (
+                        self.endpoints[2],
+                        [
+                            ("PUT", keys[2], b"cycle-2-c"),
+                            ("PUT", keys[3], b"cycle-2-d"),
+                        ],
+                    ),
+                ]
+            )
+            self.assertEqual(len(second_writes), 4)
+            second_live_revision, second_live_snapshot = take_snapshot()
+            assert_cache_matches_snapshot(second_live_snapshot, cache)
+
+            active_stream.close()
+            active_stream = None
+            second_compact_output = compact_at(second_live_revision)
+            assert_old_cursor_canceled(second_cursor, second_live_revision)
+
+            # Replace the entire client cache from a second authoritative
+            # snapshot; no old event cursor is carried into the next stream.
+            third_snapshot_revision, cache = take_snapshot()
+            assert_cache_matches_snapshot(second_live_snapshot, cache)
+            third_cursor = third_snapshot_revision + 1
+            active_stream = open_watch(third_cursor)
+
+            final_write = majority_store.transact(
+                [], [AuthorityStorePut(keys[1], b"after-second-compaction")]
+            )
+            self.assertTrue(final_write.succeeded)
+            final_event_revisions = consume_events(active_stream, 1)
+            self.assertEqual(final_event_revisions, [final_write.revision])
+
+            final_snapshot_revision, final_snapshot = take_snapshot()
+            assert_cache_matches_snapshot(final_snapshot, cache)
+            self.assertGreaterEqual(final_snapshot_revision, final_write.revision)
+
+            observations = {
+                "prefix": prefix.decode("utf-8"),
+                "snapshot_revisions": snapshot_revisions,
+                "compaction_revisions": compact_revisions,
+                "first_compaction_output": first_compact_output,
+                "second_compaction_output": second_compact_output,
+                "old_cursor_cancel_count": len(compact_revisions),
+                "resume_cursors": [
+                    first_cursor, second_cursor, third_cursor
+                ],
+                "gap_writer_revisions": gap_results,
+                "concurrent_write_revisions": first_writes + second_writes,
+                "final_write_revision": final_write.revision,
+                "progress_frame_revisions": progress_revisions,
+                "unique_watch_event_count": len(seen_events),
+                "watch_event_revisions": event_revisions,
+                "final_cache_matches_linearizable_range": True,
+                "snapshot_before_watch_gap_replayed_from_r_plus_one": (
+                    sorted(gap_event_revisions) == sorted(gap_results[1:])
+                ),
+                "cache_replaced_after_each_compaction": len(compact_revisions) == 2,
+                "duplicate_watch_events": 0,
+            }
+            print(
+                "WATCH_LONG_RUNNING_COMPACTION_CACHE_OBSERVATION "
+                + json.dumps(observations, sort_keys=True)
+            )
+        finally:
+            gap_release.set()
+            if gap_thread is not None:
+                gap_thread.join(timeout=20.0)
+            if active_stream is not None:
+                try:
+                    active_stream.close()
+                except Exception:
+                    pass
+            for stream in streams:
+                try:
+                    stream.close()
+                except Exception:
+                    pass
+            try:
+                remaining = majority_store.linearizable_range(
+                    prefix, range_end=range_end
+                )
+                if remaining.entries:
+                    majority_store.transact(
+                        [],
+                        [
+                            AuthorityStoreDelete(entry.key)
+                            for entry in remaining.entries
+                        ],
+                    )
+            except Exception:
+                pass
+            majority_driver.close()
 
 
 if __name__ == "__main__":
