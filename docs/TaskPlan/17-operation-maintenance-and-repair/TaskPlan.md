@@ -1155,3 +1155,13 @@
 - **Quality证据：** [Run 45949089930](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089930)两个Job均success：Knowledge structure and data quality、CH12 numerical resource tests。全库知识结构/数据质量与CH12数值资源门禁均通过。
 - **失败修复及实验边界：** 中间版本曾暴露两个测试环境问题：Docker网络重连未恢复静态peer IP，以及第六十四轮首次实现漏掉正常路径的etcd1重连；二者已根据Live日志修正。最终通过结果证明的是已显式恢复peer网络、由quorum快照重建应用Watch的路径；不证明etcd1在Compaction后立即恢复ReadIndex，也不要求原HTTP流自行发出取消帧。该区分避免把成员重新选举的暂态与Watch旧游标的Compaction语义混为一谈。
 - **协议与治理边界：** 本轮仅是一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting engineering evidence，不构成生产HA、真实多主机网络演练或业务Coordinator迁移验收。Watch仍是单向HTTP server-streaming；本轮不实现或声称支持双向`WatchProgress`/`WatchCancel`。ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威；SQLite Coordinator业务状态机尚未迁移；CH17-T004总体保持`IN_PROGRESS`。
+
+### 第六十五轮任务计划：Watch长时间运行、周期性Compaction与客户端状态重建
+
+- **目标：** 将Watch恢复验证从单次Compaction扩展为多轮长时间运行模型，验证完整前缀缓存如何在连续事件消费、并发写入、周期性Compaction与快照重建之间保持一致。
+- **基线与事件消费：** 先用健康多数派的线性一致前缀Range建立客户端缓存，记录snapshot revision R，并从R+1建立Watch。并发写入者分别通过独立客户端提交不同key的PUT/DELETE；消费端必须按响应和事件revision顺序应用完整事件，拒绝重复事件，不将created、fragment或Progress空帧误作KV变更。
+- **周期性压缩与重建：** 至少执行两轮Compaction。每轮关闭旧流后，在一次性Compose etcd2容器中对已观察到的revision执行Compaction；以旧cursor建立探测Watch并验证canceled/compact_revision；随后从健康多数派取得线性一致前缀快照，整体替换缓存，并仅从snapshot revision+1开启新Watch。旧cursor及取消帧不得作为恢复游标。
+- **并发窗口：** 在一轮恢复中，让后台写入线程先提交一个可被快照覆盖的更新并暂停；主线程完成快照后，再放行后台线程提交快照之后的更新；新Watch建立前完成写入，以验证从R+1仍能完整回放快照之后的事件。随后并发写入者在活动Watch期间继续提交多个key更新/删除，并逐事件更新缓存。
+- **一致性断言：** 记录每轮snapshot/compact/resume revision；事件唯一键使用(revision,key,event_type)；缓存每轮与线性一致Range结果按key/value完全一致；snapshot之后的每个事件只应用一次；恢复后不得重放快照已覆盖的历史事件。仅将客户端缓存投影作为测试模型，不宣称已有生产Watch缓存服务。
+- **安全与清理：** 使用唯一前缀及临时key；所有并发写入使用独立Etcd客户端；Compaction仅在通过Compose project/service标签校验的本次etcd2容器执行；finally关闭所有Watch/Session并删除该前缀key；不操作宿主机iptables、外部容器或非本项目网络。
+- **验收边界：** 将Live测试纳入现有run.sh，与Fake/单元测试及知识质量CI分开记录。Live仅证明一次性etcd v3.7.0 / etcd3gw 2.7.0 Compose环境中的协议与恢复行为，不代表生产HA、无限期运行稳定性、背压/内存上限或业务Coordinator迁移验收；Watch仍为单向HTTP server-streaming，不支持双向WatchProgress/WatchCancel。
