@@ -347,6 +347,7 @@ class Etcd3gwV3Client:
         endpoints: Sequence[str] | str,
         *,
         timeout: float = 3.0,
+        watch_read_timeout: float | None = None,
         ca_cert: str | None = None,
         cert_key: str | None = None,
         cert_cert: str | None = None,
@@ -361,6 +362,14 @@ class Etcd3gwV3Client:
             raise Etcd3gwConfigurationError("at least one etcd endpoint is required")
         if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
             raise Etcd3gwConfigurationError("timeout must be a positive number")
+        if watch_read_timeout is not None and (
+            not isinstance(watch_read_timeout, (int, float))
+            or isinstance(watch_read_timeout, bool)
+            or watch_read_timeout <= 0
+        ):
+            raise Etcd3gwConfigurationError(
+                "watch_read_timeout must be a positive number or None"
+            )
         if bool(cert_key) != bool(cert_cert):
             raise Etcd3gwConfigurationError("mTLS requires both cert_key and cert_cert")
         if auth_token is not None and (
@@ -379,6 +388,9 @@ class Etcd3gwV3Client:
             client_factory = Etcd3Client
 
         self.timeout = float(timeout)
+        self.watch_read_timeout = (
+            None if watch_read_timeout is None else float(watch_read_timeout)
+        )
         self.endpoints = tuple(endpoint_list)
         self._clients: list[Any] = []
         self._next_index = 0
@@ -739,7 +751,7 @@ class Etcd3gwV3Client:
                     client.get_url("/watch"),
                     json=payload,
                     stream=True,
-                    timeout=(self.timeout, None),
+                    timeout=(self.timeout, self.watch_read_timeout),
                 )
             except Exception as exc:
                 translated = _transport_error(exc)
