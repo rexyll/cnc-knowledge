@@ -1356,3 +1356,11 @@
 - 返回revision用于审计记录；它不是写入锁，不构成并发排他保证。
 - 修正InMemoryEtcdV3Client以支持etcd Range `range_end`语义，测试prefix命中与相邻prefix边界。
 - 只有临时隔离集群/服务端RBAC才能封闭预检后的竞态窗口；生产集群不得作为演练目标。
+
+### 第七十七轮：MIG-04 候选导入单 Txn 映射与容量规划
+
+- 新增只读导入规划器，验证候选bundle digest、schema-v2 aggregate、终态request record/key派生、scope fencing/sequence floors、计数和恢复门禁。
+- 明确隔离namespace键映射：`scheduler/state`与全部终态`requests/{SHA256(request_id)}`为Put目标；`coordinator/leader`只比较不存在，不恢复旧Leader。
+- 生成单Txn比较/Put计数、Base64 HTTP Gateway JSON请求字节估算和operator-supplied budget判断；超限fail closed，不自动拆批。
+- 测试候选摘要篡改、request key错配、活动/非终态记录、scope残留lease identity、操作预算和字节预算超限。
+- 不连接etcd、不写KV、不Grant Lease、不创建RBAC；写入仍须专用临时集群/服务端RBAC、预检竞态屏障、应用访问隔离、写后读回和Provider外部fencing核验。
