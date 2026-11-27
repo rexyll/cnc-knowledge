@@ -34,3 +34,17 @@
 
 - 最终文档头质量复验：[Run 45920942863](https://github.com/rexyll/cnc-knowledge/actions/runs/45920942863)两个Job成功：518项unittest（501 passed、17项opt-in skip），CH12 143项，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有治理warning；22章、178个Markdown、260实体、240关系、409来源、584内部链接。
 - 错误分类边界：当前仅确保etcd3gw通用非传输异常不触发endpoint failover；未将HTTP 401/403结构化为独立Unauthenticated/PermissionDenied类型，认证服务不可用/多数派丢失与已有token继续有效的分离故障未验证，明确留作后续任务。该限制不影响本轮simple token TTL过期/重新认证测试结论。
+
+
+## CH17-T004：etcd Gateway 认证错误分类与多数派故障隔离（全局第五十四轮，2026-11-27）
+
+- 先更新根TaskPlan和CH17专项计划，明确HTTP Gateway错误语义、认证/授权/请求/传输分类、只读failover约束及quorum loss观测范围。
+- 新增SRC-000413（etcd v3.6+ Gateway错误响应格式）、SRC-000414（etcd rpctypes错误码）、SRC-000415（etcd3gw 2.7.0 HTTP错误映射实现）。
+- 驱动增加Etcd3gwAuthenticationError、Etcd3gwPermissionDeniedError、Etcd3gwRequestError；从etcd3gw通用Etcd3Exception的JSON载荷中识别HTTP 401/gRPC code16、HTTP403/code7及明确的HTTP400错误密码消息；普通参数错误保持RequestError。保留原始cause，Watch HTTP建立错误也规范化。
+- Failover仅针对真实连接/超时错误的只读Range/status/member调用；Authentication/PermissionDenied/Request错误不触达第二endpoint，Txn/Lease写操作仍只发送一次。
+- Fake契约覆盖401/16、403/7、400错误密码、普通400、畸形JSON、cause保留、Watch 403和无错误failover；驱动测试20项。
+- 新增一次性mTLS三成员认证/quorum隔离live测试：在两成员停止时，已有token的线性一致Range超时，显式重新认证请求也超时；恢复成员/多数派后，旧token再次成功Range。真实观测值AUTH_REAUTH_RESULT_DURING_QUORUM_LOSS=timeout。没有把quorum loss下认证API独立可用作为假设。
+- Live [Run 45922792420](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792420)成功：基础三节点/成员故障/quorum suite 8项、mTLS/RBAC suite 12项、10秒token生命周期1项、认证/quorum隔离1项通过。Artifact 15165755534，SHA-256 c3b8d8e25e91cc7bff7e3d2893a55688de0b2567836052a20cb887fd2bcc7608。
+- 默认质量[Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：526项unittest（504通过、22项opt-in skip），CH12 143项，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有warning；22章、178 Markdown、260实体、240关系、412来源、584内部链接。
+- 更新CH17技术正文第14节、章节README、资源README/ASSET索引、KNOW-000061、ASSET-000092。正式ASSET-000092 30项继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+- 遗留：自动token刷新、企业IAM/JWT密钥管理、生产token轮换/撤销/审计、网络分区、认证服务HA未验证；未验证多节点simple token状态传播的长期行为。该轮不是企业生产认证方案验收。
