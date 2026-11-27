@@ -257,3 +257,17 @@
 - **实验过程中的修正：** 第一版Watch start revision比少数派成员本地已应用revision高一版，watcher尚未同步导致没有progress帧；通过写入独立marker revision=32并由etcd1线性一致读取后再从32建立Watch修复。随后曾因网络刚恢复即执行Range遇到临时不可用；改为只读、有界重试后完整通过。两次中间失败均不作为通过证据。
 - **协议解释：** etcd v3.7 Watch进度响应revision反映Watch连接的本地成员进度；成员处于少数派时该revision可以落后于quorum线性一致Range。Progress帧不包含KV状态，因此不能作为权威快照；恢复流程应使用线性一致Range快照并从R+1重建Watch。参考[etcd v3.7 Watch progress说明](https://etcd.io/docs/v3.7/dev-guide/interacting_v3/)及[etcd v3.7 API](https://etcd.io/docs/v3.7/learning/api/)。
 - **能力与治理边界：** 本轮验证WatchCreate的周期性`progress_notify=true`通知；未实现或宣称支持双向`WatchProgress`/`WatchCancel`。本结果仅是一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting engineering evidence，不代表生产HA或业务Coordinator迁移验收。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威；SQLite Coordinator业务状态机未迁移；CH17-T004整体保持`IN_PROGRESS`。
+
+
+## 第六十四轮：少数派Watch期间多数派Compaction与旧游标恢复（2026-11-27）
+
+- **任务目标：** 在三节点一次性etcd集群中保持Watch连接于被隔离成员，令多数派产生新revision并Compaction旧历史；恢复后验证旧游标被服务端取消，客户端以线性一致快照和snapshot+1安全重建。
+- **实现提交：** `cd8730a0ec557722eb55b5c594255dafb209d074`新增Compaction场景；`8bf193dd2b95daa153a9244895fac92067be4eee`把分区期间的写入改到Watch范围外的marker key；`3eaff31fe24f9286bb57deda7116924ee60fb577`配置固定peer IP；`83d3a9f0b8ffecd1f3e7281341542e392d3a48cc`、`4949c7cc22480afda07989bee0ecf94e3cc60fa8`、`abca3f827535d0e8c2b5cf8651bb21ff79f67362`、`3380e204849ddd8cdb760afd4866e67cd51c63b6`修复分区恢复的静态IP重连；`bda3f122c407475b02d2e7980f7f98e6f1679004`补齐Watch恢复finally；`3007cf17576eb82d033c2c018e33ea9d3b549520`最终修正正常恢复步骤并使用quorum快照重建旧游标和新Watch。均在`main`提交，没有创建分支。
+- **环境与隔离：** 一次性etcd v3.7.0 / etcd3gw 2.7.0三节点Compose集群，专用peer subnet `172.29.64.0/24`；成员peer IP分别为`.11/.12/.13`。为etcd1增加临时带project/purpose标签的访问bridge网络，保持Watch HTTP流可访问；只断开etcd1的Compose peer网络，etcd2/etcd3保持quorum。恢复时显式指定`docker network connect --ip 172.29.64.11`，并断言静态地址恢复。未修改宿主机iptables或其他容器/网络。
+- **版本时序：** 旧Watch从revision=39建立；多数派对未被Watch的独立marker key写入revision=[40,41]，被Watch leader key未变化；etcd2执行`etcdctl compact 41`成功。etcd1网络恢复后，旧HTTP流由客户端关闭；通过健康多数派线性一致Range取得snapshot revision=41。
+- **取消控制帧：** 在健康多数派端从旧start_revision=39重新创建Watch，收到`canceled=true`、`compact_revision=41`、events=0、`resume_revision=None`。`cancel_reason`为空字符串，是Gateway可选字段缺失/空值的行为，不能以其有无作为取消判断。随后从snapshot+1=42建立恢复Watch。
+- **续接结果：** 之后提交leader key的新PUT revision=42；恢复Watch只投递1条事件，revision=42、`prev_kv`等于snapshot中的初始值、resume_revision=43。日志观测`no_compacted_event_replayed_after_snapshot=true`与`post_snapshot_event_delivered_once=true`，即旧revision 40–41未重放且快照后的revision 42仅一次投递。测试文件两项测试共运行7.292秒并通过。
+- **Live：** [Run 45949089875](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089875)整体success。Disposable three-member etcd integration、mTLS、短TTL Token、auth/quorum隔离、mTLS RBAC成员故障/Token传播、诊断采集、容器/volumes清理、Artifact上传和post-job cleanup全部success。Artifact [15176311979](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089875/artifacts/15176311979)，SHA-256 `617e83d2321f82be8396e80bf362638100672d4a32f80ceea4e96b1ddd94ad69`。
+- **Quality：** [Run 45949089930](https://github.com/rexyll/cnc-knowledge/actions/runs/45949089930)两个Job success：Knowledge structure and data quality、CH12 numerical resource tests。
+- **失败修复说明：** 曾出现Docker断开默认网络后重连未恢复静态peer IP、第六十四轮正常流程漏掉主动重连、以及将成员本地ReadIndex恢复当成快照前置条件等问题。最终实现改为明确恢复peer网络、核验静态IP、通过健康多数派获取权威快照并进行旧游标拒绝/新Watch续接；最终Live完整通过。不能由此推断etcd1刚重连就立即具备ReadIndex能力，也不能声称原Watch流必然自动返回Compaction取消帧。
+- **治理状态：** 这是一次性CI supporting evidence，不等于生产HA、生产网络分区演练或业务Coordinator迁移验收。Watch仍不支持双向`WatchProgress`/`WatchCancel`。ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威；SQLite Coordinator业务状态机未迁移；CH17-T004仍`IN_PROGRESS`。
