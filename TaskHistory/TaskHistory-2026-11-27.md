@@ -10,3 +10,15 @@
 - 默认质量CI：[Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)两个Job成功：515项unittest（499通过、16项opt-in live skip）、CH12 143项通过、strict knowledge lint 0 errors、结构/数据0 errors和5项既有治理warning。
 - 凭据、token、CA和证书私钥仅存在runner临时目录/内存，Compose volumes及证书目录在结束时清理。token本轮显式注入，无自动刷新/续期；企业IAM、凭据轮换、审计、生产密钥托管未验证。
 - ASSET-000092的30项正式场景仍为 PROPOSED_NOT_APPROVED / NOT_RUN；本轮工程冒烟测试不改变正式审批或执行状态。schema-v2仍为唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+
+## CH17-T004：etcd Gateway Token 生命周期与显式更新（全局第五十三轮）
+
+- 实际执行时间：2026-11-27T09:06:44.620+08:00；分支：main。
+- 先完成根TaskPlan与CH17专项计划，确定simple/JWT token区分、TTL实测、显式重新认证、跨endpoint更新、Watch session一致性及失败关闭范围。
+- 新增SRC-000410～SRC-000412，登记etcd v3.7官方配置、认证设计和RBAC文档；确认simple token默认TTL为300秒，JWT TTL通过JWT token选项独立配置。
+- Etcd3gwV3Client新增set_auth_token(token|None)，允许调用方显式替换或清除全部endpoint session的Authorization头；driver不保存用户名/密码、不自动认证/刷新。Watch复用同一session。
+- Fake Gateway新增token更新/清除和认证异常不得触发endpoint failover测试。
+- mTLS Compose增加simple token TTL参数；run-mtls.sh支持TTL与测试文件选择；新增独立10秒TTL live suite，覆盖旧token过期拒绝、重新认证、新token跨endpoint更新、KV读取及Watch创建握手；CI工作流增加独立短TTL job步骤。
+- 更新KNOW-000061、ASSET-000092支持性证据、正文第13节、章节README、资源README和ASSET索引。ASSET-000092正式审批状态保持PROPOSED_NOT_APPROVED，执行状态保持NOT_RUN。
+- 本轮live与默认CI结果尚待验收；在CI通过前不得将第五十三轮标记DONE。遗留：自动刷新未实现；企业IAM、JWT密钥托管、生产撤销/轮换/审计未验证。
