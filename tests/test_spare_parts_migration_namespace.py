@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from scripts.spare_parts_provider_authority_store import (
+    AuthorityStorePut,
     EtcdV3CoordinatorAuthorityStore,
     InMemoryEtcdV3Client,
 )
@@ -43,17 +44,13 @@ class MigrationNamespacePreflightTests(unittest.TestCase):
         self.assertGreaterEqual(result.revision, 0)
 
     def test_existing_key_blocks_preflight(self):
-        self.client.txn(
-            compare=[],
+        self.store.transact(
+            compares=[],
             success=[
-                {
-                    "request_put": {
-                        "key": b"/cnc/migration/isolated/used-drill/leases/one",
-                        "value": b"{}",
-                    }
-                }
+                AuthorityStorePut(
+                    b"/cnc/migration/isolated/used-drill/leases/one", b"{}"
+                )
             ],
-            failure=[],
         )
         with self.assertRaisesRegex(MigrationNamespaceError, "not empty"):
             preflight_empty_namespace(
@@ -61,17 +58,13 @@ class MigrationNamespacePreflightTests(unittest.TestCase):
             )
 
     def test_adjacent_namespace_does_not_block_preflight(self):
-        self.client.txn(
-            compare=[],
+        self.store.transact(
+            compares=[],
             success=[
-                {
-                    "request_put": {
-                        "key": b"/cnc/migration/isolated/drill-b/leases/one",
-                        "value": b"{}",
-                    }
-                }
+                AuthorityStorePut(
+                    b"/cnc/migration/isolated/drill-b/leases/one", b"{}"
+                )
             ],
-            failure=[],
         )
         result = preflight_empty_namespace(
             self.store, b"/cnc/migration/isolated/drill-a/"
