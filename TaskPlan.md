@@ -1201,3 +1201,15 @@
 - **来源结构：** Admission为coordinator_meta、admission_requests、admission_waiters；Coordinator为coordinator_authority_meta、coordinator_authority_leader、coordinator_authority_scopes、coordinator_authority_operations。
 - **未执行：** 未访问生产SQLite、未实现导出/导入工具、未创建生产namespace、未冻结旧写入、未迁移或切换生产authority。MIG-01/02 DONE；MIG-03～06 TODO；MIG-07 BLOCKED。
 - **治理边界：** schema-v2仍为唯一生产权威；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；Watch Supervisor/Quorum Probe运行时未实现。
+
+
+### 第七十三轮任务计划：MIG-03 只读 SQLite Inventory / Export
+
+- **目标：** 实现不修改来源文件的旧Admission/Coordinator SQLite盘点工具，产出schema/行数/状态/高水位/完整性/摘要报告，并可显式导出规范化逻辑记录。
+- **实现约束：** 不实例化会初始化数据库的业务类；只允许URI `mode=ro`和`PRAGMA query_only=ON)；不执行过期清理、WAL切换、事务写入、Provider/etcd调用。
+- **报告：** 两组表及必需列、schema version、SQLite integrity/foreign key检查、journal mode、行数/状态/min-max/主键排序hash、Admission token floor、Coordinator scope token/sequence floor、孤儿operation、pending operation、DB/WAL扫描前后指纹和snapshot digest。
+- **导出：** 默认仅输出inventory；显式`--records-output`才导出完整逻辑记录，文件权限0600。snapshot digest不包含扫描时刻，records输出不得提交Git。
+- **测试：** 正常数据、只读写入拒绝、源文件不变、过期数据不触发清理、缺表拒绝、高水位回退识别、可选记录导出。
+- **交付：** `scripts/spare_parts_sqlite_migration_inventory.py`及专用unittest、迁移设计文档和README使用说明。
+- **状态：** 实现已提交；待最新main CI结果后确认本轮验收。
+

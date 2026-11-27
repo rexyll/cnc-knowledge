@@ -1319,3 +1319,14 @@
 - **交付：** [SQLite→Unified schema-v2迁移设计](../../17-operation-maintenance-and-repair/sqlite-to-unified-coordinator-migration-design.md)。
 - **主要结论：** Admission与Coordinator两组SQLite状态必须作为一个逻辑整体导入同一Unified aggregate；活动Lease按冻结时剩余TTL导入；必须保护终态幂等记录、waiter顺序、fencing/sequence/Leader epoch floors、Provider generation及manifest。
 - **边界：** 未访问生产SQLite、未实现导入器、未冻结或切换生产authority；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+### 第七十三轮：MIG-03 只读 SQLite Inventory / Export
+
+- **目标：** 以只读连接盘点Admission/Coordinator来源数据库，并生成可复核的逻辑记录摘要。
+- **工具：** `scripts/spare_parts_sqlite_migration_inventory.py`；默认manifest，显式`--records-output`时输出0600权限的完整逻辑行JSON。
+- **安全：** SQLite URI `mode=ro` + `PRAGMA query_only=ON`；不实例化业务Coordinator、不触发expiry cleanup、不修改WAL、不访问Provider/etcd。
+- **覆盖：** 来源表/列和版本、integrity/foreign-key检查、行数/状态/摘要、Admission fencing floor、Coordinator scope token/sequence floor、孤儿operation、pending operation及DB/WAL前后指纹。
+- **验收：** unittest及main Quality CI成功后标记DONE；若扫描期间源DB/WAL变化，inventory发出warning并要求写冻结后重跑。
+- **状态：** 实现与测试已提交，CI待验收；不代表生产数据已盘点或已迁移。
+

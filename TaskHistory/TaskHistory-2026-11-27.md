@@ -375,3 +375,15 @@
 - **新增文档：** docs/17-operation-maintenance-and-repair/sqlite-to-unified-coordinator-migration-design.md。定义字段映射、不变量、幂等终态、waiter顺序、全局/scope fencing floors、Leader epoch、Provider generation/manifest、冻结时剩余TTL、WAL一致快照、未知Txn结果读回、容量、单权威cutover及写入后反向迁移。
 - **关键决策：** 禁止旧SQLite与Unified双写；切换前旧SQLite唯一写权威，切换后Unified唯一写权威。活动Lease按冻结时剩余TTL导入；若后端Granted TTL会延长来源deadline则拒绝或应用绝对deadline兜底。Unified接受第一笔业务mutation后禁止直接恢复旧SQLite快照。
 - **验收/遗留：** MIG-01/02 DONE（代码审计/设计）；MIG-03～06 TODO；MIG-07 BLOCKED（现场规模、Provider owner和审批缺失）。没有生产数据盘点、导出/导入工具、生产namespace、写冻结、迁移、回滚或cutover。schema-v2仍唯一生产权威；ASSET-000092仍30项PROPOSED_NOT_APPROVED / NOT_RUN；Watch Supervisor/Quorum Probe运行时未实现。
+
+
+## CH17-T004：MIG-03 只读 SQLite Inventory / Export 工具（全局第七十三轮，2026-11-27）
+
+- **分支与安全边界：** 仅在main新增工具、测试和文档；不访问生产数据库、不触发生产操作。工具不得实例化业务Coordinator类，避免构造函数创建目录、切换WAL或初始化表。
+- **实现：** 新增`scripts/spare_parts_sqlite_migration_inventory.py`。通过SQLite URI `mode=ro`与连接级`PRAGMA query_only=ON`，在一个只读事务中读取Admission/Coordinator来源表；不执行expiry cleanup、UPDATE/DELETE/DDL或Provider/etcd调用。
+- **报告：** 包含表/列/schema version、integrity_check/foreign_key_check、journal mode、每表行数/状态分布/主键有序规范化SHA-256/关键数值min-max、Admission token floor、活动及已过期ACTIVE行、过期waiter、Coordinator scope token/sequence floor、孤儿operation、pending operation、operation digest格式和DB/WAL前后指纹。
+- **导出：** 默认只输出inventory manifest；显式`--records-output`才输出完整逻辑行JSON，原子写入且0600权限。Snapshot digest基于schema/表摘要/metadata/Leader状态，不包含扫描时间；不是物理备份。完整records含owner/task/tenant/request/manifest标识，不应提交Git。
+- **新增测试：** `tests/test_spare_parts_sqlite_migration_inventory.py`覆盖有效来源Schema与行级导出、摘要、只读连接拒绝UPDATE、源数据库文件不变、过期ACTIVE行只报告不清理、缺表拒绝及fencing/sequence floor回退识别。
+- **验证状态：** 实现/测试已提交；等待main Quality CI验收后确定Round73最终状态。未运行生产数据库盘点，没有生成生产snapshot，没有执行冻结、迁移、Provider外部floor核验或cutover。
+- **治理边界：** schema-v2仍唯一生产权威；ASSET-000092仍30项`PROPOSED_NOT_APPROVED / NOT_RUN`；MIG-04～06未开始，MIG-07仍BLOCKED。
+

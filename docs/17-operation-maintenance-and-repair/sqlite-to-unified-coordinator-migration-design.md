@@ -127,3 +127,51 @@ Coordinator来源schema当前版本为1。现场迁移前必须对实际数据�
 ## 9. 证据边界
 
 本审计基于仓库中的SQLite Admission、SQLite Coordinator、Unified Admission、Unified Coordinator和CoordinatorAuthorityStore实现。第七十一轮三节点etcd Live仅验证目标业务路径，不覆盖SQLite历史数据导入。本文件是工程设计，不是生产操作授权；现场执行前必须取得变更批准并完成正式矩阵审批。
+
+
+## 10. MIG-03：只读 Inventory / Logical Export 工具
+
+新增脚本：`scripts/spare_parts_sqlite_migration_inventory.py`。
+
+### 10.1 安全模型
+
+- 不实例化SQLite Admission/Coordinator服务类，因为它们的构造函数会创建目录、切换WAL或初始化schema。
+- 使用SQLite URI `mode=ro` 打开现有文件，并设置连接级`PRAGMA query_only=ON`；在单个只读事务中读取schema、表记录、元数据与完整性检查。
+- 不调用`_expire_locked()`，不修改ACTIVE/EXPIRED状态，不删除waiter，不写meta，不触达Provider或etcd。
+- 扫描前后计算主数据库和WAL文件SHA-256/大小/mtime；若扫描期间文件变化，报告warning并要求在写冻结后重跑。
+- 默认仅输出表级摘要和规范化行摘要；显式传入`--records-output`才导出完整业务行。完整records文件采用原子替换并设置0600权限，因其中包含owner/task/tenant/request/manifest等运行标识，必须存放在受控目录。
+- snapshot digest由schema、表级行数/行摘要、元数据和Leader持久状态组成，不依赖扫描时刻；它不是SQLite物理备份，也不替代冻结后的SQLite Backup API快照。
+
+### 10.2 检查内容
+
+- 两组来源表及必需列、Admission/Coordinator schema_version。
+- SQLite integrity_check、foreign_key_check、journal_mode。
+- 每表行数、主键排序、状态分布、关键数值字段min/max与规范化SHA-256。
+- Admission活动/已到期但仍标记ACTIVE的行、过期waiter、全局fencing token floor。
+- Coordinator scope数、operation孤儿、pending operation数量、request/manifest SHA格式、每scope fencing token与operation sequence高水位。
+- source DB/WAL扫描前后指纹变化。
+
+### 10.3 使用方式
+
+只生成摘要清单：
+
+```bash
+python scripts/spare_parts_sqlite_migration_inventory.py \
+  --database /secure/path/legacy-coordinator.sqlite3 \
+  --output resouces/17-operation-maintenance-and-repair/sqlite-migration-inventory.json
+```
+
+需要逻辑行级导出时显式增加：
+
+```bash
+python scripts/spare_parts_sqlite_migration_inventory.py \
+  --database /secure/path/legacy-coordinator.sqlite3 \
+  --output resouces/17-operation-maintenance-and-repair/sqlite-migration-inventory.json \
+  --records-output resouces/17-operation-maintenance-and-repair/sqlite-migration-records.json
+```
+
+退出码0表示未发现工具定义的完整性错误；退出码2表示输入/Schema/完整性错误。即使发现完整性错误，仍会写出可诊断的inventory manifest（若源Schema足以完成扫描）。warning不自动等于安全通过，尤其journal_mode非WAL或扫描期间DB/WAL发生变化时，应由迁移负责人判断并在冻结后复扫。
+
+### 10.4 限制
+
+MIG-03只提供只读逻辑盘点与可选JSON记录导出；不创建SQLite物理备份、不执行写冻结、不探测Provider外部fencing floor、不导入Unified schema-v2，也不证明数据可以安全迁移。records export应视为敏感运维数据，不能提交到Git或公共资源目录。
