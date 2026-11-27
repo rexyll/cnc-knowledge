@@ -48,3 +48,13 @@
 - 默认质量[Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：526项unittest（504通过、22项opt-in skip），CH12 143项，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有warning；22章、178 Markdown、260实体、240关系、412来源、584内部链接。
 - 更新CH17技术正文第14节、章节README、资源README/ASSET索引、KNOW-000061、ASSET-000092。正式ASSET-000092 30项继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
 - 遗留：自动token刷新、企业IAM/JWT密钥管理、生产token轮换/撤销/审计、网络分区、认证服务HA未验证；未验证多节点simple token状态传播的长期行为。该轮不是企业生产认证方案验收。
+
+
+## CH17-T004：mTLS + RBAC 单成员故障与跨成员 Token 传播（全局第五十五轮，进行中）
+
+- 先更新根目录 `TaskPlan.md` 与CH17专项 `TaskPlan.md`，明确真实单成员停机、有效reader token跨成员接受、只读failover和成员恢复的验证边界；继续仅在`main`分支操作。
+- 新增 `tests/test_spare_parts_provider_authority_store_member_outage_auth_etcd_integration.py`：在临时三成员mTLS集群配置最小权限reader，分别记录认证后立即的token接受状态与收敛状态；停止etcd1后，通过首个endpoint为故障成员的driver验证Range transport failover，并直接访问etcd2/etcd3区分token传播与驱动切换；恢复etcd1后验证旧token恢复访问。
+- 更新 `.github/workflows/ch17-etcd-live-integration.yml`，增加独立的mTLS/RBAC member-outage live阶段；测试只由 `ETCD_INTEGRATION=1` 和 `ETCD_MTLS_MEMBER_OUTAGE=1` 显式启用，默认测试发现不应启动Docker集群。
+- 当前代码/计划提交：`ae791eb2eaaa48036bdcc39517ec8afb0c36f9fb`（根计划）、`f876ea6697438c8d04c92571ec670dfaa9e802a0`（章节计划）、`9f3e6298d277923a1f7810b1710eb82d13a3eb77`（live测试初版）、`200420220858da98855b102a162eb2aa594c1cce`（CI阶段）、`b5ca86322f703c3001e298858cd82965adc9d2fb`（立即/收敛状态分别记录）。
+- **尚未验收：** 当前尚未取得本轮live workflow和默认质量CI的可核验运行结果；不将测试实现或workflow配置描述为测试通过。后续必须补齐运行证据、更新技术正文/README/KNOW-000061/ASSET-000092 supporting evidence和资源索引，再决定任务状态。
+- **治理边界：** 本轮工程测试不改变ASSET-000092正式30项PROPOSED_NOT_APPROVED / NOT_RUN状态；schema-v2仍唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
