@@ -78,6 +78,7 @@ class StoreBackedCoordinatorAuthority:
                 "a StoreBackedProviderAdmissionCoordinator is required"
             )
         self.scheduler = scheduler
+        self._LEADER_KEY = scheduler._PREFIX + b"coordinator/leader"
         self.store = scheduler.store
         self.clock_fn = clock_fn or scheduler.clock_fn
         if not callable(self.clock_fn):
