@@ -366,3 +366,12 @@
 - **诊断Artifact：** [15194902333](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615/artifacts/15194902333)，SHA-256 `5d370fb5b7e77b56b8fe36afdcdb92a473bf54508e0da59b20ba9d3d171b3ac`。
 - **提交：** Round71计划/审查更正`8efd52e8fb5e24ce915ad2166783283f3fdcd6cb`；Live测试及runner接入`433068fd52eb4bbfbe3af0bf69697a6cbaedcb83`；security依赖修正`8074e335917e54f1b3b8ee010ce1aae3b1832a27`/`cac623bc3d3cf175fbb2ca597e7375cc21dfcfca`；Granted TTL代码与回归修正`f34804c449f8f07999b4f545c0bb9c5c7d0826b7`。
 - **范围边界/遗留：** 本轮Provider为进程内synthetic control plane，不是真实对象存储；没有执行旧SQLite Coordinator/Admission数据迁移、写冻结、回滚或生产authority cutover；没有开启生产backup、Watch Supervisor或Quorum Probe。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威。下一阶段应先设计旧SQLite→Unified schema-v2的受控迁移/回滚与单权威切换，再定义Watch业务owner和探测运行时。
+
+## CH17-T004：旧 SQLite Coordinator / Admission 到 Unified schema-v2 迁移审计与切换设计（全局第七十二轮，2026-11-27）
+
+- **分支与范围：** 仅在main更新计划和文档；本轮只审计仓库代码，不访问生产数据库、不生成生产快照、不执行迁移或切换。
+- **来源结构：** Admission的SQLiteProviderAdmissionCoordinator包含coordinator_meta、admission_requests、admission_waiters；Coordinator的SQLiteDurableCoordinatorAuthority包含coordinator_authority_meta、coordinator_authority_leader、coordinator_authority_scopes、coordinator_authority_operations。两者按同一个SQLite文件的同机事务模型设计。
+- **目标边界：** 目标是StoreBackedProviderAdmissionCoordinator与StoreBackedCoordinatorAuthority共享的Unified schema-v2 aggregate；不把schema-v2→v3 archive迁移误当作SQLite业务状态迁移。
+- **新增文档：** docs/17-operation-maintenance-and-repair/sqlite-to-unified-coordinator-migration-design.md。定义字段映射、不变量、幂等终态、waiter顺序、全局/scope fencing floors、Leader epoch、Provider generation/manifest、冻结时剩余TTL、WAL一致快照、未知Txn结果读回、容量、单权威cutover及写入后反向迁移。
+- **关键决策：** 禁止旧SQLite与Unified双写；切换前旧SQLite唯一写权威，切换后Unified唯一写权威。活动Lease按冻结时剩余TTL导入；若后端Granted TTL会延长来源deadline则拒绝或应用绝对deadline兜底。Unified接受第一笔业务mutation后禁止直接恢复旧SQLite快照。
+- **验收/遗留：** MIG-01/02 DONE（代码审计/设计）；MIG-03～06 TODO；MIG-07 BLOCKED（现场规模、Provider owner和审批缺失）。没有生产数据盘点、导出/导入工具、生产namespace、写冻结、迁移、回滚或cutover。schema-v2仍唯一生产权威；ASSET-000092仍30项PROPOSED_NOT_APPROVED / NOT_RUN；Watch Supervisor/Quorum Probe运行时未实现。

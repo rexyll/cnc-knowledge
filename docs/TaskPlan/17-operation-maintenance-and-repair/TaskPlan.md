@@ -1303,3 +1303,19 @@
 - **CI：** [Live Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)与[Quality Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)均success。Live总计40项测试、14次调用；Quality为554 unittest（40 skipped/514通过）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors（180 Markdown、240关系）。
 - **不变边界：** 仅为一次性etcd v3.7.0三成员Compose supporting evidence；synthetic Provider仍在进程内。没有执行旧SQLite迁移/rollback/cutover或生产Authority切换；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威。Watch Supervisor/Quorum Probe运行时仍未实现。
 - **主要提交：** `433068fd52eb4bbfbe3af0bf69697a6cbaedcb83`、`f34804c449f8f07999b4f545c0bb9c5c7d0826b7`；文档及历史同步提交见根计划第七十一轮记录。
+
+### 第七十二轮任务计划：旧 SQLite → Unified schema-v2 迁移设计
+
+- **目标：** 形成旧SQLite Admission/Coordinator状态迁移前置设计，保护租约、幂等历史、fencing floor与Provider状态。
+- **来源对象：** Admission的coordinator_meta、admission_requests、admission_waiters；Coordinator的coordinator_authority_meta、coordinator_authority_leader、coordinator_authority_scopes、coordinator_authority_operations。
+- **必须保留：** 全局及scope fencing/sequence floor、Leader epoch、request/operation幂等与终态、waiter顺序、Provider generation/manifest、policy和计数器。
+- **安全约束：** 先只读盘点与隔离演练；迁移时停止旧写入并冻结快照；活动TTL按冻结时剩余时间创建，不得重置；禁止双写。Unified开始业务写入后禁止直接回指旧快照。
+- **交付与验收：** 独立迁移设计文档；明确单权威cutover和写入后的反向迁移规则。
+- **状态：** MIG-01/02 DONE（代码审计/设计）；MIG-03～06 TODO；MIG-07 BLOCKED。生产数据未访问，未执行生产变更。
+
+### 第七十二轮完成状态（2026-11-27）
+
+- **状态：** DONE（代码结构审计与迁移设计，不含现场数据盘点或执行）。
+- **交付：** [SQLite→Unified schema-v2迁移设计](../../17-operation-maintenance-and-repair/sqlite-to-unified-coordinator-migration-design.md)。
+- **主要结论：** Admission与Coordinator两组SQLite状态必须作为一个逻辑整体导入同一Unified aggregate；活动Lease按冻结时剩余TTL导入；必须保护终态幂等记录、waiter顺序、fencing/sequence/Leader epoch floors、Provider generation及manifest。
+- **边界：** 未访问生产SQLite、未实现导入器、未冻结或切换生产authority；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。

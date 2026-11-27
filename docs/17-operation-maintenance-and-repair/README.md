@@ -389,3 +389,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - [Live Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)与[Quality Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)均success。40项Live测试成功；Quality 554 unittest（40 skipped）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors。
 - 详细说明：[Unified Coordinator 真实 etcd 业务契约验证](spare-parts-inventory-backup-provider-unified-coordinator-authority.md)。
 - **边界：** 本轮未迁移旧SQLite数据，未执行生产cutover，synthetic Provider非真实对象存储；ASSET-000092仍待批准/未运行，schema-v2仍唯一生产权威。
+
+## CH17-T004 旧 SQLite Coordinator / Admission 迁移审计与切换设计（第七十二轮）
+
+- 新增[旧SQLite→Unified schema-v2迁移审计与切换设计](sqlite-to-unified-coordinator-migration-design.md)，审计Admission meta/request/waiter表及Coordinator leader/scope/operation表。
+- 两组来源状态必须作为一个逻辑整体导入同一Unified schema-v2 aggregate；保留request/operation幂等历史、waiter顺序、fencing/sequence/Leader epoch floors、Provider generation和manifest。
+- 活动Lease按冻结时剩余TTL转换；不得重置完整TTL。后端Granted TTL若超过来源deadline，必须拒绝或由应用绝对deadline兜底。
+- 定义只读盘点、隔离预演、旧端写冻结、WAL一致快照、候选导入、精确对账、单权威cutover和业务写入后的反向迁移门禁。
+- **边界：** 本轮仅代码审计与设计；未连接生产SQLite、未实现迁移工具、未冻结或切换生产authority。schema-v2仍唯一生产权威，ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN。

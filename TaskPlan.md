@@ -1184,3 +1184,20 @@
 - **边界：** Provider control plane为进程内synthetic fixture，不是实际对象存储；无真实多主机生产部署、正式场景矩阵审批、旧SQLite迁移/rollback/cutover，也未改变生产authority。ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威；Watch Supervisor与Quorum Probe运行时仍未实现。
 - **提交：** 主要实现`433068fd52eb4bbfbe3af0bf69697a6cbaedcb83`；依赖修正`8074e335917e54f1b3b8ee010ce1aae3b1832a27`/`cac623bc3d3cf175fbb2ca597e7375cc21dfcfca`；Granted TTL修正`f34804c449f8f07999b4f545c0bb9c5c7d0826b7`；审查更正与Round71计划`8efd52e8fb5e24ce915ad2166783283f3fdcd6cb`。
 - **Live诊断：** Artifact [15194902333](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615/artifacts/15194902333)，SHA-256 `5d370fb5b7e77b56b8fe36afdcdb92a473bf54508e0da59b20ba9d3d171b3ac`。
+
+### 第七十二轮任务计划：旧 SQLite Coordinator / Admission 到 Unified schema-v2 迁移审计与切换设计
+
+- **目标：** 审计旧SQLite Admission与Coordinator结构，设计确定性映射、写冻结、TTL转换、外部fencing floor保护、校验、单权威cutover及回滚协议。
+- **范围：** 只读仓库代码审计和设计；不访问生产数据库、不实现导入器、不执行冻结/迁移/切换。
+- **先决事实：** 旧SQLite Admission与Coordinator共享本地数据库；目标Store-backed业务实现已存在并共享schema-v2 aggregate。schema-v2→v3 operation archive模型是另一项迁移，不得混淆。
+- **重点：** request终态/幂等键、waiter顺序、Leader epoch、scope fencing/sequence、Provider generation/manifest、活动租约剩余TTL、WAL一致快照、未知Txn结果、容量与回滚。
+- **交付：** CH17迁移设计文档，并同步章节README、根/章节TaskPlan及每日TaskHistory。
+- **验收：** 区分代码已确认schema与现场未知数据；映射覆盖关键状态；定义冻结、验证、cutover和回滚门禁；禁止双写；设计不得表述为迁移已实施。
+
+### 第七十二轮完成状态（2026-11-27）
+
+- **状态：** DONE（来源代码审计与迁移设计；不是生产迁移）。
+- **交付：** 新增SQLite→Unified schema-v2迁移设计文档，覆盖Admission/Coordinator表映射、不变量、TTL转换、冻结与快照、候选导入、精确校验、单权威切换和写入后反向迁移。
+- **来源结构：** Admission为coordinator_meta、admission_requests、admission_waiters；Coordinator为coordinator_authority_meta、coordinator_authority_leader、coordinator_authority_scopes、coordinator_authority_operations。
+- **未执行：** 未访问生产SQLite、未实现导出/导入工具、未创建生产namespace、未冻结旧写入、未迁移或切换生产authority。MIG-01/02 DONE；MIG-03～06 TODO；MIG-07 BLOCKED。
+- **治理边界：** schema-v2仍为唯一生产权威；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；Watch Supervisor/Quorum Probe运行时未实现。
