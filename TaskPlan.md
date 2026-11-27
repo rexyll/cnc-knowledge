@@ -1160,8 +1160,8 @@
 
 - **状态：** DONE（CH17-T004代码路径审查与生产接入门禁设计；无生产运行时代码变更）。
 - **交付：** 新增`docs/17-operation-maintenance-and-repair/watch-supervisor-integration-readiness-review.md`，同步CH17技术正文第31节、章节README与章节任务计划。
-- **核心结论：** etcd KV/Txn/Lease和可选Watch底层能力已存在，但业务层`DurableCoordinatorAuthorityBackend`仍由SQLite实现，尚未形成由业务服务持有的etcd Watch生命周期；因此不应先行添加后台Supervisor/探测线程。
-- **后续门禁：** 先迁移业务状态机并明确服务owner、消费并发模型、探测权限/deadline/频率预算及监控出口，再实现每进程共享Quorum探测和Watch观测。默认`watch_read_timeout=None`不变；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威。
+- **更正后的核心结论：** 第四十一轮已经交付`StoreBackedCoordinatorAuthority`与`StoreBackedProviderAdmissionCoordinator`，构成基于`CoordinatorAuthorityStore`的Unified schema-v2业务参考实现；第七十轮初版审查漏看该实现，已在第七十一轮更正。当前真实缺口是旧SQLite状态/Admission数据迁移与受控cutover、真实etcd验证以及Watch业务生命周期owner，而不是“没有store-backed业务状态机”。
+- **后续门禁：** 已先完成Protocol符合性与三节点etcd Live supporting evidence；仍需规划旧SQLite迁移、写冻结、回滚及单权威cutover，明确Watch owner、消费并发模型、探测权限/deadline/频率预算及监控出口。默认`watch_read_timeout=None`不变；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威。
 - **核心交付提交：** `1de73f780904d090f16f2d298a877fc18b4e8828`。
 
 
@@ -1173,3 +1173,14 @@
 - **范围限制：** 不切换生产authority，不双写旧SQLite和Unified schema-v2，不执行旧表迁移，不接真实Provider/云对象存储；合成Provider仅作为业务状态机的测试边界。Unified schema-v2单aggregate全局串行写入热点和operation增长问题继续保留。
 - **文档同步：** 更正第七十轮审查报告、追加统一Coordinator技术正文与章节README、更新根/章节TaskPlan和每日TaskHistory；如新增完整资源文件，仍按Guide归档到`resouces/17-operation-maintenance-and-repair/`。
 - **验收标准：** 协议测试、普通全库Quality、CH12与strict lint通过；三节点etcd Live suite通过；明确标记正式矩阵仍未批准/未执行、生产cutover仍未完成，不将CI Live supporting evidence描述为生产HA验收。
+
+### 第七十一轮完成状态（2026-11-27）
+
+- **状态：** DONE（Unified Coordinator 真实etcd业务契约 supporting evidence；不构成生产cutover或企业HA验收）。
+- **交付：** 新增`tests/test_spare_parts_provider_unified_coordinator_authority_etcd_integration.py`，补充`DurableCoordinatorAuthorityBackend` runtime Protocol断言；将Live套件接入`scripts/etcd-integration/run.sh`并更新依赖/README；修正第七十轮审查结论，新增Unified Coordinator技术正文第13节、主etcd集成正文第32节、章节README与TaskHistory。
+- **业务验证：** 真实三节点etcd v3.7.0上3项Unified Coordinator Live测试全部通过：ACTIVATE→PUBLISH→REVOKE及Admission Lease释放后的拒绝；两个独立HTTP客户端并发分配8个唯一operation sequence和幂等重放；原生Leader TTL key到期、epoch递增与旧Leader fencing。新测试共2.746秒。
+- **实现修正：** Leader claim/renew以Store返回的实际Granted TTL（`AuthorityStoreLease.ttl_seconds`）计算持久化`expires_at`；增加后端最小Granted TTL回归测试。Live runner固定安装`requirements-ch17-security.txt`中的Ed25519依赖。
+- **验收：** [Live Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)整体success，14个测试调用合计40项Live测试通过，基础etcd、mTLS、短TTL Token、Auth/Quorum隔离、RBAC成员故障/Token传播、诊断与清理全部成功；[Quality Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)success：554项unittest（40 skipped、514通过）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors（180 Markdown、240关系）。
+- **边界：** Provider control plane为进程内synthetic fixture，不是实际对象存储；无真实多主机生产部署、正式场景矩阵审批、旧SQLite迁移/rollback/cutover，也未改变生产authority。ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威；Watch Supervisor与Quorum Probe运行时仍未实现。
+- **提交：** 主要实现`433068fd52eb4bbfbe3af0bf69697a6cbaedcb83`；依赖修正`8074e335917e54f1b3b8ee010ce1aae3b1832a27`/`cac623bc3d3cf175fbb2ca597e7375cc21dfcfca`；Granted TTL修正`f34804c449f8f07999b4f545c0bb9c5c7d0826b7`；审查更正与Round71计划`8efd52e8fb5e24ce915ad2166783283f3fdcd6cb`。
+- **Live诊断：** Artifact [15194902333](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615/artifacts/15194902333)，SHA-256 `5d370fb5b7e77b56b8fe36afdcdb92a473bf54508e0da59b20ba9d3d171b3ac`。

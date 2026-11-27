@@ -200,3 +200,17 @@ business_rule_assertions = NOT_EVALUATED
 ### 最终文档同步CI验收记录
 
 文档同步提交 `706cfcf36204c1bfe996501e65031a21e8536783`；[GitHub Actions Run 45811108498](https://github.com/rexyll/cnc-knowledge/actions/runs/45811108498)两个必需Job均completed/success。全库344项unittest、CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors（5条非阻断warning）。ASSET-000086的35条正式场景仍为 `PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+## 13. 第七十一轮：真实etcd业务契约与Leader Granted TTL验证
+
+第41轮实现的`StoreBackedCoordinatorAuthority`已存在，本轮补充的是它通过真实etcd Gateway工作的证据，不是新的状态机移植。测试在每用例唯一namespace中，创建两个独立HTTP client、Store adapter、Admission scheduler和Coordinator实例；业务状态聚合及Admission Lease索引保持在同一个schema-v2 aggregate及Store事务内。
+
+- **Protocol符合性：** 共同Coordinator契约新增runtime Protocol断言，验证业务实现满足`DurableCoordinatorAuthorityBackend`方法契约；SQLite和InMemory etcd Store-backed路径均执行该断言。
+- **Live全链路：** 真实三节点etcd上完成ACTIVATE→PUBLISH→REVOKE；Coordinator使用Admission Lease验证Owner/租约，release后旧租约无法继续分配Operation sequence。
+- **多客户端并发：** 两个独立HTTP Gateway client并发分配8个operation sequence，唯一值为1–8；相同idempotency key重放不分配新序列。
+- **Leader TTL/epoch：** 缩短Leader lease后，Live test通过线性一致Range轮询原Leader TTL key，待其自然消失后由另一个Coordinator client接管；新epoch比旧epoch递增1，旧Leader无法对pending operation执行签名授权。
+- **Granted TTL修正：** claim/renew记录的`expires_at`以Store实际返回的`AuthorityStoreLease.ttl_seconds`计算。服务端授予TTL可能不等于客户端请求TTL；不使用请求值代替实际TTL。另有最小Granted TTL fake回归测试。
+- **CI：** [Live Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)整体success，新Coordinator真实etcd测试3/3通过（2.746秒）；全流程Live 40项测试通过。[Quality Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)成功：554 unittest（40 skipped、514通过）、CH12 143、strict lint 0 errors/5 warnings、结构/data 0 errors。
+- **范围边界：** synthetic Provider control plane是进程内测试夹具；未连接真实对象存储或外部云服务。旧SQLite表/队列到Unified aggregate的迁移、写冻结、回滚与生产单权威cutover均未实施。该Live run仅为etcd v3.7.0 / etcd3gw 2.7.0 supporting evidence，不等同于生产HA或正式矩阵审批。
+
+Live诊断Artifact：[15194902333](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615/artifacts/15194902333)，SHA-256 `5d370fb5b7e77b56b8fe36afdcdb92a473bf54508e0da59b20ba9d3d171b3ac`。

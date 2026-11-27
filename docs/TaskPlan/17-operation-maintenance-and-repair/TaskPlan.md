@@ -1279,10 +1279,9 @@
 ## 第七十轮结果记录：Watch Supervisor 与 Quorum Probe 生产接入边界审查（2026-11-27）
 
 - **任务状态：** DONE（代码路径审查与接入门禁设计；没有生产行为变更）。
-- **核心发现：** `CoordinatorAuthorityStore`是KV/Txn/Lease端口；`CoordinatorAuthorityWatchStore`是独立可选Watch能力；`EtcdV3CoordinatorAuthorityStore`提供线性一致Range和Watch适配；而`DurableCoordinatorAuthorityBackend`业务服务当前仍由SQLite实现，尚无完整etcd-backed业务状态机。
-- **运行时缺口：** Watch为同步pull迭代器，`next(stream)`可能阻塞；业务服务尚未拥有Watch生命周期，探测器也没有进程级共享调度、deadline、频率预算或指标出口。不能把底层驱动的存在视为Supervisor可直接落位。
-- **决策：** 本轮不加后台线程/探测器、不添加TCP keepalive/gRPC PING/Lease心跳、不启用自动恢复、不改变`watch_read_timeout=None`。先迁移业务状态机并定义服务owner，再实现每进程共享Quorum探测和Watch观测。
-- **边界：** 本轮只做静态源代码与测试路径核查，不声称新增测试通过、真实etcd在线验证或生产HA能力。详见独立审查文档。
+- **更正后的核心发现：** 第四十一轮已经交付`StoreBackedCoordinatorAuthority`与`StoreBackedProviderAdmissionCoordinator`，其统一schema-v2 aggregate通过同一`CoordinatorAuthorityStore`事务保护Coordinator和Admission状态；第七十轮初版审查漏看该实现，已在第七十一轮更正。
+- **仍存缺口：** 旧SQLite数据迁移/冻结/回滚/cutover未完成；store-backed业务实现没有Watch生命周期owner，Watch仍是可能阻塞的同步pull迭代器；Supervisor、共享Quorum调度、deadline/频率预算和指标出口未实现。
+- **决策：** 不加后台线程/探测器、不添加TCP keepalive/gRPC PING/Lease心跳、不启用自动恢复、不改变`watch_read_timeout=None`。先完成真实etcd业务契约验证并规划旧数据cutover，再定义Watch owner和共享探测运行时。
 - **后续门禁：** 业务服务迁移与生命周期定义是下一阶段前置工作；正式场景矩阵ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威。
 - **核心交付提交：** `1de73f780904d090f16f2d298a877fc18b4e8828`（审查文档及根/章节计划、README、技术正文同步）。
 
@@ -1295,3 +1294,12 @@
 - **范围限制：** 不切换生产authority，不双写旧SQLite和Unified schema-v2，不执行旧表迁移，不接真实Provider/云对象存储；合成Provider仅作为业务状态机的测试边界。Unified schema-v2单aggregate全局串行写入热点和operation增长问题继续保留。
 - **文档同步：** 更正第七十轮审查报告、追加统一Coordinator技术正文与章节README、更新根/章节TaskPlan和每日TaskHistory；如新增完整资源文件，仍按Guide归档到`resouces/17-operation-maintenance-and-repair/`。
 - **验收标准：** 协议测试、普通全库Quality、CH12与strict lint通过；三节点etcd Live suite通过；明确标记正式矩阵仍未批准/未执行、生产cutover仍未完成，不将CI Live supporting evidence描述为生产HA验收。
+
+### 第七十一轮完成状态：Unified Coordinator 真实 etcd 业务契约验证（2026-11-27）
+
+- **实现：** 增加store-backed Coordinator的`DurableCoordinatorAuthorityBackend` runtime Protocol一致性断言，并新增三节点etcd v3.7.0 Live测试文件。测试按UUID隔离namespace，建立两个独立HTTP Gateway客户端。
+- **Live覆盖：** ACTIVATE→PUBLISH→REVOKE全链路、Admission Lease释放后阻断operation allocation、双客户端8路并发分配唯一operation sequence与幂等重放、Leader TTL原生到期后的epoch接管和旧Leader fencing；新测试3/3 PASS（2.746秒）。
+- **修正：** Coordinator Leader claim/renew现在以Store返回的实际Granted TTL计算`expires_at`；新增最小Granted TTL回归测试。`run.sh`安装固定版本CH17 security dependency，保证Ed25519 synthetic fencing fixture可导入。
+- **CI：** [Live Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)与[Quality Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)均success。Live总计40项测试、14次调用；Quality为554 unittest（40 skipped/514通过）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors（180 Markdown、240关系）。
+- **不变边界：** 仅为一次性etcd v3.7.0三成员Compose supporting evidence；synthetic Provider仍在进程内。没有执行旧SQLite迁移/rollback/cutover或生产Authority切换；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威。Watch Supervisor/Quorum Probe运行时仍未实现。
+- **主要提交：** `433068fd52eb4bbfbe3af0bf69697a6cbaedcb83`、`f34804c449f8f07999b4f545c0bb9c5c7d0826b7`；文档及历史同步提交见根计划第七十一轮记录。

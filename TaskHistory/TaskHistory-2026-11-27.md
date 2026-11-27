@@ -347,3 +347,22 @@
 - **本轮决策：** 不增加后台线程、Quorum Probe、Watch Supervisor、TCP keepalive、原生gRPC PING、Lease heartbeat、自动重连或自动failover；`watch_read_timeout`继续默认`None`。后续先完成业务状态机迁移和服务生命周期定义，再实现每进程共享探测。
 - **验收与范围：** 静态代码及测试路径审查完成；没有新增代码、单元测试或Live测试，不宣称生产HA、etcd业务服务迁移或生产Watch健康能力。恢复原则保持Quorum线性一致快照revision R整体替换，并从R+1恢复。ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威。
 - **提交与证据：** 核心交付提交`1de73f780904d090f16f2d298a877fc18b4e8828`；[GitHub Commit](https://github.com/rexyll/cnc-knowledge/commit/1de73f780904d090f16f2d298a877fc18b4e8828)。工作区通过GitHub API直接提交至`main`，未创建分支。
+
+## 第七十一轮：Unified Coordinator 真实 etcd 业务契约与Granted TTL验证（2026-11-27）
+
+- **任务ID与完成时间：** CH17-T004-R071；2026-11-27T19:49:15+08:00（Live与Quality工作流全部success）；分支`main`。
+- **Round70结论更正：** 第七十轮初版审查错误地遗漏第41轮已有的`StoreBackedCoordinatorAuthority`与`StoreBackedProviderAdmissionCoordinator`。第七十一轮已更正审查报告、根/章节任务计划、CH17 README和技术正文：store-backed Unified schema-v2业务参考实现此前已存在；真实缺口是旧SQLite数据迁移/回滚/cutover和真实etcd证据，而不是没有业务状态机。
+- **Protocol与单测：** `tests/test_spare_parts_provider_unified_coordinator_authority.py`共同业务契约新增`DurableCoordinatorAuthorityBackend` runtime Protocol符合性断言，SQLite及InMemory etcd Store-backed实现均执行。全库Quality通过。
+- **真实etcd Live实现：** 新增`tests/test_spare_parts_provider_unified_coordinator_authority_etcd_integration.py`并接入`scripts/etcd-integration/run.sh`。每用例采用UUID隔离namespace、两个独立`Etcd3gwV3Client`实例、一次性三成员etcd v3.7.0集群及进程内synthetic Provider control plane。
+- **三项新增Live结果：**
+  1. `test_real_etcd_executes_activation_publish_revocation_and_admission_guard`：ACTIVATE→PUBLISH→REVOKE完整状态链通过；验证Coordinator与Admission共用Unified aggregate、Admission Lease release后拒绝新Operation。
+  2. `test_independent_etcd_clients_allocate_unique_idempotent_sequences`：两个独立HTTP客户端并发分配8个Operation sequence，得到唯一1–8并验证幂等重放。
+  3. `test_native_leader_ttl_takeover_advances_epoch_and_fences_old_leader`：真实Leader TTL key自然过期后第二个客户端接管，epoch递增，旧Leader signing authorization失败。
+  新增Live模块3/3 PASS，2.746秒。
+- **实现修正：** `StoreBackedCoordinatorAuthority.claim_leadership()`与`renew_leadership()`以前按请求TTL计算持久化`expires_at`，现改用Store返回的`AuthorityStoreLease.ttl_seconds`实际Granted TTL；增加最小Granted TTL fake回归测试。Live TTL验收轮询线性一致Range，确认原生TTL key已删除后才要求新Leader接管。
+- **依赖修复：** Live Runner除`requirements-ch17-etcd-integration.txt`外，还安装固定的`requirements-ch17-security.txt`（`cryptography==50.0.2`），确保Ed25519 synthetic fencing test fixture可导入。
+- **Live验收：** [Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)整体success；14个测试调用合计40项Live测试通过。基础etcd、mTLS、短TTL Token、Auth/Quorum隔离、mTLS RBAC成员故障/Token传播、诊断收集、临时Compose容器和数据卷清理、Artifact上传全部success。
+- **Quality验收：** [Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)整体success：554 unittest（40 skipped、514项通过）；CH12数值资源测试143项通过；strict knowledge lint 0 errors / 5 warnings；结构/data检查0 errors（180 Markdown文件、240关系记录）。
+- **诊断Artifact：** [15194902333](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615/artifacts/15194902333)，SHA-256 `5d370fb5b7e77b56b8fe36afdcdb92a473bf54508e0da59b20ba9d3d171b3ac`。
+- **提交：** Round71计划/审查更正`8efd52e8fb5e24ce915ad2166783283f3fdcd6cb`；Live测试及runner接入`433068fd52eb4bbfbe3af0bf69697a6cbaedcb83`；security依赖修正`8074e335917e54f1b3b8ee010ce1aae3b1832a27`/`cac623bc3d3cf175fbb2ca597e7375cc21dfcfca`；Granted TTL代码与回归修正`f34804c449f8f07999b4f545c0bb9c5c7d0826b7`。
+- **范围边界/遗留：** 本轮Provider为进程内synthetic control plane，不是真实对象存储；没有执行旧SQLite Coordinator/Admission数据迁移、写冻结、回滚或生产authority cutover；没有开启生产backup、Watch Supervisor或Quorum Probe。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威。下一阶段应先设计旧SQLite→Unified schema-v2的受控迁移/回滚与单权威切换，再定义Watch业务owner和探测运行时。

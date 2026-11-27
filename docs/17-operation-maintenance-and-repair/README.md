@@ -376,7 +376,16 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 
 ## CH17-T004 Watch Supervisor 与 Quorum Probe 生产接入边界审查（第七十轮）
 
-- 完成业务服务、KV/Txn/Lease端口、可选Watch端口、etcd适配器与HTTP Gateway驱动的代码路径审查。
-- 关键阻塞：底层etcd存储适配器已存在，但`DurableCoordinatorAuthorityBackend`当前业务服务仍是SQLite实现；Watch没有业务服务级生命周期owner。
-- 决策：先迁移业务状态机并定义运行时owner/并发模型，再实现每进程共享Quorum探测；本轮不新增后台线程、探测器、TCP/gRPC keepalive或自动重连。
+- 完成业务服务、KV/Txn/Lease端口、可选Watch端口、etcd适配器与HTTP Gateway驱动的代码路径审查；第七十轮初版遗漏了第41轮已有的Store-backed Unified Coordinator实现，已由第七十一轮更正。
+- 当前已有`StoreBackedCoordinatorAuthority`与`StoreBackedProviderAdmissionCoordinator`，二者通过Unified schema-v2 aggregate和同一个`CoordinatorAuthorityStore`事务协调业务状态；旧SQLite表迁移/冻结/回滚/cutover仍未完成。
+- Watch仍没有业务服务级生命周期owner；不提前新增后台Supervisor、共享Quorum探测或自动重连。
 - 详细门禁：[Watch Supervisor与Quorum Probe生产接入边界审查](watch-supervisor-integration-readiness-review.md)。
+
+## CH17-T004 Unified Coordinator 真实 etcd 适配器与业务契约验证（第七十一轮）
+
+- 已有的`StoreBackedCoordinatorAuthority`与`StoreBackedProviderAdmissionCoordinator`继续复用Unified schema-v2 aggregate；不重新实现或绕过现有事务边界。
+- 新增真实三节点etcd Live测试：ACTIVATE→PUBLISH→REVOKE、Admission Lease释放后拒绝新操作、两个独立HTTP客户端并发分配8个唯一sequence并幂等重放、Lease TTL到期后的Leader epoch接管和旧Leader fencing。新测试3/3通过。
+- 修正Leader claim/renew使用后端实际Granted TTL记录`expires_at`，不再假设服务端授予TTL必然等于请求TTL；Live测试轮询确认TTL key确已删除。
+- [Live Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)与[Quality Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)均success。40项Live测试成功；Quality 554 unittest（40 skipped）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors。
+- 详细说明：[Unified Coordinator 真实 etcd 业务契约验证](spare-parts-inventory-backup-provider-unified-coordinator-authority.md#13-第七十一轮真实etcd业务契约验证)。
+- **边界：** 本轮未迁移旧SQLite数据，未执行生产cutover，synthetic Provider非真实对象存储；ASSET-000092仍待批准/未运行，schema-v2仍唯一生产权威。

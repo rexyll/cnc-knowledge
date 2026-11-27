@@ -612,10 +612,33 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 
 本轮完成对Watch健康分层方案的代码接入审查，详细记录见[Watch Supervisor与Quorum Probe生产接入边界审查](watch-supervisor-integration-readiness-review.md)。
 
-**核心代码事实：** `CoordinatorAuthorityStore`是基础KV/Txn/Lease端口；`CoordinatorAuthorityWatchStore`是单独的可选Watch端口；`EtcdV3CoordinatorAuthorityStore`提供`linearizable_range()`与Watch适配；`Etcd3gwV3Client`提供底层HTTP gRPC-gateway请求与同步Watch响应流。业务层`DurableCoordinatorAuthorityBackend`仍由SQLite业务服务实现，尚没有基于etcd存储端口的完整业务Coordinator状态机。
+**核心代码事实（第七十一轮更正）：** 第四十一轮已经交付`StoreBackedCoordinatorAuthority`和`StoreBackedProviderAdmissionCoordinator`。Coordinator Leader/Scope/Operation业务状态与Admission scheduler状态嵌入同一Unified schema-v2 aggregate；业务状态转换通过同一`CoordinatorAuthorityStore`事务比较aggregate revision、Leader TTL key和Admission Lease/request索引。该参考实现既可使用SQLite Store，也可使用`EtcdV3CoordinatorAuthorityStore`。旧`SQLiteDurableCoordinatorAuthority`仍保留，但到Unified schema-v2的旧数据迁移、写冻结、回滚及生产cutover尚未完成。
 
-**本轮决定：** 不在存储适配器层直接添加后台Supervisor或Quorum探测线程。业务服务尚未迁移到Store Port，Watch也没有业务owner、启动/关闭责任、线程/任务模型；此时增加后台运行时会形成无人管理的生命周期和按Watch实例扩张的探测负载。下一阶段先完成业务状态机迁移与服务生命周期定义，再建立每进程共享的线性一致Range探测器。
+**Watch运行时缺口：** `CoordinatorAuthorityWatchStore`仍是单独的可选能力；`StoreBackedCoordinatorAuthority`没有持有Watch消费者或Supervisor，Watch同步pull的`next(stream)`仍可能阻塞。业务owner、启动/关闭责任、并发模型、共享Quorum探测调度和监控出口尚未实现。
+
+**本轮决定：** 暂不在存储适配器层添加后台Supervisor或Quorum探测线程。先验证Store-backed业务状态机在真实etcd上的事务、Lease与故障边界，再独立规划旧SQLite数据cutover和业务服务生命周期，之后才进入Watch/Quorum运行时实现。
 
 **配置与一致性边界：** `watch_read_timeout`保持默认`None`；不把Progress、TCP ACK或`/maintenance/status`当成Quorum健康证明；不增加自动重连/failover。任何Watch断流/Compaction恢复仍须用健康多数派线性一致Range获取snapshot revision R，整体替换旧投影，并从R+1继续。
 
 **本轮验收：** 完成接口/类职责核对、实现缺口清单、生产接入门禁和有序实施路线。没有新增运行时代码、自动化测试或Live实验，不将此轮描述为生产Watch健康能力交付。
+
+## 32. 第七十一轮：Unified Coordinator 真实 etcd 业务契约与TTL语义验证
+
+本轮没有重新实现Coordinator状态机，而是对第41轮已存在的`StoreBackedCoordinatorAuthority`、`StoreBackedProviderAdmissionCoordinator`进行Protocol和真实服务器验证。Live测试文件为`tests/test_spare_parts_provider_unified_coordinator_authority_etcd_integration.py`，接入`scripts/etcd-integration/run.sh`，使用一次性三成员etcd v3.7.0 Compose集群、每用例UUID namespace和两个独立HTTP Gateway客户端。
+
+**新增三项Live场景：**
+
+1. `test_real_etcd_executes_activation_publish_revocation_and_admission_guard`：真实etcd保存Unified schema-v2 aggregate。执行ACTIVATE→PUBLISH→REVOKE完整链；合成Provider在进程内验证fencing proof与generation；释放Admission Lease后，旧lease不能再分配operation sequence。验证Coordinator和Admission子状态共用同一个Store Txn aggregate。
+2. `test_independent_etcd_clients_allocate_unique_idempotent_sequences`：通过两个独立`Etcd3gwV3Client`/Store/Coordinator实例并发分配8项publication sequence，最终序列为1–8且无重复；重复提交相同idempotency key返回相同sequence。
+3. `test_native_leader_ttl_takeover_advances_epoch_and_fences_old_leader`：renew Leader并缩短TTL，按服务端Granted TTL有界等待，线性一致Range确认原生TTL绑定的Leader key消失；第二个客户端接管后epoch递增，旧Leader无法再授权pending operation signing。
+
+**TTL语义修正：** `StoreBackedCoordinatorAuthority.claim_leadership()`与`renew_leadership()`现在使用`AuthorityStoreLease.ttl_seconds`（后端实际Granted TTL）计算持久化`expires_at`，不再把请求TTL误当作一定会被服务端授予的TTL。增加后端最小Granted TTL回归测试；Live验证依据线性一致Range观察实际Leader key删除，而不是只等待固定时长。
+
+**Protocol和质量：** 共同业务契约测试新增`isinstance(authority, DurableCoordinatorAuthorityBackend)`断言，分别对SQLite和Fake etcd Store-backed实现执行。Live Runner安装固定的`requirements-ch17-security.txt`，确保Ed25519 synthetic fencing fixture依赖可用。
+
+**CI验收：**
+- [Live Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)：整体success；14个测试调用合计40项Live测试通过。新Unified Coordinator测试3/3 PASS（2.746秒）；其余普通etcd、mTLS、短TTL Token、Auth/Quorum隔离、RBAC成员故障与Token传播、诊断Artifact上传和Compose容器/数据卷清理全部success。
+- [Quality Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)：success；554项unittest（40 skipped、514项执行通过），CH12数值资源测试143项通过，strict knowledge lint 0 errors/5 warnings，结构/data检查0 errors（180 Markdown文件、240关系记录）。
+- Live诊断Artifact [15194902333](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615/artifacts/15194902333)，SHA-256 `5d370fb5b7e77b56b8fe36afdcdb92a473bf54508e0da59b20ba9d3d171b3ac`。
+
+**证据边界：** 真实etcd Live只验证本轮列出的业务状态机与Gateway适配，不代表生产多主机HA验收或正式矩阵通过。Provider仍为进程内synthetic control plane，不是真实对象存储/云端条件写入；旧SQLite状态/Admission表迁移、冻结、回滚与单权威cutover未做；Unified schema-v2仍是全局单aggregate串行写入点，operation ledger保留/容量边界未解决。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，生产backup未启用。

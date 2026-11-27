@@ -187,3 +187,14 @@
 该实现仍不是旧SQLite服务的自动迁移，也没有生产cutover；已有etcd侧测试使用`InMemoryEtcdV3Client`，并非真实etcd服务器。因此第七十一轮优先补充业务Protocol符合性断言和真实三节点etcd Live测试，随后仍需单独规划旧SQLite数据迁移、写冻结、回滚及单权威切换。
 
 本次更正保留第七十轮“暂不增加Watch Supervisor”的决定：虽然store-backed业务Coordinator参考实现存在，但它尚未持有Watch stream owner，也没有业务级Supervisor、独立Quorum探测调度和监控生命周期。
+
+## 10. 第七十一轮：Store-backed Coordinator 真实etcd验证结果
+
+第七十一轮已在一次性三成员etcd v3.7.0 Compose环境中验证现有`StoreBackedCoordinatorAuthority`业务参考实现：ACTIVATE→PUBLISH→REVOKE、Admission Lease释放后拒绝新Operation、两个独立HTTP Gateway客户端并发sequence唯一性/幂等，以及Leader原生TTL到期后的epoch takeover和旧Leader fencing。新Live模块3项全部通过；整条Live工作流40项测试通过。Quality workflow 554 unittest（40 skipped、514通过），CH12 143项，strict lint 0 errors/5 warnings，结构/data 0 errors。
+
+同时修正Leader TTL记账：业务服务以Store返回的实际Granted TTL计算`expires_at`，而不是假设后端必定按请求值授予。该修正有最小Granted TTL单测及真实etcd key自然过期Live证据。
+
+**门禁状态更新：** 基础Store-backed Coordinator的真实etcd业务路径现在具备一次性CI supporting evidence，G1的“实现不存在”已不是当前问题。但旧SQLite Coordinator/Admission持久数据迁移、写冻结、回滚、真实Provider集成和生产单权威cutover仍未实施/审批；Unified schema-v2容量与operation ledger保留方案仍需后续设计。Watch stream owner、Supervisor、每进程共享Quorum Probe、指标与生产SLO也仍未实现，因此本轮不改变“暂不添加Watch Supervisor”的决策。
+
+- Live：[Run 45993192615](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615)；Artifact [15194902333](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192615/artifacts/15194902333)。
+- Quality：[Run 45993192694](https://github.com/rexyll/cnc-knowledge/actions/runs/45993192694)。
