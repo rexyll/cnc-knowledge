@@ -345,3 +345,12 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - [Live Run 45980665924](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665924)整体success；Watch minority测试文件4项测试通过（13.524s），普通Etcd、mTLS、短TTL Token、Auth/Quorum、RBAC成员故障/Token传播、诊断、容器/volumes清理及Artifact上传全部success。诊断Artifact [15189731260](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665924/artifacts/15189731260)。[Quality Run 45980665958](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665958)两个Job均success：543项unittest（35 skipped）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors。
 - 这只证明一次性etcd v3.7.0 / etcd3gw 2.7.0环境下有限64/96事件的停读与消费行为，不证明自动背压、内存/队列上限、TCP窗口或无限期稳定性。活动流排空不意味着旧cursor可用于重建；重新建流时旧cursor仍会被Compaction拒绝，必须以健康多数派线性一致Range快照恢复并从R+1续接。Watch仍为单向HTTP server-streaming，不支持双向WatchProgress/WatchCancel。
 - ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004保持`IN_PROGRESS`。
+
+## CH17-T004 Watch意外EOF与部分投影快照恢复（第六十七轮）
+
+- 驱动现在区分服务端显式`canceled`终止响应与HTTP流意外EOF：前者后续正常结束；没有取消响应的EOF转换为`AuthorityStoreUnavailableError`。Fake契约新增覆盖，既有Lease断流Live用例不再接受裸`StopIteration`。
+- 新增部分投影恢复Live场景：etcd1 Watch已消费revision 25；etcd1停止期间多数派提交revision 26/27/28（覆盖更新、删除、新增）；恢复后以quorum snapshot revision 28整体替换投影，从revision 29重新Watch并仅收到新事件一次；最终revision 29投影与线性一致Range一致。
+- 原Watch只尝试etcd1 endpoint，没有自动跨endpoint切换。恢复依据是健康多数派线性一致Range，不复用断流前cursor。
+- [Live Run 45982644017](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017)整体success；Lease Watch recovery文件3项测试（3.930s）和Watch minority文件4项测试（13.314s）均通过。诊断Artifact [15190500314](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644017/artifacts/15190500314)，SHA-256 `364c70b27a0ac0cca5da2d2c1930513885cefe2706a09ddcdfc2e41adce2e04e`。
+- [Quality Run 45982644355](https://github.com/rexyll/cnc-knowledge/actions/runs/45982644355)两个Job均success：545项unittest（36 skipped）、CH12 143项、strict lint 0 errors / 5 warnings、结构/data检查0 errors（260实体、240关系、412来源、178 Markdown）。SPAT 30包只完成离线模拟，`business_test_status=NOT_RUN`。
+- 证据只适用于一次性etcd v3.7.0 / etcd3gw 2.7.0三节点Compose实验；不代表生产网络耐久性、代理超时、长尾延迟、背压或内存容量验收。Watch仍为单向HTTP server-streaming；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持`IN_PROGRESS`。
