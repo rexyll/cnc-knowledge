@@ -967,3 +967,18 @@
 - 首次真实 live run 已确认：Token 签发后立即三个成员均接受；停止 etcd1 后剩余两个成员均接受；Driver 通过 transport failover 成功读取；健康成员直接访问均为 HTTP 200。
 - 首次 run 在重启 etcd1 后观察到原 reader simple token 返回 HTTP 401。该结果不得被简单归类为节点恢复失败或测试噪声；需进一步验证其是否为重启成员丢失/未恢复 token 验证状态，以及是否可通过显式重新认证获得新 Token。
 - 更新验收：重启后必须独立记录旧 Token 状态；若为 401，则从健康成员显式重新认证，验证新 Token 是否在三个成员均可用。不得在 driver 中自动匿名回退或静默刷新；本轮只验证显式 re-auth 可恢复性，并保留旧 Token 失效证据。
+
+
+## CH17-T004 第五十六轮：etcd 多数派网络分区与隔离成员恢复（2026-11-27）
+
+- **目标：** 在一次性 etcd v3.7.0 三成员集群中，以真实 Docker 网络隔离代替停止容器，验证多数派侧在2/3成员互通时仍可线性一致读写，而隔离少数派成员不能对外宣称成功；网络恢复后验证日志/数据收敛。
+- **任务拆解：**
+  1. 新增 opt-in live integration test，仅操作本workflow创建的 `cnc-knowledge-etcd-itest_default` 网络及其 etcd1 容器；通过Docker Compose标签定位容器，不硬编码容器ID。
+  2. 将etcd1从专用Compose网络断开，保留客户端端口可达，明确形成1节点少数派与etcd2/etcd3多数派的网络分区；记录隔离前后成员状态和请求结果。
+  3. 对多数派endpoint执行linearizable Range、Txn CAS写入和读回；对隔离成员单独执行linearizable Range/Txn，要求失败关闭或明确OUTCOME_UNKNOWN，不得把局部可达误判为成功提交。
+  4. 在finally中无条件重连网络；等待三成员恢复并验证分区期间多数派提交的数据在etcd1可读；验证无额外重复写入。
+  5. 记录分区持续时间、endpoint、异常类别、成员状态与恢复时间；不输出凭据，不连接任何外部/生产集群。
+- **实现边界：** 仅针对Disposable CI Compose网络；不使用iptables修改宿主机规则，不触碰宿主机其他Docker网络/容器。写Txn只发送一次；若结果不确定，恢复后以线性一致Range核实，不盲目重放。
+- **交付物：** 独立live测试、runner显式测试选择、CI阶段、CH17技术正文/README/KNOW-000061/ASSET-000092 supporting evidence、资源索引和TaskHistory更新。
+- **验收标准：** 多数派在分区期间保持线性一致读写；少数派成员的线性一致操作失败关闭/结果未知且不返回伪成功；重连后3成员恢复并读到多数派提交值；finally清理有效；默认全库质量CI、CH12测试、strict lint和结构校验通过。
+- **治理边界：** 本轮为一次性三节点网络分区工程冒烟测试，不构成多机房/真实网络设备/生产故障演练或正式验收。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004保持IN_PROGRESS。
