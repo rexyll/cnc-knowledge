@@ -47,7 +47,7 @@ openssl x509 -req -sha256 -days 2 -in "$CERT_DIR/server.csr" \
   -out "$CERT_DIR/server.crt" -extfile "$CERT_DIR/server.ext" >/dev/null 2>&1
 openssl req -newkey rsa:2048 -sha256 -nodes \
   -keyout "$CERT_DIR/client.key" -out "$CERT_DIR/client.csr" \
-  -subj "/CN=cnc-knowledge-etcd-test-client" >/dev/null 2>&1
+  -subj "/O=cnc-knowledge-etcd-test-client" >/dev/null 2>&1
 cat > "$CERT_DIR/client.ext" <<'EOF'
 basicConstraints=CA:FALSE
 keyUsage=digitalSignature,keyEncipherment
