@@ -920,3 +920,11 @@
 - **实现决策门：** 不预设必须自动刷新。只有在真实协议、token TTL、并发刷新锁、时钟偏差、凭据来源/托管和故障语义可验证后，才引入自动token provider；否则保留显式token更新接口并将生命周期责任交给外部安全凭据提供方。
 - **交付物：** etcd版本/配置与token生命周期说明、Fake Gateway错误分类/多endpoint测试、mTLS+RBAC live集成测试、更新后的CH17知识文章/实体/资源索引及CI证据。
 - **验收边界：** 不声称企业IAM/生产轮换撤销/审计已完成；ASSET-000092仍由企业正式审批控制，schema-v2仍是唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+
+### 第五十三轮执行进展（2026-11-27）
+
+- 新增SRC-000410～SRC-000412，核实etcd v3.7 simple token默认TTL为300秒、JWT TTL独立配置及simple/JWT设计差异。
+- 驱动增加显式set_auth_token(token|None)更新全部endpoint session；新增Fake Gateway更新/清除和认证异常不触发failover测试。
+- 新增独立10秒simple token mTLS集成阶段，覆盖token过期拒绝、重新认证、全部endpoint token更新、KV Range与Watch created握手；默认RBAC套件仍使用300秒TTL。
+- 正文/实体/README/资源索引已同步。**验收状态：** 等待短TTL live workflow和最终默认质量CI；本轮暂不标记DONE。自动刷新仍未实现，正式ASSET-000092状态不变。
