@@ -58,3 +58,19 @@
 - 当前代码/计划提交：`ae791eb2eaaa48036bdcc39517ec8afb0c36f9fb`（根计划）、`f876ea6697438c8d04c92571ec670dfaa9e802a0`（章节计划）、`9f3e6298d277923a1f7810b1710eb82d13a3eb77`（live测试初版）、`200420220858da98855b102a162eb2aa594c1cce`（CI阶段）、`b5ca86322f703c3001e298858cd82965adc9d2fb`（立即/收敛状态分别记录）。
 - **尚未验收：** 当前尚未取得本轮live workflow和默认质量CI的可核验运行结果；不将测试实现或workflow配置描述为测试通过。后续必须补齐运行证据、更新技术正文/README/KNOW-000061/ASSET-000092 supporting evidence和资源索引，再决定任务状态。
 - **治理边界：** 本轮工程测试不改变ASSET-000092正式30项PROPOSED_NOT_APPROVED / NOT_RUN状态；schema-v2仍唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+
+
+### 第五十五轮首次 live 结果与修正（2026-11-27）
+
+- 首次 live workflow： [45926442698](https://github.com/rexyll/cnc-knowledge/actions/runs/45926442698)，结论失败；失败只发生在新增测试的重启成员旧 Token 恢复断言。
+- 已验证通过的部分：
+  - 认证后立即 Token 观测：member1/member2/member3 均 accepted。
+  - 等待传播后：三个成员均 accepted。
+  - 停止 etcd1 后，Driver 从故障 endpoint 发生 transport failover，Range 成功。
+  - etcd2/etcd3 直接访问旧 Token 均 HTTP 200。
+  - quorum isolation、基础 mTLS、short-TTL token lifecycle 之前置阶段均成功。
+- 首次失败证据：重启 etcd1 后，原 reader simple Token 返回 HTTP 401；旧 Token 恢复轮询最终得到 `http-401`。这与 Token TTL=300秒的过期时间无关（单次测试约92秒），但仍需在下一次 live run 验证 fresh re-auth 行为。
+- 修正：新增重启后旧 Token 状态的明确断言；随后从健康成员 etcd2 重新认证 reader，验证 fresh token 是否在三个成员都能访问，并验证 Driver 使用 fresh token 可读取。对 HTTP 401 立即停止恢复轮询，避免无意义等待90秒。
+- 质量 CI： [45926442759](https://github.com/rexyll/cnc-knowledge/actions/runs/45926442759) 在提交 `f2e6ae20a73412e48ba149ba65af20fee0e4cb2e` 成功；全库 unittest 527项通过，CH12数值测试143项通过，strict knowledge lint 0 errors，fixture validator 0 errors / 5 warnings。fixture 仍明确标记30个正式场景NOT_RUN。
+- 增强诊断：修改 `run-mtls.sh` 将每轮mTLS Compose日志保存在runner临时目录，并纳入workflow artifact，避免下一轮仅有最终断言而缺少etcd成员日志。
+- 后续提交：测试修正 `022c538f`、`57cb1553`；计划补充 `042a1884`、`1406f9ad`；诊断归档 `cd8c891c`、`412f5636`。待新 live workflow 和最新 HEAD quality CI 完成后再判定任务状态。
