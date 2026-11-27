@@ -12,7 +12,7 @@
   "language": "en",
   "rights_status": "link_only",
   "license_or_permission": null,
-  "notes": "Used to distinguish identity/authorization failures from cluster availability failures. Source branch may advance; deployed live test version is etcd v3.7.0.",
+  "notes": "Used to distinguish identity/authorization failures from cluster availability failures. Source branch may advance; deployed live test version is etcd v3.7.0. Source-code reference is classified as official_documentation because the repository schema has no separate official_source_code evidence kind.",
   "authority_tier": "A",
-  "evidence_kind": "official_source_code"
+  "evidence_kind": "official_documentation"
 }
