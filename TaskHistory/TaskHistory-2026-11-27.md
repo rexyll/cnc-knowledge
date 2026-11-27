@@ -84,3 +84,6 @@
 - 最终文档head质量CI [Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)成功：527项unittest（504 passed、23 skipped），CH12 143项通过，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有治理warning，22章、178 Markdown、260实体、240关系、412来源、584内部链接。
 - 已同步CH17技术正文第15节、章节README、资源README、ASSET索引、KNOW-000061、ASSET-000092 supporting evidence。ASSET-000092正式场景数量仍30，审批状态PROPOSED_NOT_APPROVED，执行状态NOT_RUN，未因工程冒烟测试改变。
 - 本轮状态：COMPLETED。重要限制：当前Etcd3gwV3Client不自动重新认证/刷新；旧simple Token在本次etcd v3.7.0成员重启实验中返回401，显式重新认证后新Token恢复3/3成员访问。该现象不外推为JWT或其他版本行为。schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004仍IN_PROGRESS。
+
+
+- 最终CH17专项TaskPlan状态更新为COMPLETED后，文档头质量复验 [Run 45928045386](https://github.com/rexyll/cnc-knowledge/actions/runs/45928045386) completed/success；该run针对最终任务计划head `b76b487b48c6653cc66fbdc23c1e56c69e9d3bb7`，两个必需Job均成功。KNOW-000061和ASSET-000092的latest_default_ci_run已指向该最终复验；正式矩阵30项PROPOSED_NOT_APPROVED / NOT_RUN未改变。
