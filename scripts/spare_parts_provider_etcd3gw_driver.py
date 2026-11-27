@@ -26,6 +26,79 @@ class Etcd3gwProtocolError(RuntimeError):
     """Unexpected etcd gateway response shape."""
 
 
+
+class Etcd3gwGatewayError(RuntimeError):
+    """Structured non-transport error returned by the etcd HTTP Gateway."""
+
+
+class Etcd3gwAuthenticationError(Etcd3gwGatewayError):
+    """The supplied etcd authentication token or credentials are invalid."""
+
+
+class Etcd3gwPermissionDeniedError(Etcd3gwGatewayError):
+    """The authenticated etcd identity lacks permission for the operation."""
+
+
+class Etcd3gwRequestError(Etcd3gwGatewayError):
+    """The Gateway rejected a request for a reason other than authentication."""
+
+
+def _gateway_error_from_response(status: int, body: str) -> Etcd3gwGatewayError:
+    """Normalize a gRPC-Gateway HTTP error without exposing request credentials."""
+    payload: Mapping[str, Any] = {}
+    try:
+        parsed = json.loads(body)
+        if isinstance(parsed, Mapping):
+            payload = parsed
+    except (TypeError, ValueError):
+        pass
+
+    raw_code = payload.get("code")
+    code: int | None = None
+    if isinstance(raw_code, int) and not isinstance(raw_code, bool):
+        code = raw_code
+    elif isinstance(raw_code, str) and raw_code.isdigit():
+        code = int(raw_code)
+
+    message = str(payload.get("message") or payload.get("error") or body or "etcd Gateway request failed")
+    normalized = message.lower()
+    if status == 401 or code == 16 or "invalid auth token" in normalized or "authentication failed" in normalized:
+        return Etcd3gwAuthenticationError(message)
+    if status == 403 or code == 7 or "permission denied" in normalized or "permission not given" in normalized:
+        return Etcd3gwPermissionDeniedError(message)
+    return Etcd3gwRequestError(message)
+
+
+def _normalize_gateway_exception(exc: Exception) -> Exception:
+    """Extract the etcd Gateway google.rpc.Status body from etcd3gw exceptions."""
+    candidates: list[str] = []
+    for item in getattr(exc, "args", ()):
+        if isinstance(item, str):
+            candidates.append(item)
+    candidates.append(str(exc))
+    for candidate in candidates:
+        text = candidate.strip()
+        if not text:
+            continue
+        starts = [index for index, char in enumerate(text) if char == "{"]
+        for start in starts:
+            try:
+                payload = json.loads(text[start:])
+            except (TypeError, ValueError):
+                continue
+            if isinstance(payload, Mapping) and (
+                "code" in payload or "message" in payload or "error" in payload
+            ):
+                return _gateway_error_from_response(0, text[start:])
+    # etcd3gw 2.7.0 may wrap the HTTP reason as a separate exception arg.
+    joined = " ".join(candidates)
+    lowered = joined.lower()
+    if "unauthorized" in lowered or "invalid auth token" in lowered or "authentication failed" in lowered:
+        return Etcd3gwAuthenticationError(joined)
+    if "forbidden" in lowered or "permission denied" in lowered:
+        return Etcd3gwPermissionDeniedError(joined)
+    return exc
+
 def _encode_bytes(value: bytes) -> str:
     if not isinstance(value, bytes):
         raise TypeError("etcd keys and values must be bytes")
@@ -401,6 +474,9 @@ class Etcd3gwV3Client:
                         data=json.dumps(payload, separators=(",", ":")),
                     )
             except Exception as exc:
+                normalized = _normalize_gateway_exception(exc)
+                if normalized is not exc:
+                    raise normalized from exc
                 translated = _transport_error(exc)
                 if read_only and isinstance(translated, (TimeoutError, ConnectionError)):
                     last_transport_error = translated
@@ -674,9 +750,7 @@ class Etcd3gwV3Client:
                         f"etcd Watch endpoint returned HTTP {status}"
                     )
                     continue
-                raise Etcd3gwProtocolError(
-                    f"etcd Watch endpoint returned HTTP {status}: {detail}"
-                )
+                raise _gateway_error_from_response(status, detail)
             return _Etcd3gwWatchStream(response)
 
         if last_transport_error is not None:
@@ -702,7 +776,11 @@ class Etcd3gwV3Client:
 
 
 __all__ = [
+    "Etcd3gwAuthenticationError",
     "Etcd3gwConfigurationError",
+    "Etcd3gwGatewayError",
+    "Etcd3gwPermissionDeniedError",
     "Etcd3gwProtocolError",
+    "Etcd3gwRequestError",
     "Etcd3gwV3Client",
 ]
