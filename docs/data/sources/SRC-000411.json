@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000411",
+  "source_type": "other",
+  "title": "etcd v3 authentication design — etcd v3.7",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/learning/design-auth-v3/",
+  "version": "etcd v3.7 authentication design; accessed 2026-11-27.",
+  "published_on": null,
+  "accessed_on": "2026-11-27",
+  "locator": "Authentication token issuance, simple/JWT token architecture, token refresh responsibilities and JWT client lifecycle notes.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Official design document explains that simple tokens are stateful and intended for development/testing, while JWT tokens are signed/stateless and token renewal/client lifecycle is an application responsibility.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
