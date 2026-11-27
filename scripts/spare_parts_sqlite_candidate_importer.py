@@ -204,7 +204,7 @@ def build_candidate(
             "tenant_id": None,
             "domain": None,
             "lease_expires_at": None,
-            "lease_state": "IDLE",
+            "lease_state": ("IDLE" if row["lease_state"] in {"IDLE", "REVOKED"} else "RECOVERY_REQUIRED"),
             "latest_operation_sequence": sequence,
             "provider_generation": row["provider_generation"],
             "updated_at": float(row["updated_at"]),
@@ -298,7 +298,7 @@ def build_candidate(
             "fencing_token": _required_int(row["fencing_token"], "request fencing token"),
             "expires_at": float(row["expires_at"]),
             "state": row["state"],
-            "backend_lease_id": 0,
+            "backend_lease_id": 1,  # terminal-only sentinel; never attached to a native lease
         }
         request_indexes.append({"key": _request_key(request_id), "record": record})
 
@@ -322,7 +322,7 @@ def build_candidate(
             "external_fencing_reconciliation": external_fencing_reconciliation,
             "external_fencing_floor": None,
             "provider_operations_must_be_reconciled_before_activation": True,
-            "active_lease_ttl_keys_are_not_imported": True,
+            "active_lease_ttl_keys_are_not_imported": True,\n            "terminal_request_backend_lease_id_sentinel": 1,\n            "terminal_request_backend_lease_id_is_not_a_live_lease": True,
         },
         "counts": {
             "terminal_requests": len(request_indexes),
