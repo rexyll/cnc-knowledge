@@ -175,3 +175,44 @@ python scripts/spare_parts_sqlite_migration_inventory.py \
 ### 10.4 限制
 
 MIG-03只提供只读逻辑盘点与可选JSON记录导出；不创建SQLite物理备份、不执行写冻结、不探测Provider外部fencing floor、不导入Unified schema-v2，也不证明数据可以安全迁移。records export应视为敏感运维数据，不能提交到Git或公共资源目录。
+
+
+## 11. MIG-04：候选导入包生成器（首阶段）
+
+新增脚本：`scripts/spare_parts_sqlite_candidate_importer.py`，专用测试：`tests/test_spare_parts_sqlite_candidate_importer.py`。
+
+### 11.1 本阶段交付边界
+
+本阶段生成**候选导入包**，不直接写入etcd或任何CoordinatorAuthorityStore，也不创建生产namespace。原因是目标store当前使用固定的`/cnc/admission/unified/v2/`前缀，尚无可注入namespace的构造参数；在namespace隔离能力和事务/Lease写入恢复协议落实前，不能把“候选导入”实现成直接KV写入。
+
+候选包中的target namespace保持未设置，要求后续写入器显式选择并验证全新隔离namespace；`production_write_allowed=false`。当前脚本不具备任何生产写入路径。
+
+### 11.2 输入与完整性验证
+
+必须同时提供MIG-03 manifest、records导出和策略JSON：
+
+```bash
+python scripts/spare_parts_sqlite_candidate_importer.py \
+  --manifest /secure/path/sqlite-migration-inventory.json \
+  --records /secure/path/sqlite-migration-records.json \
+  --policy /secure/path/admission-policy.json \
+  --output /secure/path/unified-candidate-bundle.json
+```
+
+策略JSON必须包含且仅包含`global_limits`、`tenant_limits`、`max_waiters`、`aging_interval_seconds`；按目标Unified实现的规范化规则计算policy hash，并与来源Admission meta严格相等。不能从单向hash推导原策略，也不能用默认值覆盖来源策略。
+
+工具逐表重算records行数与规范化SHA-256，并重新计算manifest snapshot digest；检查来源格式、完整性PASS、扫描期间DB/WAL未变化、表集合和必需列。任一输入不匹配均fail closed。
+
+### 11.3 当前支持的候选范围
+
+- 仅接受已排空的来源快照：不存在ACTIVE Admission request、waiter或PENDING_ACTIVATION/REVOKING/PENDING_PUBLISH/RECOVERY_REVIEW operation。
+- 拒绝仍标记ACTIVE但已过期的Admission行；必须在批准的冻结/清理流程后重新inventory，工具本身不清理来源。
+- 保留全局Admission fencing floor、每scope fencing/operation sequence floor、终态request幂等索引、Coordinator scope/operation历史、Provider generation和manifest引用、策略及可映射计数器。
+- 不恢复旧Leader；只输出Leader epoch恢复下限，目标必须重新claim。
+- 非IDLE/REVOKED的scope进入`RECOVERY_REQUIRED`，不伪装成空闲。
+- 终态request索引需要满足Unified内部record schema中的正backend_lease_id字段；候选包使用保留值1作为**仅终态索引占位符**，明确声明它不是原生Lease ID、不得附着或撤销Lease。活动租约不进入候选state。
+- 外部Provider fencing floor无法从SQLite证明，候选包将`external_fencing_reconciliation=REQUIRED`且floor为null；在只读核对并批准前不得激活候选。
+
+### 11.4 当前不支持/后续门禁
+
+MIG-04首阶段不是完整导入器：它不创建目标TTL Lease、不写request/state key、不执行分批事务、不建立目标checkpoint，也不处理写入Txn结果未知的恢复。目标namespace隔离、目标Lease分配和原子事务容量评估必须在后续实现中补齐；候选包不能直接喂给生产Store。MIG-05需补齐状态映射/幂等/高水位/故障注入验证，MIG-06才允许在一次性临时etcd集群演练完整写入与恢复。
