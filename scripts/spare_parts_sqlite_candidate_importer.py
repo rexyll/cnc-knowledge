@@ -327,7 +327,8 @@ def build_candidate(
             "terminal_request_backend_lease_id_sentinel": 1,
             "terminal_request_backend_lease_id_is_not_a_live_lease": True,
         },
-        "legacy_metadata": {\n            "attestations_issued": _required_int(admission_meta.get("attestations_issued"), "attestations_issued"),
+        "legacy_metadata": {
+            "attestations_issued": _required_int(admission_meta.get("attestations_issued"), "attestations_issued"),
             "coordinator_schema_version": authority_meta["schema_version"],\n        },\n        "counts": {
             "terminal_requests": len(request_indexes),
             "scopes": len(scopes),
