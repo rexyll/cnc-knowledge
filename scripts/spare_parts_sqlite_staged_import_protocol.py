@@ -198,6 +198,7 @@ def build_staged_import_plan(
         progress_sha256=_sha256((plan_sha + "\\x00checkpoint:init").encode("utf-8")),
     )
     initial_checkpoint_value = _canonical(initial_checkpoint)
+    previous_checkpoint = initial_checkpoint
 
     # Fail early when the indivisible scheduler aggregate cannot be published.
     preliminary_publish = _budget(
@@ -292,6 +293,7 @@ def build_staged_import_plan(
             raise StagedImportPlanError("internal batch segmentation exceeded its computed budget")
         batches.append(descriptor)
         completed += len(current_pairs)
+        previous_checkpoint = next_checkpoint
         previous_checkpoint_value = next_value
         current_pairs = [pair]
         descriptor, next_value, next_checkpoint, compares, puts = make_batch(current_pairs)
@@ -306,6 +308,7 @@ def build_staged_import_plan(
             raise StagedImportPlanError("final checkpointed batch exceeds the supplied budget")
         batches.append(descriptor)
         completed += len(current_pairs)
+        previous_checkpoint = next_checkpoint
         previous_checkpoint_value = next_value
 
     if completed != len(request_pairs):
