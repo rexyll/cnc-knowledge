@@ -868,3 +868,13 @@
 - **场景：** 合法CA+合法客户端证书完成成员发现、linearizable Range和Txn写入读回；缺失客户端证书连接被服务端拒绝；错误CA无法验证服务端证书；证书校验不通过时不关闭TLS验证、不回退HTTP明文。
 - **边界：** 自签名临时证书仅验证TLS配置链路，不是企业PKI/证书轮换/吊销/生产密钥管理验收；不得把测试证书用于生产。既有mTLS构造参数须保持兼容。
 - **状态：** ASSET-000092正式矩阵仍由企业审批控制；测试只补充工程证据，不自动批准矩阵、不启用生产Coordinator；schema-v2仍为唯一生产权威。
+
+
+### 第五十一轮 mTLS 实时验收补记（2026-11-27）
+
+- 代码提交：测试断言修正 `286378e2185854eea38ee04f4ee6cf049cd9c8f3`（main）。
+- 实时集成：[Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363) completed/success；明文三节点 live suite 全部通过，独立 mTLS suite 3/3 PASS：有效双向证书完成三成员发现、CAS Txn 写入和 linearizable readback；缺失客户端证书被服务端拒绝；不受信任 CA 被客户端拒绝。诊断 Artifact 15163390323，SHA-256 `91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74`。
+- 负向测试注意：etcd3gw/requests 对 TLS 握手失败可能包装为无文本的 `ConnectionError('')`；断言以连接失败为准，并由同一集群有效证书用例建立健康基线，不依赖异常字符串。
+- 默认质量 CI：[Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)两个必需Job成功；全库508项unittest通过；CH12 143项通过；结构/数据校验0 errors、5项既有治理warning；strict knowledge lint 0 errors。
+- 证书由 runner 临时生成并在 job cleanup 中清理；mTLS Compose 数据卷也已删除。没有提交证书、私钥或CA私钥。
+- 边界：该结果证明指定 etcd v3.7.0/etcd3gw 2.7.0 一次性环境的 TLS CA 校验和客户端证书认证，不等于企业PKI、证书轮换/吊销、生产密钥托管、etcd RBAC或生产网络验收。ASSET-000092 的30项正式场景仍 PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持 IN_PROGRESS。
