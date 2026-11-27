@@ -13,6 +13,7 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 docker compose version >/dev/null
 python3 -m pip install -r requirements-ch17-etcd-integration.txt
+python3 -m pip install -r requirements-ch17-security.txt
 
 cleanup() {
   if [[ "$KEEP_CLUSTER" != "1" ]]; then
