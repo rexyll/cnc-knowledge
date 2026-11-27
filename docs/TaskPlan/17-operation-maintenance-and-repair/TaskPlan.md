@@ -972,3 +972,12 @@
 - 诊断Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 `2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff`。
 - 默认质量[Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)成功：527项unittest（504 passed、23 skipped），CH12 143项，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有warning。
 - 已同步技术正文、README、资源索引、KNOW-000061和ASSET-000092 supporting evidence。正式30项场景审批/执行字段未改变。
+
+
+## CH17-T004 第五十六轮：etcd 多数派网络分区与隔离成员恢复（2026-11-27）
+
+- **目标：** 以Docker网络隔离模拟三成员etcd集群的真实少数派/多数派分区，验证多数派线性一致读写、少数派失败关闭及分区恢复后的数据收敛。
+- **场景：** 在独立CI Compose网络中断开etcd1网络连接，保留其客户端映射端口；etcd2/etcd3保持互通。分别从多数派和隔离成员发起linearizable Range及Txn CAS，验证只有多数派能确认提交；多数派提交后重连etcd1并检查三成员一致可读。
+- **实现要求：** 仅通过Docker Compose project/service标签定位测试容器；网络名称限定为本测试项目的默认网络；不修改宿主机iptables，不操作其他容器/网络。分区操作须有finally恢复；写请求仅发送一次，OUTCOME_UNKNOWN通过恢复后的Range核实。
+- **验收：** 多数派读写成功；少数派线性一致读写失败关闭或结果未知，不返回成功；网络恢复后三成员健康且数据收敛；opt-in live suite与默认质量CI通过。
+- **治理边界：** 仅为一次性etcd v3.7.0/Compose工程验证，不代表多机房或生产网络分区验收；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威，SQLite Coordinator未迁移；CH17-T004保持IN_PROGRESS。
