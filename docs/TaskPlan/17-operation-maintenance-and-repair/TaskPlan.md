@@ -954,13 +954,21 @@
 
 - **目标：** 补齐真实单成员停机时有效RBAC token的只读failover，以及同一simple token在健康成员之间的接受/传播验证。
 - **依赖：** 第五十一至第五十四轮的mTLS Compose、临时CA/client cert runner、RBAC reader/writer fixture、Etcd3gwV3Client错误分类与只读failover契约。
-- **测试设计：** 以临时root创建最小权限reader；认证后停止etcd1，保留etcd2/etcd3形成quorum；先通过driver的首个endpoint为etcd1、后续endpoint为etcd2和etcd3的顺序验证故障endpoint transport failover，再直接访问健康成员区分跨成员token接受；记录立即访问和短暂等待后访问结果；恢复etcd1并确认三成员健康和旧token恢复可用。
+- **测试设计：** 以临时root创建最小权限reader；认证后停止etcd1，保留etcd2/etcd3形成quorum；先通过driver的首个endpoint为etcd1、后续endpoint为etcd2和etcd3的顺序验证故障endpoint transport failover，再直接访问健康成员区分跨成员token接受；记录立即访问和短暂等待后访问结果；恢复etcd1并记录旧token状态；若旧simple token返回401，则从健康成员显式重新认证，验证新token在三个成员的接受状态及driver恢复读取。
 - **错误边界：** 仅连接/超时可触发只读failover；401/403/请求错误不重试；写事务不跨endpoint重放。token传播失败必须与transport错误分开记录，禁止匿名回退和无界重试。
 - **安全边界：** 临时密码/token/CA/证书私钥只存内存或runner临时目录；不输出秘密；Compose成员在finally中恢复，runner结束销毁volume。只对本测试Compose集群执行stop/start。
 - **验收：** 实际2/3成员quorum持续可用；有效reader token对健康成员的实际结果被独立观测；driver failover成功/失败有准确证据；越权仍拒绝且不触发错误重试；节点恢复后三成员重新健康；live和默认质量CI通过。
-- **任务状态：** IN_PROGRESS。当前已完成计划、专用opt-in live suite和CI阶段；等待真实mTLS三成员集群执行与质量门禁。该任务仅增加supporting engineering evidence；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
+- **任务状态：** COMPLETED。Live Run 45927091505与默认质量Run 45927138505均通过；实测停止单成员期间有效Token的只读failover成功，节点重启后旧simple Token返回HTTP 401，显式重新认证的新Token在3/3成员接受。该任务仅增加supporting engineering evidence；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
 
 
 ### 第五十五轮验收补充：重启后的 simple Token 语义
 
 首次 live 运行结果显示，停止 etcd1 前后，reader Token 在三个成员均可用；停止 etcd1 后 Driver 的只读 Range 从健康成员成功；但重启 etcd1 后，原 Token 返回 HTTP 401。新增验证步骤：记录旧 Token 的确定性 401，随后从健康成员显式重新认证，检查新 Token 在三个成员是否均被接受，并验证 driver 使用新 Token 恢复读取。该实验只描述 etcd v3.7.0 本次实测行为，不外推为其他 token provider、etcd 版本或生产集群的通用结论。
+
+
+### 第五十五轮执行结果（2026-11-27）
+
+- Live [Run 45927091505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505)成功：基础etcd 6项、mTLS/RBAC 12项、10秒Token生命周期1项、auth/quorum隔离1项、member-outage/token传播1项全部通过。专项测试观测到Token即时/收敛传播均3/3接受，停止etcd1后只读Range failover成功，重启后旧Token HTTP 401，从健康成员重新认证的新Token在3/3成员接受。
+- 诊断Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 `2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff`。
+- 默认质量[Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)成功：527项unittest（504 passed、23 skipped），CH12 143项，strict knowledge lint 0 errors，fixture validator 0 errors/5项既有warning。
+- 已同步技术正文、README、资源索引、KNOW-000061和ASSET-000092 supporting evidence。正式30项场景审批/执行字段未改变。
