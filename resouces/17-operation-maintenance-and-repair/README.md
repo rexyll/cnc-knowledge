@@ -655,4 +655,4 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - Live [Run 45927091505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505)全部阶段成功；新增单成员故障测试1/1通过。Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 `2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff`。
 - 观测：Token签发后即时和收敛后均3/3成员接受；停止etcd1时只读Range经transport failover成功；重启后旧Token在etcd1返回401；从etcd2显式重新认证后新Token在3/3成员接受。
 - runner已将mTLS Compose成员日志/状态写入runner临时诊断目录并纳入Artifact；临时证书、私钥、密码、Token和Compose volumes在runner退出时清理。
-- 默认质量[Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)通过：527项unittest、CH12 143项、strict lint 0 errors；正式ASSET-000092 30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
+- 默认质量[Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)通过：527项unittest（504 passed、23 skipped）、CH12 143项、strict lint 0 errors；正式ASSET-000092 30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
