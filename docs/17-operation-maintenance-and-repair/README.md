@@ -433,3 +433,13 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 同时扩展`InMemoryEtcdV3Client.range()`的prefix Range语义，确保测试不会把精确键Range误当成整个prefix Range。新增测试覆盖空namespace、已占用namespace、相邻namespace隔离和后端不可用。
 
 **安全说明：** 预检不是锁。Range返回后仍可能有其他客户端写入，因此后续必须配合一次性临时etcd集群或服务端RBAC，确保没有其他写入者。此轮没有执行任何etcd写操作，也没有导入候选数据。
+
+## CH17-T004 单 Txn 候选导入容量规划（第七十七轮）
+
+新增只读工具 `scripts/spare_parts_sqlite_candidate_import_plan.py`。它验证候选bundle摘要与Unified schema-v2状态结构，检查终态request键派生、scope fencing/sequence高水位和恢复门禁，并针对显式隔离namespace构建单Txn写集合估算。
+
+计划中的单个Txn同时比较Scheduler aggregate、每条终态request索引和Coordinator Leader TTL key均为不存在，再原子Put aggregate与全部终态request索引。Leader key只比较不写入；旧Leader不恢复；本阶段不需要原生Admission Lease Grant，因为候选不含活动Lease。终态request中的backend Lease ID值1仍只是终态记录哨兵。
+
+调用者必须显式传入最大Txn操作数和字节预算。操作预算按compare+put保守计数；字节估算按Base64编码的紧凑HTTP Gateway JSON请求加安全余量计算，不等于已探测到的服务端限制。任一预算超限，工具标记容量超限并退出，不会静默拆批或跳过索引。
+
+**安全边界：** 规划器不连接etcd、不执行Range/Txn/Lease/RBAC操作。后续真实写入前仍需线性一致空prefix复检、一次性临时集群/服务端RBAC排他、应用身份访问屏障、写后读回验证，以及Provider外部fencing floor独立核对。超出单Txn预算时必须先另行设计并演练checkpoint/未知结果恢复和应用启动隔离协议；本工具不实现批量导入，也不授权生产写入。
