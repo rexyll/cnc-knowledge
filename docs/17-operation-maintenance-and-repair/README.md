@@ -415,4 +415,5 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 候选映射保留全局/逐scope fencing与sequence floors、终态request幂等索引、scope/operation历史、Provider generation/manifest引用和可映射计数器；旧Leader只转为epoch恢复下限，必须重新claim。
 - 工具要求来源已排空ACTIVE request、waiter和pending operation；过期但仍标记ACTIVE的数据拒绝导入。非IDLE/REVOKED scope进入RECOVERY_REQUIRED。
 - 外部Provider fencing floor不从SQLite推测，保持REQUIRED/null；终态request backend_lease_id使用明确标注的非活动占位符，不代表原生Lease。
+- **验证：** [Knowledge Quality Run 46004441510](https://github.com/rexyll/cnc-knowledge/actions/runs/46004441510)成功：566项unittest（40 skipped）、CH12数值资源Job通过；候选导入器专用用例包含在全库unittest中。
 - **严格边界：** 本阶段只生成候选包，不写etcd/CoordinatorAuthorityStore。目标Store当前namespace前缀固定，隔离namespace注入和目标Lease/Txn/checkpoint/未知结果恢复仍待实现；候选包不可直接导入生产。MIG-04保持IN_PROGRESS，MIG-05/06 TODO，MIG-07 BLOCKED。
