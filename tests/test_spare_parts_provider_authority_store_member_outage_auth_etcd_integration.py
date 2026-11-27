@@ -92,10 +92,15 @@ class Etcd3gwLiveMemberOutageAuthIntegrationTests(unittest.TestCase):
         # Wait for the simple token's auth state to be accepted by every member
         # before introducing the outage. Record immediate observations without
         # assuming that Raft apply timing is identical on all members.
-        cls.initial_token_observations = cls._wait_for_token_on_healthy_members()
+        cls.immediate_token_observations = cls._observe_token_on_members()
         print(
-            "MEMBER_OUTAGE_TOKEN_PROPAGATION_INITIAL="
-            + ",".join(f"member{index + 1}:{state}" for index, state in cls.initial_token_observations)
+            "MEMBER_OUTAGE_TOKEN_PROPAGATION_IMMEDIATE="
+            + ",".join(f"member{index + 1}:{state}" for index, state in cls.immediate_token_observations)
+        )
+        cls.converged_token_observations = cls._wait_for_token_on_healthy_members()
+        print(
+            "MEMBER_OUTAGE_TOKEN_PROPAGATION_CONVERGED="
+            + ",".join(f"member{index + 1}:{state}" for index, state in cls.converged_token_observations)
         )
 
     @classmethod
@@ -171,18 +176,23 @@ class Etcd3gwLiveMemberOutageAuthIntegrationTests(unittest.TestCase):
         )
 
     @classmethod
+    def _observe_token_on_members(cls):
+        observations = []
+        for index, endpoint in enumerate(cls.endpoints):
+            try:
+                response = cls._direct_range(endpoint, cls.seed_key)
+                state = "accepted" if response.status_code == 200 else f"http-{response.status_code}"
+            except cls.requests.exceptions.RequestException as exc:
+                state = f"transport-{type(exc).__name__}"
+            observations.append((index, state))
+        return observations
+
+    @classmethod
     def _wait_for_token_on_healthy_members(cls):
         deadline = time.monotonic() + 30
         last = []
         while time.monotonic() < deadline:
-            last = []
-            for index, endpoint in enumerate(cls.endpoints):
-                try:
-                    response = cls._direct_range(endpoint, cls.seed_key)
-                    state = "accepted" if response.status_code == 200 else f"http-{response.status_code}"
-                except cls.requests.exceptions.RequestException as exc:
-                    state = f"transport-{type(exc).__name__}"
-                last.append((index, state))
+            last = cls._observe_token_on_members()
             if all(state == "accepted" for _, state in last):
                 return last
             time.sleep(0.5)
