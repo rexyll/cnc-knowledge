@@ -878,3 +878,13 @@
 - 默认质量 CI：[Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)两个必需Job成功；全库508项unittest通过；CH12 143项通过；结构/数据校验0 errors、5项既有治理warning；strict knowledge lint 0 errors。
 - 证书由 runner 临时生成并在 job cleanup 中清理；mTLS Compose 数据卷也已删除。没有提交证书、私钥或CA私钥。
 - 边界：该结果证明指定 etcd v3.7.0/etcd3gw 2.7.0 一次性环境的 TLS CA 校验和客户端证书认证，不等于企业PKI、证书轮换/吊销、生产密钥托管、etcd RBAC或生产网络验收。ASSET-000092 的30项正式场景仍 PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持 IN_PROGRESS。
+
+## CH17-T004 第二十九轮：etcd v3 Gateway RBAC 与最小权限账户验证（全局第五十二轮，2026-11-27）
+
+- **目标：** 在第五十一轮一次性三成员mTLS环境基础上，启用etcd原生Authentication/RBAC，验证HTTP Gateway认证token传递、角色key-range权限和Coordinator adapter在权限拒绝时的失败关闭语义。
+- **场景规划：** (1) 以临时root管理员初始化角色/用户并启用auth；(2) reader角色仅对 /cnc-knowledge-it/authorized/ 前缀授予read，允许Range且拒绝Txn写；(3) writer角色仅对 /cnc-knowledge-it/writable/ 前缀授予readwrite，允许该前缀内CAS/Range但拒绝相邻未授权前缀；(4) 无效凭证/无token请求拒绝；(5) 在mTLS仍开启的情况下验证TLS身份校验和RBAC授权均生效。
+- **驱动范围：** 先检查etcd3gw 2.7.0的HTTP session/headers行为；若没有稳定的原生认证支持，给适配器增加显式、可选的auth token/header注入或认证provider，认证请求使用 /v3/auth/authenticate，token只保存在内存并在每个endpoint请求上附加Authorization header。不得把用户名/密码写入URL、日志、异常或仓库；不得自动降级匿名/明文。token刷新/过期处理若无法在本轮完整验证，明确标为未支持，不假称生产级自动刷新。
+- **测试范围：** fake transport验证Authorization header注入、跨endpoint一致应用、缺失/空token配置和关闭资源；真实集成在三成员mTLS集群创建临时CA/client cert及root/reader/writer凭据，先通过root配置role/user并启用auth，再以普通身份执行KV Range/Txn授权和拒绝测试。认证/授权错误不得被当作网络错误进行endpoint failover；写事务仍只发送一次并保留未知结果语义。
+- **安全约束：** root凭据仅runner临时目录/环境；启用auth前先创建root user并授予root role；禁止提交密码、token、私钥；测试完成后销毁Compose volumes和临时材料；不把/health未受RBAC保护误认为KV数据面授权。mTLS Common Name认证与gRPC-gateway存在限制，采用用户名/密码换取token并通过HTTP Authorization头传递，避免将mTLS client CN误当作etcd用户身份。
+- **验收标准：** 合法reader读授权前缀成功、读未授权前缀失败、写入被拒绝；合法writer在授权前缀内Range/CAS成功、越权前缀读写失败；无凭证/错误密码认证失败；mTLS CA/client cert仍强制校验；adapter对PermissionDenied不重试、不降级、不吞错；live证据与默认回归CI均通过。
+- **限制：** 仅是一次性etcd v3.7.0/etcd3gw 2.7.0环境的工程验证，不等于企业身份源、密码轮换、token自动刷新/撤销、审计系统、网络隔离或生产密钥托管验收。ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
