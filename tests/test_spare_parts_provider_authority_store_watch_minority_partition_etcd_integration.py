@@ -13,6 +13,7 @@ from uuid import uuid4
 from scripts.spare_parts_provider_authority_store import (
     AuthorityStoreDelete,
     AuthorityStorePut,
+    AuthorityStoreUnavailableError,
     EtcdV3CoordinatorAuthorityStore,
 )
 from scripts.spare_parts_provider_etcd3gw_driver import Etcd3gwV3Client
@@ -1621,6 +1622,232 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             except Exception:
                 pass
             watch_driver.close()
+            majority_driver.close()
+
+
+    def test_idle_watch_progress_keeps_stream_alive_and_access_path_loss_is_bounded(self):
+        suffix = uuid4().hex
+        prefix = f"/cnc-knowledge-it/watch-idle-liveness/{suffix}/state/".encode()
+        range_end = prefix[:-1] + b"0"
+        seed_key = prefix + b"seed"
+        access_network = f"{self.project}-watch-liveness-{suffix[:12]}"
+        purpose = "watch-idle-liveness"
+        container_id = self._container_id("etcd1")
+        read_timeout_seconds = 4.0
+
+        network_created = False
+        network_attached = False
+        stream = None
+        majority_driver = Etcd3gwV3Client(self.endpoints[1:], timeout=3.0)
+        majority_store = EtcdV3CoordinatorAuthorityStore(majority_driver)
+        watch_driver = None
+        watch_store = None
+        progress_revisions: list[int] = []
+        progress_intervals: list[float] = []
+        access_loss_elapsed = None
+        disconnect_kind = None
+
+        try:
+            self._create_access_network(access_network, purpose=purpose)
+            network_created = True
+            self._run(["docker", "network", "connect", access_network, container_id])
+            network_attached = True
+
+            memberships = self._network_memberships(container_id)
+            self.assertIn(self.cluster_network, memberships)
+            self.assertIn(access_network, memberships)
+            access_ip = memberships[access_network].get("IPAddress")
+            self.assertTrue(access_ip, "dedicated Watch access network has no container IPv4")
+            access_endpoint = f"http://{access_ip}:2379"
+
+            access_details = self._network_details(access_network)
+            self.assertEqual(
+                set((access_details.get("Containers") or {}).keys()),
+                {container_id},
+            )
+
+            seed = majority_store.transact(
+                [], [AuthorityStorePut(seed_key, f"seed-{suffix}".encode())]
+            )
+            self.assertTrue(seed.succeeded)
+            baseline = majority_store.linearizable_range(
+                prefix, range_end=range_end
+            )
+            self.assertEqual(
+                {entry.key: entry.value for entry in baseline.entries},
+                {seed_key: f"seed-{suffix}".encode()},
+            )
+
+            # Keep the node in the Raft cluster but route the Watch HTTP stream
+            # through a dedicated host-reachable bridge that can be detached.
+            watch_driver = Etcd3gwV3Client(
+                [access_endpoint],
+                timeout=3.0,
+                watch_read_timeout=read_timeout_seconds,
+            )
+            watch_store = EtcdV3CoordinatorAuthorityStore(watch_driver)
+            local = watch_store.linearizable_range(prefix, range_end=range_end)
+            self.assertGreaterEqual(local.revision, baseline.revision)
+
+            stream = watch_store.watch(
+                prefix,
+                start_revision=baseline.revision + 1,
+                range_end=range_end,
+                progress_notify=True,
+                prev_kv=True,
+            )
+            opened = self._next_result(stream, timeout=8.0)
+            self.assertEqual(opened[0], "response", opened[1])
+            self.assertTrue(opened[1].created)
+            self.assertFalse(opened[1].canceled)
+            self.assertEqual(opened[1].events, ())
+
+            # There are no mutations in the watched prefix during this idle
+            # window. Periodic Progress frames are control-plane liveness, not KV events.
+            previous_progress_at = time.monotonic()
+            for index in range(2):
+                outcome = self._next_result(stream, timeout=read_timeout_seconds + 2.0)
+                self.assertEqual(outcome[0], "response", outcome[1])
+                progress = outcome[1]
+                observed_at = time.monotonic()
+                self.assertTrue(progress.is_progress)
+                self.assertEqual(progress.events, ())
+                self.assertFalse(progress.canceled)
+                self.assertGreaterEqual(progress.header_revision, baseline.revision)
+                progress_revisions.append(progress.header_revision)
+                progress_intervals.append(observed_at - previous_progress_at)
+                previous_progress_at = observed_at
+
+            after_idle = majority_store.linearizable_range(
+                prefix, range_end=range_end
+            )
+            self.assertEqual(after_idle.revision, baseline.revision)
+            self.assertEqual(
+                {entry.key: entry.value for entry in after_idle.entries},
+                {seed_key: f"seed-{suffix}".encode()},
+            )
+
+            # The member remains running and attached to the Raft network.
+            # Only its dedicated client-access network is removed: from the
+            # stream consumer's perspective the established socket may remain
+            # silent until the configured HTTP read-inactivity timeout fires.
+            before_inspect = self._run([
+                "docker", "inspect", "--format",
+                '{{.State.Status}}', container_id,
+            ]).stdout.strip()
+            self.assertEqual(before_inspect, "running")
+            self._run(["docker", "network", "disconnect", access_network, container_id])
+            network_attached = False
+            self.assertNotIn(
+                access_network, self._network_memberships(container_id)
+            )
+            self.assertIn(
+                self.cluster_network, self._network_memberships(container_id)
+            )
+
+            result_queue: queue.Queue = queue.Queue(maxsize=1)
+            disconnect_started = time.monotonic()
+            drained_progress: list[int] = []
+
+            def wait_for_stream_failure():
+                try:
+                    while True:
+                        response = next(stream)
+                        if response.is_progress:
+                            drained_progress.append(response.header_revision)
+                            continue
+                        result_queue.put(("response", response))
+                        return
+                except BaseException as exc:
+                    result_queue.put(("exception", exc))
+
+            worker = threading.Thread(target=wait_for_stream_failure, daemon=True)
+            worker.start()
+            try:
+                termination = result_queue.get(timeout=read_timeout_seconds + 6.0)
+            except queue.Empty:
+                stream.close()
+                worker.join(timeout=1.0)
+                self.fail(
+                    "Watch remained blocked beyond the configured read inactivity "
+                    f"timeout ({read_timeout_seconds}s)"
+                )
+            worker.join(timeout=1.0)
+            access_loss_elapsed = time.monotonic() - disconnect_started
+            self.assertEqual(
+                termination[0],
+                "exception",
+                f"unexpected Watch outcome after access path loss: {termination[1]!r}",
+            )
+            self.assertIsInstance(
+                termination[1],
+                AuthorityStoreUnavailableError,
+                f"unexpected liveness failure classification: {type(termination[1]).__name__}",
+            )
+            disconnect_kind = type(termination[1]).__name__
+
+            # Confirm etcd1 itself remained alive and healthy in the cluster;
+            # only the dedicated client path was removed.
+            final_status = self._run([
+                "docker", "inspect", "--format",
+                '{{.State.Status}}', container_id,
+            ]).stdout.strip()
+            self.assertEqual(final_status, "running")
+            self._wait_for_quorum()
+
+            print(
+                "WATCH_IDLE_LIVENESS_OBSERVATION "
+                + json.dumps(
+                    {
+                        "baseline_revision": baseline.revision,
+                        "watched_prefix_event_count_during_idle": 0,
+                        "progress_revisions": progress_revisions,
+                        "progress_intervals_seconds": progress_intervals,
+                        "progress_frames_drained_after_access_loss": drained_progress,
+                        "watch_read_timeout_seconds": read_timeout_seconds,
+                        "access_path_loss_detection_seconds": access_loss_elapsed,
+                        "disconnect_error": disconnect_kind,
+                        "etcd1_container_remained_running": True,
+                        "etcd1_remained_on_raft_network": True,
+                        "only_client_access_network_removed": True,
+                        "final_quorum_recovered": True,
+                    },
+                    sort_keys=True,
+                )
+            )
+        finally:
+            if stream is not None:
+                try:
+                    stream.close()
+                except Exception:
+                    pass
+            if watch_driver is not None:
+                watch_driver.close()
+            if network_created:
+                try:
+                    memberships = self._network_memberships(container_id)
+                    if access_network in memberships:
+                        self._run([
+                            "docker", "network", "disconnect",
+                            access_network, container_id,
+                        ])
+                    self._remove_access_network(access_network, purpose=purpose)
+                except Exception:
+                    pass
+            try:
+                remaining = majority_store.linearizable_range(
+                    prefix, range_end=range_end
+                )
+                if remaining.entries:
+                    majority_store.transact(
+                        [],
+                        [
+                            AuthorityStoreDelete(entry.key)
+                            for entry in remaining.entries
+                        ],
+                    )
+            except Exception:
+                pass
             majority_driver.close()
 
 
