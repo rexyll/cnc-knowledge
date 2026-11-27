@@ -1029,18 +1029,33 @@ class InMemoryEtcdV3Client:
         if deleted:
             self._revision += 1
 
-    def range(self, key: bytes, *, serializable: bool = False) -> Mapping[str, Any]:
+    def range(
+        self,
+        key: bytes,
+        *,
+        range_end: bytes | None = None,
+        serializable: bool = False,
+    ) -> Mapping[str, Any]:
         with self._lock:
             self._ensure_available()
             self._expire()
             self.serializable_flags.append(serializable)
-            record = self._kvs.get(key)
-            kvs = [] if record is None else [{
-                "key": key, "value": record["value"],
-                "create_revision": record["create_revision"],
-                "mod_revision": record["mod_revision"],
-                "version": record["version"], "lease": record["lease"],
-            }]
+            if range_end is None:
+                selected = [key] if key in self._kvs else []
+            elif range_end == b"\\x00":
+                selected = sorted(candidate for candidate in self._kvs if candidate >= key)
+            else:
+                selected = sorted(
+                    candidate for candidate in self._kvs
+                    if key <= candidate < range_end
+                )
+            kvs = [{
+                "key": candidate, "value": self._kvs[candidate]["value"],
+                "create_revision": self._kvs[candidate]["create_revision"],
+                "mod_revision": self._kvs[candidate]["mod_revision"],
+                "version": self._kvs[candidate]["version"],
+                "lease": self._kvs[candidate]["lease"],
+            } for candidate in selected]
             return {"header": {"revision": self._revision}, "kvs": kvs}
 
     def _matches(self, condition: Mapping[str, Any]) -> bool:
