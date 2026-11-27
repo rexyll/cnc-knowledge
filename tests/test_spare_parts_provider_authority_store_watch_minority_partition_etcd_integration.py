@@ -439,7 +439,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 memberships = self._network_memberships(container_id)
                 if self.cluster_network not in memberships:
                     self._run([
-                        "docker", "network", "connect",
+                        "docker", "network", "connect", "--ip", "172.29.64.11",
                         self.cluster_network, container_id,
                     ])
                 self._wait_for_quorum(timeout=60.0)
