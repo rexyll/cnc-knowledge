@@ -353,10 +353,14 @@ class StoreBackedCoordinatorAuthority:
                 )
             epoch = max(current_epoch + 1, recovery_epoch_floor or 0)
             backend = self.store.lease_grant(ttl)
+            # The backend may grant a TTL longer than requested (for example,
+            # because of server-side minimums). Persist the granted TTL, not
+            # the requested value, so the wall-clock expiry never leads the
+            # native lease attached to the Leader key.
             record = {
                 "leader_id": leader_id,
                 "epoch": epoch,
-                "expires_at": now + ttl,
+                "expires_at": now + backend.ttl_seconds,
                 "backend_lease_id": backend.lease_id,
             }
             state["coordinator"]["leader"] = record
@@ -406,7 +410,7 @@ class StoreBackedCoordinatorAuthority:
             old_backend_id = int(current["backend_lease_id"])
             backend = self.store.lease_grant(ttl)
             renewed = dict(current)
-            renewed["expires_at"] = now + ttl
+            renewed["expires_at"] = now + backend.ttl_seconds
             renewed["backend_lease_id"] = backend.lease_id
             value = self.scheduler._encode(renewed)
             state["coordinator"]["leader"] = renewed

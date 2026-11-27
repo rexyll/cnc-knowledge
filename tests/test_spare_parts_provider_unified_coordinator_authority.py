@@ -54,6 +54,41 @@ class MutableClock:
             self.value += seconds
 
 
+class MinimumGrantedTtlStore:
+    """Test adapter that simulates a backend enforcing a larger minimum TTL."""
+
+    def __init__(self, delegate, minimum_ttl: int):
+        self.delegate = delegate
+        self.minimum_ttl = minimum_ttl
+
+    def __getattr__(self, name):
+        return getattr(self.delegate, name)
+
+    def lease_grant(self, ttl_seconds: int):
+        return self.delegate.lease_grant(max(ttl_seconds, self.minimum_ttl))
+
+
+class GrantedLeaseTtlTests(unittest.TestCase):
+    def test_leader_expiry_uses_backend_granted_ttl_for_claim_and_renew(self):
+        clock = MutableClock()
+        etcd = InMemoryEtcdV3Client(clock_fn=clock)
+        backend = EtcdV3CoordinatorAuthorityStore(etcd)
+        store = MinimumGrantedTtlStore(backend, minimum_ttl=9)
+        scheduler = StoreBackedProviderAdmissionCoordinator(
+            store,
+            global_limits={"read": 2, "write": 4, "multipart": 2, "inventory": 1},
+            max_waiters=8,
+            clock_fn=clock,
+        )
+        authority = StoreBackedCoordinatorAuthority(scheduler, clock_fn=clock)
+
+        claimed = authority.claim_leadership("granted-ttl-leader", ttl_seconds=1)
+        self.assertEqual(claimed.expires_at, clock() + 9)
+        renewed = authority.renew_leadership(claimed, ttl_seconds=1)
+        self.assertEqual(renewed.expires_at, clock() + 9)
+        self.assertEqual(authority.leader_snapshot()["expires_at"], renewed.expires_at)
+
+
 class StoreBackedCoordinatorAuthorityContract:
     SCOPE = "tenants/tenant-A/cnc/ch17/spares/pkg-001"
 

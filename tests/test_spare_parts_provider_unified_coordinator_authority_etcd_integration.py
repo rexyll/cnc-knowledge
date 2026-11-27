@@ -226,7 +226,22 @@ class EtcdUnifiedCoordinatorAuthorityLiveTests(unittest.TestCase):
         )
         renewed = self.authority_a.renew_leadership(self.leader, ttl_seconds=1)
         self.assertEqual(renewed.epoch, self.leader.epoch)
-        time.sleep(2.25)
+
+        # Use the expiry derived from the server-granted TTL and wait for the
+        # TTL-attached key itself to disappear from a linearizable Range. Do
+        # not assume etcd grants the exact requested TTL or deletes at an exact
+        # wall-clock boundary.
+        deadline = time.monotonic() + max(0.0, renewed.expires_at - time.time()) + 5.0
+        leader_key = None
+        while time.monotonic() < deadline:
+            leader_key, _ = self.store_a.linearizable_get(self.authority_a._LEADER_KEY)
+            if leader_key is None:
+                break
+            time.sleep(0.2)
+        self.assertIsNone(
+            leader_key,
+            "Leader TTL key did not expire by the persisted server-granted deadline",
+        )
         new_leader = self.authority_b.claim_leadership("live-leader-b", ttl_seconds=30)
         self.assertEqual(new_leader.epoch, self.leader.epoch + 1)
         with self.assertRaises(CoordinatorAuthorityStaleLeaderError):
