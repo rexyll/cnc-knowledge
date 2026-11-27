@@ -387,3 +387,12 @@
 - **验证状态：** 实现/测试已提交；等待main Quality CI验收后确定Round73最终状态。未运行生产数据库盘点，没有生成生产snapshot，没有执行冻结、迁移、Provider外部floor核验或cutover。
 - **治理边界：** schema-v2仍唯一生产权威；ASSET-000092仍30项`PROPOSED_NOT_APPROVED / NOT_RUN`；MIG-04～06未开始，MIG-07仍BLOCKED。
 
+
+
+### 第七十三轮最终验收补记（2026-11-27）
+
+- 最新实现提交：`63c7d33b19e81fe49313e8b290a4f6db1e803521`（main）。
+- [Knowledge Quality Run 46000363197](https://github.com/rexyll/cnc-knowledge/actions/runs/46000363197) completed/success；`Knowledge structure and data quality`与`CH12 numerical resource tests`两个Job均success，其中完整unittest发现/执行步骤success，CH12数值资源测试Job所有必需步骤success。
+- MIG-03验收通过：只读URI/query_only、源文件不变、过期ACTIVE仅报告不清理、schema缺失拒绝、fencing/sequence floor回退识别及逻辑记录导出测试均由全库unittest覆盖并通过。
+- MIG-03状态更新为DONE（工具、单元测试和CI通过）。MIG-01～03完成；MIG-04～06待实施；MIG-07仍BLOCKED。
+- **仍未做：** 未对任何生产SQLite文件运行工具；没有生产inventory、records export或snapshot；没有冻结、迁移、Provider外部floor核验、rollback/cutover。生产schema-v2 authority与ASSET-000092审批状态均不变。

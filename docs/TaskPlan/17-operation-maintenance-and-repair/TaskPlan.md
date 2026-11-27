@@ -1328,5 +1328,5 @@
 - **安全：** SQLite URI `mode=ro` + `PRAGMA query_only=ON`；不实例化业务Coordinator、不触发expiry cleanup、不修改WAL、不访问Provider/etcd。
 - **覆盖：** 来源表/列和版本、integrity/foreign-key检查、行数/状态/摘要、Admission fencing floor、Coordinator scope token/sequence floor、孤儿operation、pending operation及DB/WAL前后指纹。
 - **验收：** unittest及main Quality CI成功后标记DONE；若扫描期间源DB/WAL变化，inventory发出warning并要求写冻结后重跑。
-- **状态：** 实现与测试已提交，CI待验收；不代表生产数据已盘点或已迁移。
+- **状态：** DONE；实现与专用测试已通过main Quality CI（Run 46000363197）。不代表生产数据已盘点或已迁移。
 

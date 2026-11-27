@@ -1199,7 +1199,7 @@
 - **状态：** DONE（来源代码审计与迁移设计；不是生产迁移）。
 - **交付：** 新增SQLite→Unified schema-v2迁移设计文档，覆盖Admission/Coordinator表映射、不变量、TTL转换、冻结与快照、候选导入、精确校验、单权威切换和写入后反向迁移。
 - **来源结构：** Admission为coordinator_meta、admission_requests、admission_waiters；Coordinator为coordinator_authority_meta、coordinator_authority_leader、coordinator_authority_scopes、coordinator_authority_operations。
-- **未执行：** 未访问生产SQLite、未实现导出/导入工具、未创建生产namespace、未冻结旧写入、未迁移或切换生产authority。MIG-01/02 DONE；MIG-03～06 TODO；MIG-07 BLOCKED。
+- **未执行：** 未访问生产SQLite、未创建生产namespace、未冻结旧写入、未迁移或切换生产authority。MIG-01～03 DONE；MIG-04～06 TODO；MIG-07 BLOCKED。
 - **治理边界：** schema-v2仍为唯一生产权威；ASSET-000092仍PROPOSED_NOT_APPROVED / NOT_RUN；Watch Supervisor/Quorum Probe运行时未实现。
 
 
@@ -1211,5 +1211,5 @@
 - **导出：** 默认仅输出inventory；显式`--records-output`才导出完整逻辑记录，文件权限0600。snapshot digest不包含扫描时刻，records输出不得提交Git。
 - **测试：** 正常数据、只读写入拒绝、源文件不变、过期数据不触发清理、缺表拒绝、高水位回退识别、可选记录导出。
 - **交付：** `scripts/spare_parts_sqlite_migration_inventory.py`及专用unittest、迁移设计文档和README使用说明。
-- **状态：** 实现已提交；待最新main CI结果后确认本轮验收。
+- **状态：** DONE；实现、专用单元测试及main Quality CI均通过。
 

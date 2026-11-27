@@ -405,4 +405,5 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 默认输出inventory manifest，包含schema/列、行数、状态分布、规范化行SHA-256、Admission fencing floor、Coordinator scope token/sequence floor、pending/孤儿operation、SQLite完整性检查及DB/WAL扫描前后指纹。
 - 通过`--records-output`显式输出完整逻辑记录JSON；文件按0600权限创建，包含业务标识的数据不得提交Git。
 - 工具不实例化业务Coordinator，不触发expiry cleanup，不切换WAL，不写源库，不访问Provider/etcd；它不是SQLite物理备份，也不代表生产迁移授权。
+- 专用unittest随[Knowledge Quality Run 46000363197](https://github.com/rexyll/cnc-knowledge/actions/runs/46000363197)通过；CH12数值资源Job也通过。
 - 用法和检查边界详见[迁移设计第10节](sqlite-to-unified-coordinator-migration-design.md)。
