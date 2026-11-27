@@ -119,7 +119,7 @@ Coordinator来源schema当前版本为1。现场迁移前必须对实际数据�
 | MIG-01 | 来源schema与目标schema代码审计、字段映射 | DONE（代码审计；现场数据未盘点） |
 | MIG-02 | 冻结、TTL、校验、cutover与回滚设计 | DONE（设计；未获生产批准） |
 | MIG-03 | 只读SQLite inventory/export及snapshot manifest | DONE（工具、单元测试、Quality CI通过） |
-| MIG-04 | Unified schema-v2 candidate importer、分批和未知结果恢复 | TODO |
+| MIG-04 | Unified schema-v2 candidate importer、分批和未知结果恢复 | IN_PROGRESS（候选包、隔离namespace、空空间预检、单Txn只读规划完成；实际写入/恢复未完成） |
 | MIG-05 | 映射、fencing、幂等、TTL与故障注入测试 | TODO |
 | MIG-06 | 临时真实etcd迁移及反向迁移演练 | TODO |
 | MIG-07 | 容量、停写窗口、Provider owner及生产审批 | BLOCKED |
@@ -300,3 +300,7 @@ python scripts/spare_parts_sqlite_candidate_import_plan.py \
 若候选超出单Txn预算，当前规划器只会阻断，不会提供分批写入。下一阶段必须先设计并验证staging/checkpoint、未知Txn结果读回、应用启动隔离/权限屏障及最终发布协议，再考虑批处理；不能把一个业务aggregate拆开后提前暴露给应用。外部Provider fencing floor仍须独立对账批准，不能因KV导入成功而自动开放Provider操作。
 
 第七十七轮只新增只读容量规划与单元测试；没有创建目标KV、原生Lease、etcd凭证或RBAC，也没有执行迁移、生产写入或cutover。
+
+### 14.4 第七十七轮验证记录
+
+Quality Run [46027837959](https://github.com/rexyll/cnc-knowledge/actions/runs/46027837959) success：全库582 unittest（40 skipped）、CH12 143项通过、knowledge lint 0 errors/5 warnings、结构检查0 errors。本结果仅验证规划器与仓库质量门禁，不包含任何真实etcd导入或生产变更。
