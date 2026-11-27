@@ -297,6 +297,7 @@ class _Etcd3gwWatchStream:
         self._response = response
         self._frames = _iter_json_stream(response)
         self._closed = False
+        self._saw_terminal_response = False
 
     def __iter__(self) -> "_Etcd3gwWatchStream":
         return self
@@ -306,10 +307,17 @@ class _Etcd3gwWatchStream:
             raise StopIteration
         try:
             envelope = next(self._frames)
-            return _normalize_watch_response(envelope)
-        except StopIteration:
+            normalized = _normalize_watch_response(envelope)
+            if normalized["canceled"]:
+                self._saw_terminal_response = True
+            return normalized
+        except StopIteration as exc:
             self.close()
-            raise
+            if self._saw_terminal_response:
+                raise
+            raise ConnectionError(
+                "etcd Watch HTTP stream ended without a terminal canceled response"
+            ) from exc
         except Exception:
             self.close()
             raise
