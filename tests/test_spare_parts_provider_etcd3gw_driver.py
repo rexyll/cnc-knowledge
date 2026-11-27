@@ -29,7 +29,7 @@ class FakeGatewayClient:
         self.calls = []
         self.responses = {}
         self.failures = {}
-        self.session = type("Session", (), {"close": lambda self: None})()
+        self.session = type("Session", (), {"close": lambda self: None, "headers": {}})()
 
     def get_url(self, path):
         return f"{self.protocol}://{self.host}:{self.port}/v3/{path.lstrip('/')}"
@@ -72,6 +72,7 @@ class FakeStreamingSession:
         self.failure = failure
         self.calls = []
         self.closed = False
+        self.headers = {}
 
     def post(self, url, **kwargs):
         self.calls.append((url, kwargs))
@@ -380,6 +381,38 @@ class Etcd3gwDriverContractTests(unittest.TestCase):
             with self.subTest(endpoint=endpoint):
                 with self.assertRaises(Etcd3gwConfigurationError):
                     Etcd3gwV3Client(endpoint, client_factory=lambda **kwargs: None)
+
+    def test_auth_token_is_applied_to_every_endpoint_session(self):
+        clients = {}
+
+        def factory(**kwargs):
+            client = FakeGatewayClient(**kwargs)
+            clients[kwargs["port"]] = client
+            return client
+
+        driver = Etcd3gwV3Client(
+            ["https://127.0.0.1:23791", "https://127.0.0.1:23792"],
+            ca_cert="/tmp/test-ca.pem",
+            cert_cert="/tmp/test-client.pem",
+            cert_key="/tmp/test-client-key.pem",
+            auth_token="opaque-test-token",
+            client_factory=factory,
+        )
+        self.assertEqual(
+            [client.session.headers["Authorization"] for client in clients.values()],
+            ["opaque-test-token", "opaque-test-token"],
+        )
+        self.assertTrue(all(client.kwargs["ca_cert"] == "/tmp/test-ca.pem" for client in clients.values()))
+        self.assertTrue(all(client.kwargs["cert_cert"] == "/tmp/test-client.pem" for client in clients.values()))
+        driver.close()
+
+    def test_rejects_empty_auth_token(self):
+        with self.assertRaises(Etcd3gwConfigurationError):
+            Etcd3gwV3Client(
+                "https://127.0.0.1:23791",
+                auth_token=" ",
+                client_factory=lambda **kwargs: FakeGatewayClient(**kwargs),
+            )
 
     def test_from_env_requires_explicit_endpoint_list(self):
         with self.assertRaises(Etcd3gwConfigurationError):
