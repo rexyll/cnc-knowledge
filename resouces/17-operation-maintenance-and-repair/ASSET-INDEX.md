@@ -180,3 +180,11 @@
 - 恢复网络后，多数派首次核对发现原Lease和authority key仍存在、key revision仍为16，判定首次请求未提交；记录结果后显式通过健康多数派Revoke清理，key删除revision推进至17，TTL最终为-1。Artifact [15170653184](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468822/artifacts/15170653184)。
 - [Quality Run 45936468828](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468828)：533 unittest（506 passed、27 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构校验0 errors。SPAT 30项仅离线模拟、business_test_status仍NOT_RUN。
 - supporting evidence不代表精确的“撤销已提交但响应丢失”窗口或生产HA验收；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+### ASSET-000092 supporting evidence — 第六十轮
+
+- Live [Run 45938253313](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313)通过两项Lease-bound Watch测试：Revoke产生DELETE事件，header/event revision=19，prev_kv Lease ID与mod_revision=18匹配；线性一致Range确认key消失。
+- 已建立Watch在etcd1停止后返回AuthorityStoreUnavailableError，未自动切换endpoint；多数派删除revision=21。恢复后snapshot revision=21/key absent，Watch从22恢复并首先收到新PUT revision=22，未重放旧DELETE。Artifact [15171088378](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313/artifacts/15171088378)。
+- Quality [Run 45938253249](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253249)：535 unittest（506 passed、29 skipped），CH12 143，strict lint 0 errors/5 warning，结构自检0 errors。SPAT 30项仅模拟，business_test_status=NOT_RUN。
+- supporting evidence不代表正式30场景执行；ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`。

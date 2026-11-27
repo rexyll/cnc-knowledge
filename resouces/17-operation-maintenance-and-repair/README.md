@@ -689,3 +689,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 恢复网络后，多数派首次核对发现原Lease和authority key仍存在、key revision仍为16，判定首次请求未提交；记录结果后显式通过健康多数派Revoke清理，key删除revision推进至17，TTL最终为-1。Artifact [15170653184](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468822/artifacts/15170653184)。
 - [Quality Run 45936468828](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468828)：533 unittest（506 passed、27 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构校验0 errors。SPAT 30项仅离线模拟、business_test_status仍NOT_RUN。
 - supporting evidence不代表精确的“撤销已提交但响应丢失”窗口或生产HA验收；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+## CH17-T004 Lease-bound Watch删除事件与断流恢复（第六十轮）
+
+- [Live Run 45938253313](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313)成功；新增两项Watch测试通过。Lease Revoke DELETE事件revision/header=19，`prev_kv.mod_revision=18`且Lease ID正确；线性一致Range确认key删除。
+- 已建立Watch在etcd1停止后返回`AuthorityStoreUnavailableError`，只请求初始endpoint一次。多数派删除revision=21；恢复后线性一致快照revision=21/key不存在，从revision=22恢复Watch，首个新事件是PUT revision=22，旧DELETE未重放。Artifact [15171088378](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313/artifacts/15171088378)。
+- [Quality Run 45938253249](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253249)：535 unittest（506 passed、29 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构校验0 errors；SPAT 30项仅离线模拟、business_test_status仍NOT_RUN。
+- 该结果是一次性CI supporting evidence；Watch仍不支持双向WatchProgress/WatchCancel；正式ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`。

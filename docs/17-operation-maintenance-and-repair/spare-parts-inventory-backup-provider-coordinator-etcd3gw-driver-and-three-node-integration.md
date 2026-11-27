@@ -360,3 +360,47 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 - 另外覆盖Watch建立后的stream断流，验证驱动不会静默自动重放；网络/quorum恢复后先线性一致Range快照，再以快照revision+1恢复Watch。断流期间发生的删除以快照结果为准，不重放Revoke。
 - 验证Watch iterator关闭、DELETE/prev_kv解码及恢复游标；不宣称当前单向HTTP Gateway Watch支持双向WatchProgress/WatchCancel。
 - 只操作一次性Compose资源并通过标签核验容器；网络恢复置于finally，不修改宿主机iptables、不触碰其他容器；不输出凭据。所有测试仍为engineering supporting evidence，不改变ASSET-000092正式矩阵状态。
+
+
+
+### 第六十轮最终验收结果（2026-11-27）
+
+- **实现提交：** `112119448212636698280af5a63313a50a4a3a71`，新增 `tests/test_spare_parts_provider_authority_store_lease_watch_recovery_etcd_integration.py`，包含2项真实集成测试，并注册到 `scripts/etcd-integration/run.sh`。Runner续行修复提交为 `ac1d296e45e19715850c5aee5258ddd6b3a7e617`。
+- **Lease Revoke DELETE事件：** [Live Run 45938253313](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313) 中 `test_lease_revoke_emits_delete_with_previous_lease_bound_kv` 1/1 PASS。线性一致Range基线revision=18，Watch从revision=19建立；Revoke后收到唯一DELETE事件，event/header revision均为19。`prev_kv.mod_revision=18`，`prev_kv.lease_id`与原Lease一致；DELETE当前KV无entry，后续线性一致Range在revision 19确认key不存在。
+- **已建立Watch断流与快照重建：** 同一Live Run中 `test_watch_disconnect_rebuilds_from_linearizable_snapshot_plus_one` 1/1 PASS。Watch首次只向etcd1 `http://127.0.0.1:23791`发送建立请求；停止通过Compose project/service标签验证的etcd1容器后，已建立流显式返回 `AuthorityStoreUnavailableError`，未自动切换或重放。随后经etcd2/etcd3多数派撤销Lease，删除revision=21。重启etcd1并确认三成员恢复后，线性一致快照revision=21、key不存在；从revision=22恢复Watch，随后提交的首个新事件为PUT、revision=22，证明旧DELETE没有被重放，恢复后的新Watch正常工作。
+- **Live全流程：** Run 45938253313整体success；普通etcd集成（含本轮2项Watch测试）、mTLS、短TTL Token、auth/quorum隔离、mTLS/RBAC成员故障和Token传播阶段全部success；诊断采集、Compose容器/volumes清理及Artifact上传均success。诊断Artifact [15171088378](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313/artifacts/15171088378)。
+- **默认质量门禁：** [Quality Run 45938253249](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253249)两个Job success：全库535项unittest（506 passed、29 skipped）；CH12 143项通过；strict knowledge lint 0 errors、5项既有warning；结构校验0 errors。SPAT 30包仅离线模拟，`business_test_status=NOT_RUN`、`external_connections=NO`、`writes=NO`。
+- **失败修复记录：** 初始实现提交触发的Live Run 45938226096因Runner测试文件列表缺少Bash续行符在启动测试前失败，未产生测试场景结论。修复提交 `ac1d296e45e19715850c5aee5258ddd6b3a7e617` 后的Run 45938253313完整通过。
+- **解释边界：** 证据仅代表一次性etcd v3.7.0 / etcd3gw 2.7.0三节点CI环境。Watch只提供单向HTTP server-streaming能力，不包含双向WatchProgress/WatchCancel；Watch不是权威状态源，断流后仍必须线性一致Range快照并从R+1恢复。该工程测试不等于生产HA或正式矩阵验收。ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总体保持`IN_PROGRESS`。
+
+### 第六十一轮任务计划：Watch compaction取消、游标失效与快照恢复
+
+- **目标：** 在一次性三节点集群验证Watch请求的起始revision已被etcd compaction覆盖时，服务端返回canceled/compact_revision；上层不得沿失效游标继续消费，必须通过线性一致Range重建快照，再以快照revision+1开启新Watch。
+- **压缩路径：** 创建唯一测试key并记录早期revision R；产生后续修订，使用项目标签验证后的etcd容器内etcdctl仅对本次一次性集群执行指定revision的compact；然后尝试从被压缩的旧revision建立Watch，检查created/canceled、compact_revision和cancel_reason字段，并确认没有返回伪造的历史事件。
+- **恢复路径：** 读取取消Watch后的线性一致快照，记录snapshot revision、key value/mod_revision；从snapshot revision+1重新Watch；提交唯一新PUT/DELETE marker，验证恢复后仅收到新修订事件，不重放快照之前的事件。
+- **契约及安全边界：** 延续Fake Watch对canceled/compact_revision/resume_revision语义的检查；不实现或声称支持双向WatchProgress/WatchCancel。etcdctl只在一次性Compose项目和标签确认的服务容器内执行，不修改宿主机iptables、不接触其他容器；唯一临时key，finally关闭流、清理key/Lease，Runner最后销毁容器和volumes。
+- **验收：** Live compaction/canceled响应、线性一致快照和R+1恢复通过；全库质量CI、CH12、strict lint与结构校验通过。仍是supporting engineering evidence，不改变ASSET-000092正式30项矩阵审批/执行状态。
+
+
+
+## 21. 第六十轮：Lease-bound authority key Watch DELETE事件与断流恢复
+
+新增 `tests/test_spare_parts_provider_authority_store_lease_watch_recovery_etcd_integration.py`，包含正常Lease Revoke Watch删除和已建立Watch断流后的快照恢复两项Live测试，已注册至三节点集成Runner。
+
+**DELETE与prev_kv：** 在多数派创建TTL Lease，通过Txn将唯一leader key绑定该Lease，线性一致Range基线revision=18；Watch从revision=19建立并收到created握手。LeaseRevoke后Watch收到DELETE事件，event/header revision均为19；`prev_kv`保留原value、Lease ID和mod_revision=18，原key的线性一致读回确认不存在。观察到的DELETE事件不是独立权威，测试仍用Range确认最终状态。
+
+**断流和恢复游标：** 客户端首次只向etcd1 `127.0.0.1:23791`建立Watch。停止经Compose project/service标签验证的etcd1容器后，已建立流显式返回 `AuthorityStoreUnavailableError`，没有静默切换endpoint或自动重放。etcd2/etcd3多数派执行LeaseRevoke，删除revision=21。重启etcd1并等待三成员quorum后，线性一致快照revision=21且key不存在；从revision=22恢复Watch，随后新的PUT marker作为首个事件在revision=22到达，断流期间DELETE没有重复投递。
+
+**实时证据：** [Live Run 45938253313](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313)整体success；两项Watch专项均PASS。诊断Artifact [15171088378](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253313/artifacts/15171088378)。首次Runner列表遗漏续行符导致的Live Run 45938226096在测试执行前失败；修复提交 `ac1d296e45e19715850c5aee5258ddd6b3a7e617` 后重新完整通过。
+
+**质量门禁：** [Quality Run 45938253249](https://github.com/rexyll/cnc-knowledge/actions/runs/45938253249)：535 unittest（506 passed、29 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构校验0 errors；SPAT 30包仍仅离线模拟、business_test_status=NOT_RUN。
+
+**限制：** 当前Watch实现仍为单向HTTP server-streaming，不支持双向WatchProgress/WatchCancel。断流后必须先读线性一致快照并从R+1恢复；Watch不得代替权威读取。上述结果只代表一次性etcd CI集成证据，ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004继续IN_PROGRESS。
+
+## 22. 第六十一轮计划：Watch compaction取消、游标失效与快照恢复
+
+- 用唯一合成key在一次性etcd集群写入多个revision并保存早期游标R；通过标签验证的etcd容器内etcdctl执行限定revision的compaction。
+- 尝试从已压缩的旧revision创建Watch，验证服务端canceled、compact_revision、cancel_reason，且不把压缩前事件伪装成正常实时事件。
+- 收到取消后执行线性一致Range取得snapshot revision和值，再从snapshot revision+1创建新Watch；验证新的marker事件能到达且早期事件没有重放。
+- 验证Watch response的resume_revision / canceled / compact_revision语义及iterator释放；继续将Range快照作为权威，Watch只作变更提示。保持单向HTTP Gateway能力边界。
+- 仅操作一次性Compose集群及标签确认的容器；不改宿主机网络、不接触其他容器，finally关闭流并清理临时Lease/key。所有证据仍为supporting engineering evidence，不改变正式30项矩阵状态。
