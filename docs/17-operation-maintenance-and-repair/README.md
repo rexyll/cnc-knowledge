@@ -218,3 +218,7 @@ Coordinator V3分片准入与事务预算设计见 [备件库存备份 Coordinat
 ## CH17-T004 etcd Watch Gateway 流式包络保真（第五十轮）
 
 更新 KNOW-000061：驱动现已增加低层 HTTP server-streaming Watch 支持，完整保留 created/canceled/compact_revision/cancel_reason/fragment/header 和事件 KV/prev_kv；HTTP 双向 WatchProgress/Cancel 仍不支持，主动取消通过关闭 HTTP 流。真实三节点 CI [Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310) 8/8 通过；默认质量 CI [Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156) 两个 Job 成功（505 项测试，497 通过、8 项 opt-in skip；CH12 143 项通过；strict lint 0 errors）。ASSET-000092 正式 30 项场景仍 PROPOSED_NOT_APPROVED / NOT_RUN。
+
+## CH17-T004 etcd Gateway mTLS 双向证书与信任链验证（第五十一轮）
+
+新增一次性三成员 etcd v3.7.0 TLS Compose 拓扑和临时证书 runner。真实 [Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363)成功，mTLS 3/3：有效双向证书成员发现/CAS写入/线性一致读回、缺失客户端证书拒绝、错误CA拒绝；诊断Artifact 15163390323。默认质量 [Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)成功（508项unittest、CH12 143项、strict lint 0 errors、结构/数据0 errors/5项既有warning）。临时证书和私钥已由runner清理。该结果不等于企业PKI/RBAC/生产密钥管理验收；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN，schema-v2仍唯一生产权威。
