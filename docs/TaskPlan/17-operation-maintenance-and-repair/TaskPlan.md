@@ -885,3 +885,10 @@
 - **交付：** 临时CA/服务器证书/客户端证书生成脚本或runner；独立TLS Compose拓扑；opt-in live tests覆盖有效mTLS Range/Txn、缺失client certificate、错误CA；所有敏感材料仅存runner临时目录。
 - **验证边界：** 不提交私钥/证书，不使用真实企业PKI，不把禁用verify或回退HTTP作为测试成功条件；明确区分证书链验证、客户端认证和etcd RBAC授权。
 - **状态：** CH17-T004保持IN_PROGRESS；ASSET-000092的30项正式场景仍须企业批准；schema-v2仍是唯一生产权威。
+
+
+### 第五十一轮执行结果（2026-11-27）
+
+- mTLS runner、独立三成员 TLS Compose 拓扑和三个 live tests 已执行；[Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363)成功，mTLS 3/3通过（有效证书读写、缺失客户端证书拒绝、错误CA拒绝）。Artifact 15163390323，SHA-256 `91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74`。
+- 默认 CI [Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)成功：508项unittest、CH12 143项、strict lint 0 errors、结构/数据0 errors/5项既有warning。
+- mTLS 测试证书/私钥只在runner临时目录生成，退出清理；不作为企业PKI验收。ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN；CH17-T004仍IN_PROGRESS。
