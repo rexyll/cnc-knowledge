@@ -354,3 +354,7 @@ Checkpoint key位于`{prefix}/staging/sqlite-import/{candidate_digest}/checkpoin
 
 **状态边界：** 本轮新增纯只读协议模型和分类测试；没有连接etcd、写入KV、创建Lease、调整RBAC、启动应用或触碰生产数据。真实批次写入器、checkpoint续跑执行器和一次性临时etcd故障注入演练仍未实现。
 
+### 15.5 第七十八轮验证记录
+
+Quality Run [46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) success：全库594 unittest（40 skipped）、CH12数值资源143项通过、knowledge lint 0 errors/5 warnings、结构检查0 errors。该结果仅验证只读协议模型、恢复分类和仓库质量门禁，不构成真实etcd写入、故障注入或生产迁移证据。
+
