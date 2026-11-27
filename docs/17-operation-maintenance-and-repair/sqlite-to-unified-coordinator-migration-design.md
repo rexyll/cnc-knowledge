@@ -257,3 +257,46 @@ Unified Admission Scheduler新增可选构造参数`namespace_prefix`：
 5. 不得将此预检作为生产写入许可或cutover审批。
 
 本轮仅新增只读预检与内存客户端Range语义测试；不创建namespace、不写入KV、不创建Lease、不导入候选包。
+
+## 14. MIG-04：单 Txn 候选导入容量计划（第七十七轮）
+
+新增只读脚本：
+`scripts/spare_parts_sqlite_candidate_import_plan.py`。
+
+### 14.1 目标键与原子写入集合
+
+对于隔离前缀 `P=/cnc/migration/isolated/{id}/`，当前schema-v2实现的导入写集合为：
+
+- Aggregate：`P + scheduler/state`，包含Admission策略、全局fencing floor、计数器，以及Coordinator Leader（保持null）、scopes与operations。
+- 终态request幂等索引：每条候选记录写入 `P + requests/{SHA256(request_id)}`。键派生规则与Scheduler实例方法一致。
+- Leader TTL key：`P + coordinator/leader`只参与`VERSION=0`比较，不写入。旧Leader不恢复；导入完成后必须由新Coordinator重新claim并创建原生Lease。
+- 当前候选不包含活动Admission Lease与waiter，因此导入阶段原生Lease Grant数量为0。终态request中的`backend_lease_id=1`只是schema兼容哨兵，不能附着或撤销。
+
+规划器先验证候选摘要、schema-v2 aggregate结构、终态request record schema、request key派生、scope fencing/sequence floors、恢复门禁与记录数量。它为Aggregate、全部终态request key和Leader key生成`VERSION=0`比较条件；在**同一个Txn**中Put Aggregate及所有终态request索引。任何目标键已存在时，整个Txn失败，不覆盖已有值。
+
+### 14.2 容量预算
+
+CLI要求调用者明确提供`--max-txn-ops`和`--max-txn-bytes`，不会猜测或自动读取目标etcd服务端配置：
+
+```bash
+python scripts/spare_parts_sqlite_candidate_import_plan.py \\
+  --candidate /secure/path/unified-candidate-bundle.json \\
+  --namespace /cnc/migration/isolated/rehearsal-unique-id/ \\
+  --max-txn-ops 100 \\
+  --max-txn-bytes 1048576 \\
+  --wire-safety-margin-bytes 4096 \\
+  --output /secure/path/unified-import-plan.json
+```
+
+- `compare_count`、`put_count`和`compare+put`保守计数分别报告；配置的`max_txn_ops`按比较数与成功分支Put数之和执行应用层预算，避免低估事务复杂度。
+- 字节估算按etcd HTTP Gateway Txn JSON请求形状，将KV二进制key/value编码为Base64后计算规范化紧凑JSON字节，并额外加调用者指定的安全余量。它是规划估算，不是从etcd读取到的运行时限制；正式演练仍须确认目标集群的实际`max-txn-ops`、`max-request-bytes`及代理限制。
+- 只要操作预算或字节预算任一超出，计划会标记`CAPACITY_EXCEEDED`并以退出码3结束，不输出可执行结论；不得自动拆成多个事务或丢弃终态索引。
+- 规划器不连接etcd，不执行Range/Txn/Lease/RBAC操作。它生成的write-set摘要可用于后续写入前后核对。
+
+### 14.3 原子导入门禁与未解决问题
+
+单Txn只有在目标数据完整装入且全部目的键从未存在时才具有本设计要求的原子可见性。写入前仍必须复做线性一致空prefix检查，并用一次性临时集群或服务端RBAC封闭竞态。应用身份在导入与读回验证完成前必须不能访问目标prefix；仅靠“state key暂不存在”不足以阻止Scheduler构造函数创建空aggregate。
+
+若候选超出单Txn预算，当前规划器只会阻断，不会提供分批写入。下一阶段必须先设计并验证staging/checkpoint、未知Txn结果读回、应用启动隔离/权限屏障及最终发布协议，再考虑批处理；不能把一个业务aggregate拆开后提前暴露给应用。外部Provider fencing floor仍须独立对账批准，不能因KV导入成功而自动开放Provider操作。
+
+第七十七轮只新增只读容量规划与单元测试；没有创建目标KV、原生Lease、etcd凭证或RBAC，也没有执行迁移、生产写入或cutover。
