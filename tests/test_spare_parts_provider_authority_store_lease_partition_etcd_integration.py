@@ -123,6 +123,10 @@ class Etcd3gwLiveLeasePartitionTests(unittest.TestCase):
             last_ttl = self._lease_ttl(container_id, lease_id)
             if last_ttl is None:
                 return
+            # etcd v3.7 LeaseTimeToLive reports ttl=-1 and granted-ttl=0
+            # for an expired lease when returning JSON output.
+            if int(last_ttl.get("ttl", 0)) <= 0:
+                return
             time.sleep(0.5)
         self.fail(f"lease {lease_id} did not expire before deadline; last TTL={last_ttl}")
 
