@@ -1095,3 +1095,8 @@
 - **状态：** DONE（工程supporting evidence）；实现/修复提交最终 `1afc40393fc9cfa0d901ab385882d0807a657b0f`。
 - **验收入口：** [Live Run 45940105118](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118) 与 [Quality Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074) 均success；详细结果与revision观察记录见 `TaskHistory/TaskHistory-2026-11-27.md` 和CH17技术文章第22节。
 - **后续任务：** 第六十二轮验证Watch progress notification与无事件响应的revision/游标语义；不得将progress通知当成KV权威快照。
+### 第六十二轮完成状态（2026-11-27）
+
+- **状态：** DONE（一次性CI工程supporting evidence）；实现提交 `7e288e8af31207d32d872b4e3a1d58471611b809`，零值watch_id兼容修复 `869c38d03c0755458fb52cdbcdb4bac08a708c83`。
+- **验收入口：** [Live Run 45944091683](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091683)、[Quality Run 45944091695](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091695)均success；详细进度revision与快照对照见当日TaskHistory及CH17技术文章第23节。
+- **后续任务：** 第六十三轮验证Watch所在成员处于少数派时，progress header revision相对多数派线性一致Range可能滞后的行为；断流/恢复仍必须以线性一致Range快照+1重建，不得将progress通知作为权威状态。

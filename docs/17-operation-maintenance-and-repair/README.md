@@ -300,3 +300,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - 取消后线性一致快照revision=25、mod_revision=25且值正确；从revision=26恢复Watch，首个PUT事件revision=26，prev_kv与快照值一致，旧事件未重放。cancel_reason在Gateway响应中为空字符串。
 - 诊断Artifact [15172995164](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118/artifacts/15172995164)。[Quality Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074)：537 unittest（507通过、30跳过），CH12 143，strict lint 0 errors/5既有warning，结构0 errors。
 - 本轮为一次性CI supporting evidence；Watch仍为单向HTTP server-stream、不支持双向WatchProgress/WatchCancel；ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+## CH17-T004 Watch progress notification与Range权威性（第六十二轮）
+
+- [Live Run 45944091683](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091683)通过progress专项；etcd1 `127.0.0.1:23791`上Watch created header revision=28、watch_id=0；无关marker revision=29后，收到同watch_id=0的空progress帧，header revision=29、events=0、resume_revision=30。
+- 线性一致Range快照revision=29，确认被Watch key仍存在且value/mod_revision不变。progress帧不携带KV内容；健康测试中revision相等不证明分区时也一致。官方etcd说明progress revision属于本地成员，可能落后quorum Range。
+- [Quality Run 45944091695](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091695)：539 unittest（508 passed、31 skipped），CH12 143，strict lint 0 errors/5 warning，结构/data 0 errors；SPAT 30项仅离线模拟。
+- 一次性CI supporting evidence；显式双向WatchProgress/WatchCancel仍不支持；ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`。

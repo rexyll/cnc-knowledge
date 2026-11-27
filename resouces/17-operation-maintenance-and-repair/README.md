@@ -706,3 +706,13 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - 诊断Artifact [15172995164](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118/artifacts/15172995164)，SHA-256 `01ee63687fc67194471e55246412854604314700c2d160870bbff17ca77bed76`。
 - Quality [Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074)：537 unittest（507通过、30跳过），CH12 143项，strict lint 0 errors/5既有warning，结构0 errors。
 - 此记录为supporting engineering evidence，不改变ASSET-000092正式矩阵审批/执行状态。
+
+
+## 第六十二轮 Watch progress notification证据（2026-11-27）
+
+- 测试：`tests/test_spare_parts_provider_authority_store_watch_compaction_etcd_integration.py::test_watch_progress_notification_is_empty_and_range_snapshot_is_authoritative`。
+- [Live Run 45944091683](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091683)通过；etcd1进度间隔仅在一次性CI配置为1s。created header revision=28、watch_id=0；marker revision=29；progress header revision=29、watch_id=0、events=0、resume_revision=30。
+- 线性一致Range snapshot revision=29，确认被Watch key/value仍存在。进度帧无KV内容，不能替代Range；分区时本地progress revision可能落后多数派quorum读。
+- Artifact [15174705258](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091683/artifacts/15174705258)，SHA-256 `52fd565b6eeb804b4ad07e9071c588acf4368ed098e36de6f1d20ca9f1d2f88a`。
+- [Quality Run 45944091695](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091695)：539 unittest（508通过、31跳过），CH12 143，strict lint 0 errors/5 warning，结构0 errors。
+- 仅为supporting engineering evidence；正式ASSET-000092矩阵状态不变。

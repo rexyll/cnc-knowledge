@@ -1101,3 +1101,21 @@
 - **恢复与权威边界：** 比较进度通知revision与线性一致Range快照revision；明确progress notification只能辅助推进观察游标，不能替代Range确定KV状态。连接中断后仍以线性一致Range快照及snapshot revision+1恢复。
 - **验证：** 覆盖有/无事件响应顺序、progress header revision单调性、关闭stream后的资源释放和Fake Gateway契约；不得声称实现双向WatchProgress/WatchCancel。
 - **安全及治理：** 仅使用一次性Compose集群和标签核验容器；不改宿主机网络、不触碰其他容器。所有结果仍为supporting engineering evidence，不改变ASSET-000092正式矩阵状态。
+
+## 第六十二轮：Watch progress notification与无事件响应游标语义（2026-11-27）
+
+- **任务目标：** 验证WatchCreate的`progress_notify=true`是否会返回无事件的进度响应，并明确进度revision与线性一致Range快照的职责边界。
+- **实现提交：** `7e288e8af31207d32d872b4e3a1d58471611b809`（新增Fake Gateway与Live进度通知测试，并将一次性Compose etcd1的`--watch-progress-notify-interval`设为1s）；`869c38d03c0755458fb52cdbcdb4bac08a708c83`（允许Gateway返回零值watch_id，不假设ID必须大于0）。均快进提交至`main`。
+- **Live：** [Run 45944091683](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091683)整体success。compaction/快照恢复和progress通知两个Watch专项均通过；后续mTLS、短TTL Token、auth/quorum、RBAC成员故障、诊断采集、Compose清理及Artifact上传均success。诊断Artifact [15174705258](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091683/artifacts/15174705258)，SHA-256 `52fd565b6eeb804b4ad07e9071c588acf4368ed098e36de6f1d20ca9f1d2f88a`。
+- **进度帧实测：** Watch连接一次性集群etcd1 `http://127.0.0.1:23791`。created响应header revision=28、watch_id=0；对被Watch key以外的marker执行写入，marker revision=29。随后收到`is_progress=true`的空响应：watch_id=0、header revision=29、events数量=0、resume_revision=30。created与progress两个响应的watch_id一致；本次HTTP Gateway将该默认ID呈现为0，因此测试不再假设watch_id必须为正数。
+- **Range对照：** 随后的线性一致Range快照revision=29，确认被Watch key仍存在且值/mod_revision未变化；本次snapshot revision与progress header revision相等。空进度帧本身不携带KV内容，不能用它判断key值或存在性。该实测仅在健康三节点场景；官方etcd说明progress header revision来自Watch所连接的本地节点，在网络分区时可能低于quorum读revision，故不能将进度帧当作权威快照。参考[etcd v3.7 Watch API](https://etcd.io/docs/v3.7/learning/api/)、[etcd v3.7交互指南的Watch progress说明](https://etcd.io/docs/v3.7/dev-guide/interacting_v3/)及[配置选项](https://etcd.io/docs/v3.7/op-guide/configuration/)。
+- **默认质量门禁：** [Quality Run 45944091695](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091695)两个Job success：539 unittest（508 passed、31 skipped）；CH12数值测试143项通过；strict knowledge lint 0 errors、5项既有warning；结构/data检查0 errors。SPAT 30包仅离线模拟，`business_test_status=NOT_RUN`、`external_connections=NO`、`writes=NO`。
+- **失败修复记录：** 首次Live Run 45943942778因测试误假设服务端`watch_id>0`而在新用例断言失败，其他既有阶段在该断言前均通过，诊断Artifact上传和一次性Compose清理成功。修复后Run 45944091683完整通过。该初始断言失败不计作Watch行为通过。
+- **能力边界：** 本轮验证的是WatchCreate `progress_notify=true`产生的周期性通知；不代表驱动实现双向`WatchProgress`请求或`WatchCancel`。显式双向请求仍不支持；Watch仍是变更提示，权威状态须由线性一致Range确认。以上仅为一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting evidence，不是生产HA或业务Coordinator迁移验收。
+- **治理状态：** ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004保持`IN_PROGRESS`。
+
+### 第六十三轮任务计划：少数派成员上的Watch progress revision滞后
+
+- **目标：** 在一次性三节点集群中，让Watch流保持连接在隔离的单个成员，利用`progress_notify=true`观察该成员本地progress header revision；同时由剩余多数派提交新revision，并进行线性一致Range对照。
+- **验证：** 记录本地progress header revision、多数派marker提交revision与quorum Range snapshot revision，验证progress watermark可能落后且不携带KV值；恢复网络后先执行线性一致Range快照，再从snapshot revision+1恢复Watch，确认无事件遗漏/重放。
+- **边界：** 只操作一次性Compose网络和标签核验的容器；不修改宿主机iptables，不接触其他容器。WatchProgress双向API仍未实现；此任务仍为supporting evidence，不改变ASSET-000092正式矩阵审批/执行状态。

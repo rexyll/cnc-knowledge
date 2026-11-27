@@ -196,3 +196,12 @@
 - 诊断Artifact [15172995164](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105118/artifacts/15172995164)，SHA-256 `01ee63687fc67194471e55246412854604314700c2d160870bbff17ca77bed76`。
 - [Quality Run 45940105074](https://github.com/rexyll/cnc-knowledge/actions/runs/45940105074)：537 unittest（507 passed、30 skipped），CH12 143，strict lint 0 errors/5既有warnings，结构检查0 errors。
 - 仅一次性CI supporting evidence；正式CSV仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+### ASSET-000092 supporting evidence — 第六十二轮 Watch progress notification
+
+- [Live Run 45944091683](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091683)通过进度通知专项：created revision=28/watch_id=0；无关写入revision=29后收到progress revision=29/watch_id=0/events=0/resume_revision=30。
+- 线性一致Range snapshot revision=29，确认key/value有效。此处progress revision等于Range revision仅是健康集群观察值，不代表partition期间具有quorum权威性；Watch progress不携带KV内容。
+- Artifact [15174705258](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091683/artifacts/15174705258)，SHA-256 `52fd565b6eeb804b4ad07e9071c588acf4368ed098e36de6f1d20ca9f1d2f88a`。
+- [Quality Run 45944091695](https://github.com/rexyll/cnc-knowledge/actions/runs/45944091695)：539 unittest（508 passed、31 skipped），CH12 143，strict lint 0 errors/5 existing warnings，结构0 errors。
+- 工程supporting evidence；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
