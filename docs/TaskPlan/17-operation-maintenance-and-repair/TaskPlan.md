@@ -1229,7 +1229,7 @@
 
 - **目标：** 验证Watch所监视前缀长时间没有KV事件时，etcd Progress通知是否能维持流活动；为HTTP Watch增加可选的read-inactivity timeout，验证客户端访问路径消失而etcd成员仍存活时，流不会永久阻塞。
 - **驱动配置：** 新增`watch_read_timeout: float | None`构造参数，默认`None`保持兼容；指定时必须为正数，作为HTTP流式POST的read timeout，与建连timeout分开。超时/断连由Store层转换为`AuthorityStoreUnavailableError`，不得自动重连、复用旧cursor或跨endpoint切换。普通KV Range/Txn/Lease timeout语义保持不变。
-- **空闲窗口：** 使用Compose中配置`--watch-progress-notify-interval=1s`的etcd1建立`progress_notify=true` Watch。先通过多数派及etcd1本地线性一致Range同步snapshot revision，随后在监视前缀无写入的窗口内等待至少两次空Progress响应；检查events为空、revision watermark不回退，并用quorum Range确认前缀状态未变化。Progress只作为流活性信号，不得当作KV快照或quorum最新revision。
+- **空闲窗口：** 使用Compose中配置`--watch-progress-notify-interval=1s`的etcd1建立`progress_notify=true` Watch。先在整个KV无新revision期间保持流静默，验证可选read-inactivity timeout会在健康etcd节点仍running、quorum仍健康且目标prefix不变时触发；这证明该超时衡量的是“无响应间隔”，不是成员故障。随后通过目标prefix之外的marker写入推进全局revision，验证Watch收到空Progress响应且不产生目标prefix事件。Progress只作为响应/进度信号，不得当作KV快照或quorum最新revision。
 - **客户端路径失联：** 给etcd1额外连接带项目/用途标签的专用Docker bridge作为唯一测试Watch访问路径，使用容器该网络IP建流。Watch建流并收到Progress后，从运行中的etcd1容器断开该专用网络，但保留其Compose Raft网络；验证容器仍running、三成员quorum仍健康，而既有HTTP流最终在配置的read timeout内或更早的明确传输错误下向应用报告`AuthorityStoreUnavailableError`。
 - **恢复与安全：** finally关闭流和HTTP Session、将专用网络从容器清理并删除经标签核验的临时网络；prefix KV只由多数派测试客户端清理。不修改宿主机iptables、不停止etcd成员、不触碰其他容器/网络。测试仅对本次Compose项目资源操作。
 - **边界：** Docker bridge断开模拟的是客户端访问路径中断/可能半开，不等于真实WAN路由器静默丢包、NAT超时或生产代理行为；如果内核立即返回RST，则只证明快速传输错误检测，不声称触发read timeout。测试记录实际检测时长与错误类别。可选timeout只有在Watch Progress频率足够、且timeout大于心跳间隔与调度抖动时才适用；未配置时仍可能无限等待。
