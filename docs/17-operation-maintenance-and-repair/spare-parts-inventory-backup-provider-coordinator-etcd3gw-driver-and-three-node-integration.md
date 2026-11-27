@@ -495,3 +495,28 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 **实施修正记录：** 前两次Live尝试未通过，分别因为测试在未配置Progress interval的etcd2/3等待空Progress，以及只等待空闲流但没有采用已验证的范围外marker触发路径。最终实现将Watch连接到配置Progress interval的etcd1，并在Watch建立前确认该节点已线性一致应用snapshot revision；等待间隔后，由多数派对Watch前缀外marker写入revision=39，触发空Progress帧。修正后的Live Run 45975852325完整通过；此前两个失败Run不作为验收证据。
 
 **能力和治理边界：** 本轮是在一次性etcd v3.7.0 / etcd3gw 2.7.0 Compose环境内模拟单次会话跨多次Compaction与Watch重建，不构成无限期运行、真实长时间生产负载、背压/内存限制或生产SLO验收。测试cache不是生产功能。Watch仍为单向HTTP server-streaming，未实现双向`WatchProgress`/`WatchCancel`；Progress帧只提供本地观察进度，Compaction/断流后权威状态仍由健康多数派线性一致Range快照确定，并从`R+1`恢复。ASSET-000092正式30项继续`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004整体`IN_PROGRESS`。
+
+## 27. 第六十六轮：慢消费者、Watch积压与Compaction竞争
+
+本轮在现有三节点一次性etcd Live环境中验证应用层暂停读取Watch流、之后以较慢节奏继续消费时的事件完整性，并把一批未消费事件与Compaction竞争。测试使用唯一前缀`/cnc-knowledge-it/watch-slow-consumer/{uuid}/state/`、有限数量的小型KV和单向HTTP Watch；没有新增后台消费者线程、无界/有界应用队列、磁盘spill或生产缓存API。
+
+**测试拓扑：** etcd2/etcd3多数派负责写入、线性一致Range快照、Compaction和旧cursor探测；Watch连接到etcd1，因为当前Compose仅etcd1设置`--watch-progress-notify-interval=1s`。每次建流前先对etcd1执行线性一致Range，确认其已应用权威snapshot revision。所有写入使用后台独立Etcd客户端，测试结束关闭全部流和客户端，并按最多100项一批的Txn删除测试前缀；Compaction只在经Compose project/service标签核验的本次etcd2容器内执行。
+
+**第一阶段：停读后慢速消费：** 健康多数派前缀快照revision=59，初始状态包含seed key；Watch从cursor=60建立。后台writer连续提交64个唯一PUT；写入期间应用没有调用`next(stream)`，writer完成后继续停读0.8秒，再按每响应8ms延迟恢复消费。Watch完整收到64个事件，顺序与写入revision一致，产生64个响应、最大单响应事件数1，没有重复事件。随后quorum线性一致Range snapshot revision=123与客户端投影缓存完全一致。
+
+**第二阶段：积压与Compaction竞争：** 新Watch从cursor=124建立后，应用再次暂停读取。多数派连续提交96个新的唯一PUT，最新事务revision=219；经标签核验的etcd2容器执行`etcdctl compact 219`，输出`compacted revision 219`。恢复读取时，既有活动HTTP Watch完整排空96项积压（96个响应、每响应1事件），本次流没有观察到Compaction取消帧。该结果描述的是本轮具体时序，不表示所有活动流、网络分区或慢消费者条件下都会完整排空。
+
+**旧cursor与权威快照：** 关闭已排空的活动流后，在健康多数派重新使用旧cursor=124建立Watch，服务端确认该cursor已被Compaction覆盖并返回取消帧；测试检查`canceled=true`、`compact_revision>=219`、0 events和`resume_revision=None`。因此“活动流能够把积压排空”不等于“同一旧cursor可用于下一次建流”。随后多数派线性一致前缀快照revision=219，客户端以快照完整替换缓存；从snapshot+1=220重新建立Watch。
+
+**恢复与完整性：** 快照之后的新PUT revision=220被恢复Watch仅投递一次；最后一次线性一致Range revision=220与客户端缓存逐key/value完全相同。观测记录：
+
+- `initial_snapshot_revision=59`，首条Watch cursor=60；首次停读0.8秒，随后按每响应8ms节奏消费64项积压。
+- `compaction_watch_cursor=124`；第二批积压96项；`compaction_revision=219`；活动流`compaction_race_mode=drained`、`compaction_race_events_before_cancel_or_drain=96`、`compaction_race_response_count=96`。
+- `recovery_snapshot_revision=219`、`recovery_cursor=220`；新写入revision=220，恢复Watch响应1次，final snapshot revision=220。
+- 全部Watch事件唯一应用161条，重复0；最大单响应1个事件；最终cache与quorum线性一致Range相同。该次有限试验没有收到空Progress帧（`progress_revisions_seen=[]`）。
+
+**Live与质量门禁：** [Live Run 45980665924](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665924)整体success；Watch minority测试文件4项测试通过（13.524秒），包括少数派Progress滞后、quorum Compaction旧cursor恢复、第65轮多轮Compaction缓存重建和本轮慢消费者场景。普通Etcd、mTLS、短TTL Token、Auth/Quorum隔离、mTLS RBAC故障/Token传播、诊断采集、一次性Compose容器和volumes清理、Artifact上传与post-job cleanup全部success。诊断Artifact [15189731260](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665924/artifacts/15189731260)，SHA-256 `5b7b2a925a27fad24bdf15cf401aecc22691a1c3f75cb84c918f6c7fb29061d5`。 [Quality Run 45980665958](https://github.com/rexyll/cnc-knowledge/actions/runs/45980665958)两个Job均success：543项unittest（35 skipped，508通过）、CH12 143项、strict lint 0 errors/5 warnings、结构/data 0 errors。
+
+**对实现的解释：** 当前驱动为同步pull iterator；应用调用`next(stream)`时才推进HTTP响应消费。有限测试表明暂停读取后，当前etcd v3.7.0/etcd3gw 2.7.0场景仍能通过既有活动流排空这批96事件，不能将其推广为有界缓存或自动背压证明。此测试没有测量TCP窗口、网络层buffer、服务端队列、Python RSS/heap，也没有无限写入或无限期运行。Compaction竞争的确定性安全边界仍是：若要重建应用状态，旧cursor不得重用；由健康多数派线性一致Range取得snapshot并从R+1开始新Watch。Watch仍为单向HTTP server-streaming，不支持双向`WatchProgress`/`WatchCancel`。
+
+**治理状态：** 本轮仍为一次性CI supporting engineering evidence，不等于生产HA、性能/容量SLO或正式业务验收。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004整体继续`IN_PROGRESS`。
