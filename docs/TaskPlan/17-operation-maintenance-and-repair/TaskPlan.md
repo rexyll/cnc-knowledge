@@ -928,3 +928,13 @@
 - 驱动增加显式set_auth_token(token|None)更新全部endpoint session；新增Fake Gateway更新/清除和认证异常不触发failover测试。
 - 新增独立10秒simple token mTLS集成阶段，覆盖token过期拒绝、重新认证、全部endpoint token更新、KV Range与Watch created握手；默认RBAC套件仍使用300秒TTL。
 - 正文/实体/README/资源索引已同步。**验收结果：** Live [Run 45920726761](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726761)成功：基础三节点6项、mTLS/RBAC 8项、10秒simple-token生命周期1项通过；Artifact 15164208273，SHA-256 `0b66c69eb7f1ecc12e0d8bfbbf80ab0bf51de739ec31d8d2e9f3db878619e476`。默认质量[Run 45920726730](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726730)两个Job成功：518项unittest（501通过、17项opt-in skip）、CH12 143项、strict lint 0 errors。第五十三轮任务验收通过；未完成项：自动刷新、企业IAM/JWT密钥管理、生产撤销/轮换/审计；etcd3gw 2.7.0的通用Etcd3Exception尚未区分Unauthenticated与PermissionDenied，认证服务不可用与有效token存续的隔离故障场景未覆盖，列为后续任务。最终文档头质量CI Run 45920942863通过：518项unittest（501通过、17项opt-in skip）、CH12 143项、strict lint 0 errors、fixture validator 0 errors/5项既有warning。正式ASSET-000092状态不变。
+
+
+## 6.24 CH17-T004 第五十四轮：Gateway认证错误分类与故障隔离（2026-11-27）
+
+- **目标：** 明确区分HTTP Gateway认证失败（Unauthenticated）、权限拒绝（PermissionDenied）、其他客户端请求错误及传输/集群不可用，避免权限错误触发endpoint failover；补充单成员故障与quorum loss期间有效token请求和重新认证请求的分离验证。
+- **驱动范围：** 增加结构化Gateway错误解析与稳定异常类型；兼容etcd3gw 2.7.0的通用Etcd3Exception文本载体及etcd v3.6+ google.rpc.Status响应；保留原始cause，未识别错误不猜测。只有连接/超时才触发只读failover，权限/认证/请求错误不重试。
+- **测试范围：** Fake覆盖401/code16、403/code7、400认证失败、普通400参数错误、503/timeout、畸形JSON和第二endpoint未被触达；live mTLS/RBAC覆盖invalid token、越权读写及错误密码；故障集成实测已有token与重新认证在单节点故障/多数派丢失时的实际行为。
+- **安全边界：** 不打印token/密码、不匿名降级、不将mTLS CN当作HTTP Gateway RBAC身份；写事务不跨endpoint自动重试；临时凭据和证书仅在runner内存/临时目录并清理。
+- **验收：** Fake和live CI、默认全库质量CI均通过；本轮不等于企业IAM或生产HA认证服务验收。
+- **治理：** ASSET-000092正式30项保持PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2唯一生产权威，SQLite Coordinator未迁移，CH17-T004保持IN_PROGRESS。
