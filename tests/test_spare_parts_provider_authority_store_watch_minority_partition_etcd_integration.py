@@ -1313,7 +1313,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 thread.join(timeout=1.0)
             if writer_errors:
                 raise writer_errors[0]
-            self.assertEqual(len(writer_results[name]), len(writer_results[name]))
+            self.assertTrue(writer_results[name], f"writer {name!r} produced no revisions")
             return list(writer_results[name])
 
         def apply_response(response, cache: dict[bytes, bytes]) -> int:
@@ -1388,6 +1388,10 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                     self.assertTrue(cancel_is_allowed)
                     self.assertEqual(response.events, ())
                     self.assertIsNone(response.resume_revision)
+                    self.assertGreaterEqual(
+                        response.compact_revision,
+                        max(writer_results.get("compaction-burst", [0])),
+                    )
                     return "canceled", received, frames
                 self.assertEqual(apply_response(response, cache), len(response.events))
                 received += len(response.events)
@@ -1507,8 +1511,11 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 self.assertEqual(cache, before_rebuild_snapshot)
             else:
                 self.assertLess(race_received, second_count)
+                race_delivered_revisions = (
+                    all_event_revisions[-race_received:] if race_received else []
+                )
                 self.assertEqual(
-                    set(all_event_revisions[-race_received:]),
+                    set(race_delivered_revisions),
                     set(second_revisions[:race_received]),
                 )
 
