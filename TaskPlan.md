@@ -1224,3 +1224,13 @@
 - **交付：** `scripts/spare_parts_sqlite_candidate_importer.py`、专用unittest、迁移设计第11节、章节README、根/章节TaskPlan与TaskHistory。
 - **验收：** manifest/records篡改、策略不匹配、活动租约/waiter/未决操作、源文件变化等场景fail closed；候选摘要可确定性重建。
 - **状态：** 首阶段候选包生成器已实现；完整目标写入器和MIG-05/06验证未完成，MIG-04保持IN_PROGRESS。
+
+### 第七十五轮任务计划：MIG-04 Unified Store 隔离命名空间能力
+
+- **目标：** 为SQLite→Unified候选迁移后续写入器提供显式隔离目标，保证Admission、Request、Lease与Coordinator Leader键全部落入同一临时命名空间。
+- **实现：** `StoreBackedProviderAdmissionCoordinator`增加可选`namespace_prefix`；默认生产schema-v2前缀保持不变。自定义前缀只接受`/cnc/migration/isolated/{单一标识}/`，拒绝生产前缀、路径穿越及歧义路径。Lease/Request/State键和Coordinator Leader TTL键必须共享该前缀。
+- **测试：** 验证两个隔离namespace互不重叠、默认前缀兼容、非法/生产前缀拒绝、Leader TTL key不会落入生产namespace。
+- **限制：** 这只是namespace路由基础，不是导入写入器；不创建目标Lease、不写候选业务状态、不执行Txn batching/checkpoint/unknown-outcome恢复，也不触达生产集群。
+- **交付：** 更新Unified Admission/Coordinator实现、专用测试、迁移设计第12节、章节README、根/章节TaskPlan与TaskHistory。
+- **验收：** main Quality CI通过后确认；MIG-04仍IN_PROGRESS，MIG-05/06未完成，MIG-07 BLOCKED。
+
