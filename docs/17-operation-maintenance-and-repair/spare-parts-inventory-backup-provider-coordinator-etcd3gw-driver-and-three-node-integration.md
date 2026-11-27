@@ -431,9 +431,22 @@ finally路径恢复网络并等待三成员quorum。恢复后先通过多数派L
 
 **官方参考：** [etcd v3.7 API Watch streams](https://etcd.io/docs/v3.7/learning/api/)、[Watch progress与分区revision说明](https://etcd.io/docs/v3.7/dev-guide/interacting_v3/)、[v3.7配置项](https://etcd.io/docs/v3.7/op-guide/configuration/)。
 
-## 24. 第六十三轮计划：少数派成员上的Watch progress revision滞后
+## 24. 第六十三轮：少数派成员上的Watch progress revision滞后
 
-- 将Watch连接保持在被隔离的单个etcd成员，周期性获取progress notification；通过剩余多数派提交marker并执行线性一致Range。
-- 对照本地progress header revision、多数派提交revision和quorum Range snapshot revision，验证本地progress watermark可能落后，不能作为quorum状态证明。
-- 网络恢复后执行线性一致Range快照，再从snapshot revision+1恢复Watch；检查无事件遗漏/重复投递。
-- 仅操作一次性Compose网络和标签核验容器；不修改宿主机iptables，不触碰其他容器。双向WatchProgress/WatchCancel仍不实现；supporting evidence不改变ASSET-000092正式矩阵状态。
+新增Live测试`test_spare_parts_provider_authority_store_watch_minority_partition_etcd_integration.py`，并注册到`scripts/etcd-integration/run.sh`。测试运行于一次性三节点etcd v3.7.0集群和etcd3gw 2.7.0适配器。测试创建一张带项目/用途标签的临时Docker bridge网络，仅连接经Compose project/service标签核验的etcd1；该网络用于在etcd1与其余两个成员隔离时保持Watch HTTP流，不提供到etcd2/etcd3的peer连接。
+
+**Watch基线与建立条件：** 被监视key首次PUT为revision=31；随后对独立marker key写入revision=32。多数派和etcd1各自的线性一致Range均确认已应用到revision=32。Watch以`start_revision=32`建立（含该revision），created响应`watch_id=0`，没有返回事件。这里不能简单使用`baseline+1`：etcd服务端仅在watcher已经同步且本地存储revision不低于其start_revision时生成progress响应，因此测试先确保隔离成员已应用marker基线，同时不重放revision=31的被监视key PUT。
+
+**少数派Progress与quorum Range对照：** 将etcd1从Compose peer网络断开，但维持它与专用访问网络的连接。etcd2/etcd3多数派连续提交被监视key更新，revision依次为33、34、35；多数派线性一致Range读取到revision=35及第三次更新的值。隔离etcd1上的Watch连续收到两次空Progress Notification：两次header revision均为32、events均为空、watch_id保持0；没有收到revision 33–35的KV事件。Live日志`WATCH_MINORITY_PROGRESS_OBSERVATION`记录了`majority_linearizable_revision=35`、`isolated_progress_revision=32`和`isolated_second_progress_revision=32`。这直接证明本次少数派成员的progress watermark落后于多数派revision；Progress帧不携带KV值，不能作为quorum最新状态或数据存在性的证明。
+
+**网络恢复与snapshot+1续接：** 恢复etcd1的Compose peer网络并等待三成员恢复。首先在多数派取得线性一致快照revision=35；成员重新加入后，etcd1的线性一致Range在有界只读重试后也达到revision=35并读到同一值。关闭分区期间旧Watch，不沿用其progress游标；新Watch从`snapshot_revision+1=36`开始。随后提交revision=36的新PUT，恢复后的Watch仅返回该PUT一次，`prev_kv`与revision=35快照值一致；下一个响应为空Progress帧。日志记录`post_recovery_event_count=1`、`no_partition_write_replayed=true`和`next_response_after_single_recovery_event_is_empty_progress=true`，说明隔离期间revision 33–35没有重放，恢复后revision 36的事件没有遗漏。成员恢复后的线性一致读采用最多30秒只读重试，因为网络连通及成员状态恢复不代表ReadIndex服务立即可用；该重试不重放任何写请求。
+
+**Live证据：** [Run 45946092810](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092810)整体success。新增分区与恢复测试1/1 PASS，用例本身运行6.213秒；原有普通etcd集成、mTLS、短TTL Token、auth/quorum隔离及mTLS RBAC成员故障/Token传播阶段均success；诊断采集、Compose容器和volumes清理、Artifact上传及后置清理均success。Artifact [15174961822](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092810/artifacts/15174961822)，SHA-256 `5d72bea9eeb46ea6d9a26b90204f5c350797a393c774852b64792520af6a5364`。
+
+**质量门禁：** [Quality Run 45946092822](https://github.com/rexyll/cnc-knowledge/actions/runs/45946092822)两个Job均success：全库540项unittest（32项按条件跳过），CH12数值资源测试143项通过，strict knowledge lint通过，知识结构/data检查0 errors；当次结构统计包含178个Markdown文件、22个章节、260条实体记录、240条关系记录及412条来源记录。
+
+**失败修复过程：** 首次试验因Watch start revision高于隔离成员本地已应用revision，watcher尚未同步，因而没有progress帧；随后通过独立marker使本地revision达到32，再从32建立Watch，修复了该前置条件。下一轮已能稳定得到32对35的revision差，但恢复后立即执行线性一致Range遇到成员尚未恢复ReadIndex服务的暂时错误；最终实现只读、有界重试后，分区、恢复、快照及续接完整通过。两次中间失败均未被当作通过证据。
+
+**官方语义与能力边界：** [etcd v3.7交互指南](https://etcd.io/docs/v3.7/dev-guide/interacting_v3/)说明Progress Notification的revision来自Watch所连接的本地成员；当该成员失去quorum时，其revision可能落后于多数派读。[etcd v3.7 API](https://etcd.io/docs/v3.7/learning/api/)中Range默认采用线性一致读取，因此恢复流程以线性一致Range快照作为权威状态并从R+1续接。本轮只验证WatchCreate的周期性`progress_notify=true`通知，不表示HTTP Gateway适配器实现了双向`WatchProgress`请求或`WatchCancel`。
+
+**安全与治理：** 测试只改变本次一次性Compose项目的网络连接；恢复后移除临时专用网络，最终由Runner清理三节点容器、volumes和Compose网络。没有修改宿主机iptables或触碰其他容器。结果是一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting engineering evidence，不等同生产HA或业务Coordinator迁移验收；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机尚未迁移，CH17-T004保持`IN_PROGRESS`。
