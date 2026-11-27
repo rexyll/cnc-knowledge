@@ -1341,3 +1341,10 @@
 - **实现边界：** 本阶段只生成candidate bundle，不写etcd。当前Store namespace前缀固定，目标隔离namespace、Lease分配、Txn/checkpoint和unknown-outcome恢复仍需实现；不能把candidate bundle直接用于生产。
 - **交付：** candidate importer脚本及专用unittest，迁移设计第11节、章节README、根TaskPlan和TaskHistory。
 - **状态：** IN_PROGRESS（首阶段候选包生成器完成；目标写入器及完整迁移验证未完成）。
+
+### 第七十五轮：MIG-04 隔离命名空间注入
+
+- **目标：** 允许迁移演练将Unified schema-v2完整键空间写入显式隔离namespace。
+- **实现边界：** Scheduler支持可选namespace_prefix；默认仍为`/cnc/admission/unified/v2/`。自定义值只接受`/cnc/migration/isolated/{id}/`单段标识；Coordinator Leader TTL key随Scheduler namespace派生。
+- **测试：** 不同隔离namespace键空间不相交；默认前缀兼容；拒绝生产前缀、空/多段标识、路径穿越和非ASCII标识；Leader key不得泄漏至生产前缀。
+- **状态：** 代码与测试已提交，等待Quality CI。此项不实现候选包导入、Lease创建、事务分批/checkpoint或未知结果恢复；不允许生产写入。
