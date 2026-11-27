@@ -606,3 +606,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - Live 测试：`tests/test_spare_parts_provider_authority_store_etcd_integration.py` 新增真实 Watch 事件测试；连同原 5 项、单成员故障、双成员 quorum-loss 场景合计 8 项。真实 [Run 45842517310](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310) 在一次性三成员 etcd v3.7.0 集群 8/8 PASS；诊断 Artifact [15128407498](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517310/artifacts/15128407498)，SHA-256 `9c45a263c409f9f7eb808670df14c5a7f7455f8cea85ad0cadec5d053699ccb9`。
 - 默认 CI：[Run 45842517156](https://github.com/rexyll/cnc-knowledge/actions/runs/45842517156) 全库 505 项 unittest，497 通过、8 项 live 测试按默认策略 skip；CH12 143 项通过；strict knowledge lint 0 errors；结构/数据校验 0 errors、5 项既有 warning。
 - 边界：不支持双向 WatchProgress/WatchCancel 和服务端 cancel 确认；未测试 mTLS/RBAC、长期流背压、网络分区、性能或多主机；ASSET-000092 的 30 项正式场景仍 PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## 第五十一轮：etcd Gateway mTLS（2026-11-27）
+
+- 新增`scripts/etcd-integration/compose-mtls.yaml`及`run-mtls.sh`，使用临时CA/server/client证书启动独立三成员TLS集群；证书和私钥只存在runner临时目录，job结束清理。
+- Live CI [Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363)：mTLS 3/3 PASS（有效证书成员发现+CAS写读、无客户端证书拒绝、错误CA拒绝）；Artifact 15163390323，SHA-256 `91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74`。
+- 默认 CI [Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)：508项unittest、CH12 143项通过；strict lint 0 errors；结构/数据0 errors、5项既有warning。
+- 边界：不是企业PKI、证书轮换/吊销、生产密钥托管或RBAC验收；ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
