@@ -425,3 +425,11 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 - `StoreBackedCoordinatorAuthority`的Leader TTL key现在从scheduler实例前缀派生，避免业务状态隔离但Leader key仍写入默认生产前缀。
 - 新增单元测试验证默认前缀、隔离前缀与非法输入；Coordinator测试验证Leader key只存在于指定隔离前缀。
 - **边界：** 仅完成键空间隔离能力，不会自动创建隔离namespace，不写候选导入包、不创建业务Lease、不执行导入Txn；Txn容量、批处理checkpoint、未知结果恢复和临时真实etcd迁移演练仍待完成。等待Quality CI确认。
+
+## CH17-T004 隔离namespace空空间预检（第七十六轮）
+
+新增`scripts/spare_parts_migration_namespace.py`，提供`validate_isolated_namespace()`与`preflight_empty_namespace()`。预检只接受`/cnc/migration/isolated/{single-id}/`格式，并通过`EtcdV3CoordinatorAuthorityStore.linearizable_range()`对完整prefix执行线性一致Range；发现任何键即报错，后端不可用也会fail-closed。成功结果记录prefix、Range revision与0个已存在键。
+
+同时扩展`InMemoryEtcdV3Client.range()`的prefix Range语义，确保测试不会把精确键Range误当成整个prefix Range。新增测试覆盖空namespace、已占用namespace、相邻namespace隔离和后端不可用。
+
+**安全说明：** 预检不是锁。Range返回后仍可能有其他客户端写入，因此后续必须配合一次性临时etcd集群或服务端RBAC，确保没有其他写入者。此轮没有执行任何etcd写操作，也没有导入候选数据。
