@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import unittest
 
 from scripts.spare_parts_sqlite_candidate_importer import build_candidate
@@ -137,7 +138,6 @@ class StagedImportProtocolTests(unittest.TestCase):
         previous = plan["transactions"]["initialize_checkpoint"]["checkpoint_value"]
         previous_bytes = json.dumps(previous, sort_keys=True, separators=(",", ":")).encode()
         after_bytes = json.dumps(batch["checkpoint_after"], sort_keys=True, separators=(",", ":")).encode()
-        _, _ = candidate, previous
         expected_values = {}
         for index in candidate["terminal_request_indexes"]:
             key = PREFIX + index["key"].encode()
@@ -179,7 +179,6 @@ class StagedImportProtocolTests(unittest.TestCase):
     def test_publish_unknown_outcome_requires_exact_state_and_complete_checkpoint(self):
         candidate = multi_request_candidate(0)
         plan = self.build(candidate)
-        publish = plan["transactions"]["publish_scheduler_state"]
         init = plan["transactions"]["initialize_checkpoint"]
         state = candidate["state_template"]
         expected_state = json.dumps(state, sort_keys=True, separators=(",", ":")).encode()
