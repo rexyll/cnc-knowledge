@@ -326,3 +326,14 @@
 - **Quality：** [Run 45987533954](https://github.com/rexyll/cnc-knowledge/actions/runs/45987533954)两个必需Job均success：548项unittest（37 skipped、511项非跳过通过）；CH12 143项；strict lint 0 errors / 5 warnings；结构/data 0 errors（260 entity、240 relation、412 source、178 Markdown）。SPAT 30包仅离线模拟，failed=0，`business_test_status=NOT_RUN`。
 - **中间失败与边界：** 首次Live（`08e9fb8`）假设整个etcd集群完全静默时会主动推送Progress；真实结果是read timeout先触发而节点健康。第二次Live（`3cefff7`）错误要求Progress header必须追上刚提交的marker revision，观察到旧响应header=39而marker=40；最终改为校验Progress不低于snapshot baseline且不回退。前两次失败Run不作为通过证据。`watch_read_timeout`默认None；完全静默时启用该参数会因没有字节而让健康流超时，除非另有可靠持续心跳/控制流量，否则不能用于长时间无事件Watch。访问bridge断开证明的是本次Docker路径失联及读超时检测，不等同于真实WAN/NAT代理的TCP半开或静默丢包测试。
 - **治理状态：** 本轮为一次性CI supporting engineering evidence；没有实现TCP keepalive、独立健康探针、自动重连或双向WatchProgress/WatchCancel。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威；SQLite Coordinator业务状态机尚未迁移；CH17-T004总体保持`IN_PROGRESS`。
+
+## 第六十九轮：Watch连接健康分层与生产存活检测策略决策（2026-11-27）
+
+- **目标：** 对比Watch Progress、TCP Keepalive、HTTP/2 gRPC PING、独立线性一致Range和Lease-backed应用心跳，确定当前HTTP gRPC-gateway Watch驱动的生产健康模型和后续实施边界。
+- **决策记录：** 新增`docs/17-operation-maintenance-and-repair/watch-connection-health-and-liveness-decision-record.md`，记录当前客户端实现事实、检测能力矩阵、Watch/Quorum组合状态、默认timeout策略、运行时指标和实施路线。
+- **关键实现事实：** 当前驱动经Requests Session向`/v3/watch`发送一次Watch create请求并读取服务端响应流；活动流固定于接受请求的endpoint，不具备已建立流上的双向gRPC `WatchProgressRequest`/`WatchCancelRequest`写入能力。`linearizable_range()`用`serializable=false`发送只读Range并可endpoint failover；`status()`调用`/maintenance/status`，不等于Quorum线性一致探测。
+- **技术判断：** Progress用于观测Watch所在成员的本地revision，不代表Quorum最新revision或权威快照；TCP Keepalive只探测传输路径；gRPC HTTP/2 PING不适用于当前Requests/gRPC-gateway路径；独立线性一致Range用于Quorum-read能力探测，但不能证明既有Watch流健康；Lease-backed心跳只有在端到端Watch交付SLO需要时才考虑，需评估MVCC revision、Raft、Watch事件及compaction成本。
+- **推荐模型：** 组合Watch流状态和进程级共享Quorum Range探测；必要时增加单独的应用心跳维度。Watch静默但Range成功时标记Watch degraded，不要误报集群down；Watch有响应但Range失败时不宣称Quorum healthy；两者都失败时报告不可用/未知。Watch恢复仍执行Quorum snapshot R整体替换并从R+1续接。
+- **配置决策：** `watch_read_timeout`默认None。生产read timeout需要先证明受控且有界的流量最大间隔，并依据代理/NAT空闲时限、网络抖动与业务SLO推导；本轮未给出未经验证的生产秒数，也未新增TCP socket options、原生gRPC channel、自动重连、Lease heartbeat写入或后台健康状态机。
+- **上游依据：** etcd v3.7 API明确Watch是双向gRPC stream，`progress_notify`由服务器按当前负载决定通知频率，Progress revision来自连接的本地成员；gRPC Keepalive使用HTTP/2 PING并有服务端最小间隔/限流约束；Requests read timeout衡量底层socket无字节间隔而非整个响应总时长。相关官方链接均列入决策记录。
+- **证据范围：** 本轮为架构决策记录，无新增Live测试或运行行为。第六十八轮4秒静默和路径断开实测是一次性Compose supporting evidence，不等同于生产网络半开、TCP Keepalive或HTTP/2 PING验收。CH17-T004仍`IN_PROGRESS`；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威；SQLite Coordinator业务状态机尚未迁移。
