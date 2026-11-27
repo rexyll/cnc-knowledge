@@ -639,3 +639,11 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - [Quality Run 45920726730](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726730)两个Job成功：全库518项unittest（501 passed、17项opt-in skip），CH12 143项通过，strict knowledge lint 0 errors。
 - token过期后请求拒绝、重新认证获取新token、同步更新所有endpoint Authorization header、KV Range和Watch created握手通过；runner清理临时证书、token及Compose volumes。
 - 本轮只提供显式token更新，不包含自动刷新；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+### 第五十四轮验证记录（2026-11-27）
+
+- Live [Run 45922792420](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792420)成功：基础三节点/成员故障/quorum suite 8项、mTLS/RBAC suite 12项、短TTL token 1项、认证/quorum隔离1项全部通过；Artifact 15165755534，SHA-256 `c3b8d8e25e91cc7bff7e3d2893a55688de0b2567836052a20cb887fd2bcc7608`。
+- 多数派丢失期间，已有token的线性一致Range超时，重新认证RPC也超时；恢复成员和多数派后，旧token再次成功Range。不能将该结果解读为认证服务在无quorum时独立可用。
+- 默认质量[Run 45922792429](https://github.com/rexyll/cnc-knowledge/actions/runs/45922792429)成功：526项unittest（504通过、22项opt-in skip），CH12 143项，strict lint 0 errors，fixture validator 0 errors/5项既有warning。
+- 所有凭据、token、证书和Compose volumes均由runner临时创建并清理；没有提交密钥。
