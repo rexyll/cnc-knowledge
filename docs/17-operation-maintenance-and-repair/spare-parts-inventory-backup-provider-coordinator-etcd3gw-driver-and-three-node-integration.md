@@ -224,3 +224,6 @@ etcd v3.7 配置参考（SRC-000410）显示，`--auth-token`支持`simple`与`j
 新增短TTL mTLS集成测试入口：通过`--auth-token=simple`和可配置`--auth-token-ttl`在独立临时集群中验证旧token过期后被拒绝、显式重新认证取得新token、对全部endpoint更新Authorization、Range读回及Watch创建握手。默认mTLS/RBAC套件继续使用300秒TTL，短TTL套件独立启动并清理集群，避免影响原有RBAC用例。代码和测试已提交；实时CI验收：[Run 45920726761](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726761)成功；基础三节点suite 6项、mTLS/RBAC suite 8项、独立10秒TTL生命周期测试1项均通过。诊断Artifact [15164208273](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726761/artifacts/15164208273)，SHA-256 `0b66c69eb7f1ecc12e0d8bfbbf80ab0bf51de739ec31d8d2e9f3db878619e476`。默认质量CI [Run 45920726730](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726730)两个Job成功：全库518项unittest（501 passed、17项opt-in live skip），CH12 143项通过，strict knowledge lint 0 errors。所有密码/token/证书仍只在CI临时目录或进程内存中，不进入仓库。
 
 **当前限制：** 本轮尚未实现自动token provider/后台续期；也未验证JWT密钥管理、企业身份源、生产token轮换/撤销、审计、时钟偏差策略和多实例并发刷新。工程测试仍不改变ASSET-000092正式30项场景的`PROPOSED_NOT_APPROVED / NOT_RUN`状态，schema-v2仍是唯一生产权威，SQLite Coordinator业务状态机未迁移。
+
+
+**错误分类边界补充：** etcd3gw 2.7.0 对部分HTTP状态（如内部错误、服务不可用、请求/网关超时）映射为传输/服务异常，而其他非200响应统一抛出通用 `Etcd3Exception`；驱动会原样传播该非传输异常，不把认证/授权拒绝作为endpoint failover条件。当前尚未将HTTP 401/403或Gateway结构化错误码归一为独立的Unauthenticated/PermissionDenied类型；也未完成认证服务不可用/多数派丢失期间“已有token读写”与“重新认证”差异测试。该项列为后续切片，不能声称本轮已完成精细错误分类或认证服务HA验证。
