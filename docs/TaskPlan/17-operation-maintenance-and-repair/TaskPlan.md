@@ -1133,3 +1133,12 @@
 - **失败修复与测试推理：** 第一版因`start_revision`高于隔离成员本地已应用revision，服务端没有向未同步watcher发送progress；修正为先应用revision=32的独立marker再从32建立Watch。恢复网络后立即Range可能暂时失败，因此只对只读线性一致Range执行最多30秒重试，不重放写操作。最终通过运行证明的是上述修正路径，而不是前两版失败结果。
 - **协议与能力边界：** 参考[etcd v3.7 Watch交互指南](https://etcd.io/docs/v3.7/dev-guide/interacting_v3/)：Progress Notification header revision属于Watch所连接的本地成员；成员失去quorum时可能落后于多数派读。Range默认线性一致，仍是确认KV状态的权威途径。当前工程只验证WatchCreate的周期性`progress_notify=true`通知，未实现或声称支持双向`WatchProgress`/`WatchCancel`。
 - **治理状态不变：** 本轮是一次性etcd v3.7.0 / etcd3gw 2.7.0 CI supporting engineering evidence，不等于生产HA或业务Coordinator迁移验收；ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威；SQLite Coordinator业务状态机尚未迁移；CH17-T004总体保持`IN_PROGRESS`。
+
+
+### 第六十四轮任务计划：少数派Watch期间多数派Compaction与恢复边界
+
+- **目标：** 在一次性三节点etcd集群中，让Watch持续连接在被隔离的少数派成员；多数派继续写入并执行Compaction；网络恢复后观察旧Watch是否收到追赶事件、何时返回canceled/compact_revision，以及客户端必须如何重建状态。
+- **验证：** 让旧Watch start_revision严格低于多数派compact_revision；记录分区期间多数派写入revision、compact目标revision、重连后旧Watch返回的事件序列及取消帧；不预设取消前是否会先收到追赶事件。验证取消帧无KV事件、resume_revision不可用或不可继续；以quorum线性一致Range快照为权威状态，检查etcd1已追平后从snapshot revision+1重建Watch，且快照覆盖的旧事件不再重放、快照之后的新事件只投递一次。
+- **时序边界：** Raft日志中的KV写入和Compaction会依序应用；重连成员可能先向旧Watch发送尚未压缩的追赶事件，然后才处理Compaction并取消Watch。因此收到过追赶事件不能阻止客户端把后续canceled/compact_revision视为旧游标失效；取消后应通过快照重建，而不能继续使用旧Watch游标。
+- **安全及清理：** 访问网络仅附加到经Compose project/service标签核验的etcd1；peer隔离前核验Compose network标签；Compaction命令只在经标签核验的本次Compose etcd2容器内执行；恢复后先重连peer网络、等待三成员可读，再清理唯一测试key/marker和专用网络。不得修改宿主机iptables或其他容器/网络。
+- **验收边界：** 使用etcd v3.7.0 / etcd3gw 2.7.0一次性Live集群；保留取消帧header/optional cancel_reason兼容约束；仅为supporting engineering evidence，不代表生产HA、业务Coordinator迁移或ASSET-000092正式矩阵验收；双向WatchProgress/WatchCancel不在本轮实现范围。
