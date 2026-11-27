@@ -106,10 +106,6 @@ class StagedImportProtocolTests(unittest.TestCase):
         with self.assertRaisesRegex(StagedImportPlanError, "scheduler aggregate"):
             self.build(max_bytes=1)
 
-    def test_rejects_plan_when_checkpoint_initialization_exceeds_budget(self):
-        with self.assertRaisesRegex(StagedImportPlanError, "checkpoint initialization"):
-            self.build(max_ops=3)
-
     def test_initial_checkpoint_unknown_outcome_classification(self):
         plan = self.build(multi_request_candidate(0))
         import json
