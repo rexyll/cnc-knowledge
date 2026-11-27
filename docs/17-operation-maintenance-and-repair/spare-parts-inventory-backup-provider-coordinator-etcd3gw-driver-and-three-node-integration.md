@@ -212,3 +212,15 @@ Etcd3gwV3Client新增可选auth_token参数，将token写入各endpoint底层HTT
 **默认质量：** [Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)两个Job成功；515项unittest（499通过、16项opt-in live skip），CH12 143项通过，strict knowledge lint 0 errors，结构/数据校验0 errors、5项既有治理warning。
 
 **能力边界：** token由调用方显式提供并在内存中应用，本轮没有token自动刷新/过期续期。企业IAM、密码/凭据轮换、撤销、审计、生产密钥托管、跨租户身份治理均未验证。/health端点不等同于KV数据面授权证据。ASSET-000092的30项正式场景继续PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍为唯一生产权威，SQLite Coordinator业务状态机未迁移。
+
+
+
+## 13. 第五十三轮 Token 生命周期、显式更新与失败关闭（2026-11-27）
+
+etcd v3.7 配置参考（SRC-000410）显示，`--auth-token`支持`simple`与`jwt`类型，`--auth-token-ttl`默认300秒并用于simple token；JWT的TTL由JWT token选项配置，不能将两者混为一谈。官方认证设计（SRC-000411）指出simple token是有状态的开发/测试机制，不应作为生产token方案；JWT签名和验证由服务端配置完成，客户端仍需负责在过期前取得新token并更新客户端生命周期。RBAC文档（SRC-000412）说明mTLS Common Name身份映射不适用于HTTP gRPC-Gateway，因此此处继续采用mTLS证书保护传输、Authorization token承载etcd RBAC身份的双层方式。
+
+第五十三轮驱动增加`Etcd3gwV3Client.set_auth_token(token)`，可显式替换或清除所有endpoint HTTP session上的Authorization header；Watch复用同一endpoint session，因此同步继承替换后的token。该方法只负责安装调用方取得的token，不接收或保存用户名/密码，不自动认证、不自动刷新、不推测token到期时间。Fake Gateway新增token轮换/清除和认证异常不得触发endpoint failover的契约测试。
+
+新增短TTL mTLS集成测试入口：通过`--auth-token=simple`和可配置`--auth-token-ttl`在独立临时集群中验证旧token过期后被拒绝、显式重新认证取得新token、对全部endpoint更新Authorization、Range读回及Watch创建握手。默认mTLS/RBAC套件继续使用300秒TTL，短TTL套件独立启动并清理集群，避免影响原有RBAC用例。代码和测试已提交；实时CI验收结果待补记。所有密码/token/证书仍只在CI临时目录或进程内存中，不进入仓库。
+
+**当前限制：** 本轮尚未实现自动token provider/后台续期；也未验证JWT密钥管理、企业身份源、生产token轮换/撤销、审计、时钟偏差策略和多实例并发刷新。工程测试仍不改变ASSET-000092正式30项场景的`PROPOSED_NOT_APPROVED / NOT_RUN`状态，schema-v2仍是唯一生产权威，SQLite Coordinator业务状态机未迁移。
