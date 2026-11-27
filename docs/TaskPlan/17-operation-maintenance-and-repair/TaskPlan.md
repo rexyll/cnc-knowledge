@@ -1348,3 +1348,11 @@
 - **实现边界：** Scheduler支持可选namespace_prefix；默认仍为`/cnc/admission/unified/v2/`。自定义值只接受`/cnc/migration/isolated/{id}/`单段标识；Coordinator Leader TTL key随Scheduler namespace派生。
 - **测试：** 不同隔离namespace键空间不相交；默认前缀兼容；拒绝生产前缀、空/多段标识、路径穿越和非ASCII标识；Leader key不得泄漏至生产前缀。
 - **状态：** 代码与测试已提交，等待Quality CI。此项不实现候选包导入、Lease创建、事务分批/checkpoint或未知结果恢复；不允许生产写入。
+
+### 第七十六轮：MIG-04 隔离namespace空空间预检
+
+- 新增只读helper校验隔离namespace，并对完整prefix执行线性一致Range。
+- 任何已存在键都会阻断预检；后端异常、不可用或响应异常均不得降级为“空”。
+- 返回revision用于审计记录；它不是写入锁，不构成并发排他保证。
+- 修正InMemoryEtcdV3Client以支持etcd Range `range_end`语义，测试prefix命中与相邻prefix边界。
+- 只有临时隔离集群/服务端RBAC才能封闭预检后的竞态窗口；生产集群不得作为演练目标。
