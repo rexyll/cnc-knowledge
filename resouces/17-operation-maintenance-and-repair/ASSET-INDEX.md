@@ -172,3 +172,11 @@
 - Artifact [15169352034](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111643/artifacts/15169352034)。
 - Quality [Run 45933111606](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111606)：530 unittest（504 passed、26 skipped），CH12 143，strict lint 0 errors/5 warning，结构自检0 errors。
 - 仅supporting engineering evidence；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+## CH17-T004 LeaseRevoke少数派分区与恢复核对（第五十九轮）
+
+- [Live Run 45936468822](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468822)成功；新增LeaseRevoke分区测试1/1 PASS。首个Revoke请求只触达隔离的etcd1 `127.0.0.1:23791`一次，Store返回`AuthorityStoreOutcomeUnknownError`，没有failover或重放。
+- 恢复网络后，多数派首次核对发现原Lease和authority key仍存在、key revision仍为16，判定首次请求未提交；记录结果后显式通过健康多数派Revoke清理，key删除revision推进至17，TTL最终为-1。Artifact [15170653184](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468822/artifacts/15170653184)。
+- [Quality Run 45936468828](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468828)：533 unittest（506 passed、27 skipped），CH12 143项，strict lint 0 errors/5既有warning，结构校验0 errors。SPAT 30项仅离线模拟、business_test_status仍NOT_RUN。
+- supporting evidence不代表精确的“撤销已提交但响应丢失”窗口或生产HA验收；ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`。

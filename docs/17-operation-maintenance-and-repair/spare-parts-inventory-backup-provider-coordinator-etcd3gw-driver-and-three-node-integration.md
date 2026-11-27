@@ -338,3 +338,25 @@ Live workflow所有后续mTLS、short-TTL token、auth/quorum、RBAC成员故障
 **质量门禁：** [Knowledge Quality Run 45933111606](https://github.com/rexyll/cnc-knowledge/actions/runs/45933111606)两个Job成功：全库530项unittest（504 passed、26 skipped），CH12 143项通过，strict knowledge lint 0 errors / 5既有warning，结构和最终自检0 errors。SPAT 30包只是离线模拟，`business_test_status=NOT_RUN`、无外部连接、无写入。
 
 **限制：** 这是etcd v3.7.0/etcd3gw 2.7.0一次性Compose集成证据；fencing写入由Store KV compare事务模拟，未证明现有SQLite业务Coordinator已迁移并在所有业务写入口检查epoch。该实验不等同生产Leader HA、跨机房故障演练或正式30项矩阵执行。第五十八轮工程任务完成，CH17-T004总体仍IN_PROGRESS。
+
+
+## 19. 第五十九轮：少数派LeaseRevoke未知结果与恢复后核对
+
+新增Live测试 `tests/test_spare_parts_provider_authority_store_lease_revoke_partition_etcd_integration.py`，并在 `scripts/etcd-integration/run.sh` 中注册。Fake Driver测试扩展两项，覆盖所有Lease变更RPC单endpoint派发与异常类型保留。
+
+测试先从健康多数派创建TTL=60秒Lease，通过CAS Txn将唯一leader authority key绑定Lease，并记录mod_revision=16。随后只从专用Compose网络断开etcd1；Revoke driver配置全部三个endpoint、etcd1排首位，记录真实HTTP POST。首次调用只触达 `http://127.0.0.1:23791`一次，Store返回 `AuthorityStoreOutcomeUnknownError`，没有自动切换到健康成员或重放请求。
+
+finally路径恢复网络并等待三成员quorum。恢复后先通过多数派LeaseTimeToLive与线性一致Range进行结果核对：authority key仍存在，value、lease ID和revision=16未变，Lease当时仍有正TTL，因此首次Revoke结果确定为本次未提交。记录该状态后，测试显式通过健康多数派执行一次新的清理Revoke；随后key删除，读revision为17，TTL最终为-1。结构化输出保留endpoint attempts、首次结果、首次恢复状态和显式清理动作。
+
+**实时证据：** [Live Run 45936468822](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468822)整体success；新增LeaseRevoke分区测试1/1通过。普通三节点etcd、mTLS、short-TTL Token、auth/quorum和RBAC成员故障/Token传播阶段全部通过。Artifact [15170653184](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468822/artifacts/15170653184)。
+
+**默认质量门禁：** [Quality Run 45936468828](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468828)两个Job success：全库533 unittest（506 passed、27 skipped），CH12 143项，strict knowledge lint 0 errors/5既有warning，结构自检0 errors。SPAT 30包仅离线模拟，`business_test_status=NOT_RUN`、无外部连接、无写入。
+
+**限制：** 当前实验观察到的是首次Revoke未提交后显式清理成功；未精确注入etcd已提交但Gateway响应丢失的窗口。结果仅适用于一次性etcd v3.7.0/etcd3gw 2.7.0环境，不代表生产HA或正式验收。ASSET-000092维持30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004仍`IN_PROGRESS`。
+
+## 20. 第六十轮计划：Lease-bound authority key Watch删除事件与断流恢复核对
+
+- 创建Lease并绑定leader authority key；线性一致Range得到revision R，从R+1建立Watch；通过Revoke验证DELETE事件、header revision、prev_kv中的原value/lease ID/mod_revision。
+- 另外覆盖Watch建立后的stream断流，验证驱动不会静默自动重放；网络/quorum恢复后先线性一致Range快照，再以快照revision+1恢复Watch。断流期间发生的删除以快照结果为准，不重放Revoke。
+- 验证Watch iterator关闭、DELETE/prev_kv解码及恢复游标；不宣称当前单向HTTP Gateway Watch支持双向WatchProgress/WatchCancel。
+- 只操作一次性Compose资源并通过标签核验容器；网络恢复置于finally，不修改宿主机iptables、不触碰其他容器；不输出凭据。所有测试仍为engineering supporting evidence，不改变ASSET-000092正式矩阵状态。

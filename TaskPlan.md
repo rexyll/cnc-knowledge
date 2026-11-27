@@ -1046,3 +1046,26 @@
 - **契约测试：** 对LeaseGrant/KeepAlive/Revoke增加记录型Fake Gateway断言：每个变更RPC至多一次endpoint dispatch；连接响应丢失映射遵循Store端口的OUTCOME_UNKNOWN/Unavailable定义；HTTP认证、权限与请求错误不伪装为传输超时。
 - **安全边界：** 仅操作本CI一次性Compose项目/网络及通过标签校验的容器；不修改宿主机iptables，不接触其他容器；所有网络恢复在finally路径，临时key唯一，日志不得包含凭据。
 - **验收：** Live三节点分区测试、Fake契约、全库质量CI、CH12、strict lint与结构校验通过；报告需记录endpoint attempts、首次Revoke结果分类、恢复后Lease/key状态及显式清理动作。ASSET-000092正式30项仍不得自动批准或标记执行。
+
+
+
+### 第五十九轮最终验收结果（2026-11-27）
+
+- **实现提交：** `c8c4d404004ed23eee12feabd31294e53b49ac81`；新增 `tests/test_spare_parts_provider_authority_store_lease_revoke_partition_etcd_integration.py`，并扩展 `tests/test_spare_parts_provider_etcd3gw_driver.py` 中的Fake契约测试。集成Runner续行修复提交：`9c1a91a6c73cb6acb8f9278296667f0c07fa2d44`。
+- **Fake契约：** 新增两项测试，分别验证LeaseGrant/KeepAlive/Revoke的传输失败至多派发到一个endpoint，以及Gateway认证、权限和普通请求错误保持其明确类型、不作为传输错误处理。驱动测试方法总数更新为22。
+- **Live结果：** [Run 45936468822](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468822)整体Job success。新增 `test_minority_lease_revoke_is_single_dispatch_and_reconciled_after_recovery` 1/1 PASS。测试在健康多数派创建TTL=60秒Lease，将唯一authority key绑定Lease并记录key revision=16；隔离etcd1后，三endpoint客户端的首次Revoke只向 `http://127.0.0.1:23791` 派发一次，Store返回 `AuthorityStoreOutcomeUnknownError`，没有自动failover或重放。
+- **恢复核对：** 网络恢复并确认三成员quorum后，测试在线性一致读回中首先确认原authority key仍存在、value/lease ID/revision未变化且Lease TTL仍为正，因此本次首次Revoke被判定为 `revoke-not-committed`。只有记录该结果后，测试才向健康多数派显式发送一次新的Revoke清理；authority key随后删除，revision从16变为17，LeaseTimeToLive最终报告 `ttl=-1`。结构化日志的 `cleanup_action` 为 `one-explicit-revoke-through-healthy-majority`。
+- **整体Live阶段：** 普通etcd集成、mTLS、短TTL Token生命周期、auth/quorum隔离、mTLS/RBAC成员故障与Token传播全部成功；诊断采集、Compose容器/volumes清理和Artifact上传全部成功。诊断Artifact [15170653184](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468822/artifacts/15170653184)。
+- **默认质量：** [Run 45936468828](https://github.com/rexyll/cnc-knowledge/actions/runs/45936468828)两个Job均success：全库533项unittest（506 passed、27 skipped）；CH12 143项通过；strict knowledge lint 0 errors、5项既有warning；结构校验0 errors。SPAT 30包仅离线模拟校验，`business_test_status=NOT_RUN`、`external_connections=NO`、`writes=NO`。
+- **失败修复记录：** 初始代码提交触发的Live Run 45936376325在测试启动前因Runner测试文件列表缺少Bash续行符而失败，未执行场景；CI已清理一次性容器/volumes。修复Runner后重新执行的Run 45936468822成功。该首次语法失败不计作场景测试失败。
+- **解释边界：** 本轮验证的是隔离首endpoint下Revoke只发送一次、结果未知时不重试、恢复后能区分本次未提交并显式清理。没有精确注入“etcd已提交Revoke但Gateway响应在返回前丢失”的窗口；该实验不是生产HA或正式业务验收。ASSET-000092仍30项、`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍是唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总体保持`IN_PROGRESS`。
+
+
+### 第六十轮任务计划：Lease-bound authority key Watch删除事件与断流恢复核对
+
+- **目标：** 验证Lease Revoke触发的authority key DELETE事件是否携带完整Watch响应包络和`prev_kv`租约信息，并验证Watch中途断流后通过线性一致快照与`R+1`重建不会遗漏或重复业务删除。
+- **正常事件路径：** 在三成员一次性CI集群创建唯一Lease并绑定leader authority key；先执行线性一致Range取得revision R，再从R+1建立Watch，验证created握手、LeaseRevoke后唯一DELETE事件、`prev_kv`中的原value/lease ID/mod_revision，以及事件header revision严格大于R。
+- **断流与恢复路径：** 单独覆盖Watch连接建立后stream断开；确认已建立的Watch不会被驱动静默自动重放或切换。恢复quorum后执行线性一致Range快照，记录新revision及key实际存在/不存在，再从快照revision+1恢复Watch；对断流期间已发生的删除以快照结果为准，不重复执行Revoke。
+- **边界与契约：** 保持当前HTTP Gateway单向server-stream能力边界；不声称支持双向WatchProgress/WatchCancel。验证Watch iterator关闭、恢复游标、DELETE/prev_kv解码和不自动重放；不将观察到的Watch事件作为独立于KV线性一致状态的权威。
+- **安全边界：** 只操作一次性Compose项目/网络及标签验证后的容器；不修改宿主机iptables、不触碰其他容器；finally恢复网络并等待三成员quorum；使用唯一临时key，不输出token/凭据。
+- **验收：** Fake Watch契约、三成员Live正常删除事件与断流恢复、全库质量CI、CH12、strict lint及结构校验通过。该测试仍属engineering supporting evidence，不改变ASSET-000092正式30项矩阵审批/执行状态。
