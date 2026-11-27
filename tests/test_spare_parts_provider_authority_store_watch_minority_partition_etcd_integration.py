@@ -1214,5 +1214,408 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             majority_driver.close()
 
 
+    def test_slow_watch_consumer_drains_backlog_or_rebuilds_after_compaction(self):
+        suffix = uuid4().hex
+        prefix = f"/cnc-knowledge-it/watch-slow-consumer/{suffix}/state/".encode()
+        range_end = prefix[:-1] + b"0"
+        seed_key = prefix + b"seed"
+        final_key = prefix + b"after-rebuild"
+        etcd2_container = self._container_id("etcd2")
+
+        majority_driver = Etcd3gwV3Client(self.endpoints[1:], timeout=4.0)
+        majority_store = EtcdV3CoordinatorAuthorityStore(majority_driver)
+        watch_driver = Etcd3gwV3Client([self.endpoints[0]], timeout=4.0)
+        watch_store = EtcdV3CoordinatorAuthorityStore(watch_driver)
+
+        streams = []
+        active_stream = None
+        writer_threads: list[threading.Thread] = []
+        writer_errors: list[BaseException] = []
+        writer_results: dict[str, list[int]] = {}
+        writer_done: dict[str, threading.Event] = {}
+        applied_identities: set[tuple[int, bytes, str]] = set()
+        all_event_revisions: list[int] = []
+        response_counts: list[int] = []
+        max_events_per_response = 0
+        progress_revisions: list[int] = []
+        slow_pause_seconds = 0.8
+        slow_response_delay_seconds = 0.008
+
+        def take_snapshot() -> tuple[int, dict[bytes, bytes]]:
+            result = majority_store.linearizable_range(prefix, range_end=range_end)
+            return result.revision, {
+                entry.key: entry.value for entry in result.entries
+            }
+
+        def open_watch(start_revision: int):
+            local_applied = watch_store.linearizable_range(
+                prefix, range_end=range_end
+            )
+            self.assertGreaterEqual(
+                local_applied.revision,
+                start_revision - 1,
+                "etcd1 has not applied the snapshot before opening the slow-consumer Watch",
+            )
+            stream = watch_store.watch(
+                prefix,
+                start_revision=start_revision,
+                range_end=range_end,
+                progress_notify=True,
+                prev_kv=True,
+            )
+            opened = self._next_result(stream, timeout=10.0)
+            self.assertEqual(opened[0], "response", opened[1])
+            self.assertTrue(opened[1].created)
+            self.assertFalse(opened[1].canceled)
+            self.assertEqual(opened[1].events, ())
+            self.assertIsNone(opened[1].resume_revision)
+            streams.append(stream)
+            return stream
+
+        def start_writer(name: str, first_index: int, count: int):
+            done = threading.Event()
+            revisions: list[int] = []
+            writer_done[name] = done
+            writer_results[name] = revisions
+
+            def write_batch():
+                driver = Etcd3gwV3Client([self.endpoints[2]], timeout=4.0)
+                store = EtcdV3CoordinatorAuthorityStore(driver)
+                try:
+                    for index in range(first_index, first_index + count):
+                        key = prefix + f"{name}-{index:04d}".encode()
+                        value = (
+                            f"{name}:{index:04d}:{suffix}:".encode()
+                            + (b"x" * 192)
+                        )
+                        result = store.transact([], [AuthorityStorePut(key, value)])
+                        if not result.succeeded:
+                            raise AssertionError(
+                                f"backlog writer transaction failed at index {index}"
+                            )
+                        revisions.append(result.revision)
+                except BaseException as exc:
+                    writer_errors.append(exc)
+                finally:
+                    driver.close()
+                    done.set()
+
+            thread = threading.Thread(target=write_batch, daemon=True)
+            writer_threads.append(thread)
+            thread.start()
+
+        def wait_writer(name: str):
+            self.assertTrue(
+                writer_done[name].wait(timeout=30.0),
+                f"writer {name!r} did not finish within the bounded test window",
+            )
+            for thread in writer_threads:
+                thread.join(timeout=1.0)
+            if writer_errors:
+                raise writer_errors[0]
+            self.assertEqual(len(writer_results[name]), len(writer_results[name]))
+            return list(writer_results[name])
+
+        def apply_response(response, cache: dict[bytes, bytes]) -> int:
+            nonlocal max_events_per_response
+            self.assertFalse(response.created)
+            self.assertFalse(response.canceled)
+            self.assertFalse(
+                response.fragment,
+                "an incomplete fragmented response must not be applied to the cache",
+            )
+            if response.is_progress:
+                self.assertEqual(response.events, ())
+                progress_revisions.append(response.header_revision)
+                return 0
+
+            self.assertTrue(response.events)
+            self.assertEqual(
+                response.resume_revision, response.header_revision + 1
+            )
+            response_counts.append(len(response.events))
+            max_events_per_response = max(
+                max_events_per_response, len(response.events)
+            )
+            last_revision = all_event_revisions[-1] if all_event_revisions else 0
+            for event in response.events:
+                self.assertTrue(prefix <= event.key < range_end)
+                self.assertGreaterEqual(event.revision, last_revision)
+                last_revision = event.revision
+                identity = (event.revision, event.key, event.event_type)
+                self.assertNotIn(
+                    identity,
+                    applied_identities,
+                    "a slow-consumer Watch event was applied more than once",
+                )
+                applied_identities.add(identity)
+                all_event_revisions.append(event.revision)
+
+                if event.event_type == "PUT":
+                    self.assertIsNotNone(event.entry)
+                    if event.previous_entry is not None:
+                        self.assertEqual(
+                            cache.get(event.key), event.previous_entry.value
+                        )
+                    cache[event.key] = event.entry.value
+                elif event.event_type == "DELETE":
+                    self.assertIsNone(event.entry)
+                    self.assertIsNotNone(event.previous_entry)
+                    self.assertIn(event.key, cache)
+                    self.assertEqual(
+                        cache[event.key], event.previous_entry.value
+                    )
+                    del cache[event.key]
+                else:
+                    self.fail(f"unexpected event type {event.event_type!r}")
+            return len(response.events)
+
+        def consume_backlog(
+            stream,
+            expected_count: int,
+            cache: dict[bytes, bytes],
+            *,
+            cancel_is_allowed: bool,
+        ) -> tuple[str, int, int]:
+            received = 0
+            frames = 0
+            while received < expected_count:
+                outcome = self._next_result(stream, timeout=12.0)
+                self.assertEqual(outcome[0], "response", outcome[1])
+                response = outcome[1]
+                frames += 1
+                if response.canceled:
+                    self.assertTrue(cancel_is_allowed)
+                    self.assertEqual(response.events, ())
+                    self.assertIsNone(response.resume_revision)
+                    return "canceled", received, frames
+                self.assertEqual(apply_response(response, cache), len(response.events))
+                received += len(response.events)
+                if response.is_progress and received < expected_count:
+                    self.assertLess(
+                        response.header_revision,
+                        max(writer_results.get("compaction-burst", [0])),
+                        "Progress passed the committed backlog without delivering its events",
+                    )
+                if received < expected_count and response.events:
+                    time.sleep(slow_response_delay_seconds)
+            return "drained", received, frames
+
+        def compact_at(revision: int) -> str:
+            result = self._run(
+                [
+                    "docker", "exec", etcd2_container,
+                    "/usr/local/bin/etcdctl",
+                    "--endpoints=http://127.0.0.1:2379",
+                    "--dial-timeout=2s",
+                    "--command-timeout=10s",
+                    "compact", str(revision),
+                ],
+                timeout=15.0,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("compacted revision", result.stdout.lower())
+            return result.stdout.strip()
+
+        def assert_old_cursor_canceled(start_revision: int, compact_revision: int):
+            stale = majority_store.watch(
+                prefix,
+                start_revision=start_revision,
+                range_end=range_end,
+                progress_notify=False,
+                prev_kv=True,
+            )
+            try:
+                first = self._next_result(stale, timeout=10.0)
+                self.assertEqual(first[0], "response", first[1])
+                canceled = first[1]
+                if canceled.created:
+                    self.assertFalse(canceled.canceled)
+                    self.assertEqual(canceled.events, ())
+                    next_result = self._next_result(stale, timeout=10.0)
+                    self.assertEqual(next_result[0], "response", next_result[1])
+                    canceled = next_result[1]
+                self.assertTrue(canceled.canceled)
+                self.assertGreaterEqual(canceled.compact_revision, compact_revision)
+                self.assertEqual(canceled.events, ())
+                self.assertIsNone(canceled.resume_revision)
+            finally:
+                stale.close()
+
+        cache: dict[bytes, bytes] = {}
+        observations: dict = {}
+
+        try:
+            seed = majority_store.transact(
+                [], [AuthorityStorePut(seed_key, f"seed-{suffix}".encode())]
+            )
+            self.assertTrue(seed.succeeded)
+            initial_revision, cache = take_snapshot()
+            self.assertEqual(cache, {seed_key: f"seed-{suffix}".encode()})
+
+            # Phase 1: the producer commits a finite burst while the application
+            # does not call next(stream); the application then resumes slowly.
+            first_cursor = initial_revision + 1
+            active_stream = open_watch(first_cursor)
+            first_count = 64
+            start_writer("slow-burst", 0, first_count)
+            first_revisions = wait_writer("slow-burst")
+            self.assertEqual(len(first_revisions), first_count)
+            time.sleep(slow_pause_seconds)
+            slow_mode, slow_received, slow_frames = consume_backlog(
+                active_stream,
+                first_count,
+                cache,
+                cancel_is_allowed=False,
+            )
+            self.assertEqual(slow_mode, "drained")
+            self.assertEqual(slow_received, first_count)
+            self.assertEqual(sorted(all_event_revisions), sorted(first_revisions))
+            slow_snapshot_revision, slow_snapshot = take_snapshot()
+            self.assertEqual(cache, slow_snapshot)
+
+            active_stream.close()
+            active_stream = None
+
+            # Phase 2: establish a new Watch and deliberately withhold reads
+            # while a second finite burst is committed and compacted.
+            second_cursor = slow_snapshot_revision + 1
+            active_stream = open_watch(second_cursor)
+            second_count = 96
+            start_writer("compaction-burst", 0, second_count)
+            second_revisions = wait_writer("compaction-burst")
+            self.assertEqual(len(second_revisions), second_count)
+            self.assertEqual(second_revisions, sorted(second_revisions))
+            compact_revision = second_revisions[-1]
+            compact_output = compact_at(compact_revision)
+            time.sleep(slow_pause_seconds)
+
+            race_mode, race_received, race_frames = consume_backlog(
+                active_stream,
+                second_count,
+                cache,
+                cancel_is_allowed=True,
+            )
+            if race_mode == "drained":
+                self.assertEqual(race_received, second_count)
+                self.assertEqual(
+                    sorted(all_event_revisions[-second_count:]),
+                    sorted(second_revisions),
+                )
+                before_rebuild_revision, before_rebuild_snapshot = take_snapshot()
+                self.assertGreaterEqual(before_rebuild_revision, compact_revision)
+                self.assertEqual(cache, before_rebuild_snapshot)
+            else:
+                self.assertLess(race_received, second_count)
+                self.assertEqual(
+                    set(all_event_revisions[-race_received:]),
+                    set(second_revisions[:race_received]),
+                )
+
+            active_stream.close()
+            active_stream = None
+            assert_old_cursor_canceled(second_cursor, compact_revision)
+
+            # Rebuild the whole projection from the surviving quorum whether
+            # the old stream drained its backlog or was canceled by compaction.
+            recovery_revision, cache = take_snapshot()
+            self.assertGreaterEqual(recovery_revision, compact_revision)
+            self.assertEqual(
+                set(cache),
+                {seed_key}
+                | {
+                    prefix + f"slow-burst-{index:04d}".encode()
+                    for index in range(first_count)
+                }
+                | {
+                    prefix + f"compaction-burst-{index:04d}".encode()
+                    for index in range(second_count)
+                },
+            )
+
+            recovery_cursor = recovery_revision + 1
+            active_stream = open_watch(recovery_cursor)
+            final_value = f"after-slow-consumer-rebuild-{suffix}".encode()
+            final_write = majority_store.transact(
+                [], [AuthorityStorePut(final_key, final_value)]
+            )
+            self.assertTrue(final_write.succeeded)
+            final_mode, final_received, final_frames = consume_backlog(
+                active_stream,
+                1,
+                cache,
+                cancel_is_allowed=False,
+            )
+            self.assertEqual(final_mode, "drained")
+            self.assertEqual(final_received, 1)
+            self.assertEqual(all_event_revisions[-1], final_write.revision)
+
+            final_revision, final_snapshot = take_snapshot()
+            self.assertGreaterEqual(final_revision, final_write.revision)
+            self.assertEqual(cache, final_snapshot)
+
+            observations = {
+                "initial_snapshot_revision": initial_revision,
+                "first_watch_cursor": first_cursor,
+                "slow_consumer_pause_seconds": slow_pause_seconds,
+                "slow_consumer_response_delay_seconds": slow_response_delay_seconds,
+                "slow_burst_event_count": first_count,
+                "slow_burst_mode": slow_mode,
+                "slow_burst_received": slow_received,
+                "slow_burst_response_count": slow_frames,
+                "slow_burst_snapshot_revision": slow_snapshot_revision,
+                "compaction_watch_cursor": second_cursor,
+                "compaction_burst_event_count": second_count,
+                "compaction_revision": compact_revision,
+                "compaction_output": compact_output,
+                "compaction_race_mode": race_mode,
+                "compaction_race_events_before_cancel_or_drain": race_received,
+                "compaction_race_response_count": race_frames,
+                "recovery_snapshot_revision": recovery_revision,
+                "recovery_cursor": recovery_cursor,
+                "final_write_revision": final_write.revision,
+                "final_watch_response_count": final_frames,
+                "final_snapshot_revision": final_revision,
+                "unique_applied_event_count": len(applied_identities),
+                "duplicate_applied_events": 0,
+                "max_events_per_response": max_events_per_response,
+                "progress_revisions_seen": progress_revisions,
+                "final_cache_matches_linearizable_range": True,
+            }
+            print(
+                "WATCH_SLOW_CONSUMER_COMPACTION_OBSERVATION "
+                + json.dumps(observations, sort_keys=True)
+            )
+        finally:
+            for thread in writer_threads:
+                thread.join(timeout=20.0)
+            if active_stream is not None:
+                try:
+                    active_stream.close()
+                except Exception:
+                    pass
+            for stream in streams:
+                try:
+                    stream.close()
+                except Exception:
+                    pass
+            try:
+                remaining = majority_store.linearizable_range(
+                    prefix, range_end=range_end
+                )
+                cleanup_operations = [
+                    AuthorityStoreDelete(entry.key) for entry in remaining.entries
+                ]
+                if cleanup_operations:
+                    for offset in range(0, len(cleanup_operations), 100):
+                        majority_store.transact(
+                            [], cleanup_operations[offset:offset + 100]
+                        )
+            except Exception:
+                pass
+            watch_driver.close()
+            majority_driver.close()
+
+
 if __name__ == "__main__":
     unittest.main()
