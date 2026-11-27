@@ -918,3 +918,17 @@
 - 新增Fake Gateway token更新/清除、认证异常不failover契约测试；mTLS Compose和runner支持短TTL参数，工作流新增独立10秒simple-token生命周期集成阶段，覆盖过期拒绝、显式重新认证、全部endpoint更新、Range及Watch创建。
 - 更新KNOW-000061、ASSET-000092 supporting evidence、CH17正文/README、资源README/索引和TaskHistory。正式30场景仍PROPOSED_NOT_APPROVED / NOT_RUN，schema-v2仍唯一生产权威，SQLite Coordinator未迁移。
 - **验收结果：** Live CI [Run 45920726761](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726761)成功：普通三节点suite 6项、mTLS/RBAC suite 8项、10秒simple-token生命周期suite 1项全部通过；Artifact 15164208273，SHA-256 `0b66c69eb7f1ecc12e0d8bfbbf80ab0bf51de739ec31d8d2e9f3db878619e476`。默认质量CI [Run 45920726730](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726730)两个Job成功：518项unittest（501通过、17项opt-in skip）、CH12 143项、strict lint 0 errors。第五十三轮工程任务验收通过；未完成项：自动刷新、企业IAM/JWT密钥管理、凭据撤销轮换和审计；etcd3gw 2.7.0将未识别HTTP非200响应统一包装为Etcd3Exception，当前只保证认证/授权异常不触发transport failover，尚未细分Unauthenticated/PermissionDenied；认证服务不可用与token存续的分离故障测试也未覆盖，留作后续切片。最终文档头质量CI [Run 45920942863](https://github.com/rexyll/cnc-knowledge/actions/runs/45920942863)通过：518项unittest（501通过、17项opt-in skip）、CH12 143项、strict lint 0 errors，fixture validator 0 errors/5项既有治理warning。
+
+
+## 第五十四轮计划（2026-11-27）：etcd Gateway 认证错误规范化与认证/数据面故障隔离
+
+- **目标：** 将 etcd HTTP gRPC-Gateway 的认证失败、权限拒绝、参数错误和传输/集群不可用明确分类；验证错误不触发错误的 endpoint failover；区分已有有效token的数据面请求与重新认证请求在节点故障/失去多数派时的行为。
+- **官方依据：** 新增来源记录：etcd v3.6+ Gateway错误响应遵循google.rpc.Status JSON并以HTTP状态为首要判断；etcd v3.7 rpctypes区分Unauthenticated、PermissionDenied、Unavailable等gRPC code；etcd3gw 2.7.0对401/403等未显式映射状态统一抛出Etcd3Exception。
+- **驱动设计：** 增加专用异常类型（AuthenticationError、PermissionDeniedError、GatewayRequestError）；从etcd3gw异常携带的HTTP响应文本中安全解析JSON status code/message；优先识别HTTP 401/403与gRPC code 16/7，兼容旧Gateway错误文本及400 InvalidArgument的明确认证失败消息；保留原始异常为cause。对不能解析的非200响应维持原异常传播，不猜测、不降级。
+- **Failover策略：** 只有Timeout/ConnectionError等真实传输故障可触发只读Range/status/member请求切换endpoint；AuthenticationError、PermissionDeniedError、GatewayRequestError和协议错误均不得触发endpoint failover。Txn/Lease写请求仍不跨endpoint重试。
+- **Fake测试：** 覆盖HTTP 401/code16、HTTP403/code7、400认证失败消息、普通400参数错误、503/连接超时、错误JSON、异常cause保留，以及认证/授权拒绝不调用第二endpoint；确保不记录Authorization token。
+- **Live测试：** 在临时mTLS etcd v3.7.0三节点集群验证过期/无效token产生Unauthenticated、reader越权产生PermissionDenied、错误用户名密码认证产生AuthenticationError/对应Gateway status；有效身份Range/CAS仍成功。单节点停机期间，验证有效token请求可通过剩余成员完成，而对停机endpoint的显式重新认证只作为连接故障处理并可由调用方改用健康endpoint；恢复节点后验证成员状态。
+- **多数派故障隔离：** 在可控的两成员停止/恢复测试中记录有效token请求与重新认证请求的实际HTTP/gRPC错误；不预设两者必然相同或不同。若缺少可重复的隔离条件，则仅记录现象和限制，不把“认证服务独立可用”当作已证明。
+- **文档和资源：** 更新CH17技术正文、README、KNOW-000061、ASSET-000092 supporting evidence、来源、TaskHistory、资源README和ASSET索引。所有证据均标注etcd v3.7.0 / etcd3gw 2.7.0 / 临时环境范围。
+- **验收标准：** fake分类契约全部通过；live 401/403/transport差异测试通过；默认全库CI、CH12、strict lint、fixture validator通过；无密钥/凭据入库。
+- **治理边界：** 仅工程适配器和一次性集成测试，不执行正式30项UAT。ASSET-000092保持PROPOSED_NOT_APPROVED / NOT_RUN；schema-v2仍唯一生产权威；SQLite Coordinator业务状态机未迁移；CH17-T004保持IN_PROGRESS。
