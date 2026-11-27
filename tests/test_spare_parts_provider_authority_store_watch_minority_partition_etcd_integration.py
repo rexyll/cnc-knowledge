@@ -332,7 +332,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             # to be able to serve at least that applied revision.
             snapshot, snapshot_revision = majority_store.linearizable_get(key)
             self.assertIsNotNone(snapshot)
-            self.assertEqual(snapshot.value, initial_value)
+            self.assertEqual(snapshot.value, partition_values[-1])
 
             # Membership/status recovery does not imply that the formerly
             # isolated member has already re-established ReadIndex service.
@@ -447,7 +447,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 if majority_store is not None:
                     try:
                         cleanup = []
-                        for cleanup_key in (key, baseline_marker_key, compaction_marker_key):
+                        for cleanup_key in (key, baseline_marker_key):
                             current, _ = majority_store.linearizable_get(cleanup_key)
                             if current is not None:
                                 cleanup.append(AuthorityStoreDelete(cleanup_key))
@@ -630,15 +630,17 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                     old_stream,
                     timeout=min(10.0, max(0.5, cancel_deadline - time.monotonic())),
                 )
-                self.assertNotEqual(outcome, "timeout", "old Watch did not receive compaction cancellation")
+                self.assertNotEqual(
+                    outcome, "timeout",
+                    "old Watch did not receive compaction cancellation",
+                )
                 self.assertEqual(outcome, "response", response)
                 if response.canceled:
                     canceled = response
                     break
                 self.assertFalse(response.created)
-                # The compacted writes deliberately target a key outside
-                # this exact-key Watch, so no catch-up KV events should advance
-                # the old watcher's min_revision before Compaction is applied.
+                # The compaction writes target a different key, so this exact-key
+                # Watch must not receive any of their catch-up KV events.
                 self.assertEqual(response.events, ())
             self.assertIsNotNone(canceled, "old Watch was not canceled after compacted log catch-up")
             self.assertFalse(canceled.created)
@@ -656,7 +658,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
             old_stream.close()
             snapshot, snapshot_revision = majority_store.linearizable_get(key)
             self.assertIsNotNone(snapshot)
-            self.assertEqual(snapshot.value, partition_values[-1])
+            self.assertEqual(snapshot.value, initial_value)
             self.assertGreaterEqual(snapshot_revision, compacted_revision)
 
             # Do not resume from the old Watch's last event/progress revision.
@@ -775,7 +777,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                 if majority_store is not None:
                     try:
                         cleanup = []
-                        for cleanup_key in (key, baseline_marker_key):
+                        for cleanup_key in (key, baseline_marker_key, compaction_marker_key):
                             current, _ = majority_store.linearizable_get(cleanup_key)
                             if current is not None:
                                 cleanup.append(AuthorityStoreDelete(cleanup_key))
