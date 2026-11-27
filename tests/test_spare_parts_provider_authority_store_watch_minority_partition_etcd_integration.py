@@ -791,6 +791,7 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
         majority_driver = Etcd3gwV3Client(self.endpoints[1:], timeout=3.0)
         majority_store = EtcdV3CoordinatorAuthorityStore(majority_driver)
         streams = []
+        active_stream = None
         gap_thread = None
         gap_release = threading.Event()
         gap_first_write = threading.Event()
