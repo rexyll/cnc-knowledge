@@ -454,3 +454,5 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 
 **应用访问门禁：** staging期间应用身份无权访问namespace；应用可能在state缺失时自动初始化空Scheduler，因此绝不能提前启动。导入完成后先读回最终state与Leader key，再撤销迁移写身份，只向应用身份开放业务所需精确键范围，并排除 `staging/`；随后才允许启动新Leader claim。Provider业务仍须独立完成外部fencing floor核验。
 
+**第七十八轮验证：** [Knowledge Quality Run 46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) success：594 unittest（40 skipped），CH12数值资源测试143项通过，knowledge lint 0 errors/5 warnings，结构检查0 errors。该轮只验证协议模型与仓库质量门禁，没有真实etcd写入/故障注入。
+
