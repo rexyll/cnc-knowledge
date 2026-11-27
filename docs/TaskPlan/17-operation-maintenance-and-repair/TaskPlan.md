@@ -927,4 +927,4 @@
 - 新增SRC-000410～SRC-000412，核实etcd v3.7 simple token默认TTL为300秒、JWT TTL独立配置及simple/JWT设计差异。
 - 驱动增加显式set_auth_token(token|None)更新全部endpoint session；新增Fake Gateway更新/清除和认证异常不触发failover测试。
 - 新增独立10秒simple token mTLS集成阶段，覆盖token过期拒绝、重新认证、全部endpoint token更新、KV Range与Watch created握手；默认RBAC套件仍使用300秒TTL。
-- 正文/实体/README/资源索引已同步。**验收状态：** 等待短TTL live workflow和最终默认质量CI；本轮暂不标记DONE。自动刷新仍未实现，正式ASSET-000092状态不变。
+- 正文/实体/README/资源索引已同步。**验收结果：** Live [Run 45920726761](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726761)成功：基础三节点6项、mTLS/RBAC 8项、10秒simple-token生命周期1项通过；Artifact 15164208273，SHA-256 `0b66c69eb7f1ecc12e0d8bfbbf80ab0bf51de739ec31d8d2e9f3db878619e476`。默认质量[Run 45920726730](https://github.com/rexyll/cnc-knowledge/actions/runs/45920726730)两个Job成功：518项unittest（501通过、17项opt-in skip）、CH12 143项、strict lint 0 errors。第五十三轮任务验收通过；自动刷新仍未实现，正式ASSET-000092状态不变。
