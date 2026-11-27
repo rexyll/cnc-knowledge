@@ -264,7 +264,7 @@ etcd Gateway错误响应的协议依据补充如下：SRC-000413记录etcd v3.6+
 
 诊断Artifact [15167295428](https://github.com/rexyll/cnc-knowledge/actions/runs/45927091505/artifacts/15167295428)，SHA-256 `2f06dbcea1b1e69bf9dfcf2666bfedff3811321aa8a8dd1474181c88b75e7aff`。本轮还修正runner诊断目录归档，使mTLS Compose成员日志和状态文件纳入CI Artifact。
 
-**默认质量CI：** [Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)在最终文档head成功：全库527项unittest通过；CH12 143项数值测试通过；strict knowledge lint 0 errors；fixture validator 0 errors / 5项既有治理warning；结构数据为22章、178 Markdown、260实体、240关系、412来源、584内部链接。
+**默认质量CI：** [Run 45927138505](https://github.com/rexyll/cnc-knowledge/actions/runs/45927138505)在最终文档head成功：全库527项unittest（504 passed、23 skipped）；CH12 143项数值测试通过；strict knowledge lint 0 errors；fixture validator 0 errors / 5项既有治理warning；结构数据为22章、178 Markdown、260实体、240关系、412来源、584内部链接。
 
 **技术解释与限制：** 本次结果证明限定环境下存活成员可继续接受旧Token，Driver可从停机成员failover；但成员重启后旧simple Token在该成员返回401，而从健康成员重新认证得到的新Token在三个成员都可用。该结果只描述本次etcd v3.7.0/simple-token实验，不将原因扩展推断为所有etcd版本或JWT token行为。Driver仍不保存用户名/密码，不自动重新认证，不自动刷新Token；调用方必须通过受控凭据源显式重新认证并调用token替换接口。不得匿名回退，不得将401/403作为endpoint failover条件。
 
