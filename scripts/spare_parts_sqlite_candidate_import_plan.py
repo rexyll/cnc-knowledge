@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from scripts.spare_parts_migration_namespace import (
+    MigrationNamespaceError,
     validate_isolated_namespace,
 )
 from scripts.spare_parts_provider_unified_admission_store import (
@@ -254,7 +255,10 @@ def build_import_plan(
     wire_safety_margin_bytes: int = 4096,
 ) -> dict[str, Any]:
     """Return a deterministic one-shot Txn plan; never connect to a store."""
-    prefix = validate_isolated_namespace(namespace_prefix)
+    try:
+        prefix = validate_isolated_namespace(namespace_prefix)
+    except MigrationNamespaceError as exc:
+        raise ImportPlanError(f"unsafe target namespace: {exc}") from exc
     if prefix == PRODUCTION_PREFIX:
         raise ImportPlanError("production namespace is never an import target")
     max_ops = _required_int(max_txn_ops, "max_txn_ops", 1)
