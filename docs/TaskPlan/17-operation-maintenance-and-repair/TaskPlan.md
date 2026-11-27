@@ -1181,3 +1181,13 @@
 - **试验修正：** 前两次Live失败分别来自测试错误地在未配置Progress间隔的多数派端点等待空Progress，以及只等待空闲Watch而没有使用既有成功用例的范围外marker触发通知。最终测试按Compose真实配置将Watch连接到etcd1、先线性一致Range同步本地revision，再通过前缀外marker触发空Progress；两次中间失败均不作为通过证据。最终Live Run 45975852325通过。
 - **证据边界：** 本轮的“长运行”指一次Live测试内跨越两轮Compaction、多个Watch重建和并发事件序列，不等于无限期耐久运行、背压/内存上限或生产运行SLO验证。客户端cache是测试中构造的投影模型，不代表仓库已交付生产Watch缓存服务。Watch仍为单向HTTP server-streaming，双向`WatchProgress`/`WatchCancel`未实现；Compaction/断流/旧cursor失效时仍必须通过健康多数派线性一致Range重建快照并从R+1恢复。
 - **治理状态不变：** ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍为唯一生产权威；SQLite Coordinator业务状态机尚未迁移；CH17-T004整体保持`IN_PROGRESS`。
+
+### 第六十六轮任务计划：慢消费者、Watch积压与Compaction竞争
+
+- **目标：** 验证应用层暂停读取Watch流、后续缓慢恢复消费时的事件积压完整性；并将积压流与Compaction并置，明确服务端继续排空已有事件与取消过期Watch两种可能路径下的安全客户端行为。
+- **受控慢消费：** 先用健康多数派线性一致Range建立前缀snapshot/cache，从R+1创建Watch；写入一批唯一key事件，但在写入阶段不调用`next(stream)`，形成有界应用读取停顿；随后逐响应/逐事件加入可控消费延迟，验证revision顺序、PUT/DELETE previous KV、事件唯一身份及无缺失/无重复，并与quorum Range快照逐key/value核对。
+- **Compaction竞争：** 建立第二条Watch并读取created握手帧后暂停消费；多数派在Watch前缀内提交第二批有限事件，随后对最新已提交revision执行Compaction。恢复读取时不预设活动HTTP流一定立即取消：若流完整排空积压，则验证所有事件只应用一次；若收到canceled/compact_revision，则立即关闭旧流、丢弃旧cursor及部分投影。任何超时、非单调revision、未知事件或不能由完整事件/Progress解释的提前结束均应失败。
+- **权威恢复：** 不论活动流已排空还是取消，都从健康多数派取得线性一致前缀快照，整体替换缓存，并显式用旧start_revision探测服务端取消过期cursor；从snapshot+1开启新Watch，提交后续事件并核实只投递一次，最终缓存与线性一致Range完全一致。
+- **范围与负载限制：** 使用固定数量的唯一KV、小型定长value和有限写入线程；记录停读时长、写入事件数、消费响应数/最大单响应事件数、压缩revision、活动流完成模式和恢复cursor。不把该测试解释为无界压力、网络带宽上限、RSS/堆内存上限、真实自动背压或无限期运行测试。
+- **协议与安全：** 复用etcd1配置的1秒Progress通知端点；由etcd2/etcd3多数派负责写、快照、Compaction和旧cursor探测；Compaction仅在Compose project/service标签核验后的本次etcd2容器执行。唯一测试前缀，finally关闭所有流/客户端并删除该前缀全部KV；不改宿主机iptables、不触碰其他容器/网络。
+- **验收：** Fake/单元契约与三节点Live分别记录；Live测试接入现有`run.sh`。只将其作为etcd v3.7.0 / etcd3gw 2.7.0一次性Compose supporting evidence；不宣称已交付生产消费者队列、最大缓存容量、背压策略或业务Coordinator迁移。Watch仍为单向HTTP server-streaming，不实现双向WatchProgress/WatchCancel。
