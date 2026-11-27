@@ -1163,3 +1163,13 @@
 - **核心结论：** etcd KV/Txn/Lease和可选Watch底层能力已存在，但业务层`DurableCoordinatorAuthorityBackend`仍由SQLite实现，尚未形成由业务服务持有的etcd Watch生命周期；因此不应先行添加后台Supervisor/探测线程。
 - **后续门禁：** 先迁移业务状态机并明确服务owner、消费并发模型、探测权限/deadline/频率预算及监控出口，再实现每进程共享Quorum探测和Watch观测。默认`watch_read_timeout=None`不变；ASSET-000092仍`PROPOSED_NOT_APPROVED / NOT_RUN`，schema-v2仍为唯一生产权威。
 - **核心交付提交：** `1de73f780904d090f16f2d298a877fc18b4e8828`。
+
+
+### 第七十一轮任务计划：Unified Coordinator 真实 etcd 适配器与业务契约验证
+
+- **目标：** 基于仓库已有的`StoreBackedCoordinatorAuthority`与`StoreBackedProviderAdmissionCoordinator`统一schema-v2实现，补齐业务服务Protocol符合性断言，并通过一次性三节点etcd v3.7.0集群验证真实HTTP Gateway/Txn/Lease路径。
+- **先决事实：** 第四十一轮已交付store-backed Coordinator业务参考实现；当前测试在SQLite与`InMemoryEtcdV3Client`上执行，不代表真实etcd在线验证。第七十轮审查中的“缺少etcd-backed业务状态机”表述须更正为“已有参考实现，旧SQLite数据cutover与真实集群验证尚未完成”。
+- **实现任务：** (1) 在现有契约测试中显式断言`StoreBackedCoordinatorAuthority`符合`DurableCoordinatorAuthorityBackend` runtime Protocol；(2) 新增opt-in三节点Live测试，覆盖ACTIVATE→PUBLISH→REVOKE完整状态链、Admission Lease与Coordinator同Txn状态、多个独立HTTP客户端的并发operation sequence唯一分配/幂等、Leader TTL到期后的epoch takeover与旧Leader fencing；(3) 使用每测试独立namespace，所有测试只接触本次Compose专用etcd集群；(4) 接入`scripts/etcd-integration/run.sh`与其README。
+- **范围限制：** 不切换生产authority，不双写旧SQLite和Unified schema-v2，不执行旧表迁移，不接真实Provider/云对象存储；合成Provider仅作为业务状态机的测试边界。Unified schema-v2单aggregate全局串行写入热点和operation增长问题继续保留。
+- **文档同步：** 更正第七十轮审查报告、追加统一Coordinator技术正文与章节README、更新根/章节TaskPlan和每日TaskHistory；如新增完整资源文件，仍按Guide归档到`resouces/17-operation-maintenance-and-repair/`。
+- **验收标准：** 协议测试、普通全库Quality、CH12与strict lint通过；三节点etcd Live suite通过；明确标记正式矩阵仍未批准/未执行、生产cutover仍未完成，不将CI Live supporting evidence描述为生产HA验收。

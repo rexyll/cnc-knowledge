@@ -10,13 +10,14 @@
 
 **当前不应直接实现或启用生产Watch Supervisor、定时Quorum探测线程或自动恢复状态机。**
 
-仓库已经具备底层构件：etcd KV/Txn/Lease适配器、线性一致Range、可选Watch迭代器、低层HTTP Watch server-streaming驱动，以及Fake/三节点Compose测试。但这些构件尚未形成一条由业务服务实际持有和管理的生产调用链：
+仓库已经具备底层构件，也**已经存在一条store-backed业务Coordinator参考实现**；上一版审查漏看了第41轮的统一Coordinator实现，现更正如下：
 
-1. 业务层 `DurableCoordinatorAuthorityBackend` 的当前具体服务仍是SQLite实现。
-2. `EtcdV3CoordinatorAuthorityStore` 是KV/Txn/Lease存储适配器，不是完整的业务Coordinator服务替代品。
-3. `CoordinatorAuthorityWatchStore` 是独立的可选Watch能力；Watch流目前由底层接口和测试调用，没有业务服务级的owner、start/stop、线程/任务调度和关闭流程。
-4. Watch迭代器是同步pull模型；`next(stream)`可能阻塞。不能把Quorum探测塞进同一个消费循环。
-5. 生产探测key权限、请求deadline、探测频率、实例数量、监控出口、部署网络和业务SLO尚未定义。
+1. `scripts/spare_parts_provider_unified_coordinator_authority.py`中的`StoreBackedCoordinatorAuthority`实现了Leader、scope fencing、ACTIVATE/REVOKE/PUBLISH operation ledger、序列分配与恢复协调业务方法，具备`DurableCoordinatorAuthorityBackend`所要求的同名接口。
+2. 该业务服务以`StoreBackedProviderAdmissionCoordinator`为统一Admission scheduler，把Coordinator子状态写入同一schema-v2 aggregate；其业务状态转换通过同一个`CoordinatorAuthorityStore`事务比较aggregate revision、Leader TTL key及Admission活动Lease/request索引。
+3. 现有`tests/test_spare_parts_provider_unified_coordinator_authority.py`已把同一契约分别运行于`SQLiteCoordinatorAuthorityStore`和`EtcdV3CoordinatorAuthorityStore(InMemoryEtcdV3Client)`。这是Fake etcd adapter证据，不是真实etcd服务器证据；此前未发现该业务实现的三节点Live集成测试或显式runtime Protocol符合性断言。
+4. 旧`SQLiteDurableCoordinatorAuthority`和旧`SQLiteProviderAdmissionCoordinator`仍保留；尚无旧SQLite表/Admission队列向统一schema-v2 aggregate迁移的工具、写冻结、回滚和正式cutover。
+5. `CoordinatorAuthorityWatchStore`仍是独立可选能力；`StoreBackedCoordinatorAuthority`没有持有Watch消费者或运行时Supervisor。Watch生命周期owner、start/stop、线程/任务调度及关闭流程仍未建立。
+6. Watch迭代器是同步pull模型；`next(stream)`可能阻塞。生产探测key权限、请求deadline、频率、实例预算、指标出口、部署网络和业务SLO尚未定义。
 
 因此，本轮只完成代码事实审查和接入门禁设计；**不新增运行线程、不自动触发Range、不改变默认超时、不启用自动重连/failover，也不改变schema-v2生产权威。**
 
@@ -25,8 +26,10 @@
 | 层次 | 当前实现 | 已具备能力 | 尚缺少的生产职责 |
 |---|---|---|---|
 | 业务服务契约 | `DurableCoordinatorAuthorityBackend`，定义于 `scripts/spare_parts_provider_authority_store.py` | 领导权、激活/撤销、序列分配、发布确认、恢复协调等业务操作契约 | 该契约尚无基于etcd KV端口的完整业务状态机实现 |
-| 业务服务实现 | `scripts/spare_parts_provider_coordinator_authority.py` | 当前SQLite WAL持久化的同机参考实现 | 业务状态迁移、跨主机部署和etcd故障语义整合尚未完成 |
-| 基础存储端口 | `CoordinatorAuthorityStore` | 线性一致精确读、Txn、Lease操作 | 不是业务服务接口；没有规定Watch运行时生命周期 |
+| 旧业务服务实现 | `SQLiteDurableCoordinatorAuthority` | SQLite WAL同机参考实现 | 旧SQLite数据迁移、冻结、回滚和cutover未完成 |
+| Store-backed业务服务 | `StoreBackedCoordinatorAuthority` | Leader/Scope/Operation状态机；与Admission aggregate共用同一Store Txn；具备Durable backend方法集 | 仍是参考实现；真实etcd、多主机与生产Provider验证缺失 |
+| Admission调度器 | `StoreBackedProviderAdmissionCoordinator` | schema-v2统一aggregate，保存quota、waiter、Admission Lease和Coordinator子状态 | 单aggregate是全局写串行点；旧SQLite Admission迁移未完成 |
+| 基础存储端口 | `CoordinatorAuthorityStore` | 线性一致读、Txn、Lease操作 | 不负责业务服务生命周期或Watch运行时管理 |
 | 可选Watch端口 | `CoordinatorAuthorityWatchStore` | 以revision为基础订阅KV变化；Watch只是唤醒提示，不能作为权威状态 | 未定义业务消费者、投影缓存所有权、并发模型和关停管理 |
 | etcd适配器 | `EtcdV3CoordinatorAuthorityStore` | `linearizable_get`、`linearizable_range`、Txn、Lease及可选Watch转换 | 不负责创建进程级Supervisor，也不负责业务层恢复编排 |
 | 传输驱动 | `scripts/spare_parts_provider_etcd3gw_driver.py` 中的 `Etcd3gwV3Client` | HTTP gRPC-gateway Range/Txn/Lease和Watch响应流解析；只读操作按既有策略处理endpoint故障 | 当前Watch是单向HTTP server-streaming；流建立后固定endpoint，不支持已建立流上的双向Progress/Cancel控制 |
@@ -34,18 +37,17 @@
 当前职责关系：
 
 ```text
-业务服务：DurableCoordinatorAuthorityBackend
-  └─ 当前实现：SQLite Durable Coordinator
-       └─ SQLite WAL（同机参考，不是多主机共识）
-
-未来目标（尚未完成）：
-业务服务：etcd-backed Durable Coordinator（尚不存在）
-  └─ CoordinatorAuthorityStore
-       └─ EtcdV3CoordinatorAuthorityStore
-            └─ EtcdV3Client
-                 └─ Etcd3gwV3Client
-                      ├─ linearizable Range
-                      └─ HTTP Watch stream
+业务服务契约：DurableCoordinatorAuthorityBackend
+  ├─ 旧实现：SQLiteDurableCoordinatorAuthority
+  │    └─ SQLite WAL（同机参考）
+  └─ Store-backed参考实现：StoreBackedCoordinatorAuthority
+       └─ StoreBackedProviderAdmissionCoordinator
+            └─ CoordinatorAuthorityStore
+                 ├─ SQLiteCoordinatorAuthorityStore（本地契约测试）
+                 └─ EtcdV3CoordinatorAuthorityStore
+                      └─ Etcd3gwV3Client
+                           ├─ linearizable Range / Txn / Lease
+                           └─ HTTP Watch stream（独立可选接口）
 ```
 
 关键区别：**存储适配器已经存在，不等于业务Coordinator已经迁移到该适配器。** 只有业务层开始真实持有etcd-backed服务后，针对业务运行时的健康探测和Watch生命周期管理才有明确的集成对象。
@@ -102,10 +104,10 @@
 
 ### G1. 业务服务迁移完成
 
-- 有一个实现`DurableCoordinatorAuthorityBackend`的etcd-backed业务服务，而不只是`EtcdV3CoordinatorAuthorityStore`。
-- 业务状态机迁移覆盖领导权、epoch/fencing、Lease、幂等操作、未知Txn结果核对、序列分配、发布确认和恢复流程。
-- SQLite参考实现继续保留为同机/测试实现；不得把本地SQLite WAL描述为多主机共识。
-- 所有业务方法具备与现有服务契约一致的测试，并明确生产切换条件。
+- 已有`StoreBackedCoordinatorAuthority`作为业务级store-backed参考实现；先补充显式`DurableCoordinatorAuthorityBackend` runtime Protocol符合性测试，并在真实三节点etcd上执行核心业务契约。
+- 验证覆盖领导权TTL/epoch fencing、Admission Lease同Txn保护、ACTIVATE/REVOKE/PUBLISH、幂等、未知Txn结果、并发序列分配和恢复流程。
+- 旧`SQLiteDurableCoordinatorAuthority`与旧`SQLiteProviderAdmissionCoordinator`仍作为迁移源和回退参考；单独设计并审批SQLite旧表/队列到Unified schema-v2的冻结、导入、核验、回滚和单权威cutover。
+- 真实etcd Live通过仍只属于supporting evidence；不得据此自动切换生产权威或宣称正式企业验收。
 
 ### G2. 运行时生命周期已定义
 
@@ -148,8 +150,9 @@
 
 | 顺序 | 后续工作 | 前置条件 | 本轮状态 |
 |---|---|---|---|
-| 1 | 将业务Coordinator状态机从SQLite SQL实现迁移到CoordinatorAuthorityStore端口，形成etcd-backed DurableCoordinatorAuthorityBackend | 业务服务契约与迁移范围确认 | BLOCKED：当前业务实现仍为SQLite |
-| 2 | 明确服务生命周期、Watch消费者和阻塞模型 | 步骤1形成可运行的业务服务owner | TODO |
+| 1 | 补齐StoreBackedCoordinatorAuthority与Durable backend Protocol一致性断言，并执行三节点真实etcd Live契约 | 已有Unified schema-v2 Store-backed实现 | IN_PROGRESS：Fake已覆盖，真实etcd待补 |
+| 2 | 设计旧SQLite Admission/Coordinator表与Unified schema-v2 aggregate受控迁移/回滚cutover | 步骤1 Live evidence通过；外部Provider fencing floor来源确认 | BLOCKED：无迁移工具/审批 |
+| 3 | 明确服务生命周期、Watch消费者和阻塞模型 | 统一业务服务单权威cutover设计明确 | TODO |
 | 3 | 实现每进程共享Quorum探测器及状态快照 | 步骤1、2完成；读权限、deadline、频率预算明确 | TODO |
 | 4 | 将Watch流观测和Quorum探测结果接入监控 | 指标出口、标签和告警SLO明确 | TODO |
 | 5 | 开展目标部署环境下故障演练 | 生产网络路径和场景矩阵确定 | TODO |
@@ -165,10 +168,22 @@
 ## 8. 验收依据与关联资料
 
 - `scripts/spare_parts_provider_authority_store.py`：`CoordinatorAuthorityStore`、`CoordinatorAuthorityWatchStore`、`DurableCoordinatorAuthorityBackend`及`EtcdV3CoordinatorAuthorityStore`。
-- `scripts/spare_parts_provider_coordinator_authority.py`：当前SQLite Durable Coordinator业务服务实现。
+- `scripts/spare_parts_provider_coordinator_authority.py`：旧SQLite Durable Coordinator业务服务实现。
+- `scripts/spare_parts_provider_unified_admission_store.py`：统一Admission schema-v2 aggregate与store-backed scheduler。
+- `scripts/spare_parts_provider_unified_coordinator_authority.py`：Store-backed Unified Coordinator业务服务实现。
+- `tests/test_spare_parts_provider_unified_coordinator_authority.py`：SQLite与Fake etcd adapter业务契约测试。
 - `scripts/spare_parts_provider_etcd3gw_driver.py`：HTTP gateway驱动、线性一致Range和Watch流实现。
 - `tests/test_spare_parts_provider_authority_store.py`、`tests/test_spare_parts_provider_authority_store_watch.py`、`tests/test_spare_parts_provider_etcd3gw_driver.py`：存储契约、Watch和驱动Fake测试。
 - `docs/17-operation-maintenance-and-repair/watch-connection-health-and-liveness-decision-record.md`：第六十九轮健康分层决策。
 - `docs/17-operation-maintenance-and-repair/spare-parts-inventory-backup-provider-coordinator-etcd3gw-driver-and-three-node-integration.md`：当前驱动和三节点集成的完整技术记录。
 
 **最终结论：** 先完成业务服务对存储端口的真实接入和生命周期归属，再实现共享探测；当前Watch/Quorum能力保留为可验证的底层构件，不提前宣称生产健康能力。
+
+
+## 9. 第七十一轮审查更正与真实etcd验证计划
+
+第七十轮审查发布后进一步检索历史实现，发现其“尚无etcd-backed业务Coordinator状态机”表述不准确。第41轮已经交付`StoreBackedCoordinatorAuthority`和`StoreBackedProviderAdmissionCoordinator`：Coordinator状态嵌入Unified Admission schema-v2 aggregate，并通过同一`CoordinatorAuthorityStore`事务处理业务转换及Admission活动Lease/request索引比较。它可使用SQLite存储适配器或etcd v3存储适配器。
+
+该实现仍不是旧SQLite服务的自动迁移，也没有生产cutover；已有etcd侧测试使用`InMemoryEtcdV3Client`，并非真实etcd服务器。因此第七十一轮优先补充业务Protocol符合性断言和真实三节点etcd Live测试，随后仍需单独规划旧SQLite数据迁移、写冻结、回滚及单权威切换。
+
+本次更正保留第七十轮“暂不增加Watch Supervisor”的决定：虽然store-backed业务Coordinator参考实现存在，但它尚未持有Watch stream owner，也没有业务级Supervisor、独立Quorum探测调度和监控生命周期。
