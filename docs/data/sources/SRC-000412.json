@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000412",
+  "source_type": "other",
+  "title": "Role-based access control — etcd v3.7",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.7/op-guide/authentication/rbac/",
+  "version": "etcd v3.7 RBAC guide; accessed 2026-11-27.",
+  "published_on": null,
+  "accessed_on": "2026-11-27",
+  "locator": "Authentication scope, protected v3 API operations, /health and /metrics exceptions, and gRPC-gateway limitation for mTLS Common Name authentication.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Used to preserve distinction between mTLS transport identity and HTTP gRPC-gateway token-based RBAC identity; health/metrics endpoints are not protected by v3 RBAC.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
