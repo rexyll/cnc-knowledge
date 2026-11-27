@@ -10,6 +10,7 @@ import unittest
 from uuid import uuid4
 
 from scripts.spare_parts_provider_authority_store import (
+    AuthorityStoreDelete,
     AuthorityStorePut,
     AuthorityStoreUnavailableError,
     EtcdV3CoordinatorAuthorityStore,
@@ -254,18 +255,17 @@ class Etcd3gwLiveLeaseWatchRecoveryTests(unittest.TestCase):
                 "timeout",
                 "established Watch stream did not report EOF/disconnect after its member stopped",
             )
-            if termination[0] == "exception":
-                self.assertIsInstance(
-                    termination[1],
-                    AuthorityStoreUnavailableError,
-                    f"unexpected Watch disconnect classification: {type(termination[1]).__name__}",
-                )
-                disconnect_result = type(termination[1]).__name__
-            else:
-                # A clean HTTP EOF is also an explicit end of this iterator;
-                # it is not an automatic restart or a synthetic Watch event.
-                self.assertIsInstance(termination[1], StopIteration)
-                disconnect_result = "StopIteration"
+            self.assertEqual(
+                termination[0],
+                "exception",
+                "an HTTP EOF without etcd's canceled control frame must be classified as a disconnect",
+            )
+            self.assertIsInstance(
+                termination[1],
+                AuthorityStoreUnavailableError,
+                f"unexpected Watch disconnect classification: {type(termination[1]).__name__}",
+            )
+            disconnect_result = type(termination[1]).__name__
 
             # The Watch must not silently dispatch a second request elsewhere.
             self.assertEqual(attempts, [self.endpoints[0]])
@@ -338,6 +338,219 @@ class Etcd3gwLiveLeaseWatchRecoveryTests(unittest.TestCase):
                 current, _ = majority_store.linearizable_get(key)
                 if current is not None and current.lease_id in lease_ids:
                     majority_store.lease_revoke(current.lease_id)
+            except Exception:
+                pass
+            watch_driver.close()
+            majority_driver.close()
+
+
+    def test_watch_partial_projection_is_rebuilt_after_midstream_member_restart(self):
+        suffix = uuid4().hex
+        prefix = f"/cnc-knowledge-it/watch-reconnect-window/{suffix}/state/".encode()
+        range_end = prefix[:-1] + b"0"
+        alpha = prefix + b"alpha"
+        beta = prefix + b"beta"
+        gamma = prefix + b"gamma"
+        delta = prefix + b"delta"
+        minority_container = self._container_id("etcd1")
+
+        majority_driver = Etcd3gwV3Client(self.endpoints[1:], timeout=3.0)
+        majority_store = EtcdV3CoordinatorAuthorityStore(majority_driver)
+        watch_driver = Etcd3gwV3Client([self.endpoints[0]], timeout=3.0)
+        watch_store = EtcdV3CoordinatorAuthorityStore(watch_driver)
+        stream = None
+        resumed_stream = None
+        stopped = False
+        attempts: list[str] = []
+        applied_before_disconnect: list[int] = []
+        resumed_event_revision = None
+        snapshot_revision = None
+        cache: dict[bytes, bytes] = {}
+
+        def apply_one(response, projection: dict[bytes, bytes]) -> None:
+            self.assertFalse(response.created)
+            self.assertFalse(response.canceled)
+            self.assertFalse(response.fragment)
+            self.assertEqual(len(response.events), 1)
+            event = response.events[0]
+            self.assertEqual(event.event_type, "PUT")
+            self.assertIsNotNone(event.entry)
+            if event.previous_entry is not None:
+                self.assertEqual(projection.get(event.key), event.previous_entry.value)
+            projection[event.key] = event.entry.value
+
+        try:
+            initial = majority_store.transact(
+                [],
+                [
+                    AuthorityStorePut(alpha, b"alpha-v0"),
+                    AuthorityStorePut(beta, b"beta-v0"),
+                ],
+            )
+            self.assertTrue(initial.succeeded)
+
+            baseline = majority_store.linearizable_range(prefix, range_end=range_end)
+            cache = {entry.key: entry.value for entry in baseline.entries}
+            self.assertEqual(cache, {alpha: b"alpha-v0", beta: b"beta-v0"})
+
+            # Ensure etcd1 has applied the snapshot before creating its Watch.
+            local_baseline = watch_store.linearizable_range(prefix, range_end=range_end)
+            self.assertGreaterEqual(local_baseline.revision, baseline.revision)
+
+            attempts = self._track_watch_attempts(watch_driver)
+            stream = watch_store.watch(
+                prefix,
+                start_revision=baseline.revision + 1,
+                range_end=range_end,
+                progress_notify=False,
+                prev_kv=True,
+            )
+            opened = self._next_result(stream)
+            self.assertEqual(opened[0], "response", opened[1])
+            self.assertTrue(opened[1].created)
+            self.assertEqual(attempts, [self.endpoints[0]])
+
+            # Apply one acknowledged event, leaving a partially current cache.
+            first_update = majority_store.transact(
+                [], [AuthorityStorePut(alpha, b"alpha-v1")]
+            )
+            self.assertTrue(first_update.succeeded)
+            first_event = self._next_result(stream)
+            self.assertEqual(first_event[0], "response", first_event[1])
+            apply_one(first_event[1], cache)
+            self.assertEqual(cache[alpha], b"alpha-v1")
+            applied_before_disconnect.append(first_event[1].events[0].revision)
+
+            # Stop only the label-verified disposable etcd1 container.
+            self._run(
+                ["docker", "stop", "--time", "1", minority_container],
+                timeout=20.0,
+            )
+            stopped = True
+
+            # These mutations form the gap while the established Watch is down.
+            second_update = majority_store.transact(
+                [], [AuthorityStorePut(alpha, b"alpha-v2")]
+            )
+            beta_delete = majority_store.transact(
+                [], [AuthorityStoreDelete(beta)]
+            )
+            gamma_create = majority_store.transact(
+                [], [AuthorityStorePut(gamma, b"gamma-v1")]
+            )
+            self.assertTrue(second_update.succeeded)
+            self.assertTrue(beta_delete.succeeded)
+            self.assertTrue(gamma_create.succeeded)
+            outage_last_revision = gamma_create.revision
+
+            termination = self._next_result(stream, timeout=12.0)
+            self.assertEqual(
+                termination[0],
+                "exception",
+                "the established Watch must surface its endpoint interruption",
+            )
+            self.assertIsInstance(
+                termination[1],
+                AuthorityStoreUnavailableError,
+                f"unexpected disconnect classification: {type(termination[1]).__name__}",
+            )
+            self.assertEqual(attempts, [self.endpoints[0]])
+
+            expected_after_outage = {
+                alpha: b"alpha-v2",
+                gamma: b"gamma-v1",
+            }
+            self.assertNotEqual(
+                cache,
+                expected_after_outage,
+                "the pre-recovery projection should expose the unobserved write gap",
+            )
+
+            # Restore the same member, then reconcile using the quorum snapshot.
+            self._run(["docker", "start", minority_container], timeout=20.0)
+            stopped = False
+            self._wait_for_quorum()
+
+            snapshot = majority_store.linearizable_range(prefix, range_end=range_end)
+            snapshot_revision = snapshot.revision
+            self.assertGreaterEqual(snapshot_revision, outage_last_revision)
+            cache = {entry.key: entry.value for entry in snapshot.entries}
+            self.assertEqual(cache, expected_after_outage)
+
+            # The replacement projection covers all revisions <= R; resume at R+1.
+            resumed_cursor = snapshot_revision + 1
+            resumed_stream = majority_store.watch(
+                prefix,
+                start_revision=resumed_cursor,
+                range_end=range_end,
+                progress_notify=False,
+                prev_kv=True,
+            )
+            resumed_created = self._next_result(resumed_stream)
+            self.assertEqual(resumed_created[0], "response", resumed_created[1])
+            self.assertTrue(resumed_created[1].created)
+
+            successor = majority_store.transact(
+                [], [AuthorityStorePut(delta, b"delta-v1")]
+            )
+            self.assertTrue(successor.succeeded)
+            resumed_event = self._next_result(resumed_stream)
+            self.assertEqual(resumed_event[0], "response", resumed_event[1])
+            apply_one(resumed_event[1], cache)
+            resumed_event_revision = resumed_event[1].events[0].revision
+            self.assertEqual(resumed_event_revision, successor.revision)
+
+            final = majority_store.linearizable_range(prefix, range_end=range_end)
+            final_projection = {entry.key: entry.value for entry in final.entries}
+            self.assertEqual(cache, final_projection)
+            self.assertEqual(
+                final_projection,
+                {
+                    alpha: b"alpha-v2",
+                    gamma: b"gamma-v1",
+                    delta: b"delta-v1",
+                },
+            )
+
+            print(
+                "WATCH_PARTIAL_PROJECTION_RECOVERY_OBSERVATION "
+                + json.dumps(
+                    {
+                        "baseline_revision": baseline.revision,
+                        "first_applied_event_revisions": applied_before_disconnect,
+                        "disconnect_result": type(termination[1]).__name__,
+                        "unobserved_outage_write_revisions": [
+                            second_update.revision,
+                            beta_delete.revision,
+                            gamma_create.revision,
+                        ],
+                        "outage_last_revision": outage_last_revision,
+                        "snapshot_revision": snapshot_revision,
+                        "resume_cursor": resumed_cursor,
+                        "resumed_event_revision": resumed_event_revision,
+                        "final_range_revision": final.revision,
+                        "projection_matches_linearizable_range": True,
+                        "watch_endpoint_attempts": attempts,
+                        "stale_cursor_replayed": False,
+                    },
+                    sort_keys=True,
+                )
+            )
+        finally:
+            if stream is not None:
+                stream.close()
+            if resumed_stream is not None:
+                resumed_stream.close()
+            if stopped:
+                self._run(["docker", "start", minority_container], timeout=20.0)
+                self._wait_for_quorum()
+            try:
+                remaining = majority_store.linearizable_range(prefix, range_end=range_end)
+                if remaining.entries:
+                    majority_store.transact(
+                        [],
+                        [AuthorityStoreDelete(entry.key) for entry in remaining.entries],
+                    )
             except Exception:
                 pass
             watch_driver.close()
