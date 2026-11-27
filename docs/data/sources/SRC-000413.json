@@ -1,0 +1,18 @@
+{
+  "source_id": "SRC-000413",
+  "source_type": "other",
+  "title": "Why gRPC gateway — etcd v3.6",
+  "publisher": "etcd Project — Official Documentation",
+  "author": null,
+  "url": "https://etcd.io/docs/v3.6/dev-guide/api_grpc_gateway/",
+  "version": "etcd v3.6 Gateway documentation; accessed 2026-11-27.",
+  "published_on": null,
+  "accessed_on": "2026-11-27",
+  "locator": "Gateway error responses: gRPC status translated to HTTP status and google.rpc.Status JSON body; clients should use HTTP status as primary indicator and message for context.",
+  "language": "en",
+  "rights_status": "link_only",
+  "license_or_permission": null,
+  "notes": "Supports parsing structured Gateway errors and distinguishes current v3.6+ behavior from older Gateway error payloads. No documentation text is reproduced.",
+  "authority_tier": "A",
+  "evidence_kind": "official_documentation"
+}
