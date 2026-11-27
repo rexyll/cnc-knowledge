@@ -111,26 +111,30 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
         worker.join(timeout=1.0)
         return result
 
-    def _create_access_network(self, network: str) -> None:
+    def _create_access_network(
+        self, network: str, *, purpose: str = "watch-minority-isolation"
+    ) -> None:
         self._run([
             "docker", "network", "create", "--driver", "bridge",
             "--label", f"cnc-knowledge.project={self.project}",
-            "--label", "cnc-knowledge.purpose=watch-minority-isolation",
+            "--label", f"cnc-knowledge.purpose={purpose}",
             network,
         ])
         details = self._network_details(network)
         labels = details.get("Labels") or {}
         self.assertEqual(labels.get("cnc-knowledge.project"), self.project)
         self.assertEqual(
-            labels.get("cnc-knowledge.purpose"), "watch-minority-isolation"
+            labels.get("cnc-knowledge.purpose"), purpose
         )
 
-    def _remove_access_network(self, network: str) -> None:
+    def _remove_access_network(
+        self, network: str, *, purpose: str = "watch-minority-isolation"
+    ) -> None:
         details = self._network_details(network)
         labels = details.get("Labels") or {}
         if (
             labels.get("cnc-knowledge.project") != self.project
-            or labels.get("cnc-knowledge.purpose") != "watch-minority-isolation"
+            or labels.get("cnc-knowledge.purpose") != purpose
         ):
             self.fail(f"refusing to remove an unowned Docker network: {network!r}")
         self._run(["docker", "network", "rm", network])
@@ -464,6 +468,334 @@ class Etcd3gwLiveMinorityWatchProgressTests(unittest.TestCase):
                             access_network, container_id,
                         ])
                     self._remove_access_network(access_network)
+
+
+    def test_minority_watch_is_canceled_by_quorum_compaction_then_snapshot_resumes(self):
+        suffix = uuid4().hex
+        key = f"/cnc-knowledge-it/watch-minority-compaction/{suffix}/leader".encode()
+        baseline_marker_key = (
+            f"/cnc-knowledge-it/watch-minority-compaction/{suffix}/baseline"
+        ).encode()
+        initial_value = f"leader-before-minority-compaction-{suffix}".encode()
+        partition_values = [
+            f"leader-quorum-update-{index}-{suffix}".encode()
+            for index in range(1, 3)
+        ]
+        resumed_value = f"leader-after-compaction-snapshot-{suffix}".encode()
+        access_network = f"{self.project}-watch-compact-{suffix[:12]}"
+        etcd1_container = self._container_id("etcd1")
+        etcd2_container = self._container_id("etcd2")
+
+        access_network_created = False
+        cluster_network_disconnected = False
+        access_endpoint = None
+        watch_driver = None
+        majority_driver = None
+        watch_store = None
+        majority_store = None
+        old_stream = None
+        resumed_stream = None
+        observations: dict = {}
+
+        try:
+            # Keep a host-reachable path to etcd1 for the Watch stream while
+            # removing only its peer path to etcd2/etcd3.
+            self._create_access_network(
+                access_network, purpose="watch-minority-compaction"
+            )
+            access_network_created = True
+            self._run(["docker", "network", "connect", access_network, etcd1_container])
+
+            memberships = self._network_memberships(etcd1_container)
+            self.assertIn(self.cluster_network, memberships)
+            self.assertIn(access_network, memberships)
+            access_ip = memberships[access_network].get("IPAddress")
+            self.assertTrue(access_ip, "temporary access network has no etcd1 IPv4 address")
+            access_endpoint = f"http://{access_ip}:2379"
+            self.assertEqual(
+                set(self._network_details(access_network).get("Containers") or {}),
+                {etcd1_container},
+            )
+
+            cluster_labels = self._network_details(self.cluster_network).get("Labels") or {}
+            self.assertEqual(
+                cluster_labels.get("com.docker.compose.project"), self.project
+            )
+            self.assertEqual(
+                cluster_labels.get("com.docker.compose.network"), "default"
+            )
+
+            majority_driver = Etcd3gwV3Client(self.endpoints[1:], timeout=3.0)
+            majority_store = EtcdV3CoordinatorAuthorityStore(majority_driver)
+            watch_driver = Etcd3gwV3Client([access_endpoint], timeout=3.0)
+            watch_store = EtcdV3CoordinatorAuthorityStore(watch_driver)
+
+            initial = majority_store.transact([], [AuthorityStorePut(key, initial_value)])
+            self.assertTrue(initial.succeeded)
+            marker = majority_store.transact(
+                [], [AuthorityStorePut(baseline_marker_key, b"watch-baseline")]
+            )
+            self.assertTrue(marker.succeeded)
+
+            majority_entry, majority_baseline_revision = majority_store.linearizable_get(key)
+            self.assertIsNotNone(majority_entry)
+            self.assertEqual(majority_entry.value, initial_value)
+            local_entry, local_baseline_revision = watch_store.linearizable_get(key)
+            self.assertIsNotNone(local_entry)
+            self.assertEqual(local_entry.value, initial_value)
+            self.assertGreaterEqual(majority_baseline_revision, marker.revision)
+            self.assertGreaterEqual(local_baseline_revision, marker.revision)
+            watch_start_revision = local_baseline_revision
+
+            old_stream = watch_store.watch(
+                key,
+                start_revision=watch_start_revision,
+                progress_notify=False,
+                prev_kv=True,
+            )
+            created_result = self._next_result(old_stream, timeout=8.0)
+            self.assertEqual(created_result[0], "response", created_result[1])
+            created = created_result[1]
+            self.assertTrue(created.created)
+            self.assertFalse(created.canceled)
+            self.assertEqual(created.events, ())
+
+            # Partition etcd1 after its watcher has synced at the baseline.
+            self._run([
+                "docker", "network", "disconnect",
+                self.cluster_network, etcd1_container,
+            ])
+            cluster_network_disconnected = True
+            memberships = self._network_memberships(etcd1_container)
+            self.assertNotIn(self.cluster_network, memberships)
+            self.assertIn(access_network, memberships)
+
+            # The remaining two-member majority commits new KV revisions.
+            partition_write_revisions = []
+            for value in partition_values:
+                result = majority_store.transact([], [AuthorityStorePut(key, value)])
+                self.assertTrue(result.succeeded)
+                partition_write_revisions.append(result.revision)
+            self.assertEqual(
+                partition_write_revisions,
+                sorted(partition_write_revisions),
+            )
+            self.assertGreater(partition_write_revisions[0], watch_start_revision)
+
+            majority_latest, majority_revision = majority_store.linearizable_get(key)
+            self.assertIsNotNone(majority_latest)
+            self.assertEqual(majority_latest.value, partition_values[-1])
+            self.assertGreaterEqual(majority_revision, partition_write_revisions[-1])
+
+            # Compact on etcd2, which remains in the quorum. The container must
+            # belong to this exact disposable Compose project/service.
+            compacted_revision = partition_write_revisions[-1]
+            compact_result = self._run([
+                "docker", "exec", etcd2_container,
+                "/usr/local/bin/etcdctl",
+                "--endpoints=http://127.0.0.1:2379",
+                "--dial-timeout=2s",
+                "--command-timeout=10s",
+                "compact", str(compacted_revision),
+            ], timeout=15.0)
+            self.assertEqual(compact_result.returncode, 0, compact_result.stderr)
+            self.assertGreater(compacted_revision, watch_start_revision)
+
+            # The old HTTP Watch remains pinned to minority etcd1 while the
+            # majority has compacted the range. On rejoin, Raft catch-up may
+            # deliver some missing KV events before the compact command is
+            # applied locally and the old watcher is canceled. Do not assume
+            # either zero or all catch-up events arrive before cancellation.
+            self._run([
+                "docker", "network", "connect",
+                self.cluster_network, etcd1_container,
+            ])
+            cluster_network_disconnected = False
+            memberships = self._network_memberships(etcd1_container)
+            self.assertIn(self.cluster_network, memberships)
+            self._wait_for_quorum(timeout=60.0)
+
+            old_watch_events = []
+            canceled = None
+            cancel_deadline = time.monotonic() + 30.0
+            while time.monotonic() < cancel_deadline:
+                outcome, response = self._next_result(
+                    old_stream,
+                    timeout=min(10.0, max(0.5, cancel_deadline - time.monotonic())),
+                )
+                self.assertNotEqual(outcome, "timeout", "old Watch did not receive compaction cancellation")
+                self.assertEqual(outcome, "response", response)
+                if response.canceled:
+                    canceled = response
+                    break
+                self.assertFalse(response.created)
+                for event in response.events:
+                    self.assertEqual(event.event_type, "PUT")
+                    self.assertEqual(event.key, key)
+                    self.assertIn(event.revision, partition_write_revisions)
+                    self.assertIsNotNone(event.entry)
+                    self.assertIn(event.entry.value, partition_values)
+                    old_watch_events.append({
+                        "revision": event.revision,
+                        "value": event.entry.value.decode("utf-8"),
+                    })
+            self.assertIsNotNone(canceled, "old Watch was not canceled after compacted log catch-up")
+            self.assertFalse(canceled.created)
+            self.assertEqual(canceled.compact_revision, compacted_revision)
+            self.assertEqual(canceled.events, ())
+            self.assertIsNone(canceled.resume_revision)
+            self.assertIsInstance(canceled.cancel_reason, str)
+            if canceled.cancel_reason:
+                self.assertIn("compact", canceled.cancel_reason.lower())
+            old_event_revisions = [item["revision"] for item in old_watch_events]
+            self.assertEqual(old_event_revisions, sorted(set(old_event_revisions)))
+
+            # The cancellation invalidates the old cursor even if some
+            # catch-up events were delivered immediately before the cancel.
+            old_stream.close()
+            snapshot, snapshot_revision = majority_store.linearizable_get(key)
+            self.assertIsNotNone(snapshot)
+            self.assertEqual(snapshot.value, partition_values[-1])
+            self.assertGreaterEqual(snapshot_revision, compacted_revision)
+
+            # Do not resume from the old Watch's last event/progress revision.
+            # Wait until the recovered member can itself serve the quorum
+            # snapshot, using read-only probes only.
+            local_snapshot = None
+            local_revision = 0
+            last_local_error: Exception | None = None
+            local_deadline = time.monotonic() + 30.0
+            while time.monotonic() < local_deadline:
+                try:
+                    candidate, candidate_revision = watch_store.linearizable_get(key)
+                    if (
+                        candidate is not None
+                        and candidate.value == snapshot.value
+                        and candidate_revision >= snapshot_revision
+                    ):
+                        local_snapshot = candidate
+                        local_revision = candidate_revision
+                        break
+                    last_local_error = RuntimeError(
+                        "recovered member has not reached the compaction snapshot"
+                    )
+                except Exception as exc:
+                    last_local_error = exc
+                time.sleep(0.5)
+            self.assertIsNotNone(
+                local_snapshot,
+                f"recovered member did not serve the quorum snapshot: {last_local_error}",
+            )
+            self.assertEqual(local_snapshot.value, snapshot.value)
+            self.assertGreaterEqual(local_revision, snapshot_revision)
+
+            resumed_stream = watch_store.watch(
+                key,
+                start_revision=snapshot_revision + 1,
+                progress_notify=False,
+                prev_kv=True,
+            )
+            resumed_created_result = self._next_result(resumed_stream, timeout=8.0)
+            self.assertEqual(
+                resumed_created_result[0], "response", resumed_created_result[1]
+            )
+            resumed_created = resumed_created_result[1]
+            self.assertTrue(resumed_created.created)
+            self.assertFalse(resumed_created.canceled)
+            self.assertEqual(resumed_created.events, ())
+
+            post_snapshot_write = majority_store.transact(
+                [], [AuthorityStorePut(key, resumed_value)]
+            )
+            self.assertTrue(post_snapshot_write.succeeded)
+            self.assertGreater(post_snapshot_write.revision, snapshot_revision)
+            resumed_result = self._next_result(resumed_stream, timeout=10.0)
+            self.assertEqual(resumed_result[0], "response", resumed_result[1])
+            resumed_response = resumed_result[1]
+            self.assertFalse(resumed_response.canceled)
+            self.assertEqual(len(resumed_response.events), 1)
+            resumed_event = resumed_response.events[0]
+            self.assertEqual(resumed_event.event_type, "PUT")
+            self.assertEqual(resumed_event.key, key)
+            self.assertEqual(resumed_event.entry.value, resumed_value)
+            self.assertIsNotNone(resumed_event.previous_entry)
+            self.assertEqual(resumed_event.previous_entry.value, snapshot.value)
+            self.assertEqual(resumed_event.revision, post_snapshot_write.revision)
+            self.assertEqual(
+                resumed_response.resume_revision, post_snapshot_write.revision + 1
+            )
+
+            observations = {
+                "watch_endpoint": access_endpoint,
+                "watch_start_revision": watch_start_revision,
+                "majority_partition_write_revisions": partition_write_revisions,
+                "majority_compact_revision": compacted_revision,
+                "compact_command_stdout": compact_result.stdout.strip(),
+                "majority_linearizable_revision_before_rejoin": majority_revision,
+                "old_watch_event_revisions_before_cancel": old_event_revisions,
+                "old_watch_canceled": canceled.canceled,
+                "old_watch_cancel_compact_revision": canceled.compact_revision,
+                "old_watch_cancel_event_count": len(canceled.events),
+                "old_watch_cancel_resume_revision": canceled.resume_revision,
+                "quorum_snapshot_revision": snapshot_revision,
+                "recovered_member_linearizable_revision": local_revision,
+                "resume_start_revision": snapshot_revision + 1,
+                "post_snapshot_write_revision": post_snapshot_write.revision,
+                "post_snapshot_event_count": len(resumed_response.events),
+                "no_compacted_event_replayed_after_snapshot": (
+                    resumed_event.revision == post_snapshot_write.revision
+                    and resumed_event.revision > snapshot_revision
+                ),
+                "post_snapshot_event_delivered_once": len(resumed_response.events) == 1,
+            }
+            print(
+                "WATCH_MINORITY_COMPACTION_RECOVERY_OBSERVATION "
+                + json.dumps(observations, sort_keys=True)
+            )
+        finally:
+            for stream in (old_stream, resumed_stream):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
+
+            # Always restore the Compose peer network before cleanup writes.
+            try:
+                memberships = self._network_memberships(etcd1_container)
+                if self.cluster_network not in memberships:
+                    self._run([
+                        "docker", "network", "connect",
+                        self.cluster_network, etcd1_container,
+                    ])
+                self._wait_for_quorum(timeout=60.0)
+            finally:
+                if majority_store is not None:
+                    try:
+                        cleanup = []
+                        for cleanup_key in (key, baseline_marker_key):
+                            current, _ = majority_store.linearizable_get(cleanup_key)
+                            if current is not None:
+                                cleanup.append(AuthorityStoreDelete(cleanup_key))
+                        if cleanup:
+                            majority_store.transact([], cleanup)
+                    except Exception:
+                        pass
+                if watch_driver is not None:
+                    watch_driver.close()
+                if majority_driver is not None:
+                    majority_driver.close()
+
+                if access_network_created:
+                    memberships = self._network_memberships(etcd1_container)
+                    if access_network in memberships:
+                        self._run([
+                            "docker", "network", "disconnect",
+                            access_network, etcd1_container,
+                        ])
+                    self._remove_access_network(
+                        access_network, purpose="watch-minority-compaction"
+                    )
 
 
 if __name__ == "__main__":
