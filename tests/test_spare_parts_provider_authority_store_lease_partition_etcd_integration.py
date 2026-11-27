@@ -329,15 +329,29 @@ class Etcd3gwLiveLeasePartitionTests(unittest.TestCase):
             # Phase D: verify the former minority converged to the fenced state
             # before any test-scoped lease cleanup runs.
             recovered_driver = Etcd3gwV3Client(
-                [self.endpoints[0]], timeout=3.0
+                [self.endpoints[0]], timeout=2.0
             )
             try:
                 recovered_store = EtcdV3CoordinatorAuthorityStore(recovered_driver)
-                recovered_leader, _ = recovered_store.linearizable_get(leader_key)
+                deadline = time.monotonic() + 15.0
+                recovered_leader = None
+                last_recovery_error: Exception | None = None
+                while time.monotonic() < deadline:
+                    try:
+                        recovered_leader, _ = recovered_store.linearizable_get(leader_key)
+                        if recovered_leader is not None:
+                            break
+                    except Exception as exc:
+                        last_recovery_error = exc
+                    time.sleep(0.5)
+                self.assertIsNotNone(
+                    recovered_leader,
+                    f"former minority did not converge to the successor lease; "
+                    f"last_error={last_recovery_error}",
+                )
                 recovered_epoch, _ = recovered_store.linearizable_get(epoch_key)
                 recovered_stale, _ = recovered_store.linearizable_get(stale_write_key)
                 recovered_new_write, _ = recovered_store.linearizable_get(new_write_key)
-                self.assertIsNotNone(recovered_leader)
                 self.assertEqual(recovered_leader.value, new_owner)
                 self.assertEqual(recovered_leader.lease_id, new_lease.lease_id)
                 self.assertEqual(recovered_epoch.value, b"2")
