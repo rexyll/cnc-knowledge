@@ -144,7 +144,7 @@ class Etcd3gwLiveNetworkPartitionTests(unittest.TestCase):
             if disconnected:
                 memberships = self._network_memberships(container_id)
                 if self.network not in memberships:
-                    self._run(["docker", "network", "connect", self.network, container_id])
+                    self._run(["docker", "network", "connect", "--ip", "172.29.64.11", self.network, container_id])
             self._wait_for_quorum()
 
         # Once the network is restored, the isolated member must converge to
@@ -283,7 +283,7 @@ class Etcd3gwLiveNetworkPartitionTests(unittest.TestCase):
             if disconnected:
                 memberships = self._network_memberships(container_id)
                 if self.network not in memberships:
-                    self._run(["docker", "network", "connect", self.network, container_id])
+                    self._run(["docker", "network", "connect", "--ip", "172.29.64.11", self.network, container_id])
             self._wait_for_quorum()
 
         # Reconcile the one-shot Txn after quorum returns; never replay it.
