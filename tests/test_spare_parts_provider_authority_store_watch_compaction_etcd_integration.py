@@ -170,7 +170,10 @@ class Etcd3gwLiveWatchCompactionTests(unittest.TestCase):
             self.assertTrue(canceled.canceled)
             self.assertFalse(canceled.created)
             self.assertEqual(canceled.compact_revision, compacted_revision)
-            self.assertIn("compact", canceled.cancel_reason.lower())
+            # etcd v3.7.0 may omit optional cancel_reason text in Gateway JSON.
+            self.assertIsInstance(canceled.cancel_reason, str)
+            if canceled.cancel_reason:
+                self.assertIn("compact", canceled.cancel_reason.lower())
             self.assertEqual(canceled.events, ())
             self.assertIsNone(canceled.resume_revision)
 
