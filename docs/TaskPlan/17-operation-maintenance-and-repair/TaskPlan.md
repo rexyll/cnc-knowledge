@@ -1245,3 +1245,14 @@
 - **Live验收：** [Run 45987534125](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125)整体success；Watch minority文件5项测试通过（24.605s），其余mTLS、Token、auth/quorum、RBAC及清理/Artifact步骤全success。Artifact [15192246652](https://github.com/rexyll/cnc-knowledge/actions/runs/45987534125/artifacts/15192246652)，SHA-256 `e9f2dbb141dc55a60f3988876df8eaa86eb02b4b26dda3f43c76f0a4a0b30663`。
 - **Quality验收：** [Run 45987533954](https://github.com/rexyll/cnc-knowledge/actions/runs/45987533954)两个Job success：548 unittest（37 skipped）、CH12 143项、strict lint 0 errors / 5 warnings、结构/data 0 errors（260实体、240关系、412来源、178 Markdown）。
 - **解释边界：** `watch_read_timeout`只限制流无字节间隔，不是成员健康检测。全局完全静默时即使节点健康也会超时；默认None保持兼容。没有实现后台心跳、TCP keepalive、独立探针、自动重连或双向Watch。ASSET-000092正式30项仍`PROPOSED_NOT_APPROVED / NOT_RUN`；schema-v2仍唯一生产权威，SQLite Coordinator业务状态机未迁移，CH17-T004总体`IN_PROGRESS`。
+
+### 第六十九轮任务计划：Watch健康分层与连接存活检测策略决策
+
+- **目标：** 基于第六十八轮实测，形成生产Watch健康判定策略，明确Watch stream transport、etcd节点本地进度、Quorum线性一致读、应用业务心跳四个不同维度，避免把静默、Progress滞后或单端口可达误判为集群故障。
+- **机制比较：** 分析etcd `progress_notify`/`WatchProgressRequest`、TCP SO_KEEPALIVE、HTTP/2 gRPC PING、独立linearizable Range/endpoint health和Lease-backed应用心跳的覆盖层、盲区、写入成本、协议依赖与本仓库当前客户端适用性。分清HTTP连接复用与内核TCP keepalive。
+- **代码事实：** 当前驱动经`requests.Session.post('/v3/watch', stream=True)`在HTTP gRPC-gateway路径建立server-streaming请求；流建立后固定一个endpoint；当前没有对既有Watch流发送后续WatchProgressRequest/WatchCancelRequest的双向写入能力；`status()`走`/maintenance/status`，而`linearizable_range()`发送`serializable=false`的Range并具备只读endpoint failover。`watch_read_timeout`默认None，启用后限制response无字节间隔。
+- **决策输出：** 提供检测能力矩阵、Watch/Quorum组合状态表、建议的状态机与分层观测指标；给出保守默认值和阈值确定方法，不臆造生产秒数。明确read timeout不是健康检测，Progress不是Quorum最新revision，TCP/gRPC Keepalive不是业务读写健康证明，Lease-backed心跳会增加revision/事件/compaction负担。
+- **推荐策略：** 将Watch事件/Progress/EOF作为流维度；以独立、小型、限时linearizable Range作为Quorum读能力探针；必要时由共享监控器复用探测而不是每条Watch各自高频Range。transport timeout只在确认存在有界、可靠流量或业务接受空闲Watch重建时启用；无心跳的长时间静默Watch默认不配置read timeout。断流/失效后仍按quorum snapshot R整体替换并从R+1重建。
+- **范围限制：** 本轮只产出架构/运行策略决策，不实现TCP socket配置、gRPC PING、应用heartbeat写入、后台探针、自动重连或健康状态机；因为当前运行时消费循环/调度器、部署网络路径和生产SLO尚未定义。任何后续实现先单独验证连接类型、服务器keepalive策略、额外revision负载和超时预算。
+- **证据来源：** 参考etcd v3.7 API/Progress说明、etcd节点健康命令、gRPC Keepalive指导和Python Requests流式read timeout语义；在决策记录中保留可访问的上游文档链接与本仓库第63/68轮实测证据。
+- **验收：** 新增独立决策记录，章节README和TaskHistory可导航；根/章节TaskPlan同步；全库Quality、CH12、strict lint和结构/data检查通过。该轮为设计决策，不以新增Live测试或生产行为改动作为验收。
