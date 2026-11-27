@@ -187,7 +187,7 @@ def build_candidate(
         raise CandidateImportError("source must contain exactly one singleton Leader row")
     leader = leader_rows[0]
     leader_epoch = _required_int(leader.get("epoch"), "leader epoch")
-    if leader.get("state") not in {"ACTIVE", "EXPIRED", "RELEASED", "NONE"}:
+    if leader.get("state") not in {"ACTIVE", "EXPIRED", "RELEASED", "NONE", "UNCLAIMED", "FENCED"}:
         raise CandidateImportError("source Leader state is unknown")
 
     scopes: dict[str, Any] = {}
@@ -309,7 +309,7 @@ def build_candidate(
         "source_snapshot_digest_sha256": manifest["snapshot_digest_sha256"],
         "generated_at_unix": float(generated_at),
         "target": {
-            "namespace": "/cnc/admission/unified/v2/",
+            "namespace": None,\n            "namespace_must_be_explicit": True,
             "mode": "ISOLATED_CANDIDATE_ONLY",
             "requires_empty_namespace": True,
             "production_write_allowed": False,
@@ -324,7 +324,7 @@ def build_candidate(
             "provider_operations_must_be_reconciled_before_activation": True,
             "active_lease_ttl_keys_are_not_imported": True,\n            "terminal_request_backend_lease_id_sentinel": 1,\n            "terminal_request_backend_lease_id_is_not_a_live_lease": True,
         },
-        "counts": {
+        "legacy_metadata": {\n            "attestations_issued": _required_int(admission_meta.get("attestations_issued"), "attestations_issued"),\n            "coordinator_schema_version": authority_meta["schema_version"],\n        },\n        "counts": {
             "terminal_requests": len(request_indexes),
             "scopes": len(scopes),
             "operations": len(operations),
