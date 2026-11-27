@@ -614,3 +614,12 @@ python scripts/spare_parts_fixture_validator.py --root . \
 - Live CI [Run 45918152363](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152363)：mTLS 3/3 PASS（有效证书成员发现+CAS写读、无客户端证书拒绝、错误CA拒绝）；Artifact 15163390323，SHA-256 `91014d3f47cf09152dd81488231494fdc04afc675b428cdad3e0556cf00aac74`。
 - 默认 CI [Run 45918152436](https://github.com/rexyll/cnc-knowledge/actions/runs/45918152436)：508项unittest、CH12 143项通过；strict lint 0 errors；结构/数据0 errors、5项既有warning。
 - 边界：不是企业PKI、证书轮换/吊销、生产密钥托管或RBAC验收；ASSET-000092的30项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+## 第五十二轮：etcd Gateway RBAC 与最小权限（2026-11-27）
+
+- 新增`tests/test_spare_parts_provider_authority_store_rbac_mtls_etcd_integration.py`；Etcd3gwV3Client可显式接收auth_token并将Authorization头应用于每个endpoint session。
+- Live [Run 45919206834](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206834)：普通三成员suite 8项通过；mTLS suite 8/8（基础mTLS 3 + RBAC 5）通过，覆盖reader只读prefix、writer读写prefix、越权访问拒绝、无token/错误密码失败。Artifact 15163741056，SHA-256 `b7e7476a08e1e9c4a77e4bb02e2b80727dd09e1baadc1b66866b6a54b72c8ee0`。
+- Gateway client cert采用无CN证书，仍由CA签名并强制mTLS；RBAC用户名/密码认证换取token，避免使用Gateway不支持的证书CN用户映射。
+- 默认 [Run 45919206886](https://github.com/rexyll/cnc-knowledge/actions/runs/45919206886)：515项unittest（499通过、16项opt-in skip），CH12 143项，strict lint 0 errors，结构/数据0 errors、5项既有warning。
+- 限制：token自动刷新/续期、企业IAM、审计、生产密钥托管未验证；ASSET-000092正式30项仍PROPOSED_NOT_APPROVED / NOT_RUN。
