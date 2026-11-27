@@ -49,6 +49,16 @@ def _required_int(value: Any, name: str, minimum: int = 0) -> int:
     return value
 
 
+def _meta_int(metadata: dict[str, Any], key: str) -> int:
+    value = metadata.get(key)
+    if isinstance(value, str):
+        try:
+            value = int(value)
+        except ValueError as exc:
+            raise CandidateImportError(f"metadata {key} must be a non-negative integer") from exc
+    return _required_int(value, key)
+
+
 def _verify_records(manifest: dict[str, Any], records: dict[str, Any]) -> None:
     if manifest.get("format") != "ch17-sqlite-migration-inventory-v1":
         raise CandidateImportError("unsupported inventory manifest format")
@@ -262,7 +272,7 @@ def build_candidate(
             "updated_at": float(row["updated_at"]),
         }
 
-    admission_floor = _required_int(admission_meta.get("next_fencing_token"), "Admission fencing floor")
+    admission_floor = _meta_int(admission_meta, "next_fencing_token")
     request_max = max(
         (_required_int(r["fencing_token"], "request fencing token") for r in tables["admission_requests"]),
         default=0,
@@ -292,11 +302,11 @@ def build_candidate(
         "waiters": [],
         "coordinator": {"leader": None, "scopes": scopes, "operations": operations},
         "counters": {
-            "issued_leases": _required_int(admission_meta.get("issued_leases"), "issued_leases"),
-            "expired_leases": _required_int(admission_meta.get("expired_leases"), "expired_leases"),
+            "issued_leases": _meta_int(admission_meta, "issued_leases"),
+            "expired_leases": _meta_int(admission_meta, "expired_leases"),
             "released_leases": sum(1 for r in tables["admission_requests"] if r["state"] == "RELEASED"),
-            "rejected_capacity": _required_int(admission_meta.get("rejected_capacity"), "rejected_capacity"),
-            "rejected_queue": _required_int(admission_meta.get("rejected_queue"), "rejected_queue"),
+            "rejected_capacity": _meta_int(admission_meta, "rejected_capacity"),
+            "rejected_queue": _meta_int(admission_meta, "rejected_queue"),
         },
     }
     request_indexes = []
@@ -348,7 +358,7 @@ def build_candidate(
             "terminal_request_backend_lease_id_is_not_a_live_lease": True,
         },
         "legacy_metadata": {
-            "attestations_issued": _required_int(admission_meta.get("attestations_issued"), "attestations_issued"),
+            "attestations_issued": _meta_int(admission_meta, "attestations_issued"),
             "coordinator_schema_version": authority_meta["schema_version"],
         },
         "counts": {
