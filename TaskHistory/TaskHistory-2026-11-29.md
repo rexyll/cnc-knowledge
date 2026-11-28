@@ -48,3 +48,9 @@
 - 补充整体Etcd snapshot rollback后的数据恢复边界：witness sequence/root只能检测回滚，不能重建scope/operation/key/event正文；完整事件日志或受信备份/补齐日志缺失时，保持写隔离并逐scope受控重建。
 - 明确单一namespace全局meta/event sequence会序列化各scope写入，形成吞吐热点；本轮接受作为v1正确性基线，未来分片必须另行证明root与全序关系。
 - Round99仍为架构设计，不实现Etcd-native Floor service，不连接真实Etcd或配置RBAC，不执行迁移/Restore/Cutover；等待全库质量CI通过后再标记DONE。
+### Round 99 最终CI与结项（2026-11-29）
+
+- **最终验收：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663)，对应设计/TaskPlan/README/TaskHistory同步提交 head SHA d8cec4bf4d75f1701411d7dd71a352e2cb71fcf1，两个必需Job均completed/success。
+- Knowledge structure and data quality：全库776项unittest运行，40项环境跳过，其余736项通过；knowledge lint 0 errors / 5 warnings；结构/data检查0 errors；CH17离线场景模拟30项、failed=0，明确business_test_status=NOT_RUN、external_connections=NO、writes=NO。
+- CH12 numerical resource tests：143项通过。
+- **结论：** Round99 Etcd-native Provider Grant Floor原子权威与域外Witness架构设计完成（DONE）。Etcd-native业务状态机、生产Witness持久服务、实际Etcd/RBAC/KMS/HSM、真实多节点和快照恢复演练均未实施；Production Unified schema-v2仍为唯一authority；Grant-aware Restore/Cutover仍不允许执行。
