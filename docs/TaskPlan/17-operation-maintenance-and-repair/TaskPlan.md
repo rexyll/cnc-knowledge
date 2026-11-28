@@ -799,7 +799,7 @@
 
 ### 第四十五轮CI验收补记（2026-11-26）
 
-- **最终代码head：** \`a035cdf1f82e6ea9274195b2872953e9f12e83ba\`；[GitHub Actions Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)两个必需Job均completed/success。
+- **最终代码head：** `a035cdf1f82e6ea9274195b2872953e9f12e83ba`；[GitHub Actions Run 45823628905](https://github.com/rexyll/cnc-knowledge/actions/runs/45823628905)两个必需Job均completed/success。
 - **质量结果：** 全库462项unittest通过（本轮新增36项分片准入/事务预算参考模型测试）；CH12 143项数值资源测试通过；strict knowledge lint 0 errors；知识结构与数据质量0 errors，5项既有非阻断warning。
 - **验收边界：** 纯内存模型，不接真实etcd/native Lease/多主机Dispatcher，不测真实protobuf/gRPC请求字节、quorum或p95/p99。ASSET-000090的54项正式场景仍PROPOSED_NOT_APPROVED / NOT_RUN；V3公平策略变更待企业批准。
 - **状态：** schema-v2仍是唯一生产权威；无生产分片/切换；CH17-T004继续IN_PROGRESS。
@@ -1410,8 +1410,8 @@
 
 ### 第八十轮：MIG-05 Unified schema-v2 运行时兼容与Leader epoch floor保真
 
-- 对候选包格式升级至\`ch17-sqlite-unified-candidate-v2\`；旧v1因Leader epoch floor语义变化而被显式拒绝。
-- 旧Leader的identity和TTL key不恢复，但旧epoch必须在aggregate中持久：epoch>0时用固定marker（\`migration-epoch-floor / epoch / expires_at=0.0 / backend_lease_id=0\`）；epoch=0时保持leader=None。
+- 对候选包格式升级至`ch17-sqlite-unified-candidate-v2`；旧v1因Leader epoch floor语义变化而被显式拒绝。
+- 旧Leader的identity和TTL key不恢复，但旧epoch必须在aggregate中持久：epoch>0时用固定marker（`migration-epoch-floor / epoch / expires_at=0.0 / backend_lease_id=0`）；epoch=0时保持leader=None。
 - Planner严格限定marker字段，不放宽为任意非空Leader。运行时只允许该marker的backend_lease_id=0，所有真实Leader仍需正Lease ID。
 - 完成runtime互操作测试：从已发布aggregate构造标准Admission/Coordinator runtime；验证已完成request重放拒绝、scope高水位和operation ledger保持、且不创建Admission Lease；正常claim路径自动将epoch提升至floor+1。
 - 本轮全部只在InMemory etcd fake上执行，真实三节点etcd故障演练留待MIG-06。
@@ -1581,10 +1581,10 @@
 
 ### 第九十五轮：Provider Grant Receipt 签名协议模块与 Floor 验签门禁
 
-- 新增 \`scripts/spare_parts_provider_grant_receipt.py\` 和 \`tests/test_spare_parts_provider_grant_receipt.py\`：使用 RFC 8785 JCS 与独立 domain-separated Ed25519 Provider key；严格解析 envelope、拒绝重复 JSON key/未知字段/非法类型/时间/digest/namespace/action-result组合；完整摘要从 canonical envelope（含签名）重算。
+- 新增 `scripts/spare_parts_provider_grant_receipt.py` 和 `tests/test_spare_parts_provider_grant_receipt.py`：使用 RFC 8785 JCS 与独立 domain-separated Ed25519 Provider key；严格解析 envelope、拒绝重复 JSON key/未知字段/非法类型/时间/digest/namespace/action-result组合；完整摘要从 canonical envelope（含签名）重算。
 - 外部 Floor schema 升级到 v4，按 Provider ID + key ID 保存公钥、SHA-256 fingerprint、ACTIVE/RETIRING/REVOKED、not_before/not_after、retiring_effective_at、revocation_effective_at/reason 和 trust revision。只允许显式本地数据库 owner API 注册/退役/撤销，不从 receipt 自身自动信任公钥。
 - Reservation 增加 Coordinator command issued_at/expires_at。reserve 时限制命令窗口为正且 expiry 不晚于 native Lease expiry；operation ID 重放还必须匹配命令时间。
-- Floor \`confirm_provider_receipt()\` 从裸 digest 改为 signed envelope；在同一 \`BEGIN IMMEDIATE\` + revision CAS 事务中验证签名者与 trust lifecycle、全部 reservation claims、FENCE/ACTIVATE结果、ACTIVATE应用时间不得早于已确认FENCE回执等条件；成功后记录 Floor 自算摘要、key ID/fingerprint、trust revision 和 applied_at。
+- Floor `confirm_provider_receipt()` 从裸 digest 改为 signed envelope；在同一 `BEGIN IMMEDIATE` + revision CAS 事务中验证签名者与 trust lifecycle、全部 reservation claims、FENCE/ACTIVATE结果、ACTIVATE应用时间不得早于已确认FENCE回执等条件；成功后记录 Floor 自算摘要、key ID/fingerprint、trust revision 和 applied_at。
 - SQLite Floor schema v1 顺序迁移到 v4。既有裸 digest 与 operation history 保留为未认证历史；新 signer/fingerprint/trust/applied-time/command-time 字段不补造，旧历史不会自动升级为可信回执。无可信 command-time 的旧 PENDING 操作不能通过新确认路径。
 - 专项测试覆盖 JCS、合法 FENCE/ACTIVATE、签名/字段篡改、所有 Reservation 身份字段错配、未知 key/fingerprint、key有效期/退休/撤销、命令时窗/native Lease、ACTIVATE/FENCE时间顺序、裸digest拒绝、v1→v4迁移、旧记录不提升、幂等与替换、失败后revision不前进和并发CAS。
 - 目前仅使用合成 Ed25519 Provider key 和独立本地 SQLite；Floor 不独立验证 Coordinator command signature，Reservation command digest/claims 的可信来源仍由上游调用方与 Coordinator authority 提供。Provider SQLite 的 FENCE/ACTIVATE mutation 事务尚未实际生成/持久化 signed Receipt，也没有 durable receipt lookup API；本轮不是端到端 Provider 签名回执集成。
