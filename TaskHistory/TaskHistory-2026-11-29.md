@@ -40,7 +40,7 @@
   - 设计域外witness严格耐久模式：Witness PREPARE、Etcd PREPARE/COMMIT、Witness COMMIT、Etcd FINALIZE；FINALIZE前阻断下一笔写，调用方在Witness已确认且Etcd最终状态读回前不收到成功。明确周期性witness只具备有限RPO，不得表述为零丢失。
 - **主要提交：** TaskPlan登记 963106fa606db1a10c478205768b45fa91a315ed / 266b4408bf9d4af6fa1b4bf69e2abd40e8a27299；设计文档 ac7cb81b5992fb7d2793894fd9d736583dcde090；Witness严格提交协议补充 0ff3dc613e3ec001cc9afd6054b95fbabf0c9026。
 - **边界：** 本轮只交付架构设计，不实现Etcd-native Grant Floor service或生产witness adapter，不连接真实Etcd/Coordinator/Provider/KMS/HSM，不配置RBAC，不执行SQLite迁移、候选导入、Restore、应用激活或Cutover。Production Unified schema-v2仍为唯一authority；Grant历史通用Restore继续fail-closed。
-- **状态：** IN_PROGRESS；待README/TaskHistory同步、全库质量CI和设计审查通过后再结项。
+- **状态（当时）：** IN_PROGRESS；这是完成设计文档和初步同步时的阶段记录。后续完成状态见本文件下方“Round 99 最终CI与结项”小节。
 ### Round 99 设计审查补充（2026-11-29）
 
 - 新增设计细化提交：c9ccad04ea93a5fcb1df033ad2f286fdebdf6630。
@@ -50,7 +50,8 @@
 - Round99仍为架构设计，不实现Etcd-native Floor service，不连接真实Etcd或配置RBAC，不执行迁移/Restore/Cutover；等待全库质量CI通过后再标记DONE。
 ### Round 99 最终CI与结项（2026-11-29）
 
-- **最终验收：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663)，对应设计/TaskPlan/README/TaskHistory同步提交 head SHA d8cec4bf4d75f1701411d7dd71a352e2cb71fcf1，两个必需Job均completed/success。
+- **设计版本CI：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663)，两个必需Job均success，验证Etcd-native设计文档、witness恢复语义和阶段性记录。
+- **最终文档同步验收：** [Knowledge Quality Run 46164006077](https://github.com/rexyll/cnc-knowledge/actions/runs/46164006077)，对应最终main文档提交 head SHA df6c807f495b805f71ad351594c0a87c265f606f，两个必需Job均completed/success。
 - Knowledge structure and data quality：全库776项unittest运行，40项环境跳过，其余736项通过；knowledge lint 0 errors / 5 warnings；结构/data检查0 errors；CH17离线场景模拟30项、failed=0，明确business_test_status=NOT_RUN、external_connections=NO、writes=NO。
 - CH12 numerical resource tests：143项通过。
 - **结论：** Round99 Etcd-native Provider Grant Floor原子权威与域外Witness架构设计完成（DONE）。Etcd-native业务状态机、生产Witness持久服务、实际Etcd/RBAC/KMS/HSM、真实多节点和快照恢复演练均未实施；Production Unified schema-v2仍为唯一authority；Grant-aware Restore/Cutover仍不允许执行。
