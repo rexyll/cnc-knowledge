@@ -529,3 +529,22 @@ v4备份校验进一步要求Leader floor与command-Leader审计两张表必须�
 第八十九轮新增独立设计文档[Provider可撤销授权与撤销屏障架构设计](provider-revocation-barrier-architecture.md)。其建议将Provider-native grant/epoch作为实际Provider mutation的最终授权门禁，并把Leader handoff拆为停止旧授权签发、Provider FENCE、持久化receipt、新grant激活和mutation事务内校验。FENCE必须与所有受保护对象/multipart mutation共享同一Provider事务或原生条件写域；否则不能声称旧epoch在屏障后被可靠拒绝。
 
 **语义必须准确：** Provider侧撤销以FENCE提交为线性化点，不等于etcd Lease物理过期瞬间撤销。若业务要求两个独立系统之间零窗口同步撤销，必须提供共享事务权威或Provider原生原子条件写；仅在线Range、签名Lease expiry、短TTL或异步Watch都不能满足。本文不实现该协议，也不改变MIG-04/05/06/07状态。
+
+
+### 15.15 第九十轮：Provider-native Revocable Grant / FENCE Barrier 本地参考实现
+
+新增`scripts/spare_parts_provider_revocable_grant.py`，采用独立域分离Ed25519签名命令；claims严格绑定Provider ID、tenant、scope、FENCE/ACTIVATE动作、grant ID、grant generation、Coordinator namespace、Leader ID/epoch/native Lease ID、Lease expiry和命令有效期。ACTIVATE额外绑定FENCE command envelope的SHA-256 digest。
+
+Provider SQLite schema升级到v5，新增：
+- `provider_scope_grants`：每个tenant/scope保存Coordinator Leader身份、Provider grant generation、grant ID、FENCED/ACTIVE状态、grant expiry、FENCE digest和ACTIVATE digest。
+- `provider_grant_commands`：保存完整命令digest、issuer/key、Provider/tenant/scope、动作、代次、Leader/Lease绑定、FENCE引用、结果和提交时间。
+
+FENCE必须使用比该scope当前记录更高的Leader epoch，并将状态推进到FENCED；若无历史grant，首个FENCE可从代次1开始。ACTIVATE只能在当前状态FENCED时执行，必须匹配完整pending Leader/Lease/grant身份，引用当前FENCE digest，并验证数据库中存在相同scope/Provider/tenant/epoch且结果为FENCED的持久receipt。FENCE与ACTIVATE各自消耗一个单调grant generation。
+
+可选`require_revocable_grant=True`开启Provider写入门禁。写入证明必须包含成对的`provider_grant_id`和`provider_grant_generation` claims；四种Provider实际mutation（对象PUT、multipart begin、part、complete）均在现有`_authorized_transaction`/BEGIN IMMEDIATE内部读取grant状态，要求ACTIVE、ID/generation精确匹配且未过期。FENCE使用同一数据库的BEGIN IMMEDIATE事务，因此不能越过已持有写锁的mutation；若mutation先获得锁并提交，则它在线性化顺序上先于FENCE；FENCE先提交后旧grant不能再写。
+
+未知响应处理：完整命令envelope digest作为收据主键；新增`provider_grant_command_status()`只读查询历史receipt与当前scope状态。测试通过commit后response-loss hook验证：客户端收到异常后读回原digest得到FENCED历史结果；精确重放返回ALREADY_APPLIED，不重复推进generation。ACTIVATE缺失或错误FENCE receipt会拒绝。
+
+schema v4→v5为加法迁移；旧v2/v3测试fixture升级后也必须创建新grant表。Provider backup validator将两张grant表加入必需表集合；backup/restore不得丢失grant floor或命令receipt。
+
+**严格边界：** 目前是同机SQLite参考实现。它只证明当前对象与multipart写入口在这个SQLite Provider中的事务排序，不证明远程Provider、云对象存储、异步后台任务或多主机强fencing。Provider FENCE的线性化点不是etcd Lease独立过期的物理瞬间；Coordinator必须等待Provider receipt后才能声明Provider侧handoff完成。真实Provider、三节点etcd、KMS/HSM、RBAC和跨系统联合故障验证仍未完成。
