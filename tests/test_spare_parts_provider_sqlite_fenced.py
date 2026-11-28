@@ -1072,6 +1072,21 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                 require_revocable_grant=True,
             )
 
+    def test_revocable_grant_command_fails_closed_when_online_leader_is_inactive(self):
+        checker = MutableLeaderStatusChecker(active=False)
+        provider = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            leader_status_checker=checker, require_online_leader_status=True,
+            require_revocable_grant=True,
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "absent, expired, revoked"):
+            provider.apply_provider_grant_command(
+                self.grant_command("FENCE", 1, "grant-offline-leader")
+            )
+        self.assertEqual(len(checker.calls), 1)
+        self.assertIsNone(provider.provider_grant_state(SCOPE))
+
     def test_provider_grant_requires_durable_fence_receipt_before_activation(self):
         provider = self.enable_revocable_grants()
         now = time.time()
