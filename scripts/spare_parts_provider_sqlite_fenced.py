@@ -1319,6 +1319,13 @@ class SQLiteFencedObjectStorageProvider:
                     raise FencingAttestationRejectedError(
                         "Provider grant receipt conflicts with its signed claims"
                     )
+                if (
+                    receipt["envelope_json"] is None
+                    or receipt["signer_public_key_base64"] is None
+                ):
+                    raise SQLiteProviderGrantRejectedError(
+                        "historical Provider grant receipt lacks its original signed envelope; re-fence is required"
+                    )
                 expected_envelope = json.dumps(
                     envelope, sort_keys=True, separators=(",", ":"), allow_nan=False
                 )
@@ -1980,16 +1987,25 @@ class SQLiteFencedObjectStorageProvider:
             grant = c.execute(
                 """SELECT g.coordinator_namespace,g.leader_id,g.leader_epoch,g.leader_lease_id,
                           g.grant_generation,g.grant_id,g.state,g.grant_expires_at,
-                          f.provider_id
+                          f.provider_id,f.envelope_json AS fence_envelope_json,
+                          f.signer_public_key_base64 AS fence_signer_public_key_base64,
+                          a.envelope_json AS activation_envelope_json,
+                          a.signer_public_key_base64 AS activation_signer_public_key_base64
                    FROM provider_scope_grants g
                    JOIN provider_grant_commands f
                      ON f.command_sha256=g.fence_command_sha256 AND f.action='FENCE'
+                   JOIN provider_grant_commands a
+                     ON a.command_sha256=g.activation_command_sha256 AND a.action='ACTIVATE'
                    WHERE g.tenant_id=? AND g.fencing_scope=?""",
                 (tenant_id, fencing_scope),
             ).fetchone()
             if (
                 grant is None or grant["provider_id"] != self.provider_id
                 or grant["state"] != "ACTIVE"
+                or not grant["fence_envelope_json"]
+                or not grant["fence_signer_public_key_base64"]
+                or not grant["activation_envelope_json"]
+                or not grant["activation_signer_public_key_base64"]
             ):
                 raise SQLiteProviderGrantRejectedError(
                     "Provider grant is absent or fenced for this scope"
