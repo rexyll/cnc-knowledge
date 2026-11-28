@@ -77,13 +77,49 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             expected_revision=expected_revision,
         )
 
-    def confirm_fence(self, reservation):
+
+    def receipt_envelope(self, reservation, **overrides):
+        self._receipt_tick += 0.25
+        issued = time.time() + self._receipt_tick
+        claims = {
+            "format": RECEIPT_CLAIMS_FORMAT,
+            "provider_id": reservation.key.provider_id,
+            "tenant_id": reservation.key.tenant_id,
+            "scope": reservation.key.scope,
+            "action": reservation.action,
+            "grant_id": reservation.grant_id,
+            "generation": reservation.generation,
+            "command_sha256": reservation.command_digest,
+            "fence_command_sha256": reservation.fence_command_digest,
+            "result_state": "FENCED" if reservation.action == "FENCE" else "ACTIVE",
+            "coordinator_namespace": reservation.coordinator_namespace,
+            "leader_id": reservation.leader_id,
+            "leader_epoch": reservation.leader_epoch,
+            "native_lease_id": reservation.native_lease_id,
+            "native_lease_expires_at_unix": reservation.lease_expires_at_unix,
+            "command_issued_at_unix": issued,
+            "command_expires_at_unix": issued + 30.0,
+            "applied_at_unix": issued + 0.1,
+        }
+        claims.update(overrides)
+        return sign_provider_grant_receipt(
+            claims, key_id="provider-receipt-a", private_key=self.receipt_signer
+        )
+
+    def confirm_receipt(self, reservation, receipt_envelope=None, *, expected_revision=None, **overrides):
+        envelope = receipt_envelope or self.receipt_envelope(reservation, **overrides)
+        self.last_receipts[reservation.operation_id] = envelope
         return self.authority.confirm_provider_receipt(
             operation_id=reservation.operation_id,
-            command_digest=reservation.command_digest,
-            provider_receipt_digest=_digest(reservation.operation_id + "-provider-receipt"),
-            expected_revision=reservation.reserved_scope_revision,
+            receipt_envelope=envelope,
+            expected_revision=(
+                reservation.reserved_scope_revision
+                if expected_revision is None else expected_revision
+            ),
         )
+
+    def confirm_fence(self, reservation):
+        return self.confirm_receipt(reservation)
 
     def activate(self, *, operation_id="activate-op-1", expected_revision=None,
                  fence_command_digest=None, grant_id="grant-a"):
