@@ -126,7 +126,21 @@ class CandidateImporterTests(unittest.TestCase):
         self.assertEqual(state["coordinator"]["scopes"][
             "tenants/tenant-A/cnc/ch17/spares/pkg-001"
         ]["high_water_token"], 9)
-        self.assertIsNone(state["coordinator"]["leader"])
+        self.assertEqual(state["coordinator"]["leader"], {
+            "leader_id": "migration-epoch-floor",
+            "epoch": 8,
+            "expires_at": 0.0,
+            "backend_lease_id": 1,
+        })
+        self.assertTrue(
+            result["recovery_requirements"][
+                "leader_epoch_floor_is_embedded_as_inactive_coordinator_record"
+            ]
+        )
+        self.assertEqual(
+            result["recovery_requirements"]["leader_epoch_floor_backend_lease_id_sentinel"],
+            1,
+        )
         self.assertEqual(result["recovery_requirements"]["leader_epoch_floor"], 8)
         self.assertIsNone(result["recovery_requirements"]["external_fencing_floor"])
         self.assertTrue(result["recovery_requirements"]["leader_must_be_reclaimed"])
