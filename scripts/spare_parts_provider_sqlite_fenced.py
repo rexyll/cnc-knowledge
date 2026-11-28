@@ -31,6 +31,11 @@ from scripts.spare_parts_fencing_attestation import (
     _load_ed25519_public_key,
 )
 
+from scripts.spare_parts_provider_write_freeze_gate import (
+    ProviderWriteFreezeCommandError,
+    verify_provider_write_freeze_command,
+)
+
 from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageConflict,
     BackupStorageError,
@@ -72,6 +77,10 @@ class FencingAttestationStatusUnavailableError(BackupStorageError):
     """The required online Coordinator lease-status check failed closed."""
 
 
+class SQLiteProviderWriteFrozenError(BackupStorageError):
+    """A persisted Provider-native freeze gate blocks a mutation."""
+
+
 class SQLiteProviderObjectNotFoundError(BackupStorageError):
     """The requested tenant-scoped object does not exist."""
 
@@ -95,6 +104,7 @@ class SQLiteFencedObjectStorageProvider:
         *,
         principal_id: str,
         principal_secret: str,
+        provider_id: str | None = None,
         trusted_attestation_keys: dict[str, str | bytes] | None = None,
         trusted_ed25519_public_keys: dict[str, Any] | None = None,
         attestation_status_checker: Any | None = None,
@@ -120,6 +130,11 @@ class SQLiteFencedObjectStorageProvider:
         if not 0 < busy_timeout_seconds <= 120:
             raise BackupStorageError("SQLite busy timeout must be in (0, 120] seconds")
         self.principal_id = principal_id.strip()
+        if provider_id is not None and (
+            not isinstance(provider_id, str) or not provider_id.strip() or len(provider_id) > 128
+        ):
+            raise BackupStorageError("Provider identity is invalid")
+        self.provider_id = provider_id.strip() if provider_id is not None else None
         self._principal_secret = principal_secret.encode("utf-8")
         hmac_keys = trusted_attestation_keys or {}
         ed25519_keys = trusted_ed25519_public_keys or {}
@@ -199,6 +214,18 @@ class SQLiteFencedObjectStorageProvider:
             )
             connection.execute("PRAGMA busy_timeout = " + str(int(self.busy_timeout_seconds * 1000)))
             connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                """CREATE TABLE IF NOT EXISTS provider_write_freeze_scopes (
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    generation INTEGER NOT NULL CHECK(generation > 0),
+                    freeze_id TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('FROZEN','OPEN')),
+                    command_sha256 TEXT NOT NULL CHECK(length(command_sha256)=64),
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(tenant_id,fencing_scope)
+                )"""
+            )
             connection.execute(
                 """CREATE TABLE IF NOT EXISTS trusted_ed25519_keys (
                     issuer_id TEXT NOT NULL,
@@ -530,6 +557,16 @@ class SQLiteFencedObjectStorageProvider:
                     not_after REAL,
                     created_at REAL NOT NULL,
                     PRIMARY KEY(issuer_id,key_id)
+                );
+                CREATE TABLE provider_write_freeze_scopes (
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    generation INTEGER NOT NULL CHECK(generation > 0),
+                    freeze_id TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('FROZEN','OPEN')),
+                    command_sha256 TEXT NOT NULL CHECK(length(command_sha256)=64),
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(tenant_id,fencing_scope)
                 );
                 CREATE TABLE trusted_ed25519_keys (
                     issuer_id TEXT NOT NULL,
