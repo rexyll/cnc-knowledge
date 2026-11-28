@@ -943,7 +943,7 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 )
             except (json.JSONDecodeError, ValueError) as exc:
                 raise ProviderGrantFloorError(
-                    "Coordinator signed command envelope is invalid JSON"
+                    "Coordinator signed command envelope is invalid JSON or contains duplicate JSON object keys"
                 ) from exc
         if not isinstance(parsed, dict):
             raise ProviderGrantFloorError("Coordinator signed command envelope must be a JSON object")
@@ -1071,19 +1071,17 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         }
 
     def reserve_fence_from_command(
-        self, *, operation_id: str, command_envelope: dict | bytes | str,
-        expected_revision: int,
+        self, *, operation_id: str, key: ProviderGrantScopeKey,
+        command_envelope: dict | bytes | str, expected_revision: int,
     ) -> ProviderGrantFloorReservation:
         envelope = self._parse_coordinator_command_envelope(command_envelope)
         try:
+            self._key_tuple(key)
             claims = envelope["command"]
             if claims["action"] != "FENCE" or claims["fence_command_sha256"] is not None:
                 raise ProviderGrantFloorError(
                     "FENCE reservation requires a signed FENCE command without a prior FENCE digest"
                 )
-            key = ProviderGrantScopeKey(
-                claims["provider_id"], claims["tenant_id"], claims["scope"]
-            )
             digest = hashlib.sha256(
                 json.dumps(envelope, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
             ).hexdigest()
@@ -1110,17 +1108,15 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             raise ProviderGrantFloorError("signed Coordinator FENCE command claims are malformed") from exc
 
     def reserve_activate_from_command(
-        self, *, operation_id: str, command_envelope: dict | bytes | str,
-        expected_revision: int,
+        self, *, operation_id: str, key: ProviderGrantScopeKey,
+        command_envelope: dict | bytes | str, expected_revision: int,
     ) -> ProviderGrantFloorReservation:
         envelope = self._parse_coordinator_command_envelope(command_envelope)
         try:
+            self._key_tuple(key)
             claims = envelope["command"]
             if claims["action"] != "ACTIVATE":
                 raise ProviderGrantFloorError("ACTIVATE reservation requires a signed ACTIVATE command")
-            key = ProviderGrantScopeKey(
-                claims["provider_id"], claims["tenant_id"], claims["scope"]
-            )
             digest = hashlib.sha256(
                 json.dumps(envelope, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
             ).hexdigest()
