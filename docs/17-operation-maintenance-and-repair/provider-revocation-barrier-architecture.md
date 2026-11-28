@@ -122,6 +122,6 @@ Provider 本地时钟是 TTL 方案的额外信任假设：若采用 expiry，�
 - Provider新增scope grant状态表和命令receipt表；FENCE推进到FENCED。更换Leader/Lease身份要求epoch严格增加；同epoch仅允许完全相同Leader/Lease身份主动撤销当前ACTIVE grant；ACTIVATE只有在FENCE receipt存在且全部identity绑定一致时才能开启新grant。
 - 可选`require_revocable_grant`在初始化时强制要求Provider ID、Ed25519命令信任公钥和在线Coordinator Leader checker；checker返回inactive/异常时拒绝FENCE/ACTIVATE且不推进状态。对象PUT及multipart begin/part/complete在各自Provider写事务中检查Grant ID/generation、ACTIVE状态和expiry，并JOIN当前FENCE receipt确认Provider ID，拒绝跨Provider身份复用。Freeze/Unfreeze与Grant命令不能注入调用方时间；写锁等待和在线Leader查询后均重新校验命令expiry及Key有效时间窗。在线检查仅是命令前置门禁，仍不能原子绑定Provider commit。
 - FENCE与mutation使用同一Provider SQLite BEGIN IMMEDIATE事务，形成单机数据库内的可验证串行化边界。
-- 命令提交后响应丢失通过原始envelope digest读回receipt，不生成新代次；ACTIVATE签发时间必须不早于FENCE的Provider持久化回执时间，且receipt经backup/restore后仍可查询。
+- 命令提交后响应丢失通过原始envelope digest读回receipt，不生成新代次；ACTIVATE签发时间必须不早于FENCE的Provider持久化回执时间。备份校验完整receipt链；由于通用Restore尚无独立Grant generation/Leader epoch floor，任何含Grant历史的备份均被拒绝恢复，防止旧状态重放。
 
 **状态：** 已提交代码与专用测试初版，待必需CI完成后确认。该实现仍不是远程Provider/对象存储、跨主机或生产级证明；FENCE线性化点仍仅是Provider本地数据库提交，不与etcd Lease物理撤销瞬间原子同步。
