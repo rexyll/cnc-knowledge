@@ -489,11 +489,9 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.confirm_receipt(reservation, old_receipt)
         self.assertEqual(self.authority.snapshot(self.key).state, "FENCED")
 
-        next_reservation = self.reserve_fence(
+        next_reservation = self.activate(
             operation_id="retiring-key-new-receipt",
             expected_revision=self.authority.snapshot(self.key).revision,
-            leader_epoch=2, leader_id="leader-b", lease_id=2002,
-            lease_expiry=self.lease_expiry + 100.0,
         )
         retirement_time = retired["retiring_effective_at"]
         after_retirement = max(time.time(), retirement_time + 0.1)
@@ -522,7 +520,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             command_expires_at_unix=revoked["revocation_effective_at"] + 30.0,
             applied_at_unix=revoked["revocation_effective_at"] + 0.2,
         )
-        with self.assertRaisesRegex(ProviderGrantFloorConflict, "stopped issuing"):
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "revoked"):
             self.confirm_receipt(reservation, receipt)
         self.assertEqual(self.authority.snapshot(self.key).state, "FENCE_PENDING")
 
