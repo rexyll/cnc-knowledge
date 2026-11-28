@@ -1392,3 +1392,10 @@
 - **CI：** [46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) success：594 unittest（40 skipped）、CH12 143项、lint 0 errors/5 warnings、结构0 errors。
 - **边界：** 没有真实etcd写入器、自动checkpoint续跑或临时集群故障注入；MIG-04继续IN_PROGRESS。
 
+### 第七十九轮：MIG-05 分阶段导入执行契约与故障注入模拟
+
+- 使用 `EtcdV3CoordinatorAuthorityStore` 与 `InMemoryEtcdV3Client` 执行协议中的checkpoint初始化、request批次Txn和最终scheduler/state发布Txn。
+- 收紧batch未知结果恢复：只接受不可变计划中当前batch或后续batch的精确checkpoint字节值；伪造progress digest、跳跃游标或计划外checkpoint必须QUARANTINE。
+- 模拟提交前中断、提交后响应丢失、重启后依据checkpoint继续、竞争writer抢占request key，以及最终发布响应丢失。
+- 验证compare失败时没有部分request写入、checkpoint不推进、scheduler/state未提前出现；成功路径每个request记录只创建一次，最终发布后Leader key仍必须为空，等待新Leader claim。
+- 本轮测试不替代真实三节点etcd Live，不证明共识、耐久性、跨进程网络竞态或生产RBAC；不连接生产集群、不导入候选数据、不执行cutover。
