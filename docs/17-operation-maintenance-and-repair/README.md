@@ -561,3 +561,14 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 - Provider增加可选 `require_online_leader_status=True`。新命令在线校验失败或store不可用时fail closed；精确历史receipt重放仍优先返回历史结果。
 - **重要限制：** etcd Range与Provider SQLite commit没有共同事务，仍存在检查后撤销的TOCTOU窗口。本轮不是跨系统原子fencing，不代表生产接入或stale-Leader风险彻底消除。
 - 测试使用合成store/fake checker；真实三节点etcd、真实Provider和网络分区联合验证仍未执行。
+
+
+## CH17-T006 Provider 可撤销授权与撤销屏障架构（第八十九轮）
+
+新增[Provider 可撤销授权与撤销屏障架构设计](provider-revocation-barrier-architecture.md)，用于处理第八十八轮在线Leader/Native Lease检查仍存在的跨系统TOCTOU。
+
+核心结论：etcd线性一致Range与Provider SQLite commit没有共同事务；将Range移入SQLite事务也不能阻止etcd Lease在Range之后变化。Provider mutation必须在最终提交事务或Provider原生条件写边界内检查可撤销grant/epoch。推荐评估Provider参与的FENCE屏障：旧grant撤销与实际mutation共享Provider线性化顺序，持久化receipt，只有屏障receipt可验证后才允许新epoch grant激活。
+
+**语义限制：** Provider FENCE提交是Provider侧撤销的线性化点，不是etcd Lease物理过期的同一瞬间。若业务要求跨独立系统零窗口撤销，必须具备共享事务权威或Provider原生原子条件写；单纯在线Range、签名expiry或异步Watch均不能证明这一点。
+
+本轮为架构决策文档，不包含grant/FENCE实现、真实Provider/etcd联调、RBAC变更或生产迁移。
