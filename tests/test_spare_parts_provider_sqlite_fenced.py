@@ -1176,23 +1176,26 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             __import__("json").dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
         ).hexdigest()
         provider.apply_provider_grant_command(fence)
+        fence_receipt = provider.provider_grant_command_status(digest)
         provider.apply_provider_grant_command(self.grant_command(
             "ACTIVATE", 2, "grant-short-lived",
-            issued_at=now + 0.01, lease_expires=now + 30.0,
-            expires=now + 0.45, fence_digest=digest,
+            issued_at=float(fence_receipt["applied_at"]) + 0.01,
+            lease_expires=now + 30.0,
+            expires=now + 0.8, fence_digest=digest,
         ))
         key = SCOPE + "/grant/expired.bin"
         proof = self.proof(
             key, 60, "object:put_if_absent", "expired-grant-write",
             grant_id="grant-short-lived", grant_generation=2,
         )
-        time.sleep(0.55)
+        time.sleep(0.9)
         with self.assertRaisesRegex(SQLiteProviderGrantRejectedError, "expired"):
             provider.put_if_absent_fenced(
                 key, b"expired", fencing_scope=SCOPE, fencing_token=60,
                 idempotency_key="expired-grant-write", fencing_attestation=proof,
             )
-        self.assertIsNone(provider.get_object(key))
+        with self.assertRaises(SQLiteProviderObjectNotFoundError):
+            provider.get_object(key)
 
     def test_backup_validation_requires_ed25519_grant_trust_registry(self):
         backup = self.base / "provider-grant-trust-backup.sqlite"
