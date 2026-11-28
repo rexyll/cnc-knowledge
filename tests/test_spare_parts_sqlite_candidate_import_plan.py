@@ -147,6 +147,15 @@ class CandidateImportPlanTests(unittest.TestCase):
                 max_txn_ops=100, max_txn_bytes=1_000_000,
             )
 
+    def test_rejects_legacy_candidate_v1_after_leader_epoch_contract_change(self):
+        candidate = self.candidate()
+        candidate["format"] = "ch17-sqlite-unified-candidate-v1"
+        resign(candidate)
+        with self.assertRaisesRegex(ImportPlanError, "unsupported candidate bundle format"):
+            build_import_plan(
+                candidate, PREFIX, max_txn_ops=100, max_txn_bytes=1_000_000
+            )
+
     def test_rejects_modified_candidate_digest(self):
         candidate = self.candidate()
         candidate["state_template"]["next_fencing_token"] += 1
