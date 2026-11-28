@@ -35,6 +35,7 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             status="ACTIVE",
             not_before=self.now - 3600.0,
             not_after=None,
+            retiring_effective_at=None,
             revocation_effective_at=None,
             trust_revision=4,
         )
@@ -148,6 +149,7 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             status="ACTIVE",
             not_before=self.now - 3600.0,
             not_after=None,
+            retiring_effective_at=None,
             revocation_effective_at=None,
             trust_revision=4,
         )
@@ -164,6 +166,7 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             status="ACTIVE",
             not_before=self.now - 3600.0,
             not_after=None,
+            retiring_effective_at=None,
             revocation_effective_at=None,
             trust_revision=4,
         )
@@ -180,6 +183,7 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             status="ACTIVE",
             not_before=self.now + 10.0,
             not_after=self.now + 20.0,
+            retiring_effective_at=None,
             revocation_effective_at=None,
             trust_revision=5,
         )
@@ -196,6 +200,7 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             status="RETIRING",
             not_before=self.now - 3600.0,
             not_after=self.now + 10.0,
+            retiring_effective_at=self.now,
             revocation_effective_at=None,
             trust_revision=5,
         )
@@ -211,6 +216,7 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             status="REVOKED",
             not_before=self.now - 3600.0,
             not_after=None,
+            retiring_effective_at=self.now - 2.0,
             revocation_effective_at=self.now - 1.0,
             trust_revision=6,
         )
@@ -234,6 +240,7 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             status="REVOKED",
             not_before=self.now - 3600.0,
             not_after=None,
+            retiring_effective_at=self.now - 8.0,
             revocation_effective_at=self.now - 5.0,
             trust_revision=6,
         )
