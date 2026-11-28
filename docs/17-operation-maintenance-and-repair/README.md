@@ -540,3 +540,11 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 - 任意历史精确命令重放都返回 ALREADY_APPLIED，包括scope已经经历后续UNFREEZE/新generation的情况；返回历史结果与当前scope状态，重放不产生任何状态迁移。
 - 新增只读 write_freeze_command_status()，Coordinator可按原envelope digest查询历史提交收据；收据随SQLite backup/restore保留。
 - 未查到收据不是跨网络未知请求的最终“未提交”证明；远程Provider必须提供等价的线性一致receipt查询与幂等控制端点。
+
+#### 第八十七轮补充：Freeze命令与Coordinator Leader绑定
+
+- Freeze命令协议升级v2，签名绑定Coordinator namespace、Leader ID、Leader epoch、native Lease ID及Lease expiry；命令expiry必须不晚于Leader Lease expiry。
+- Provider schema v4新增每scope Leader epoch high-water表及每命令Leader审计表。命令收据、freeze scope状态、Leader floor及审计记录在同一SQLite写事务中提交。
+- 已观察更高epoch后拒绝较低epoch的新命令；相同epoch不允许更换Leader ID或native Lease ID；namespace在scope生命周期内固定。更高epoch可接管现有freeze，但UNFREEZE仍必须匹配active freeze ID。
+- 历史精确命令receipt仍优先解析，旧命令重放只返回ALREADY_APPLIED，不回滚当前状态。
+- **限制：** Provider本地只验证签名声明的Lease expiry，不在线查询真实etcd Lease是否存在、是否附着或是否提前撤销。未观察新epoch前的旧Leader有效窗口仍存在；生产必须增加线性一致在线Leader/Lease检查或等价撤销机制。
