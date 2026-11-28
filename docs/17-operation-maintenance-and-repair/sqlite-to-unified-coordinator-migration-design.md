@@ -486,3 +486,24 @@ apply_write_freeze_command() 在完成签名和当前信任注册表校验后，
 新增只读 write_freeze_command_status(digest)，用于Coordinator在超时/连接断开后查询历史收据。返回值明确区分命令当时的 result_state 与当前scope状态；未知digest返回None，格式非法拒绝。命令账本随Provider数据库备份/恢复保留。
 
 **恢复规则：** Coordinator遇到命令响应未知时，必须使用原始签名envelope的digest查询状态。查到收据表示原命令已提交，不得重发为新命令；未查到收据不自动证明原请求永远不会提交，调用方仍需按控制通道策略处理不确定性，不能改用新generation猜测。此本地API只验证SQLite持久化和同机事务原子性，不证明远程网络、Provider多副本或Coordinator跨主机恢复语义。
+
+### 第八十七轮：Provider Freeze 命令绑定 Coordinator Leader Epoch 与 Native Lease
+
+Freeze command协议升级为v2。签名claims新增并强制包含 coordinator_namespace、leader_id、正整数 leader_epoch、正整数 leader_lease_id 及 leader_lease_expires_at_unix。命令 expires_at_unix 不得晚于声明的Leader Lease到期时间；命令和Lease在Provider验证时都必须尚未到期。签名覆盖上述全部字段。
+
+Provider schema升级到v4，新增：
+- provider_write_freeze_leader_floors：按tenant/scope持久化已观察到的Coordinator namespace、Leader ID、epoch、native Lease ID及Lease expiry。
+- provider_write_freeze_command_leaders：按完整命令envelope digest保存该命令签发时的Leader绑定，供审计和receipt查询。
+
+新命令必须遵守每scope的Leader单调性：
+1. namespace一经建立不可在该scope内改变；
+2. Leader epoch低于已观察floor时拒绝；
+3. epoch相同时Leader ID和native Lease ID必须完全一致；
+4. 只有更高epoch可以切换Leader身份/Lease；
+5. freeze generation状态推进、命令receipt、Leader floor和命令Leader审计记录在同一 BEGIN IMMEDIATE 事务提交。任何命令验证或generation检查失败不得推进Leader floor。
+
+精确历史envelope receipt仍在Leader floor校验前查询；重放已提交旧命令只返回ALREADY_APPLIED，不产生状态变化。新的旧Leader命令则在Provider已经观察到更高epoch后被拒绝。新Leader可用更高epoch及下一freeze generation接管当前freeze；UNFREEZE仍须匹配当前freeze ID。
+
+**关键限制：** 该协议只能证明签名者声明了Leader epoch/Lease信息，且命令声明期限不晚于Lease expiry；Provider没有在线查询etcd Lease是否仍存在/仍附着于Leader key，也无法仅凭签名获知Lease是否提前撤销。因此，旧Leader在Provider尚未观察到新epoch时，仍可能在已签命令和Lease声明有效窗口内被接受。生产环境必须增加Provider侧线性一致Leader/Lease状态检查，或等价的不可伪造、可撤销授权机制；不能把本轮本地SQLite验证称为实时Lease有效性证明。
+
+v3 Provider数据库升级到v4时以加法方式创建Leader floor及命令审计表；旧freeze scopes与receipt保留。此实现仍是同机SQLite参考，不连接真实etcd。
