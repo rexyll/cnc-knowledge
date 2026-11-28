@@ -2572,6 +2572,90 @@ class SQLiteFencedObjectStorageProvider:
             }
             if not required.issubset(tables):
                 raise BackupStorageError("Provider backup is missing required tables")
+
+            grant_receipts = {
+                row["command_sha256"]: row
+                for row in connection.execute(
+                    "SELECT * FROM provider_grant_commands"
+                ).fetchall()
+            }
+            for receipt in grant_receipts.values():
+                if not re.fullmatch(r"[0-9a-f]{64}", receipt["command_sha256"]):
+                    raise BackupStorageError("Provider backup has an invalid grant command digest")
+                if receipt["action"] == "ACTIVATE":
+                    fence = grant_receipts.get(receipt["fence_command_sha256"])
+                    if (
+                        fence is None or fence["action"] != "FENCE"
+                        or fence["result_state"] != "FENCED"
+                        or fence["provider_id"] != receipt["provider_id"]
+                        or fence["tenant_id"] != receipt["tenant_id"]
+                        or fence["fencing_scope"] != receipt["fencing_scope"]
+                        or fence["grant_id"] != receipt["grant_id"]
+                        or int(fence["generation"]) + 1 != int(receipt["generation"])
+                        or fence["coordinator_namespace"] != receipt["coordinator_namespace"]
+                        or fence["leader_id"] != receipt["leader_id"]
+                        or int(fence["leader_epoch"]) != int(receipt["leader_epoch"])
+                        or int(fence["leader_lease_id"]) != int(receipt["leader_lease_id"])
+                        or float(receipt["applied_at"]) < float(fence["applied_at"])
+                    ):
+                        raise BackupStorageError(
+                            "Provider backup has a broken FENCE/ACTIVATE receipt chain"
+                        )
+
+            for grant in connection.execute(
+                "SELECT * FROM provider_scope_grants"
+            ).fetchall():
+                fence = grant_receipts.get(grant["fence_command_sha256"])
+                if (
+                    fence is None or fence["action"] != "FENCE"
+                    or fence["result_state"] != "FENCED"
+                    or fence["provider_id"] != connection.execute(
+                        "SELECT value FROM provider_meta WHERE key='provider_id'"
+                    ).fetchone()[0] if connection.execute(
+                        "SELECT 1 FROM provider_meta WHERE key='provider_id'"
+                    ).fetchone() else False
+                ):
+                    # Provider identity is a runtime binding rather than a meta
+                    # value in this schema; validate all durable scope fields
+                    # against the exact receipt below.
+                    if fence is None or fence["action"] != "FENCE" or fence["result_state"] != "FENCED":
+                        raise BackupStorageError("Provider backup grant scope has no FENCE receipt")
+                if (
+                    fence["tenant_id"] != grant["tenant_id"]
+                    or fence["fencing_scope"] != grant["fencing_scope"]
+                    or fence["grant_id"] != grant["grant_id"]
+                    or fence["coordinator_namespace"] != grant["coordinator_namespace"]
+                    or fence["leader_id"] != grant["leader_id"]
+                    or int(fence["leader_epoch"]) != int(grant["leader_epoch"])
+                    or int(fence["leader_lease_id"]) != int(grant["leader_lease_id"])
+                    or float(fence["leader_lease_expires_at"]) != float(grant["leader_lease_expires_at"])
+                ):
+                    raise BackupStorageError("Provider backup grant scope disagrees with its FENCE receipt")
+                if grant["state"] == "FENCED":
+                    if (
+                        int(grant["grant_generation"]) != int(fence["generation"])
+                        or grant["activation_command_sha256"] is not None
+                        or grant["grant_expires_at"] is not None
+                    ):
+                        raise BackupStorageError("Provider backup FENCED scope has an invalid generation or grant expiry")
+                else:
+                    activation = grant_receipts.get(grant["activation_command_sha256"])
+                    if (
+                        activation is None or activation["action"] != "ACTIVATE"
+                        or activation["result_state"] != "ACTIVE"
+                        or activation["provider_id"] != fence["provider_id"]
+                        or activation["tenant_id"] != grant["tenant_id"]
+                        or activation["fencing_scope"] != grant["fencing_scope"]
+                        or activation["grant_id"] != grant["grant_id"]
+                        or int(activation["generation"]) != int(grant["grant_generation"])
+                        or activation["fence_command_sha256"] != grant["fence_command_sha256"]
+                        or activation["coordinator_namespace"] != grant["coordinator_namespace"]
+                        or activation["leader_id"] != grant["leader_id"]
+                        or int(activation["leader_epoch"]) != int(grant["leader_epoch"])
+                        or int(activation["leader_lease_id"]) != int(grant["leader_lease_id"])
+                        or float(grant["grant_expires_at"]) > float(grant["leader_lease_expires_at"])
+                    ):
+                        raise BackupStorageError("Provider backup ACTIVE grant has an invalid ACTIVATE receipt")
             report = {
                 "result": "VALID",
                 "schema_version": SCHEMA_VERSION,
