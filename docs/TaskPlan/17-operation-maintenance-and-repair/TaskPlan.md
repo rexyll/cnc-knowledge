@@ -1473,3 +1473,15 @@
 - 保持只读查询可用；legacy unfenced写和unfenced multipart abort继续拒绝。
 - 测试覆盖签名和命令重放、generation skip/stale、错误Provider/freeze ID、四种mutation拒绝、解除冻结后旧proof拒绝、SQLite写事务与freeze命令竞态排序、重启和备份/恢复持久化。
 - 参考实现限定为本地SQLite同库事务；Provider Freeze attestation验证器不会因此自动报告真实Provider已冻结，生产授权字段仍false。远程Provider Gateway、KMS/HSM、服务端IAM/RBAC及多主机一致性仍待MIG-06/后续真实集成。
+
+
+### 第八十六轮任务计划：Provider Freeze命令收据与未知响应恢复
+
+- 新增持久化命令收据账本，以完整签名envelope digest作为主键，绑定issuer/key、Provider/tenant/scope、action、freeze ID、generation、历史结果状态和提交时间。
+- 命令收据与scope freeze generation/state推进必须处于同一个Provider BEGIN IMMEDIATE事务；禁止先更新scope后单独写收据。
+- 命令处理先验签并检查trusted key registry，再查历史收据。精确历史命令无论当前scope已推进多少代都只能返回ALREADY_APPLIED及历史结果，不得重新执行状态迁移。
+- 不同签名envelope不得借用历史receipt；同claims重新签名属于不同命令封装，仍须通过当前generation规则。
+- 增加只读receipt状态查询，区分命令历史result_state和当前scope状态；未知digest返回None，非法digest拒绝。
+- backup/restore必须保留命令收据；测试覆盖FREEZE→UNFREEZE→旧FREEZE重放、历史/当前状态区分、未知/非法digest、重启和backup/restore。
+- 远程Coordinator恢复必须使用原始envelope digest查receipt；receipt缺失不能单独证明未知网络请求未提交，不得擅自创建新generation或改写原命令。
+- 本轮仅同机SQLite参考实现，不连接真实Provider/etcd/KMS，不开放应用访问，不执行迁移或cutover。
