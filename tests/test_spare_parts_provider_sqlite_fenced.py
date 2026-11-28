@@ -1207,9 +1207,10 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             restored_path, provider_id="provider-test-a",
             trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
         )
-        self.assertEqual(
-            restored.write_freeze_command_status(digest)["result_state"], "FROZEN"
-        )
+        restored_receipt = restored.write_freeze_command_status(digest)
+        self.assertEqual(restored_receipt["result_state"], "FROZEN")
+        self.assertEqual(restored_receipt["leader_epoch"], 1)
+        self.assertEqual(restored_receipt["leader_lease_id"], 101)
 
     def test_freeze_generation_survives_provider_restart_backup_and_restore(self):
         self.provider.apply_write_freeze_command(
@@ -1240,6 +1241,9 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         )
         self.assertEqual(restored.write_freeze_state(SCOPE)["generation"], 2)
         self.assertEqual(restored.write_freeze_state(SCOPE)["state"], "OPEN")
+        self.assertEqual(
+            restored.write_freeze_state(SCOPE)["leader_floor"]["leader_epoch"], 1
+        )
 
     def test_schema_v2_provider_database_is_upgraded_with_freeze_gate_table(self):
         with sqlite3.connect(self.database) as connection:
