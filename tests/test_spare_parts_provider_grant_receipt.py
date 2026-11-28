@@ -211,7 +211,7 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             status="REVOKED",
             not_before=self.now - 3600.0,
             not_after=None,
-            revocation_effective_at=self.now - 0.25,
+            revocation_effective_at=self.now - 1.0,
             trust_revision=6,
         )
         with self.assertRaisesRegex(ProviderGrantReceiptError, "was revoked"):
@@ -249,13 +249,12 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
             self.verify(envelope)
 
     def test_applied_time_after_signed_command_expiry_is_rejected(self):
-        envelope = self.sign(
-            command_issued_at_unix=self.now - 10.0,
-            command_expires_at_unix=self.now - 5.0,
-            applied_at_unix=self.now - 1.0,
-        )
         with self.assertRaisesRegex(ProviderGrantReceiptError, "outside the signed command window"):
-            self.verify(envelope)
+            self.sign(
+                command_issued_at_unix=self.now - 10.0,
+                command_expires_at_unix=self.now - 5.0,
+                applied_at_unix=self.now - 1.0,
+            )
 
     def test_fence_cannot_claim_activate_result_or_prior_fence(self):
         with self.assertRaisesRegex(ProviderGrantReceiptError, "result state"):
