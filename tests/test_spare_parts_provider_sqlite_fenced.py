@@ -2143,6 +2143,84 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertIn("provider_scope_grants", tables)
         self.assertIn("provider_grant_commands", tables)
 
+    def test_schema_v5_legacy_grant_receipts_remain_unverifiable_and_fail_closed(self):
+        import json
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-v5-legacy",
+            issued_at=now, lease_expires=now + 90.0,
+        )
+        fence_digest = hashlib.sha256(
+            json.dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence)
+        fence_receipt = provider.provider_grant_command_status(fence_digest)
+        provider.apply_provider_grant_command(self.grant_command(
+            "ACTIVATE", 2, "grant-v5-legacy",
+            issued_at=float(fence_receipt["applied_at"]) + 0.01,
+            lease_expires=now + 90.0, expires=time.time() + 45.0,
+            fence_digest=fence_digest,
+        ))
+
+        with sqlite3.connect(self.database) as connection:
+            connection.execute(
+                """CREATE TABLE provider_grant_commands_legacy (
+                    command_sha256 TEXT PRIMARY KEY CHECK(length(command_sha256)=64),
+                    issuer_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    provider_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    action TEXT NOT NULL CHECK(action IN ('FENCE','ACTIVATE')),
+                    grant_id TEXT NOT NULL,
+                    generation INTEGER NOT NULL CHECK(generation > 0),
+                    coordinator_namespace TEXT NOT NULL,
+                    leader_id TEXT NOT NULL,
+                    leader_epoch INTEGER NOT NULL CHECK(leader_epoch > 0),
+                    leader_lease_id INTEGER NOT NULL CHECK(leader_lease_id > 0),
+                    leader_lease_expires_at REAL NOT NULL,
+                    fence_command_sha256 TEXT,
+                    result_state TEXT NOT NULL CHECK(result_state IN ('FENCED','ACTIVE')),
+                    applied_at REAL NOT NULL
+                )"""
+            )
+            connection.execute(
+                """INSERT INTO provider_grant_commands_legacy(
+                    command_sha256,issuer_id,key_id,provider_id,tenant_id,fencing_scope,
+                    action,grant_id,generation,coordinator_namespace,leader_id,
+                    leader_epoch,leader_lease_id,leader_lease_expires_at,
+                    fence_command_sha256,result_state,applied_at
+                )
+                SELECT command_sha256,issuer_id,key_id,provider_id,tenant_id,fencing_scope,
+                       action,grant_id,generation,coordinator_namespace,leader_id,
+                       leader_epoch,leader_lease_id,leader_lease_expires_at,
+                       fence_command_sha256,result_state,applied_at
+                FROM provider_grant_commands"""
+            )
+            connection.execute("DROP TABLE provider_grant_commands")
+            connection.execute("ALTER TABLE provider_grant_commands_legacy RENAME TO provider_grant_commands")
+            connection.execute("UPDATE provider_meta SET value='5' WHERE key='schema_version'")
+
+        migrated = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            require_revocable_grant=True,
+        )
+        key = SCOPE + "/grant/legacy-v5-denied.bin"
+        proof = self.proof(
+            key, 91, "object:put_if_absent", "legacy-v5-proof",
+            grant_id="grant-v5-legacy", grant_generation=2,
+        )
+        with self.assertRaisesRegex(SQLiteProviderGrantRejectedError, "legacy-unverifiable"):
+            migrated.put_if_absent_fenced(
+                key, b"must-not-write", fencing_scope=SCOPE,
+                fencing_token=91, idempotency_key="legacy-v5-proof",
+                fencing_attestation=proof,
+            )
+        with self.assertRaisesRegex(BackupStorageError, "lacks its original signed envelope"):
+            migrated.backup_to(self.base / "provider-v5-legacy-grant-backup.sqlite")
+
     def test_schema_v5_provider_database_adds_signed_grant_receipt_envelope_columns(self):
         with sqlite3.connect(self.database) as connection:
             connection.execute("DROP TABLE provider_grant_commands")
