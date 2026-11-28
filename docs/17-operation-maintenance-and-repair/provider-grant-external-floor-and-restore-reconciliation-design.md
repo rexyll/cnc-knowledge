@@ -251,6 +251,8 @@ Floor测试使用独立合成Coordinator Ed25519 key，覆盖：
 
 [Knowledge Quality Run 46159157703](https://github.com/rexyll/cnc-knowledge/actions/runs/46159157703) 在代码测试提交上两个必需Job均success：全库757项测试运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings；结构/数据检查0 errors。最终完整文档同步仍以对应文档提交的CI为准。
 
+扩展回归最终验证：[Knowledge Quality Run 46159590900](https://github.com/rexyll/cnc-knowledge/actions/runs/46159590900) 两个必需Job均success；全库762项测试运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings；结构/数据检查0 errors。此轮额外覆盖Provider/Tenant/scope显式目标绑定、command expiry超过native Lease拒绝、exact operation replay及legacy PENDING operation在strict迁移后不得补认证。完整文档同步由后续主分支CI复核。
+
 ### 11.5 保留的生产边界
 
 此实现仍是单机SQLite参考模型，不是etcd linearizable KV/Txn、Raft quorum、多主机authority或生产Coordinator trust plane。Coordinator key registry由本地数据库owner API管理，不含生产审批、多节点安全发布、KMS/HSM或硬件密钥隔离。Floor文件及其trust registry仍不能识别自身旧快照回滚，必须依赖Floor备份域外可信checkpoint。
