@@ -445,5 +445,36 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             )
 
 
+    def test_namespace_must_be_a_single_isolated_migration_scope(self):
+        invalid_namespaces = (
+            "/cnc/migration/unified/",
+            "/cnc/unified/schema-v2/",
+            "/cnc/migration/isolated/",
+            "/cnc/migration/isolated/provider-grant-test/extra/",
+            "/cnc/migration/isolated/../",
+            "/cnc/migration/isolated/%2e%2e/",
+            r"/cnc/migration/isolated/provider-grant-test\\",
+        )
+        for index, namespace in enumerate(invalid_namespaces):
+            with self.subTest(namespace=namespace):
+                with self.assertRaisesRegex(ProviderGrantFloorError, "isolated"):
+                    self.authority.reserve_fence(
+                        operation_id=f"bad-isolated-namespace-{index}",
+                        key=self.key,
+                        grant_id="grant-a",
+                        command_digest=_digest(f"bad-isolated-namespace-{index}"),
+                        coordinator_namespace=namespace,
+                        leader_id=self.leader_id,
+                        leader_epoch=1,
+                        native_lease_id=self.lease_id,
+                        lease_expires_at_unix=self.lease_expiry,
+                        expected_revision=0,
+                    )
+                snapshot = self.authority.snapshot(self.key)
+                self.assertEqual(snapshot.state, "IDLE")
+                self.assertEqual(snapshot.revision, 0)
+                self.assertEqual(snapshot.authority_revision, 0)
+
+
 if __name__ == "__main__":
     unittest.main()
