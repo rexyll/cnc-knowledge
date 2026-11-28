@@ -112,3 +112,16 @@ Provider 本地时钟是 TTL 方案的额外信任假设：若采用 expiry，�
 ## 8. 本轮状态与安全声明
 
 本文仅完成问题分解和候选架构，不代表已实现 Provider grant、FENCE 命令、撤销屏障或生产级强 fencing。尚未连接真实 etcd、Provider、KMS/HSM、对象存储或 IAM/RBAC；未改变生产 authority、未导入候选数据、未激活应用、未执行 cutover。生产 Unified schema-v2 仍为唯一权威，ASSET-000092 仍为 `PROPOSED_NOT_APPROVED / NOT_RUN`。
+
+
+## 9. 第九十轮本地参考实现映射
+
+第九十轮已开始将本设计映射到同机SQLite Provider：
+
+- 新增独立Ed25519 `FENCE` / `ACTIVATE` command envelope；ACTIVATE必须引用精确FENCE receipt digest。
+- Provider新增scope grant状态表和命令receipt表；FENCE推进到FENCED并要求Leader epoch严格增加；ACTIVATE只有在FENCE receipt存在且全部identity绑定一致时才能开启新grant。
+- 可选`require_revocable_grant`令对象PUT及multipart begin/part/complete在各自Provider写事务中检查Grant ID/generation、ACTIVE状态和expiry。
+- FENCE与mutation使用同一Provider SQLite BEGIN IMMEDIATE事务，形成单机数据库内的可验证串行化边界。
+- 命令提交后响应丢失通过原始envelope digest读回receipt，不生成新代次。
+
+**状态：** 已提交代码与专用测试初版，待必需CI完成后确认。该实现仍不是远程Provider/对象存储、跨主机或生产级证明；FENCE线性化点仍仅是Provider本地数据库提交，不与etcd Lease物理撤销瞬间原子同步。
