@@ -894,6 +894,89 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.assertEqual(self.authority.snapshot(self.key).revision, before.revision)
         self.assertEqual(self.authority.snapshot(self.key).authority_revision, before.authority_revision)
 
+
+    def test_signed_command_provider_claim_must_match_expected_floor_provider(self):
+        envelope = self.coordinator_command(
+            "FENCE", 1, provider_id="provider-not-this-floor"
+        )
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "binding mismatch"):
+            self.authority.reserve_fence_from_command(
+                operation_id="wrong-provider-signed-command",
+                key=self.key,
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "IDLE")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_signed_command_scope_claim_must_match_explicit_floor_scope(self):
+        envelope = self.coordinator_command(
+            "FENCE", 1, scope="cnc/ch17/not-the-requested-scope"
+        )
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "scope"):
+            self.authority.reserve_fence_from_command(
+                operation_id="wrong-scope-signed-command",
+                key=self.key,
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "IDLE")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_signed_command_expiry_cannot_exceed_native_lease(self):
+        envelope = self.coordinator_command(
+            "FENCE", 1, expires_at=self.lease_expiry + 1.0
+        )
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "signature verification failed"):
+            self.authority.reserve_fence_from_command(
+                operation_id="command-outlives-native-lease",
+                key=self.key,
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "IDLE")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_signed_command_exact_operation_replay_returns_same_reservation(self):
+        envelope = self.coordinator_command("FENCE", 1)
+        first = self.authority.reserve_fence_from_command(
+            operation_id="signed-command-exact-replay",
+            key=self.key,
+            command_envelope=envelope,
+            expected_revision=0,
+        )
+        after_first = self.authority.snapshot(self.key)
+        replay = self.authority.reserve_fence_from_command(
+            operation_id="signed-command-exact-replay",
+            key=self.key,
+            command_envelope=envelope,
+            expected_revision=0,
+        )
+        after_replay = self.authority.snapshot(self.key)
+        self.assertEqual(replay, first)
+        self.assertEqual(after_replay.revision, after_first.revision)
+        self.assertEqual(after_replay.authority_revision, after_first.authority_revision)
+        different_command = self.coordinator_command(
+            "FENCE", 1, issued_at=time.time() - 0.15
+        )
+        with self.assertRaises(ProviderGrantFloorConflict):
+            self.authority.reserve_fence_from_command(
+                operation_id="signed-command-exact-replay",
+                key=self.key,
+                command_envelope=different_command,
+                expected_revision=0,
+            )
+        self.assertEqual(self.authority.snapshot(self.key).revision, after_first.revision)
+
     def test_retired_or_revoked_coordinator_key_cannot_issue_new_reservations(self):
         self.authority.admin_set_coordinator_command_key_status(
             issuer_id=self.coordinator_issuer,
