@@ -99,6 +99,7 @@ Coordinator command key 与 Provider receipt key 必须是两个独立信任域�
 | grant_id | 与 reservation grant ID 精确一致 |
 | generation | 与 reservation generation 精确一致，正的 SQLite-safe 整数 |
 | command_sha256 | 目标 Provider 实际应用的原始 Coordinator signed command envelope 的 SHA-256；必须与 pending reservation 的 command digest 一致 |
+| fence_command_sha256 | FENCE 必须为 null；ACTIVATE 必须绑定外部 Floor 最近一次已确认的 FENCE command digest |
 | result_state | FENCE 必须为 FENCED；ACTIVATE 必须为 ACTIVE |
 | coordinator_namespace | 与已签名 command claims / reservation 精确一致，继续受 isolated namespace 策略约束 |
 | leader_id、leader_epoch | 与已签名 command claims 精确一致 |
@@ -115,6 +116,7 @@ Receipt 不需要独立接收调用方提供的 operation ID。Floor reservation
 - 整数身份字段必须使用 JSON integer，不能把 bool 当作整数；generation / epoch / Lease ID 限定在 SQLite signed 64-bit 正整数范围。
 - 浮点时间必须有限、非负；比较时不将其转换为本地时区字符串。
 - receipt_digest 由完整 canonical envelope（含 signature）直接计算：SHA-256(canonical_json(envelope))。
+- command_sha256 必须使用生成原 Coordinator command 时对应版本的 canonical envelope 字节计算，并与 Provider command verifier 实际接受的字节规则一致；不能对已签名 command 重新序列化后换一种 canonicalizer 再计算。当前 command verifier 的 canonicalization 规则应在实现时作为独立版本固定并纳入一致性测试。
 - 不接受调用方同时传入一个 claims 对象和一个独立摘要，再由服务器默认相信两者一致；摘要只能在 envelope schema、签名、绑定和时间验证全部通过后由 verifier 重算。
 
 ## 4. Ed25519 签名协议
@@ -202,7 +204,7 @@ get_provider_grant_receipt(provider_id, tenant_id, command_sha256)
 - scope 当前确实为已确认的 FENCED；
 - ACTIVATE reservation 绑定最近一次已确认 FENCE command digest；
 - ACTIVATE receipt command_sha256 等于当前 ACTIVATE reservation；
-- receipt fence_command_sha256（若包含在 ACTIVATE receipt claims 中）精确等于已确认 FENCE command digest；
+- receipt fence_command_sha256 精确等于已确认 FENCE command digest；
 - result_state == ACTIVE；
 - Provider applied time 不早于已确认 FENCE receipt 的 applied time；
 - FENCE 与 ACTIVATE receipt 的 Provider、tenant、scope、Grant、generation、Coordinator Leader/native Lease 身份一致，并满足 generation 的既定推进规则。
