@@ -220,7 +220,13 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 
 ### Validation
 
-- Full main quality CI results will be added after code/test and final metadata commits complete.
+- An initial negative-test run exposed only an exception normalization mismatch for invalid isolated namespaces; the ledger now wraps `MigrationNamespaceError` as `ProviderFreezeReplayLedgerError`.
+- [Knowledge Quality Run 46114881253](https://github.com/rexyll/cnc-knowledge/actions/runs/46114881253): success for the complete Round84 code and documentation state.
+- Full unittest suite: 639 tests run, 40 skipped (599 passed).
+- CH12 numerical resource tests: 143 passed.
+- Knowledge lint: 0 errors; fixture lint: 0 errors / 5 warnings.
+- Synthetic scenario replay: 30 simulated, 0 failed; external connections and writes were disabled.
+- Both required GitHub Actions jobs completed successfully.
 
 ### Safety boundary
 
