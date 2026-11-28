@@ -420,3 +420,25 @@ Quality Run [46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/4
 验签结果增加 `evidence_signature_verified`、`signer_key_id` 和 `trust_store_sha256`。两个授权字段仍严格为false。
 
 **信任与重放边界：** 公钥信任库由调用方提供，工具不能证明其来源、审批状态或安全分发；真实部署必须通过独立可信渠道固定信任根并制定轮换/撤销流程。Ed25519签名认证的是某个不可变快照，不提供Provider持续冻结证明。当前离线校验器没有持久化nonce/evidence-id账本，不能阻止有效签名快照在新鲜度窗口内重放；应在真实Provider冻结协议和演练环境中另行设计防重放及冻结租约。该验签结果不等于生产cutover审批或Provider写权限。
+
+
+
+### 15.11 第八十三轮：Provider freeze attestation、Coordinator绑定与一次性防重放
+
+新增 `scripts/spare_parts_sqlite_provider_freeze_attestation.py`。与第八十二轮通用签名快照不同，本轮冻结声明采用独立签名域分隔前缀，并要求固定 claims schema：
+- Provider身份、freeze ID、单调freeze generation、`frozen=true`和`freeze_mode=provider-native-write-gate`；
+- UUID形式的evidence ID、由Coordinator挑战发起方提供的64位十六进制随机nonce；
+- freeze_started、freeze_expires、issued_at、expires_at四个时间戳；
+- Coordinator Leader ID、正数epoch、正数native Lease ID和Lease expiry；
+- 第八十一轮完整Provider只读证据对象。
+
+验证器要求Coordinator调用方提供一份不超过5秒的当前Leader快照。快照的Leader ID、epoch、Lease ID和Lease expiry须与签名claims完全相同，当前Lease必须未过期且覆盖签名声明的expires_at。freeze窗口必须满足 `freeze_started <= evidence.observed_at <= issued_at <= now < expires_at <= freeze_expires`。Coordinator快照、候选和Provider证据的scope集合必须完全一致；Provider冻结证据的generation/token/operation sequence须与Coordinator authority snapshot逐scope精确相等，并继续满足候选floor上限及既有300秒新鲜度检查。
+
+新增 `SQLiteProviderFreezeEvidenceReplayLedger`，使用普通0600数据库文件、SQLite `synchronous=FULL`、`BEGIN IMMEDIATE`及数据库唯一约束，原子消费以下三种范围内唯一标识：`(provider_id, evidence_id)`、`(provider_id, challenge_nonce_sha256)`、`(provider_id, freeze_id, freeze_generation)`。完整签名和上下文验证成功后才写ledger；重复任一标识均拒绝，ledger锁定/写入失败也不得降级接受。消费记录携带claim摘要及Leader/epoch/Lease身份，便于审计追踪。
+
+**生产限制必须保留：**
+1. 此实现是单机SQLite参考ledger，不支持跨主机共识；可信数据库备份回滚可重置防重放历史，不能作为多实例生产Coordinator的最终权威。生产必须换成共享的线性一致etcd CAS/Txn或等价耐久账本，并把nonce发行、Leader/Lease校验和一次性消费设计为同一权威生命周期。
+2. Coordinator快照目前由调用方传入；生产必须来自带认证的、线性一致的CoordinatorAuthority读取，而不是本地缓存或人工输入。
+3. `frozen=true`是Provider签名的原生write-gate声明。此离线验证器不探测真实写API，也不证明所有mutation路径都受冻结门控制，因此结果明确保留 `provider_write_freeze_enforced=false`。
+4. 本模块不调用Provider/KMS/etcd，不创建冻结锁、不写Provider control object、不修改RBAC，也不授予应用启用/Provider操作权限。真实Provider write-path阻断测试与分布式故障演练仍属于MIG-06。
+
