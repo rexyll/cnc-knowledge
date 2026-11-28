@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from typing import Any
 
 from scripts.spare_parts_migration_namespace import (
@@ -18,6 +19,7 @@ from scripts.spare_parts_migration_namespace import (
 )
 from scripts.spare_parts_provider_authority_store import (
     AuthorityStoreCompare,
+    AuthorityStoreError,
     AuthorityStoreOutcomeUnknownError,
     AuthorityStorePut,
 )
@@ -97,12 +99,16 @@ class EtcdProviderFreezeEvidenceReplayLedger:
         for field in ("freeze_generation", "leader_epoch", "lease_id"):
             if not isinstance(record[field], int) or isinstance(record[field], bool) or record[field] <= 0:
                 raise ProviderFreezeReplayLedgerError(f"{field} must be a positive integer")
-        digest = record["challenge_nonce_sha256"]
-        if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
-            raise ProviderFreezeReplayLedgerError("challenge nonce digest is invalid")
+        for field in ("challenge_nonce_sha256", "claim_sha256"):
+            digest = record[field]
+            if not isinstance(digest, str) or len(digest) != 64 or any(
+                c not in "0123456789abcdef" for c in digest
+            ):
+                raise ProviderFreezeReplayLedgerError(f"{field} is invalid")
         if (
             not isinstance(record["consumed_at_unix"], (int, float))
             or isinstance(record["consumed_at_unix"], bool)
+            or not math.isfinite(float(record["consumed_at_unix"]))
         ):
             raise ProviderFreezeReplayLedgerError("consumed_at_unix is invalid")
 
@@ -112,6 +118,17 @@ class EtcdProviderFreezeEvidenceReplayLedger:
             "lease_id", "lease_expires_at_unix", "scopes",
         } or authority_snapshot.get("format") != COORDINATOR_SNAPSHOT_FORMAT:
             raise ProviderFreezeAuthorityChangedError("Coordinator snapshot schema mismatch")
+        snapshot_time = authority_snapshot.get("observed_at_unix")
+        if (
+            not isinstance(snapshot_time, (int, float))
+            or isinstance(snapshot_time, bool)
+            or not math.isfinite(float(snapshot_time))
+            or float(snapshot_time) > float(record["consumed_at_unix"])
+            or float(record["consumed_at_unix"]) - float(snapshot_time) > 5.0
+        ):
+            raise ProviderFreezeAuthorityChangedError(
+                "Coordinator snapshot is stale or from the future"
+            )
         if (
             authority_snapshot.get("leader_id") != record["leader_id"]
             or authority_snapshot.get("leader_epoch") != record["leader_epoch"]
@@ -155,7 +172,10 @@ class EtcdProviderFreezeEvidenceReplayLedger:
             or current_leader.get("epoch") != record["leader_epoch"]
             or current_leader.get("backend_lease_id") != record["lease_id"]
             or current_leader.get("expires_at") != authority_snapshot.get("lease_expires_at_unix")
-            or float(current_leader.get("expires_at", 0)) <= float(record["consumed_at_unix"])
+            or not isinstance(current_leader.get("expires_at"), (int, float))
+            or isinstance(current_leader.get("expires_at"), bool)
+            or not math.isfinite(float(current_leader.get("expires_at")))
+            or float(current_leader.get("expires_at")) <= float(record["consumed_at_unix"])
         ):
             raise ProviderFreezeAuthorityChangedError(
                 "Coordinator native Leader and aggregate do not match signed freeze binding"
@@ -264,3 +284,11 @@ class EtcdProviderFreezeEvidenceReplayLedger:
                 raise ProviderFreezeReplayOutcomeUnknownError(
                     "exact replay-consumption retry remains unknown; do not activate"
                 ) from retry_exc
+            except AuthorityStoreError as exc:
+                raise ProviderFreezeReplayLedgerError(
+                    "exact replay-consumption retry failed closed"
+                ) from exc
+        except AuthorityStoreError as exc:
+            raise ProviderFreezeReplayLedgerError(
+                "shared etcd replay-consumption Txn failed closed"
+            ) from exc
