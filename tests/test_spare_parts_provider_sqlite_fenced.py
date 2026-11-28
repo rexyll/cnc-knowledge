@@ -1455,24 +1455,20 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             public_key=PROVIDER_RECEIPT_PUBLIC,
             not_before=now - 60.0,
         )
+        floor.admin_register_coordinator_command_key(
+            issuer_id=ISSUER_ID,
+            key_id=ED_KEY_ID,
+            public_key=ED_PUBLIC,
+            not_before=now - 60.0,
+        )
         scope_key = ProviderGrantScopeKey(
             provider_id="provider-test-a",
             tenant_id="tenant-a",
             scope=SCOPE,
         )
-        claims = fence_command["command"]
-        fence_reservation = floor.reserve_fence(
+        fence_reservation = floor.reserve_fence_from_command(
             operation_id="provider-fence-operation",
-            key=scope_key,
-            grant_id="grant-provider-signed-e2e",
-            command_digest=fence_digest,
-            coordinator_namespace=claims["coordinator_namespace"],
-            leader_id=claims["leader_id"],
-            leader_epoch=claims["leader_epoch"],
-            native_lease_id=claims["leader_lease_id"],
-            lease_expires_at_unix=claims["leader_lease_expires_at_unix"],
-            command_issued_at_unix=claims["issued_at_unix"],
-            command_expires_at_unix=claims["expires_at_unix"],
+            command_envelope=fence_command,
             expected_revision=0,
         )
         fenced_floor = floor.confirm_provider_receipt(
@@ -1501,21 +1497,10 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertIsNotNone(activate_receipt)
         self.assertEqual(activate_receipt["receipt_envelope"]["receipt"]["fence_command_sha256"], fence_digest)
 
-        activate_claims = activate_command["command"]
         current_floor = floor.snapshot(scope_key)
-        activate_reservation = floor.reserve_activate(
+        activate_reservation = floor.reserve_activate_from_command(
             operation_id="provider-activate-operation",
-            key=scope_key,
-            grant_id="grant-provider-signed-e2e",
-            command_digest=activate_digest,
-            fence_command_digest=fence_digest,
-            coordinator_namespace=activate_claims["coordinator_namespace"],
-            leader_id=activate_claims["leader_id"],
-            leader_epoch=activate_claims["leader_epoch"],
-            native_lease_id=activate_claims["leader_lease_id"],
-            lease_expires_at_unix=activate_claims["leader_lease_expires_at_unix"],
-            command_issued_at_unix=activate_claims["issued_at_unix"],
-            command_expires_at_unix=activate_claims["expires_at_unix"],
+            command_envelope=activate_command,
             expected_revision=current_floor.revision,
         )
         active_floor = floor.confirm_provider_receipt(
