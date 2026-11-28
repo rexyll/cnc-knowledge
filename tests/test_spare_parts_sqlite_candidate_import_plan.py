@@ -70,7 +70,7 @@ def candidate_fixture():
         },
     }
     candidate = {
-        "format": "ch17-sqlite-unified-candidate-v1",
+        "format": "ch17-sqlite-unified-candidate-v2",
         "source_snapshot_digest_sha256": "b" * 64,
         "generated_at_unix": 1000.0,
         "target": {
