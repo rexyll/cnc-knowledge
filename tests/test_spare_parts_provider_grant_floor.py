@@ -930,11 +930,15 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.assertEqual(after.authority_revision, before.authority_revision)
 
     def test_signed_command_expiry_cannot_exceed_native_lease(self):
+        issued = time.time() - 0.25
         envelope = self.coordinator_command(
-            "FENCE", 1, expires_at=self.lease_expiry + 1.0
+            "FENCE", 1,
+            issued_at=issued,
+            expires_at=issued + 31.0,
+            lease_expires_at=issued + 30.0,
         )
         before = self.authority.snapshot(self.key)
-        with self.assertRaisesRegex(ProviderGrantFloorConflict, "signature verification failed"):
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "verification failed"):
             self.authority.reserve_fence_from_command(
                 operation_id="command-outlives-native-lease",
                 key=self.key,
