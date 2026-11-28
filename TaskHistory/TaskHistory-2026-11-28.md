@@ -85,3 +85,43 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - All Round80 runtime integration was executed against \`InMemoryEtcdV3Client\`, not a real etcd cluster. The test's new Leader claim uses only a fake in-memory Lease.
 - No real etcd Range/Txn/Lease write, real Lease Grant/Revoke, RBAC modification, production namespace access, application startup, candidate data import or production cutover occurred.
 - ASSET-000092 remains \`PROPOSED_NOT_APPROVED / NOT_RUN\`; production Unified schema-v2 remains the sole authority.
+
+
+## CNC Knowledge Base — Round 81
+
+- Repository: \`rexyll/cnc-knowledge\`
+- Branch: \`main\` only; no branch created.
+- Scope: MIG-05 external Provider fencing floor reconciliation, read-only fail-closed validator.
+
+### Code changes
+
+- Added \`scripts/spare_parts_sqlite_provider_fencing_reconciliation.py\`.
+- Added \`tests/test_spare_parts_sqlite_provider_fencing_reconciliation.py\`.
+- Validator accepts only candidate format \`ch17-sqlite-unified-candidate-v2\` and a fixed read-only evidence schema.
+- Evidence must identify the Provider and include an observation timestamp and an exact scope map matching all candidate scopes.
+- Per scope, Provider generation must exactly match the candidate generation. Observed Provider fencing high-water token and operation sequence must each be less than or equal to the corresponding candidate floor.
+- If a Provider floor exceeds the candidate floor, validation fails and requires rebuilding the candidate from reconciled source data; it never silently lowers Provider state or mutates the candidate.
+- Evidence older than 300 seconds or from the future is rejected by default; malformed fields, unknown fields, missing/extra scopes, generation mismatch and invalid numeric floors fail closed.
+- Successful output includes canonical evidence SHA-256 and per-scope comparisons, but both \`application_activation_authorized\` and \`provider_operations_authorized\` remain false.
+- Added seven tests covering fresh success, missing scope, higher token floor, higher operation sequence, generation mismatch, stale/future evidence and unknown schema.
+
+### Validation
+
+- [Knowledge Quality Run 46094890151](https://github.com/rexyll/cnc-knowledge/actions/runs/46094890151): success.
+- Full unittest suite: 611 tests run, 40 skipped.
+- CH12 numerical resource tests: 143 passed.
+- Knowledge structure/data checks: 0 errors.
+- Fixture lint: 0 errors / 5 warnings.
+
+### Documentation
+
+- Updated root \`TaskPlan.md\`, CH17 TaskPlan, CH17 README and SQLite-to-Unified migration design.
+- MIG-05 remains IN_PROGRESS: this validates supplied Provider floor evidence only; evidence authenticity, trusted Provider sampling, continuous freeze, and runtime enforcement are still outstanding.
+- MIG-06 remains TODO; MIG-07 remains BLOCKED.
+
+### Safety boundary
+
+- No real Provider was queried; evidence was synthetic unit-test input.
+- No Provider control object was written, no generation/fencing floor was changed, no etcd Lease or RBAC was touched, no application access was enabled, and no production cutover occurred.
+- The 300-second freshness check is only a timestamp policy; it does not prevent Provider mutation after observation. The result is not a signature, trust attestation or production authorization.
+- ASSET-000092 remains \`PROPOSED_NOT_APPROVED / NOT_RUN\`; production Unified schema-v2 remains the sole authority.
