@@ -8,6 +8,7 @@ database outside the Provider SQLite backup/restore domain.
 from __future__ import annotations
 
 import base64
+import hashlib
 import math
 import os
 import re
@@ -203,7 +204,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 CREATE TABLE IF NOT EXISTS provider_grant_floor_meta (
                     singleton INTEGER PRIMARY KEY CHECK(singleton=1),
                     schema_version INTEGER NOT NULL,
-                    authority_revision INTEGER NOT NULL
+                    authority_revision INTEGER NOT NULL,
+                    trust_revision INTEGER NOT NULL DEFAULT 0
                 );
                 CREATE TABLE IF NOT EXISTS provider_grant_floor_scopes (
                     provider_id TEXT NOT NULL,
@@ -773,7 +775,7 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         after = self._lease_expiry(not_after) if not_after is not None else None
         if after is not None and after <= before:
             raise ProviderGrantFloorError("Provider receipt key validity interval is invalid")
-        fingerprint = __import__("hashlib").sha256(public_key).hexdigest()
+        fingerprint = hashlib.sha256(public_key).hexdigest()
         encoded = base64.b64encode(public_key).decode("ascii")
         connection = self._connect()
         try:
@@ -832,13 +834,19 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
         ):
             raise ProviderGrantFloorError("Provider receipt key ID is invalid")
-        if status not in {"RETIRING", "REVOKED"}:
+        if not isinstance(status, str) or status not in {"RETIRING", "REVOKED"}:
             raise ProviderGrantFloorError("Provider receipt key may only transition to RETIRING or REVOKED")
         effective = None
         reason = None
         if status == "REVOKED":
             effective = self._lease_expiry(revocation_effective_at)
-            reason = self._identifier(revocation_reason, "revocation_reason")
+            if (
+                not isinstance(revocation_reason, str) or not revocation_reason.strip()
+                or len(revocation_reason) > 256
+                or any(ord(ch) < 32 for ch in revocation_reason)
+            ):
+                raise ProviderGrantFloorError("Provider receipt revocation reason is invalid")
+            reason = revocation_reason.strip()
         elif revocation_effective_at is not None or revocation_reason is not None:
             raise ProviderGrantFloorError("RETIRING key must not carry revocation metadata")
         connection = self._connect()
@@ -895,7 +903,7 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         try:
             parsed = parse_receipt_envelope(receipt_envelope)
             canonical_envelope = canonical_receipt_json(parsed)
-            receipt_digest = __import__("hashlib").sha256(canonical_envelope).hexdigest()
+            receipt_digest = hashlib.sha256(canonical_envelope).hexdigest()
         except ProviderGrantReceiptError as exc:
             raise ProviderGrantFloorError(str(exc)) from exc
         connection = self._connect()
