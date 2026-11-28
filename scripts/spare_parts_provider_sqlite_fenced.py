@@ -985,6 +985,15 @@ class SQLiteFencedObjectStorageProvider:
                     raise FencingAttestationRejectedError(
                         "Coordinator Leader identity or native Lease changed without an epoch advance"
                     )
+                if (
+                    leader["leader_epoch"] == int(floor["leader_epoch"])
+                    and leader["leader_id"] == floor["leader_id"]
+                    and leader["leader_lease_id"] == int(floor["leader_lease_id"])
+                    and leader["leader_lease_expires_at"] < float(floor["leader_lease_expires_at"])
+                ):
+                    raise FencingAttestationRejectedError(
+                        "Coordinator Leader Lease expiry regressed within the same epoch"
+                    )
 
             current = c.execute(
                 """SELECT generation,freeze_id,state FROM provider_write_freeze_scopes
