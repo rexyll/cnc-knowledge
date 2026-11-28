@@ -1188,6 +1188,21 @@ class SQLiteFencedObjectStorageProvider:
             raise FencingAttestationRejectedError(str(exc)) from exc
         scope = _safe_key(claims["scope"])
         with self._transaction() as c:
+            # BEGIN IMMEDIATE can wait behind another writer. Revalidate the
+            # signed command after acquiring the Provider serialization lock so
+            # an expired command cannot commit merely because it was valid
+            # before the lock wait.
+            now = time.time() if now_unix is None else float(now_unix)
+            try:
+                claims, key_id, command_digest = verify_provider_grant_command(
+                    envelope, self._trusted_ed25519_public_keys,
+                    expected_provider_id=self.provider_id,
+                    expected_tenant_id=self.tenant_id,
+                    now_unix=now,
+                )
+            except ProviderGrantCommandError as exc:
+                raise FencingAttestationRejectedError(str(exc)) from exc
+            scope = _safe_key(claims["scope"])
             trusted = c.execute(
                 """SELECT algorithm,public_key_sha256,status,not_before,not_after
                    FROM trusted_ed25519_keys WHERE issuer_id=? AND key_id=?""",
@@ -1264,6 +1279,19 @@ class SQLiteFencedObjectStorageProvider:
                     raise FencingAttestationRejectedError(
                         "Coordinator Leader is absent, expired, revoked or does not match the grant command"
                     )
+
+            # The online check may take time. Re-check command and Lease
+            # expiry immediately before persisting the transition.
+            now = time.time() if now_unix is None else float(now_unix)
+            try:
+                claims, key_id, command_digest = verify_provider_grant_command(
+                    envelope, self._trusted_ed25519_public_keys,
+                    expected_provider_id=self.provider_id,
+                    expected_tenant_id=self.tenant_id,
+                    now_unix=now,
+                )
+            except ProviderGrantCommandError as exc:
+                raise FencingAttestationRejectedError(str(exc)) from exc
 
             current = c.execute(
                 """SELECT * FROM provider_scope_grants
