@@ -1399,3 +1399,11 @@
 - 模拟提交前中断、提交后响应丢失、重启后依据checkpoint继续、竞争writer抢占request key，以及最终发布响应丢失。
 - 验证compare失败时没有部分request写入、checkpoint不推进、scheduler/state未提前出现；成功路径每个request记录只创建一次，最终发布后Leader key仍必须为空，等待新Leader claim。
 - 本轮测试不替代真实三节点etcd Live，不证明共识、耐久性、跨进程网络竞态或生产RBAC；不连接生产集群、不导入候选数据、不执行cutover。
+
+### 第七十九轮完成记录：分阶段导入执行契约模拟
+
+- **状态：** DONE（内存adapter事务执行与恢复分类的一部分；不是真实etcd演练）。
+- `classify_batch_unknown()`增加精确checkpoint链约束：必须命中本计划当前批或后续批的完整预期checkpoint；仅plan digest、完成数量和request值相符仍不足以判定提交。
+- 新增执行级测试，通过`EtcdV3CoordinatorAuthorityStore`调用`InMemoryEtcdV3Client`，覆盖提交前中断/相同Txn重试、提交后响应丢失、对象重建后checkpoint续跑、竞争writer导致CAS整批拒绝，以及publish未知结果读回。
+- **CI：** [Knowledge Quality Run 46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/46092128612) success：600 unittest（40 skipped），CH12 143项通过，lint 0 errors/5 warnings，结构/data检查0 errors。
+- **限制：** fake仅证明adapter事务契约，不证明etcd集群共识、磁盘耐久性、真实多主机并发或RBAC；没有真实writer、Lease/RBAC操作、生产namespace访问或cutover。MIG-04仍IN_PROGRESS；MIG-05部分验证进行中；MIG-06未开始。
