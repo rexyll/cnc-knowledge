@@ -1197,6 +1197,35 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         with self.assertRaises(SQLiteProviderObjectNotFoundError):
             provider.get_object(key)
 
+    def test_backup_validation_rejects_broken_grant_receipt_chain(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-backup-chain",
+            issued_at=now, lease_expires=now + 60.0,
+        )
+        digest = hashlib.sha256(
+            __import__("json").dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence)
+        fence_receipt = provider.provider_grant_command_status(digest)
+        provider.apply_provider_grant_command(self.grant_command(
+            "ACTIVATE", 2, "grant-backup-chain",
+            issued_at=float(fence_receipt["applied_at"]) + 0.01,
+            lease_expires=now + 60.0, expires=now + 30.0,
+            fence_digest=digest,
+        ))
+        backup = self.base / "provider-grant-broken-chain.sqlite"
+        provider.backup_to(backup)
+        with sqlite3.connect(backup) as connection:
+            connection.execute(
+                """UPDATE provider_grant_commands
+                   SET fence_command_sha256=? WHERE action='ACTIVATE'""",
+                ("0" * 64,),
+            )
+        with self.assertRaisesRegex(BackupStorageError, "broken FENCE/ACTIVATE receipt chain"):
+            SQLiteFencedObjectStorageProvider.validate_backup(backup)
+
     def test_backup_validation_requires_ed25519_grant_trust_registry(self):
         backup = self.base / "provider-grant-trust-backup.sqlite"
         self.provider.backup_to(backup)
