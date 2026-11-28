@@ -359,3 +359,26 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - The etcd read and Provider SQLite commit are not one distributed transaction. A Lease can still be revoked after the Range and before the local SQLite commit. This change reduces the stale-command window but does not eliminate cross-system TOCTOU and must not be described as atomic fencing or real-time validity at commit.
 - No real etcd, Provider, KMS/HSM, cloud object store or IAM/RBAC was contacted; no production namespace or authority was changed, no candidate data was imported, no application activation or cutover occurred.
 - ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`; production Unified schema-v2 remains the sole authority.
+
+
+## CNC Knowledge Base — Round 89（架构设计进行中）
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: Provider revocable authorization and revocation-barrier architecture after the Round 88 cross-system TOCTOU finding.
+
+### Changes
+
+- Added `docs/17-operation-maintenance-and-repair/provider-revocation-barrier-architecture.md`.
+- Distinguished Coordinator Leader validity from Provider mutation authorization.
+- Compared a single transactional authority, Provider-native conditional writes, Provider-participating FENCE barrier, and online Range-only checks.
+- Proposed Provider-side grant/epoch floor as the final mutation gate; FENCE and protected mutations must share the Provider transaction or native conditional-write boundary; durable command receipt is required before new-epoch grant activation.
+- Explicitly defined Provider FENCE commit as the Provider-side revocation linearization point. It is not atomic with the physical expiry/revocation instant of an independent etcd Lease.
+- Synchronized root TaskPlan, CH17 TaskPlan, CH17 README and migration design with the Round 89 architecture decision task.
+
+### Status / validation
+
+- Architecture document created; plan/history synchronization and required main-branch CI validation remain pending.
+- This round is design only. No grant/FENCE writer, real etcd/Provider/KMS/HSM integration, RBAC change, production namespace access, candidate import, application activation or cutover occurred.
+- MIG-04 remains IN_PROGRESS; MIG-05 remains IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED.
+- Production Unified schema-v2 remains the sole authority; ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`.
