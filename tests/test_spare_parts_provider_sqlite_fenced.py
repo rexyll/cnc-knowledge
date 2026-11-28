@@ -1106,6 +1106,30 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(FencingAttestationRejectedError, "namespace changed"):
             self.provider.apply_write_freeze_command(namespace_change)
 
+    def test_coordinator_namespace_must_be_canonical_absolute_prefix(self):
+        claims = dict(self.command("FREEZE", 1, "namespace-canonical")["command"])
+        claims["coordinator_namespace"] = "/cnc//migration/../isolated/"
+        invalid = sign_provider_write_freeze_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "canonical absolute prefix"):
+            self.provider.apply_write_freeze_command(invalid)
+
+    def test_same_epoch_rejects_regressed_leader_lease_expiry_snapshot(self):
+        first = self.command("FREEZE", 1, "lease-expiry-floor", now=1000.0)
+        self.assertEqual(
+            self.provider.apply_write_freeze_command(first, now_unix=1000.0)["state"],
+            "FROZEN",
+        )
+        claims = dict(self.command("UNFREEZE", 2, "lease-expiry-floor", now=1005.0)["command"])
+        claims["leader_lease_expires_at_unix"] = 1040.0
+        stale_snapshot = sign_provider_write_freeze_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "expiry regressed"):
+            self.provider.apply_write_freeze_command(stale_snapshot, now_unix=1005.0)
+        self.assertEqual(self.provider.write_freeze_state(SCOPE)["generation"], 1)
+
     def test_command_expiry_cannot_outlive_leader_lease(self):
         claims = dict(self.command("FREEZE", 1, "lease-bound")["command"])
         claims["issued_at_unix"] = time.time()
