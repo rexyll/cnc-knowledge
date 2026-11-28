@@ -1382,3 +1382,12 @@
 - **补充防回退：** namespace要求规范绝对前缀；同一epoch/Lease ID下Lease expiry不得回退，拒绝陈旧续租快照。
 
 - **备份完整性：** v4备份必须包含freeze scope、命令receipt、Leader floor和命令Leader审计表；恢复后验证Leader epoch/native Lease绑定不丢失。
+
+
+### 第八十八轮实施状态（2026-11-28）
+
+- **目标：** 为 Provider Freeze 新命令增加在线 Coordinator Leader/native Lease 状态校验，减少已提前撤销或已切换 Leader 的旧签名命令被接受的窗口。
+- **实现：** 新增 `scripts/spare_parts_provider_live_leader_status.py`，使用现有 `linearizable_range(prefix)` 在同一revision读取Scheduler aggregate和Leader TTL key，核对Leader ID、epoch、native Lease ID、KV Lease attachment及expiry。
+- **Provider门禁：** 新增可选 `leader_status_checker` 与 `require_online_leader_status=True`；新FREEZE/UNFREEZE命令在线校验失败或Coordinator不可用时拒绝。精确历史命令receipt仍优先返回ALREADY_APPLIED。
+- **限制：** etcd线性一致Range与Provider SQLite commit不能跨系统原子提交；Lease可能在Range成功后、SQLite commit前被撤销。本轮不宣称消除TOCTOU或实现跨系统原子fencing。详见 `docs/17-operation-maintenance-and-repair/provider-online-coordinator-leader-verification.md`。
+- **状态：** 代码、测试与文档已提交至main；必需CI完成前保持验收待定。无真实etcd/Provider/KMS连接，无生产namespace写入、候选导入、应用激活或cutover。
