@@ -2609,17 +2609,8 @@ class SQLiteFencedObjectStorageProvider:
                 if (
                     fence is None or fence["action"] != "FENCE"
                     or fence["result_state"] != "FENCED"
-                    or fence["provider_id"] != connection.execute(
-                        "SELECT value FROM provider_meta WHERE key='provider_id'"
-                    ).fetchone()[0] if connection.execute(
-                        "SELECT 1 FROM provider_meta WHERE key='provider_id'"
-                    ).fetchone() else False
                 ):
-                    # Provider identity is a runtime binding rather than a meta
-                    # value in this schema; validate all durable scope fields
-                    # against the exact receipt below.
-                    if fence is None or fence["action"] != "FENCE" or fence["result_state"] != "FENCED":
-                        raise BackupStorageError("Provider backup grant scope has no FENCE receipt")
+                    raise BackupStorageError("Provider backup grant scope has no FENCE receipt")
                 if (
                     fence["tenant_id"] != grant["tenant_id"]
                     or fence["fencing_scope"] != grant["fencing_scope"]
@@ -2641,7 +2632,8 @@ class SQLiteFencedObjectStorageProvider:
                 else:
                     activation = grant_receipts.get(grant["activation_command_sha256"])
                     if (
-                        activation is None or activation["action"] != "ACTIVATE"
+                        grant["grant_expires_at"] is None
+                        or activation is None or activation["action"] != "ACTIVATE"
                         or activation["result_state"] != "ACTIVE"
                         or activation["provider_id"] != fence["provider_id"]
                         or activation["tenant_id"] != grant["tenant_id"]
