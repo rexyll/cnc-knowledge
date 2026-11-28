@@ -1457,3 +1457,14 @@
 - **交付：** 新增 Provider Grant receipt 认证设计文档；同步根 TaskPlan、CH17 TaskPlan、README 和 TaskHistory。设计评审完成后再决定独立实现轮次。
 - **设计文档：** [Provider Grant Floor 回执来源认证与签名证据设计](docs/17-operation-maintenance-and-repair/provider-grant-receipt-authentication-design.md)。
 - **状态：** DONE（2026-11-28；Knowledge Quality Run 46153427280 两个必需 Job 均 success）。
+
+### 第九十五轮任务计划：Provider Grant Receipt 签名协议模块与外部 Floor 验签门禁
+
+- **目标：** 将第九十四轮协议设计推进为本地可执行的纯协议模块和外部 Floor 验签门禁；本轮先不改 Provider 写入事务，不连接生产 Provider/KMS/HSM。
+- **协议模块：** 新增 Provider Receipt envelope/claims schema、RFC 8785 JCS canonicalization、domain-separated Ed25519 签名与验签、严格字段/类型/数值/时间校验、不可变 Verified Receipt 结果对象；不复用 Coordinator command signing key。
+- **信任注册表：** 在独立 SQLite Floor schema v2 中增加 Provider receipt public-key registry；支持 provider/key 唯一绑定、fingerprint、ACTIVE/RETIRING/REVOKED、not_before/not_after、revocation_effective_at 和 trust revision。公钥只能通过显式管理 API 注册，不从待验签 receipt 自动信任。
+- **确认门禁：** 将本地 Floor \`confirm_provider_receipt\` 从裸 digest 输入迁移为 signed receipt envelope；在同一 BEGIN IMMEDIATE + scope revision CAS 事务内验签，并核对Provider/tenant/scope/action/Grant/generation/command digest/FENCE digest/namespace/Leader/native Lease/result state/时间；Floor 根据验证后的完整 canonical envelope 自行计算 digest，记录signer key及trust revision。未知密钥、撤销密钥、篡改、身份不一致、回执替换及过期证据全部 fail-closed。
+- **测试：** JCS一致性向量、合法FENCE/ACTIVATE、字段和签名篡改、未知/错误Provider key、密钥有效期/轮换/撤销、跨Provider/tenant/scope、错generation/action/command/FENCE链、同证据幂等、不同回执替换、失败后revision不变、schema v1→v2迁移及并发CAS。
+- **兼容与边界：** 旧数据库可迁移但已有裸digest历史不得自动升级为可信签名证据；历史未认证操作不得被伪造补签或悄悄标记为已验证。当前 Provider 暂时仍输出原始命令回执，必须在下一独立轮次接入 Receipt signer；本轮 Floor 测试使用合成签名 Provider。Grant-aware Restore 仍不可用，通用 Restore 继续fail-closed。
+- **交付：** 新增协议模块与专项测试，更新\`requirements-ch17-security.txt\`、外部 Floor schema/API和README，记录兼容迁移及CI结果。
+- **状态：** TODO。
