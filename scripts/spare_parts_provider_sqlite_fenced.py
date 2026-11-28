@@ -2104,7 +2104,7 @@ class SQLiteFencedObjectStorageProvider:
                 or not grant["activation_signer_public_key_base64"]
             ):
                 raise SQLiteProviderGrantRejectedError(
-                    "Provider grant is absent or fenced for this scope"
+                    "Provider grant is absent, fenced, or backed by a legacy-unverifiable receipt"
                 )
             fence_claims = self._verify_persisted_provider_grant_receipt(
                 c, command_sha256=grant["fence_command_sha256"],
