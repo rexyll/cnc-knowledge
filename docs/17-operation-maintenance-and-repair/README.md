@@ -456,3 +456,10 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 
 **第七十八轮验证：** [Knowledge Quality Run 46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) success：594 unittest（40 skipped），CH12数值资源测试143项通过，knowledge lint 0 errors/5 warnings，结构检查0 errors。该轮只验证协议模型与仓库质量门禁，没有真实etcd写入/故障注入。
 
+## CH17-T004 分阶段导入执行契约与故障注入模拟（第七十九轮）
+
+进一步收紧 `classify_batch_unknown()`：读回checkpoint必须逐字节匹配当前不可变计划中当前批次或某一后续批次的预期checkpoint。`plan_sha256`、完成计数和request值即使各自看似正确，也不能代替对完整checkpoint链的精确验证；计划外checkpoint一律QUARANTINE。
+
+新增 `tests/test_spare_parts_sqlite_staged_import_execution.py`，通过现有 `EtcdV3CoordinatorAuthorityStore` 适配器与 `InMemoryEtcdV3Client` 直接执行checkpoint初始化、request批次Txn和最终state发布。场景覆盖：提交后响应丢失并读回判定COMMITTED、提交前中断并仅重试相同Txn、模拟执行进程重建后从checkpoint续跑、竞争writer先写入目标key导致CAS整批失败，以及最终publish响应丢失后的精确读回确认。
+
+这些测试验证现有adapter与内存fake上的事务/恢复契约，不是etcd服务端或三节点共识实验；不覆盖真实网络分区、节点掉电、跨主机并发、磁盘持久性、服务端Txn配置和RBAC。仍不包含真实writer或自动resume程序，本轮不触碰生产namespace。
