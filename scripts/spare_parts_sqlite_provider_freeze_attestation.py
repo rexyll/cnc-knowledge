@@ -59,14 +59,19 @@ class SQLiteProviderFreezeEvidenceReplayLedger:
             raise ProviderFreezeReplayLedgerError("replay ledger record schema mismatch")
         path = self.database_path
         try:
-            if path.exists():
-                info = path.lstat()
-                if not stat.S_ISREG(info.st_mode) or stat.S_IMODE(info.st_mode) & 0o077:
-                    raise ProviderFreezeReplayLedgerError(
-                        "existing replay ledger must be a regular file with mode 0600"
-                    )
-                if hasattr(os, "getuid") and info.st_uid != os.getuid():
-                    raise ProviderFreezeReplayLedgerError("replay ledger owner mismatch")
+            try:
+                descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600)
+            except FileExistsError:
+                descriptor = None
+            if descriptor is not None:
+                os.close(descriptor)
+            info = path.lstat()
+            if not stat.S_ISREG(info.st_mode) or stat.S_IMODE(info.st_mode) & 0o077:
+                raise ProviderFreezeReplayLedgerError(
+                    "existing replay ledger must be a regular file with mode 0600"
+                )
+            if hasattr(os, "getuid") and info.st_uid != os.getuid():
+                raise ProviderFreezeReplayLedgerError("replay ledger owner mismatch")
             connection = sqlite3.connect(path, timeout=10.0, isolation_level=None)
             try:
                 connection.execute("PRAGMA journal_mode=DELETE")
