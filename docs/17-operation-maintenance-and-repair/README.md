@@ -675,3 +675,5 @@ Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执
 - 将Etcd集群snapshot整体回滚与正常运行期Txn原子性分开；Etcd内部revision/state-root不能自证没有整体回滚。设计域外witness，并定义逐笔PREPARE → Etcd PREPARE/COMMIT → Witness COMMIT → Etcd FINALIZE严格耐久模式。
 
 **边界：** 本轮只有架构设计；Etcd-native业务服务、生产witness持久化与RBAC、真实Etcd多节点/网络分区/快照恢复验证未实现。Production Unified schema-v2仍为唯一生产authority；未执行迁移、Grant-aware Restore或Cutover。
+- Witness取消语义已细化：Etcd PREPARE结果未知时不能只凭一次未发现pending的Range就标记ABORTED；COMMIT/ABORT必须由同intent compare竞争，Etcd COMMIT确定后不可回退。
+- Rollback witness只保存sequence/root时只能检测整体snapshot回滚，不足以重建数据；若无域外事件正文或可信备份，必须维持写隔离并逐scope受控重建。v1全局meta/event root意味着写入全局串行化，吞吐需后续实测。
