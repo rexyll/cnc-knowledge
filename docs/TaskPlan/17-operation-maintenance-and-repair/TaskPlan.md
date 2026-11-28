@@ -1500,3 +1500,14 @@
 - 追加测试：拒绝非规范Coordinator namespace及同一epoch/native Lease ID下Lease expiry回退。
 
 - 备份校验/恢复需强制保留Leader floor和每命令Leader绑定；测试验证恢复后的epoch与Lease ID。
+
+
+## CH17-T004 第八十八轮：Provider Freeze 在线 Coordinator Leader / Native Lease 校验
+
+- **目标：** 在线确认签名Freeze命令中的Leader身份和Lease绑定仍与Coordinator当前权威状态一致。
+- **实现：** 新增 `scripts/spare_parts_provider_live_leader_status.py`。每次检查通过单次 `linearizable_range(namespace_prefix)` 读取同一revision的Scheduler aggregate和Leader TTL key；校验aggregate Leader与TTL key值一致、Leader ID/epoch/native Lease ID一致、KV lease attachment一致、expiry一致且未到期。
+- **Provider：** 增加 `leader_status_checker` 和 `require_online_leader_status` opt-in配置。开启后，在线检查false或异常均拒绝新的FREEZE/UNFREEZE；缺少checker时Provider初始化失败。历史精确命令receipt仍先于在线检查，只返回ALREADY_APPLIED，不重做状态变更。
+- **测试：** 新增 `tests/test_spare_parts_provider_live_leader_status.py`；Provider专项测试增加checker缺失、状态失效、连接异常fail-closed和历史receipt优先级用例。
+- **TOCTOU限制：** 在线Range和Provider SQLite提交没有共同事务；即使在SQLite BEGIN IMMEDIATE期间执行检查，etcd Lease仍可能在Range后、SQLite commit前撤销。本轮只拒绝检查时已经失效的Leader，不构成跨系统原子fencing。后续必须设计Provider参与的可撤销授权/屏障协议。
+- **验证：** 必需GitHub Actions CI待完成；未取得CI结果前不标记验收DONE。
+- **安全边界：** 未连接真实etcd、Provider、KMS/HSM、对象存储或IAM/RBAC；未触碰生产namespace、未导入候选数据、未激活应用或执行cutover。ASSET-000092仍为PROPOSED_NOT_APPROVED / NOT_RUN。
