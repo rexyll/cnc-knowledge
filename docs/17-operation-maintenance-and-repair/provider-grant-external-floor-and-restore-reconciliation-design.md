@@ -259,3 +259,61 @@ Floor测试使用独立合成Coordinator Ed25519 key，覆盖：
 
 没有连接真实Coordinator/etcd/Provider/object storage/KMS/HSM/IAM/RBAC，没有修改Unified schema-v2 production authority。Provider receipt authentication、Coordinator command source authentication和跨系统mutation atomicity仍是不同保证，当前参考代码不把其中任何一个夸大为生产分布式原子授权。Grant-aware Restore仍未实现，所有包含Provider Grant历史的通用Restore继续fail-closed；不执行候选导入、Restore、应用激活或Cutover。
 
+
+
+## 12. 第九十八轮：独立单调检查点与 Floor 快照回滚检测
+
+第九十七轮已将 Floor 的 Coordinator command source authentication 收敛到原始签名 envelope，但 Floor SQLite 文件及其 Provider/Coordinator key trust registry 仍可能被自身旧快照覆盖。数据库内部的 \`authority_revision\`、\`trust_revision\` 和 operation history 都属于同一个回滚域；旧快照可以同时恢复这些值。 \`snapshot(minimum_revision=...)\` 只有在调用方确实持有数据库外的可信 revision checkpoint 时才具备回滚检测价值。
+
+第九十八轮新增本地检查点保护层。它不改变 Floor 原有 FENCE/ACTIVATE 状态机，也不把 SQLite 变成分布式 authority；目标是让本地参考接口显式依赖一个独立的单调检查点端口，并在所有受保护操作前后核对完整逻辑状态。
+
+### 12.1 Checkpoint record 与外部存储端口
+
+新增 \`scripts/spare_parts_provider_grant_floor_checkpoint.py\`，定义：
+
+- \`ProviderGrantFloorCheckpoint\`：不可变记录，包含单调 \`sequence\`、Floor \`authority_revision\` 与完整 \`state_sha256\`；
+- \`ProviderGrantFloorCheckpointStore\`：外部接口，提供 \`read_checkpoint()\` 与基于 \`expected_sequence\` 的 \`compare_and_set(...)\`；
+- \`InMemoryProviderGrantFloorCheckpointStore\`：仅供测试使用的单进程 CAS fake，不具备进程重启持久性、独立备份域或防回滚能力；
+- \`CheckpointedSQLiteProviderGrantFloorAuthority\`：受检查点保护的 SQLite Floor wrapper。
+
+Checkpoint \`sequence\` 与 Floor \`authority_revision\` 是不同维度。密钥注册、轮换、退役/撤销等操作可能改变完整信任状态而不推进 scope authority revision，因此只要逻辑数据库摘要发生变化，外部 checkpoint sequence 就必须推进；精确幂等重放若没有改变逻辑状态，则不得虚增 sequence。
+
+外部存储实现必须保证 \`sequence\` 只能通过精确 expected-sequence CAS 单调增加，拒绝旧值覆盖和并发竞争。不能将 checkpoint 文件与 Floor SQLite 文件放在相同磁盘快照、备份或恢复域。
+
+### 12.2 完整逻辑状态摘要
+
+\`calculate_floor_checkpoint_state()\` 使用 SQLite \`mode=ro\`、\`PRAGMA query_only=ON\` 和只读事务读取数据，并执行 \`PRAGMA integrity_check\`。摘要覆盖：
+
+1. 非 SQLite 内部对象的 schema 定义（表、索引、触发器等对象元数据及 SQL）；
+2. Floor 五张业务表的列定义与全部行：meta、scopes、operations、Provider receipt key registry、Coordinator command key registry；
+3. 完整 trust lifecycle 和历史 operation 内容，而不只是 revision 数字。
+
+行按规范化后的编码结果排序，所有 JSON 使用稳定键顺序和紧凑编码；浮点值转为 \`float.hex()\` 表示，二进制值使用 Base64 表示。最终对完整逻辑状态计算 SHA-256。缺少/多出业务表、完整性检查失败、非法数值或无法确定性序列化均拒绝生成摘要。
+
+这是一种本地参考数据库的确定性逻辑摘要方案，不是数字签名、WORM、可信时间戳，也不单独防止数据库文件与外部检查点被同一攻击者同时替换。
+
+### 12.3 受保护操作顺序
+
+wrapper 覆盖 Floor 所有公开查询与修改入口：\`snapshot\`、\`operation_status\`、legacy/signed FENCE 与 ACTIVATE reservation、\`confirm_provider_receipt\`，以及 Provider/Coordinator 两组 trust key 注册和状态生命周期管理 API。
+
+- **操作前：** 读取外部 checkpoint，并在只读数据库快照中重算摘要。Checkpoint 缺失、revision 不一致或 digest 不一致时拒绝调用底层 Floor。
+- **只读操作：** 先核对，再执行查询，之后再次核对；本地 wrapper 锁仅串行化同一 wrapper 实例内的调用。
+- **写操作：** 先核对旧 checkpoint，再执行底层 SQLite 原子事务。成功后重算完整摘要；若状态发生变化，使用旧 \`sequence\` 执行外部 CAS，要求得到 \`sequence + 1\`、新 revision 和新 digest 的精确记录；最后再次读取并核对。
+- **无状态变化的幂等操作：** 若摘要未变，不推进 checkpoint sequence；仍需确认旧 checkpoint 与数据库一致。
+- **失败/未知结果：** 底层写操作抛错但数据库摘要变化时，不猜测该操作是否成功，也不自动补写 checkpoint；外部 CAS 抛错后，只允许精确 read-back 与预期新 checkpoint 完全相等时确认提交。无法证明时抛出 \`ProviderGrantFloorCheckpointUncertain\`，后续读写因 DB 与 checkpoint 不一致而 fail-closed。
+
+SQLite 与独立 checkpoint service 之间没有共同事务。因此当 SQLite 已提交而 checkpoint 无法确认时，本地参考实现会停在“数据库状态已变、checkpoint 未确认”的隔离状态，不进行自动回滚或猜测性重试。生产实现应把 Floor 记录与 checkpoint 纳入同一线性一致事务域，或提供等价的外部原子提交协议。
+
+### 12.4 首次 bootstrap 门禁
+
+\`bootstrap_empty_floor()\` 只能在外部 checkpoint 不存在，且 SQLite Floor 完全空白时显式执行。允许条件包括：\`authority_revision=0\`、\`trust_revision=0\`、严格 Coordinator command authentication 已启用，且 scope、operation、Provider receipt key、Coordinator command key 均无历史记录。
+
+已有任何 scope/operation/trust-key 记录的 Floor 不允许自动 adopt 或根据当前状态补建 checkpoint。对现存数据库启用该 wrapper 前，必须由独立治理流程提供可信历史检查点或执行可审计的迁移；本轮不实现该接管程序。
+
+### 12.5 测试与验证边界
+
+新增 \`tests/test_spare_parts_provider_grant_floor_checkpoint.py\`，覆盖空库 bootstrap、非空无锚拒绝、缺失 checkpoint、完整 FENCE/ACTIVATE 生命周期、trust registry 变化、精确 command replay、旧 SQLite 快照恢复、同 revision 内容篡改、外部 checkpoint 回退、业务校验失败不推进 checkpoint、CAS 响应丢失精确读回及 checkpoint 写失败后 fail-closed。
+
+测试使用 \`InMemoryProviderGrantFloorCheckpointStore\`。它只验证本地调用顺序和故障语义，不能作为生产 checkpoint backend，也没有验证多进程、多主机、网络分区、etcd quorum 或 checkpoint 自身备份回滚。\`CheckpointedSQLiteProviderGrantFloorAuthority\` 只承诺单进程、单 wrapper 实例的串行化；不得并行访问底层原始 authority，也不得把它当作跨进程锁。
+
+生产仍需独立、持久、线性一致且受单调治理的 checkpoint authority；最好将 checkpoint 与 Floor 数据置于同一事务域。当前不连接真实 etcd、Coordinator、Provider、object storage、KMS/HSM 或 IAM/RBAC，不修改 Unified schema-v2 production authority，不实现 Grant-aware Restore，不执行候选导入、Restore、应用激活或 Cutover。所有包含 Provider Grant history 的通用 Restore 继续 fail-closed。
