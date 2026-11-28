@@ -26,7 +26,7 @@ class CandidateImportError(RuntimeError):
     """Raised when a migration bundle cannot be safely staged."""
 
 
-FORMAT = "ch17-sqlite-unified-candidate-v1"
+FORMAT = "ch17-sqlite-unified-candidate-v2"
 RECORDS_FORMAT = "ch17-sqlite-migration-records-v1"
 ADMISSION_PREFIX = b"/cnc/admission/unified/v2/"
 
