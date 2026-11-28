@@ -152,6 +152,7 @@ class StagedImportProtocolTests(unittest.TestCase):
             expected_previous_checkpoint=previous_bytes,
             observed_checkpoint=after_bytes,
             expected_completed_request_count=2,
+            expected_successor_checkpoints=[after_bytes],
             observed_request_values=observed,
             expected_request_values=expected_values,
             observed_state_exists=False,
@@ -162,6 +163,7 @@ class StagedImportProtocolTests(unittest.TestCase):
             expected_previous_checkpoint=previous_bytes,
             observed_checkpoint=previous_bytes,
             expected_completed_request_count=2,
+            expected_successor_checkpoints=[after_bytes],
             observed_request_values={k: None for k in expected_values},
             expected_request_values=expected_values,
             observed_state_exists=False,
@@ -174,6 +176,7 @@ class StagedImportProtocolTests(unittest.TestCase):
             expected_previous_checkpoint=previous_bytes,
             observed_checkpoint=after_bytes,
             expected_completed_request_count=2,
+            expected_successor_checkpoints=[after_bytes],
             observed_request_values=corrupt,
             expected_request_values=expected_values,
             observed_state_exists=False,
@@ -199,11 +202,16 @@ class StagedImportProtocolTests(unittest.TestCase):
         initial = plan["transactions"]["initialize_checkpoint"]["checkpoint_value"]
         previous_bytes = json.dumps(initial, sort_keys=True, separators=(",", ":")).encode()
         final_bytes = json.dumps(final_checkpoint, sort_keys=True, separators=(",", ":")).encode()
+        successor_checkpoints = [
+            json.dumps(batch["checkpoint_after"], sort_keys=True, separators=(",", ":")).encode()
+            for batch in batches
+        ]
         self.assertEqual(classify_batch_unknown(
             plan_sha256=plan["plan_sha256"],
             expected_previous_checkpoint=previous_bytes,
             observed_checkpoint=final_bytes,
             expected_completed_request_count=first["request_count"],
+            expected_successor_checkpoints=successor_checkpoints,
             observed_request_values=first_values,
             expected_request_values=first_values,
             observed_state_exists=False,
