@@ -2114,7 +2114,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
 
         backup = self.base / "provider-freeze-backup.sqlite"
         report = reopened.backup_to(backup)
-        self.assertEqual(report["schema_version"], 6)
+        self.assertEqual(report["schema_version"], 7)
         restored_path = self.base / "provider-freeze-restored.sqlite"
         restore_report = reopened.restore_to_new_database(
             backup, restored_path, external_fencing_floor=0,
@@ -2151,7 +2151,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "7")
         self.assertIn("provider_write_freeze_scopes", tables)
         self.assertIn("provider_write_freeze_commands", tables)
         self.assertIn("provider_write_freeze_leader_floors", tables)
@@ -2180,7 +2180,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "7")
         self.assertIn("provider_write_freeze_leader_floors", tables)
         self.assertIn("provider_write_freeze_command_leaders", tables)
         self.assertIn("provider_scope_grants", tables)
@@ -2305,7 +2305,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "PRAGMA table_info(provider_grant_commands)"
                 )
             }
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "7")
         self.assertIn("envelope_json", columns)
         self.assertIn("signer_public_key_base64", columns)
 
@@ -2330,7 +2330,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "7")
         self.assertIn("provider_scope_grants", tables)
         self.assertIn("provider_grant_commands", tables)
 
