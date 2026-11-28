@@ -1042,6 +1042,68 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         with self.assertRaises(FencingAttestationRejectedError):
             self.provider.apply_write_freeze_command(wrong_provider)
 
+    def test_historical_command_replay_after_unfreeze_never_reapplies_old_state(self):
+        freeze = self.command("FREEZE", 1, "freeze-history")
+        unfreeze = self.command("UNFREEZE", 2, "freeze-history")
+        canonical = lambda value: __import__("json").dumps(
+            value, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8")
+        freeze_digest = hashlib.sha256(canonical(freeze)).hexdigest()
+
+        self.assertEqual(self.provider.apply_write_freeze_command(freeze)["state"], "FROZEN")
+        self.assertEqual(self.provider.apply_write_freeze_command(unfreeze)["state"], "OPEN")
+        before = self.provider.write_freeze_state(SCOPE)
+        self.assertEqual(before["generation"], 2)
+        self.assertEqual(before["state"], "OPEN")
+
+        replay = self.provider.apply_write_freeze_command(freeze)
+        self.assertEqual(replay["result"], "ALREADY_APPLIED")
+        self.assertEqual(replay["generation"], 1)
+        self.assertEqual(replay["state"], "FROZEN")
+        self.assertEqual(replay["current_generation"], 2)
+        self.assertEqual(replay["current_state"], "OPEN")
+        after = self.provider.write_freeze_state(SCOPE)
+        self.assertEqual(after["generation"], 2)
+        self.assertEqual(after["state"], "OPEN")
+
+        receipt = self.provider.write_freeze_command_status(freeze_digest)
+        self.assertEqual(receipt["action"], "FREEZE")
+        self.assertEqual(receipt["result_state"], "FROZEN")
+        self.assertEqual(receipt["generation"], 1)
+        self.assertEqual(receipt["current_scope_state"]["state"], "OPEN")
+        self.assertIsNone(self.provider.write_freeze_command_status("0" * 64))
+        with self.assertRaises(BackupStorageError):
+            self.provider.write_freeze_command_status("not-a-digest")
+
+    def test_command_receipt_is_durable_across_restart_and_backup_restore(self):
+        freeze = self.command("FREEZE", 1, "freeze-receipt-durable")
+        canonical = __import__("json").dumps(
+            freeze, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8")
+        digest = hashlib.sha256(canonical).hexdigest()
+        self.provider.apply_write_freeze_command(freeze)
+        reopened = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertEqual(
+            reopened.write_freeze_command_status(digest)["result_state"], "FROZEN"
+        )
+        backup = self.base / "provider-command-ledger-backup.sqlite"
+        reopened.backup_to(backup)
+        restored_path = self.base / "provider-command-ledger-restored.sqlite"
+        reopened.restore_to_new_database(
+            backup, restored_path, external_fencing_floor=0,
+            fencing_reconciliation_ref="synthetic-command-ledger-test",
+        )
+        restored = _new_provider(
+            restored_path, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertEqual(
+            restored.write_freeze_command_status(digest)["result_state"], "FROZEN"
+        )
+
     def test_freeze_generation_survives_provider_restart_backup_and_restore(self):
         self.provider.apply_write_freeze_command(
             self.command("FREEZE", 1, "freeze-persist")
