@@ -619,6 +619,12 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 float(row["command_expires_at_unix"])
                 if row["command_expires_at_unix"] is not None else None
             ),
+            coordinator_signer_key_id=row["coordinator_signer_key_id"],
+            coordinator_key_fingerprint=row["coordinator_key_fingerprint"],
+            coordinator_trust_revision=(
+                int(row["coordinator_trust_revision"])
+                if row["coordinator_trust_revision"] is not None else None
+            ),
         )
 
     def operation_status(self, operation_id: str) -> ProviderGrantFloorOperation | None:
@@ -693,6 +699,7 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         native_lease_id: int, lease_expires_at_unix: float,
         command_issued_at_unix: float, command_expires_at_unix: float,
         expected_revision: int,
+        coordinator_command_envelope: dict | None = None,
     ) -> ProviderGrantFloorReservation:
         self._identifier(operation_id, "operation_id")
         self._identifier(grant_id, "grant_id")
@@ -723,6 +730,17 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         connection = self._connect()
         try:
             connection.execute("BEGIN IMMEDIATE")
+            policy = connection.execute(
+                "SELECT coordinator_command_auth_required FROM provider_grant_floor_meta "
+                "WHERE singleton=1"
+            ).fetchone()
+            signed_commands_required = bool(
+                policy and int(policy["coordinator_command_auth_required"]) == 1
+            )
+            if coordinator_command_envelope is None and signed_commands_required:
+                raise ProviderGrantFloorConflict(
+                    "Coordinator signed command envelope is required; caller-supplied digest/claims are not authenticated"
+                )
             existing = self._existing_reservation(
                 connection, operation_id, action=action, key=key, grant_id=grant_id,
                 command_digest=command_digest, fence_command_digest=fence_command_digest,
@@ -735,6 +753,27 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             if existing is not None:
                 connection.commit()
                 return existing
+
+            coordinator_trust = None
+            if coordinator_command_envelope is not None:
+                coordinator_trust = self._verify_coordinator_command(
+                    connection,
+                    coordinator_command_envelope,
+                    key=key,
+                    action=action,
+                    grant_id=grant_id,
+                    generation=int(existing.generation) if existing is not None else None,
+                    command_digest=command_digest,
+                    fence_command_digest=fence_command_digest,
+                    coordinator_namespace=coordinator_namespace,
+                    leader_id=leader_id,
+                    leader_epoch=leader_epoch,
+                    native_lease_id=native_lease_id,
+                    lease_expires_at_unix=lease_expires_at_unix,
+                    command_issued_at_unix=command_issued_at_unix,
+                    command_expires_at_unix=command_expires_at_unix,
+                    now_unix=time.time(),
+                )
 
             key_values = self._key_tuple(key)
             connection.execute(
@@ -829,13 +868,18 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                    (operation_id,provider_id,tenant_id,scope,action,grant_id,generation,
                     command_digest,fence_command_digest,coordinator_namespace,leader_id,
                     leader_epoch,native_lease_id,lease_expires_at_unix,command_issued_at_unix,
-                    command_expires_at_unix,state,reserved_scope_revision,authority_revision)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PENDING',?,?)""",
+                    command_expires_at_unix,coordinator_signer_key_id,
+                    coordinator_key_fingerprint,coordinator_trust_revision,
+                    state,reserved_scope_revision,authority_revision)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PENDING',?,?)""",
                 (
                     operation_id, *key_values, action, grant_id, next_generation,
                     command_digest, fence_command_digest, coordinator_namespace,
                     leader_id, leader_epoch, native_lease_id, lease_expires_at_unix,
                     command_issued_at_unix, command_expires_at_unix,
+                    coordinator_trust["key_id"] if coordinator_trust else None,
+                    coordinator_trust["fingerprint"] if coordinator_trust else None,
+                    coordinator_trust["trust_revision"] if coordinator_trust else None,
                     next_revision, authority_revision,
                 ),
             )
@@ -857,6 +901,248 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             raise
         finally:
             connection.close()
+
+    @staticmethod
+    def _parse_coordinator_command_envelope(envelope: dict | bytes | str) -> dict:
+        """Parse a signed command without permitting duplicate JSON object keys."""
+        if isinstance(envelope, dict):
+            parsed = envelope
+        else:
+            if isinstance(envelope, bytes):
+                try:
+                    raw = envelope.decode("utf-8", errors="strict")
+                except UnicodeDecodeError as exc:
+                    raise ProviderGrantFloorError(
+                        "Coordinator command envelope must be valid UTF-8"
+                    ) from exc
+            elif isinstance(envelope, str):
+                raw = envelope
+            else:
+                raise ProviderGrantFloorError(
+                    "Coordinator signed command envelope must be an object, UTF-8 bytes or text"
+                )
+
+            def unique_object(pairs):
+                result = {}
+                for key, value in pairs:
+                    if key in result:
+                        raise ValueError("duplicate JSON object key")
+                    result[key] = value
+                return result
+
+            def reject_constant(value):
+                raise ValueError("non-finite JSON number is forbidden")
+
+            try:
+                parsed = json.loads(
+                    raw,
+                    object_pairs_hook=unique_object,
+                    parse_constant=reject_constant,
+                )
+            except (json.JSONDecodeError, ValueError) as exc:
+                raise ProviderGrantFloorError(
+                    "Coordinator signed command envelope is invalid JSON"
+                ) from exc
+        if not isinstance(parsed, dict):
+            raise ProviderGrantFloorError("Coordinator signed command envelope must be a JSON object")
+        return parsed
+
+    def _verify_coordinator_command(
+        self,
+        connection: sqlite3.Connection,
+        envelope: dict,
+        *,
+        key: ProviderGrantScopeKey,
+        action: Action,
+        grant_id: str,
+        generation: int | None,
+        command_digest: str,
+        fence_command_digest: str | None,
+        coordinator_namespace: str,
+        leader_id: str,
+        leader_epoch: int,
+        native_lease_id: int,
+        lease_expires_at_unix: float,
+        command_issued_at_unix: float,
+        command_expires_at_unix: float,
+        now_unix: float,
+    ) -> dict[str, object]:
+        try:
+            claims = envelope["command"]
+            signature = envelope["signature"]
+            issuer_id = claims["issuer_id"]
+            key_id = signature["key_id"]
+        except (KeyError, TypeError) as exc:
+            raise ProviderGrantFloorConflict(
+                "Coordinator signed command envelope schema is incomplete"
+            ) from exc
+        if (
+            not isinstance(issuer_id, str) or not issuer_id.strip()
+            or not isinstance(key_id, str) or not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+            )
+        ):
+            raise ProviderGrantFloorConflict("Coordinator signed command issuer or key ID is invalid")
+        trust_row = connection.execute(
+            """SELECT * FROM provider_grant_floor_coordinator_keys
+               WHERE issuer_id=? AND key_id=?""",
+            (issuer_id, key_id),
+        ).fetchone()
+        if trust_row is None:
+            raise ProviderGrantFloorConflict("Coordinator command signer key is not trusted")
+        try:
+            public_key = base64.b64decode(trust_row["public_key_base64"], validate=True)
+        except (ValueError, base64.binascii.Error) as exc:
+            raise ProviderGrantFloorConflict(
+                "Coordinator command trust registry contains an invalid public key"
+            ) from exc
+        fingerprint = hashlib.sha256(public_key).hexdigest()
+        issued_at = claims.get("issued_at_unix") if isinstance(claims, dict) else None
+        if (
+            trust_row["algorithm"] != "ED25519"
+            or fingerprint != trust_row["public_key_sha256"]
+            or trust_row["status"] != "ACTIVE"
+            or now_unix < float(trust_row["not_before"])
+            or (trust_row["not_after"] is not None and now_unix >= float(trust_row["not_after"]))
+            or not isinstance(issued_at, (int, float)) or isinstance(issued_at, bool)
+            or float(issued_at) < float(trust_row["not_before"])
+            or (trust_row["not_after"] is not None and float(issued_at) >= float(trust_row["not_after"]))
+        ):
+            raise ProviderGrantFloorConflict(
+                "Coordinator command signer is inactive, retired, revoked or outside its trust window"
+            )
+        try:
+            verified_claims, verified_key_id, verified_digest = verify_provider_grant_command(
+                envelope,
+                {key_id: public_key},
+                expected_provider_id=key.provider_id,
+                expected_tenant_id=key.tenant_id,
+                now_unix=now_unix,
+            )
+        except ProviderGrantCommandError as exc:
+            raise ProviderGrantFloorConflict(
+                f"Coordinator signed command verification failed: {exc}"
+            ) from exc
+        expected = {
+            "issuer_id": issuer_id,
+            "provider_id": key.provider_id,
+            "tenant_id": key.tenant_id,
+            "scope": key.scope,
+            "action": action,
+            "grant_id": grant_id,
+            "issued_at_unix": command_issued_at_unix,
+            "expires_at_unix": command_expires_at_unix,
+            "coordinator_namespace": coordinator_namespace,
+            "leader_id": leader_id,
+            "leader_epoch": leader_epoch,
+            "leader_lease_id": native_lease_id,
+            "leader_lease_expires_at_unix": lease_expires_at_unix,
+            "fence_command_sha256": fence_command_digest,
+        }
+        for field, expected_value in expected.items():
+            actual = verified_claims.get(field)
+            if field in {
+                "issued_at_unix", "expires_at_unix", "leader_lease_expires_at_unix"
+            }:
+                try:
+                    matches = float(actual) == float(expected_value)
+                except (TypeError, ValueError):
+                    matches = False
+            else:
+                matches = actual == expected_value
+            if not matches:
+                raise ProviderGrantFloorConflict(
+                    f"Coordinator signed command {field} does not match the requested Floor reservation"
+                )
+        if verified_key_id != key_id or verified_digest != command_digest:
+            raise ProviderGrantFloorConflict(
+                "Coordinator signed command key ID or canonical command digest mismatch"
+            )
+        if generation is not None and int(verified_claims["generation"]) != generation:
+            raise ProviderGrantFloorConflict(
+                "Coordinator signed command generation does not match the existing reservation"
+            )
+        return {
+            "key_id": key_id,
+            "fingerprint": fingerprint,
+            "trust_revision": int(trust_row["trust_revision"]),
+        }
+
+    def reserve_fence_from_command(
+        self, *, operation_id: str, command_envelope: dict | bytes | str,
+        expected_revision: int,
+    ) -> ProviderGrantFloorReservation:
+        envelope = self._parse_coordinator_command_envelope(command_envelope)
+        try:
+            claims = envelope["command"]
+            if claims["action"] != "FENCE" or claims["fence_command_sha256"] is not None:
+                raise ProviderGrantFloorError(
+                    "FENCE reservation requires a signed FENCE command without a prior FENCE digest"
+                )
+            key = ProviderGrantScopeKey(
+                claims["provider_id"], claims["tenant_id"], claims["scope"]
+            )
+            digest = hashlib.sha256(
+                json.dumps(envelope, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+            ).hexdigest()
+            return self._reserve(
+                "FENCE",
+                operation_id=operation_id,
+                key=key,
+                grant_id=claims["grant_id"],
+                command_digest=digest,
+                fence_command_digest=None,
+                coordinator_namespace=claims["coordinator_namespace"],
+                leader_id=claims["leader_id"],
+                leader_epoch=claims["leader_epoch"],
+                native_lease_id=claims["leader_lease_id"],
+                lease_expires_at_unix=claims["leader_lease_expires_at_unix"],
+                command_issued_at_unix=claims["issued_at_unix"],
+                command_expires_at_unix=claims["expires_at_unix"],
+                expected_revision=expected_revision,
+                coordinator_command_envelope=envelope,
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, ProviderGrantFloorError):
+                raise
+            raise ProviderGrantFloorError("signed Coordinator FENCE command claims are malformed") from exc
+
+    def reserve_activate_from_command(
+        self, *, operation_id: str, command_envelope: dict | bytes | str,
+        expected_revision: int,
+    ) -> ProviderGrantFloorReservation:
+        envelope = self._parse_coordinator_command_envelope(command_envelope)
+        try:
+            claims = envelope["command"]
+            if claims["action"] != "ACTIVATE":
+                raise ProviderGrantFloorError("ACTIVATE reservation requires a signed ACTIVATE command")
+            key = ProviderGrantScopeKey(
+                claims["provider_id"], claims["tenant_id"], claims["scope"]
+            )
+            digest = hashlib.sha256(
+                json.dumps(envelope, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+            ).hexdigest()
+            return self._reserve(
+                "ACTIVATE",
+                operation_id=operation_id,
+                key=key,
+                grant_id=claims["grant_id"],
+                command_digest=digest,
+                fence_command_digest=claims["fence_command_sha256"],
+                coordinator_namespace=claims["coordinator_namespace"],
+                leader_id=claims["leader_id"],
+                leader_epoch=claims["leader_epoch"],
+                native_lease_id=claims["leader_lease_id"],
+                lease_expires_at_unix=claims["leader_lease_expires_at_unix"],
+                command_issued_at_unix=claims["issued_at_unix"],
+                command_expires_at_unix=claims["expires_at_unix"],
+                expected_revision=expected_revision,
+                coordinator_command_envelope=envelope,
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, ProviderGrantFloorError):
+                raise
+            raise ProviderGrantFloorError("signed Coordinator ACTIVATE command claims are malformed") from exc
 
     def reserve_fence(
         self, *, operation_id: str, key: ProviderGrantScopeKey, grant_id: str,
