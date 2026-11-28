@@ -888,6 +888,31 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.assertEqual(after.revision, before.revision)
         self.assertEqual(after.authority_revision, before.authority_revision)
 
+
+    def test_revoked_coordinator_key_cannot_create_new_reservation_or_advance_revision(self):
+        retiring = time.time() - 1.0
+        self.authority.admin_set_coordinator_command_key_status(
+            issuer_id=self.coordinator_issuer,
+            key_id=self.coordinator_key_id,
+            status="REVOKED",
+            retiring_effective_at=retiring,
+            revocation_effective_at=retiring + 0.25,
+            revocation_reason="synthetic Coordinator command key compromise",
+        )
+        envelope = self.coordinator_command("FENCE", 1)
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "inactive, retired, revoked"):
+            self.authority.reserve_fence_from_command(
+                operation_id="revoked-coordinator-key-op",
+                key=self.key,
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "IDLE")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
     def test_coordinator_key_rotation_keeps_old_key_historical_but_accepts_new_active_key(self):
         old_scope = ProviderGrantScopeKey(
             provider_id=self.key.provider_id,
