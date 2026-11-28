@@ -235,3 +235,31 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - No real etcd, Provider, KMS or external service was contacted; no RBAC/Lease/provider-control state was mutated outside the in-memory fake; no application access, candidate import or production cutover occurred.
 - `provider_write_freeze_enforced`, application activation and Provider operations authorization remain false.
 - ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`; production Unified schema-v2 remains the sole authority.
+
+
+## CNC Knowledge Base — Round 85
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: Provider-native persistent write-freeze gate for the existing SQLite fenced Provider reference.
+
+### Code changes
+
+- Added `scripts/spare_parts_provider_write_freeze_gate.py`, a domain-separated Ed25519 FREEZE/UNFREEZE command envelope bound to issuer, Provider ID, tenant, scope, freeze ID, monotonic generation and short validity window.
+- Extended `scripts/spare_parts_provider_sqlite_fenced.py` with optional Provider identity, persistent `provider_write_freeze_scopes`, `apply_write_freeze_command()` and read-only `write_freeze_state()`.
+- Provider schema upgraded from v2 to v3. Existing v2 DBs receive an additive migration; backup validation requires the v3 freeze-state table, and backup/restore preparation retains the freeze state.
+- Object fenced PUT, multipart begin, part and complete now inspect the gate and write-proof generation inside the same existing `BEGIN IMMEDIATE` transaction.
+- FREEZE/UNFREEZE must advance exactly one generation. UNFREEZE must match the active freeze ID. Exact command replay is idempotent; stale, skipped, conflicting, wrong-tenant/provider, wrong-freeze-ID or invalid-signature commands fail closed.
+- After unfreeze, all mutation proofs must include the current `provider_freeze_generation`; old proofs cannot resume writes. Read paths remain available; unfenced mutations and unfenced multipart abort remain disabled.
+- Added tests for all mutation paths, command signature and monotonicity, stale proof rejection, transaction ordering race, schema v2 migration, Provider restart, and backup/restore persistence.
+
+### Validation
+
+- Final quality CI results will be added after docs/history synchronization completes.
+
+### Safety boundary
+
+- This is a same-host SQLite reference gate, not a remote Provider Gateway or cloud object-store enforcement proof.
+- No real Provider, KMS/HSM, etcd, cloud object store or IAM/RBAC service was contacted; no production control object or authority was changed.
+- The offline freeze attestation verifier still reports `provider_write_freeze_enforced=false`; it does not inspect this local fixture or establish production freeze status.
+- No candidate import, application activation or production cutover occurred. ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`; production Unified schema-v2 remains the sole authority.
