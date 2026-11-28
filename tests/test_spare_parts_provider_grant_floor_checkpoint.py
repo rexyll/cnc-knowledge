@@ -21,6 +21,7 @@ from scripts.spare_parts_provider_grant_floor import (
 from scripts.spare_parts_provider_grant_floor_checkpoint import (
     CheckpointedSQLiteProviderGrantFloorAuthority,
     InMemoryProviderGrantFloorCheckpointStore,
+    ProviderGrantFloorCheckpoint,
     ProviderGrantFloorCheckpointBootstrapDenied,
     ProviderGrantFloorCheckpointMismatch,
     ProviderGrantFloorCheckpointMissing,
@@ -92,6 +93,23 @@ class _ConflictNextCheckpointWrite(InMemoryProviderGrantFloorCheckpointStore):
             )
             raise OSError("simulated competing checkpoint CAS writer")
         return super().compare_and_set(**kwargs)
+
+
+class _WrongNextCheckpointResponse(InMemoryProviderGrantFloorCheckpointStore):
+    def __init__(self) -> None:
+        super().__init__()
+        self.misreport_next_response = False
+
+    def compare_and_set(self, **kwargs) -> ProviderGrantFloorCheckpoint:
+        result = super().compare_and_set(**kwargs)
+        if self.misreport_next_response:
+            self.misreport_next_response = False
+            return ProviderGrantFloorCheckpoint(
+                sequence=result.sequence,
+                authority_revision=result.authority_revision,
+                state_sha256="0" * 64,
+            )
+        return result
 
 
 class CheckpointedProviderGrantFloorTests(unittest.TestCase):
@@ -340,6 +358,24 @@ class CheckpointedProviderGrantFloorTests(unittest.TestCase):
             not_before=time.time() - 60.0,
         )
         self.assertEqual(guard.verify_checkpoint().sequence, 2)
+
+    def test_mismatched_checkpoint_response_requires_and_accepts_exact_readback(self):
+        store = _WrongNextCheckpointResponse()
+        raw = SQLiteProviderGrantFloorAuthority(self.root / "misreported.sqlite")
+        guard = CheckpointedSQLiteProviderGrantFloorAuthority(raw, store)
+
+        store.misreport_next_response = True
+        bootstrap = guard.bootstrap_empty_floor()
+        self.assertEqual(bootstrap, store.read_checkpoint())
+
+        store.misreport_next_response = True
+        guard.admin_register_coordinator_command_key(
+            issuer_id="misreported-issuer",
+            key_id="misreported-key",
+            public_key=_raw_public_key(Ed25519PrivateKey.generate()),
+            not_before=time.time() - 60.0,
+        )
+        self.assertEqual(guard.verify_checkpoint(), store.read_checkpoint())
 
     def test_unconfirmed_checkpoint_write_leaves_floor_fail_closed(self):
         store = _FailNextCheckpointWrite()
