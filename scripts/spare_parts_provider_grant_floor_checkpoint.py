@@ -522,7 +522,12 @@ class CheckpointedSQLiteProviderGrantFloorAuthority:
                         "Floor write raised after changing durable state; checkpoint was not advanced"
                     ) from exc
                 raise
-            after = calculate_floor_checkpoint_state(self._authority)
+            try:
+                after = calculate_floor_checkpoint_state(self._authority)
+            except Exception as exc:
+                raise ProviderGrantFloorCheckpointUncertain(
+                    "Floor mutation committed but its resulting state digest is unavailable"
+                ) from exc
             if after != before:
                 self._advance_checkpoint(previous, after)
             self._assert_anchored()
