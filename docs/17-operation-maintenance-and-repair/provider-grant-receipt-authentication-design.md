@@ -317,3 +317,39 @@ Registry 不得仅从待验签 receipt 自身下载 public key 并自动信任�
 3. 外部 Floor 必须验签并逐字段匹配当前 reservation 后，才能确认 FENCE/ACTIVATE；回执摘要必须由验证后的 canonical envelope 重算。
 4. Provider receipt authenticity、external Floor consistency 和 Provider mutation atomicity 是三个不同保证，必须分别验证，不能互相代替。
 5. 本设计不会解除现有 Restore 门禁，不代表生产 authority/Provider/KMS/HSM/etcd 已接入。
+
+## 14. 第九十五轮：本地 Receipt 协议模块与外部 Floor 验签实现
+
+本轮在第94轮协议设计基础上实现了本地参考代码；实现范围仅到 Provider receipt 签名/验签模块和外部 Floor 的验证门禁，**尚未让 Provider SQLite 数据面实际生成并持久化这些 Receipt**。
+
+### 14.1 协议模块
+
+新增 \`scripts/spare_parts_provider_grant_receipt.py\`：
+
+- 使用固定版本 RFC 8785 JCS 生成 claims 和完整 envelope 的 canonical UTF-8 字节；签名输入采用独立 domain \`cnc-provider-grant-receipt-v1\\x00\`、ASCII key ID 与 canonical claims。
+- 提供 Provider Ed25519 receipt signer、strict envelope parser、signature verifier 和不可变 \`VerifiedProviderGrantReceipt\` 结果对象。Coordinator command signing key 不复用。
+- 严格拒绝重复 JSON key、未知字段、错误格式、非法 Base64、错误签名长度、未知 action、错误 FENCE/ACTIVATE result、bool 冒充整数、非有限时间、非规范 digest、非法 namespace 和越界命令时间。
+- FENCE receipt 要求 \`result_state=FENCED\` 且 \`fence_command_sha256=null\`；ACTIVATE receipt 要求 \`result_state=ACTIVE\` 且引用格式正确的既有 FENCE command digest。
+- Receipt 的完整摘要是验证通过后由完整 canonical envelope（含签名）重算的 SHA-256，不再由调用方另行提供。
+
+### 14.2 外部 Floor schema v4 与信任注册表
+
+\`scripts/spare_parts_provider_grant_floor.py\` 已升级为 schema v4：
+
+- 新增 \`provider_grant_floor_receipt_keys\` 表，按 Provider ID + key ID 保存 Ed25519 公钥、SHA-256 fingerprint、状态、有效期、退休生效时间、撤销生效时间、reason 与 trust revision。
+- 仅提供显式的本地数据库 owner 管理入口注册/退役/撤销 key；Receipt 自带 key 或未知 key 不会自动建立信任。该本地 API 没有生产级身份认证/审批工作流，不能直接作为生产密钥管理面。
+- ACTIVE 允许有效期内新回执；RETIRING 只接受退休生效时间之前应用的历史回执；REVOKED 只接受撤销生效时间之前、且满足既有有效期和退休边界的历史回执。状态只能向 RETIRING / REVOKED 前进，不能重新激活；RETIRING 可进一步撤销。
+- Reservation 现在持久保存 Coordinator 原命令的 \`command_issued_at_unix\` 与 \`command_expires_at_unix\`；Receipt 两个字段必须与 Reservation 精确一致，且命令到期不得超过 native Lease expiry。Floor 仍不在本轮独立验 Coordinator command signature；它验证 Provider receipt 并绑定已经写入 Reservation 的 command digest/claims。
+- Floor 的 \`confirm_provider_receipt\` 只接受 signed envelope，不再接受裸摘要。验签、Provider/tenant/scope/action/Grant/generation/command/FENCE digest/isolated namespace/Leader/native Lease/command time/result 等匹配、ACTIVATE chronology、scope revision CAS 与状态推进位于同一个 \`BEGIN IMMEDIATE\` 事务中。
+- 成功时由 Floor 自行计算 canonical envelope digest，并记录 signer key ID、public-key fingerprint、trust revision、Provider applied time。相同已确认 Envelope 可幂等回放；不同摘要不能替换。
+- SQLite schema v1 依序迁移到 v4。旧裸摘要和历史操作继续保留；新增 signer/fingerprint/trust/applied-time/command-time 字段保持 NULL，不伪造签名、不补造命令时间、不自动升级为已认证证据。缺少可信命令时间的旧 PENDING 操作不能走新确认路径。
+
+### 14.3 测试覆盖与边界
+
+新增 \`tests/test_spare_parts_provider_grant_receipt.py\` 与扩展 Floor 测试，使用仅供测试的合成 Ed25519 key，覆盖 canonical JSON、FENCE/ACTIVATE、签名和 claims 篡改、reservation 字段精确绑定、key fingerprint、有效期/退休/撤销、未知 key、裸摘要 API 拒绝、命令时间窗口、native Lease 上限、schema v1→v4 迁移、历史裸摘要不提升、幂等/替换、FENCE/ACTIVATE applied-time chronology 和失败时 revision 不前进。
+
+该实现**不是** Provider mutation transaction 集成：\`spare_parts_provider_sqlite_fenced.py\` 目前尚未在 FENCE/ACTIVATE 状态变更的同一事务内签名并保存 Provider receipt envelope，也未提供按 command digest 查询 durable signed receipt 的接口。Floor 单元测试通过合成 Provider key 产生 Envelope，不能据此声称真实 Provider 已能输出认证回执。后续独立实现必须先核查 Provider 数据库事务边界，再把 grant state、command receipt 和 signed receipt 原子持久化，补充响应丢失恢复测试。
+
+Provider signer key 仍只是测试用内存 Ed25519 key；没有接入 KMS/HSM、生产 secret store、Provider 集群 key identity 或独立 trust-registry 控制平面。签名的 \`applied_at_unix\` 是 Provider 声明并签名的时间，不是独立可信时间戳；若受信私钥被攻陷，攻击者仍可能回填历史时间，生产部署需要不可变 Provider 事件/可信计时或其他审计机制。SQLite Floor 和 trust registry 也仍可能被旧快照覆盖，不能声称自身防回滚。
+
+本轮不连接真实 etcd、Provider、KMS/HSM、object storage 或 IAM/RBAC；不修改 Unified schema-v2 生产 authority；不执行导入、Restore、应用激活或 Cutover。任何含 Provider Grant 历史的通用 Restore 继续 fail-closed。
