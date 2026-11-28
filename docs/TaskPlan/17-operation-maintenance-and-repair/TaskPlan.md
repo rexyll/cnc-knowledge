@@ -1618,3 +1618,13 @@
 - 测试覆盖 Coordinator 签名、未知/撤销 key、key rotation、重复 JSON key、跨 Provider/Tenant/scope、wrong generation、命令时间/native Lease、裸 claims 拒绝、strict no-downgrade、v1→v5 migration、legacy PENDING fail-closed、CAS/revision 不前进及 Provider→Floor E2E。
 - 仅本地 SQLite 和合成 Ed25519 key；没有生产 Coordinator/etcd/Provider/KMS/HSM/IAM/RBAC 或多节点 trust plane。Grant-aware Restore 仍未实现，通用 Restore 含 Grant 历史继续 fail-closed。
 - **状态：** DONE（2026-11-28；代码/测试验证 [Knowledge Quality Run 46159590900](https://github.com/rexyll/cnc-knowledge/actions/runs/46159590900) 两个必需 Job 均 success；完整文档同步由当前主分支 CI 再次复核）。
+
+
+### 第九十八轮：Provider Grant Floor 外部单调检查点与快照回滚检测
+
+- 在现有 SQLite Floor 的数据库外部建立独立 checkpoint port；checkpoint 至少绑定单调 checkpoint sequence、Floor authority revision 与涵盖完整逻辑表状态的 deterministic SHA-256 digest。
+- 用严格 wrapper 保护公开 read/write API：先核对数据库当前摘要与已锚定 checkpoint；修改成功后通过外部 CAS 推进 checkpoint。任何前后状态不一致、数据库回退/领先、checkpoint丢失或CAS结果未知均拒绝后续读写。
+- 首次bootstrap必须显式执行，且只接受无任何scope、operation、Provider receipt key和Coordinator command key的空白Floor。禁止为已有未锚定历史自动生成checkpoint。
+- 测试使用独立于Floor文件的in-memory CAS fake，并通过SQLite backup/restore模拟旧快照覆盖；同时验证同revision内容变化、trust registry变化、幂等重放、并发CAS及失败时不推进checkpoint。
+- **限制：** in-memory fake只验证协议与本地故障语义，不是生产持久化锚。wrapper只覆盖单进程单实例；跨进程/多节点仍需要共享线性一致的外部authority，最好把Floor记录和checkpoint放在同一Txn。checkpoint推进失败时不自动恢复；含Grant历史的通用Restore仍保持fail-closed。
+- **状态：** IN_PROGRESS。
