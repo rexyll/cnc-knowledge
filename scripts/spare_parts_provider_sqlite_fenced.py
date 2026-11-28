@@ -52,7 +52,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     _sha,
 )
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 PBKDF2_ITERATIONS = 210_000
 MAX_FENCING_TOKEN = (1 << 63) - 1
 DEFAULT_ACTIONS = (
@@ -226,6 +226,15 @@ class SQLiteFencedObjectStorageProvider:
                     PRIMARY KEY(tenant_id,fencing_scope)
                 )"""
             )
+            connection.execute(
+                "UPDATE provider_meta SET value=? WHERE key='schema_version' AND value='2'",
+                (str(SCHEMA_VERSION),),
+            )
+            version_row = connection.execute(
+                "SELECT value FROM provider_meta WHERE key='schema_version'"
+            ).fetchone()
+            if version_row is None or version_row[0] != str(SCHEMA_VERSION):
+                raise BackupStorageError("unsupported SQLite Provider schema version")
             connection.execute(
                 """CREATE TABLE IF NOT EXISTS trusted_ed25519_keys (
                     issuer_id TEXT NOT NULL,
@@ -1887,6 +1896,7 @@ class SQLiteFencedObjectStorageProvider:
             required = {
                 "provider_principals", "trusted_fencing_keys", "fencing_scopes", "fenced_operations",
                 "provider_objects", "multipart_sessions", "multipart_parts", "provider_audit",
+                "provider_write_freeze_scopes",
             }
             tables = {
                 row["name"] for row in connection.execute(
