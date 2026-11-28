@@ -22,9 +22,6 @@ from typing import Protocol
 from urllib.parse import quote
 
 from scripts.spare_parts_provider_grant_floor import (
-    ProviderGrantFloorAuthorityError if False else ProviderGrantFloorError,
-)
-from scripts.spare_parts_provider_grant_floor import (
     ProviderGrantFloorSnapshot,
     ProviderGrantFloorReservation,
     ProviderGrantFloorOperation,
