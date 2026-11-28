@@ -7,15 +7,25 @@ database outside the Provider SQLite backup/restore domain.
 """
 from __future__ import annotations
 
+import base64
 import math
 import os
 import re
 import sqlite3
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-SCHEMA_VERSION = 1
+from scripts.spare_parts_provider_grant_receipt import (
+    ProviderGrantReceiptError,
+    ProviderReceiptTrustKey,
+    canonical_receipt_json,
+    parse_receipt_envelope,
+    verify_provider_grant_receipt,
+)
+
+SCHEMA_VERSION = 2
 MAX_SQLITE_INTEGER = (1 << 63) - 1
 _DIGEST_RE = re.compile(r"[0-9a-f]{64}\Z")
 _ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
@@ -118,6 +128,10 @@ class ProviderGrantFloorOperation:
     reserved_scope_revision: int
     confirmed_scope_revision: int | None
     authority_revision: int
+    receipt_signer_key_id: str | None = None
+    receipt_key_fingerprint: str | None = None
+    receipt_trust_revision: int | None = None
+    provider_applied_at_unix: float | None = None
 
 
 class ProviderGrantFloorAuthority:
@@ -238,7 +252,26 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                     provider_receipt_digest TEXT,
                     reserved_scope_revision INTEGER NOT NULL,
                     confirmed_scope_revision INTEGER,
-                    authority_revision INTEGER NOT NULL
+                    authority_revision INTEGER NOT NULL,
+                    receipt_signer_key_id TEXT,
+                    receipt_key_fingerprint TEXT,
+                    receipt_trust_revision INTEGER,
+                    provider_applied_at_unix REAL
+                );
+                CREATE TABLE IF NOT EXISTS provider_grant_floor_receipt_keys (
+                    provider_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    algorithm TEXT NOT NULL CHECK(algorithm='ED25519'),
+                    public_key_base64 TEXT NOT NULL,
+                    public_key_sha256 TEXT NOT NULL CHECK(length(public_key_sha256)=64),
+                    status TEXT NOT NULL CHECK(status IN ('ACTIVE','RETIRING','REVOKED')),
+                    not_before REAL NOT NULL,
+                    not_after REAL,
+                    revocation_effective_at REAL,
+                    revocation_reason TEXT,
+                    trust_revision INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY(provider_id,key_id)
                 );
                 """
             )
@@ -248,11 +281,47 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             if row is None:
                 connection.execute(
                     """INSERT INTO provider_grant_floor_meta
-                       (singleton, schema_version, authority_revision) VALUES (1, ?, 0)""",
+                       (singleton, schema_version, authority_revision, trust_revision)
+                       VALUES (1, ?, 0, 0)""",
                     (SCHEMA_VERSION,),
                 )
-            elif int(row["schema_version"]) != SCHEMA_VERSION:
-                raise ProviderGrantFloorError("unsupported external Grant floor schema version")
+            else:
+                version = int(row["schema_version"])
+                if version == 1:
+                    meta_columns = {
+                        item[1] for item in connection.execute(
+                            "PRAGMA table_info(provider_grant_floor_meta)"
+                        ).fetchall()
+                    }
+                    if "trust_revision" not in meta_columns:
+                        connection.execute(
+                            "ALTER TABLE provider_grant_floor_meta "
+                            "ADD COLUMN trust_revision INTEGER NOT NULL DEFAULT 0"
+                        )
+                    operation_columns = {
+                        item[1] for item in connection.execute(
+                            "PRAGMA table_info(provider_grant_floor_operations)"
+                        ).fetchall()
+                    }
+                    for column, declaration in (
+                        ("receipt_signer_key_id", "TEXT"),
+                        ("receipt_key_fingerprint", "TEXT"),
+                        ("receipt_trust_revision", "INTEGER"),
+                        ("provider_applied_at_unix", "REAL"),
+                    ):
+                        if column not in operation_columns:
+                            connection.execute(
+                                f"ALTER TABLE provider_grant_floor_operations "
+                                f"ADD COLUMN {column} {declaration}"
+                            )
+                    connection.execute(
+                        "UPDATE provider_grant_floor_meta SET schema_version=? WHERE singleton=1",
+                        (SCHEMA_VERSION,),
+                    )
+                elif version != SCHEMA_VERSION:
+                    raise ProviderGrantFloorError(
+                        "unsupported external Grant floor schema version"
+                    )
         finally:
             connection.close()
         os.chmod(self.database_path, 0o600)
@@ -406,6 +475,16 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 if row["confirmed_scope_revision"] is not None else None
             ),
             authority_revision=int(row["authority_revision"]),
+            receipt_signer_key_id=row["receipt_signer_key_id"],
+            receipt_key_fingerprint=row["receipt_key_fingerprint"],
+            receipt_trust_revision=(
+                int(row["receipt_trust_revision"])
+                if row["receipt_trust_revision"] is not None else None
+            ),
+            provider_applied_at_unix=(
+                float(row["provider_applied_at_unix"])
+                if row["provider_applied_at_unix"] is not None else None
+            ),
         )
 
     def operation_status(self, operation_id: str) -> ProviderGrantFloorOperation | None:
@@ -655,14 +734,170 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             expected_revision=expected_revision,
         )
 
+    @staticmethod
+    def _trust_key_from_row(row) -> ProviderReceiptTrustKey:
+        try:
+            public_key = base64.b64decode(row["public_key_base64"], validate=True)
+        except (ValueError, base64.binascii.Error) as exc:
+            raise ProviderGrantFloorError(
+                "Provider receipt trust registry contains an invalid public key"
+            ) from exc
+        return ProviderReceiptTrustKey(
+            provider_id=row["provider_id"],
+            key_id=row["key_id"],
+            public_key=public_key,
+            public_key_sha256=row["public_key_sha256"],
+            status=row["status"],
+            not_before=float(row["not_before"]),
+            not_after=(float(row["not_after"]) if row["not_after"] is not None else None),
+            revocation_effective_at=(
+                float(row["revocation_effective_at"])
+                if row["revocation_effective_at"] is not None else None
+            ),
+            trust_revision=int(row["trust_revision"]),
+        )
+
+    def admin_register_provider_receipt_key(
+        self, *, provider_id: str, key_id: str, public_key: bytes,
+        not_before: float, not_after: float | None = None,
+    ) -> dict[str, object]:
+        """Register a Provider receipt key through the local database-owner control path."""
+        self._identifier(provider_id, "provider_id")
+        if not isinstance(key_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+        ):
+            raise ProviderGrantFloorError("Provider receipt key ID is invalid")
+        if not isinstance(public_key, bytes) or len(public_key) != 32:
+            raise ProviderGrantFloorError("Provider receipt Ed25519 public key must contain 32 bytes")
+        before = self._lease_expiry(not_before)
+        after = self._lease_expiry(not_after) if not_after is not None else None
+        if after is not None and after <= before:
+            raise ProviderGrantFloorError("Provider receipt key validity interval is invalid")
+        fingerprint = __import__("hashlib").sha256(public_key).hexdigest()
+        encoded = base64.b64encode(public_key).decode("ascii")
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            existing = connection.execute(
+                "SELECT * FROM provider_grant_floor_receipt_keys WHERE provider_id=? AND key_id=?",
+                (provider_id, key_id),
+            ).fetchone()
+            if existing is not None:
+                if (
+                    existing["public_key_sha256"] != fingerprint
+                    or existing["public_key_base64"] != encoded
+                    or float(existing["not_before"]) != before
+                    or existing["not_after"] != after
+                ):
+                    raise ProviderGrantFloorConflict(
+                        "Provider receipt key ID is already bound to different key material or validity"
+                    )
+                result = dict(existing)
+                connection.commit()
+                return result
+            connection.execute(
+                "UPDATE provider_grant_floor_meta SET trust_revision=trust_revision+1 WHERE singleton=1"
+            )
+            trust_revision = int(connection.execute(
+                "SELECT trust_revision FROM provider_grant_floor_meta WHERE singleton=1"
+            ).fetchone()["trust_revision"])
+            created_at = time.time()
+            connection.execute(
+                """INSERT INTO provider_grant_floor_receipt_keys(
+                    provider_id,key_id,algorithm,public_key_base64,public_key_sha256,
+                    status,not_before,not_after,revocation_effective_at,revocation_reason,
+                    trust_revision,created_at
+                ) VALUES(?,?,'ED25519',?,?, 'ACTIVE',?,?,NULL,NULL,?,?)""",
+                (provider_id,key_id,encoded,fingerprint,before,after,trust_revision,created_at),
+            )
+            result = dict(connection.execute(
+                "SELECT * FROM provider_grant_floor_receipt_keys WHERE provider_id=? AND key_id=?",
+                (provider_id,key_id),
+            ).fetchone())
+            connection.commit()
+            return result
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def admin_set_provider_receipt_key_status(
+        self, *, provider_id: str, key_id: str, status: str,
+        revocation_effective_at: float | None = None, revocation_reason: str | None = None,
+    ) -> dict[str, object]:
+        """Advance a registered receipt key to RETIRING or REVOKED; never reactivate it."""
+        self._identifier(provider_id, "provider_id")
+        if not isinstance(key_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+        ):
+            raise ProviderGrantFloorError("Provider receipt key ID is invalid")
+        if status not in {"RETIRING", "REVOKED"}:
+            raise ProviderGrantFloorError("Provider receipt key may only transition to RETIRING or REVOKED")
+        effective = None
+        reason = None
+        if status == "REVOKED":
+            effective = self._lease_expiry(revocation_effective_at)
+            reason = self._identifier(revocation_reason, "revocation_reason")
+        elif revocation_effective_at is not None or revocation_reason is not None:
+            raise ProviderGrantFloorError("RETIRING key must not carry revocation metadata")
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT * FROM provider_grant_floor_receipt_keys WHERE provider_id=? AND key_id=?",
+                (provider_id,key_id),
+            ).fetchone()
+            if row is None:
+                raise ProviderGrantFloorConflict("unknown Provider receipt trust key")
+            old_status = row["status"]
+            if old_status == status and (
+                status != "REVOKED"
+                or (
+                    row["revocation_effective_at"] == effective
+                    and row["revocation_reason"] == reason
+                )
+            ):
+                result = dict(row)
+                connection.commit()
+                return result
+            if old_status != "ACTIVE" or status not in {"RETIRING","REVOKED"}:
+                raise ProviderGrantFloorConflict("Provider receipt key lifecycle transition is invalid")
+            connection.execute(
+                "UPDATE provider_grant_floor_meta SET trust_revision=trust_revision+1 WHERE singleton=1"
+            )
+            trust_revision = int(connection.execute(
+                "SELECT trust_revision FROM provider_grant_floor_meta WHERE singleton=1"
+            ).fetchone()["trust_revision"])
+            connection.execute(
+                """UPDATE provider_grant_floor_receipt_keys SET status=?,revocation_effective_at=?,
+                   revocation_reason=?,trust_revision=? WHERE provider_id=? AND key_id=?""",
+                (status,effective,reason,trust_revision,provider_id,key_id),
+            )
+            result = dict(connection.execute(
+                "SELECT * FROM provider_grant_floor_receipt_keys WHERE provider_id=? AND key_id=?",
+                (provider_id,key_id),
+            ).fetchone())
+            connection.commit()
+            return result
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
     def confirm_provider_receipt(
-        self, *, operation_id: str, command_digest: str, provider_receipt_digest: str,
+        self, *, operation_id: str, receipt_envelope: dict | bytes | str,
         expected_revision: int,
     ) -> ProviderGrantFloorSnapshot:
         self._identifier(operation_id, "operation_id")
-        command_digest = self._digest(command_digest, "command_digest")
-        provider_receipt_digest = self._digest(provider_receipt_digest, "provider_receipt_digest")
         expected_revision = self._integer(expected_revision, "expected_revision", minimum=0)
+        try:
+            parsed = parse_receipt_envelope(receipt_envelope)
+            canonical_envelope = canonical_receipt_json(parsed)
+            receipt_digest = __import__("hashlib").sha256(canonical_envelope).hexdigest()
+        except ProviderGrantReceiptError as exc:
+            raise ProviderGrantFloorError(str(exc)) from exc
         connection = self._connect()
         try:
             connection.execute("BEGIN IMMEDIATE")
@@ -672,10 +907,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             ).fetchone()
             if operation is None:
                 raise ProviderGrantFloorConflict("unknown external Grant floor operation ID")
-            if operation["command_digest"] != command_digest:
-                raise ProviderGrantFloorConflict("Provider receipt command digest does not match reservation")
             if operation["state"] == "CONFIRMED":
-                if operation["provider_receipt_digest"] != provider_receipt_digest:
+                if operation["provider_receipt_digest"] != receipt_digest:
                     raise ProviderGrantFloorConflict("confirmed Provider receipt digest cannot be replaced")
                 key = ProviderGrantScopeKey(
                     operation["provider_id"], operation["tenant_id"], operation["scope"]
@@ -696,22 +929,74 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 operation["provider_id"], operation["tenant_id"], operation["scope"]
             )
             key_values = self._key_tuple(key)
+            signature_key_id = parsed["signature"]["key_id"]
+            trust_row = connection.execute(
+                """SELECT * FROM provider_grant_floor_receipt_keys
+                   WHERE provider_id=? AND key_id=?""",
+                (operation["provider_id"],signature_key_id),
+            ).fetchone()
+            if trust_row is None:
+                raise ProviderGrantFloorConflict("Provider receipt signer key is not trusted")
+            trust_key = self._trust_key_from_row(trust_row)
+            expected_claims = {
+                "provider_id": operation["provider_id"],
+                "tenant_id": operation["tenant_id"],
+                "scope": operation["scope"],
+                "action": operation["action"],
+                "grant_id": operation["grant_id"],
+                "generation": int(operation["generation"]),
+                "command_sha256": operation["command_digest"],
+                "fence_command_sha256": operation["fence_command_digest"],
+                "coordinator_namespace": operation["coordinator_namespace"],
+                "leader_id": operation["leader_id"],
+                "leader_epoch": int(operation["leader_epoch"]),
+                "native_lease_id": int(operation["native_lease_id"]),
+                "native_lease_expires_at_unix": float(operation["lease_expires_at_unix"]),
+            }
+            try:
+                verified = verify_provider_grant_receipt(
+                    parsed, trust_key, expected_claims=expected_claims
+                )
+            except ProviderGrantReceiptError as exc:
+                raise ProviderGrantFloorConflict(str(exc)) from exc
+
             scope = connection.execute(
                 """SELECT * FROM provider_grant_floor_scopes
                    WHERE provider_id=? AND tenant_id=? AND scope=?""",
                 key_values,
             ).fetchone()
-            if int(scope["revision"]) != expected_revision:
+            if scope is None or int(scope["revision"]) != expected_revision:
+                actual = int(scope["revision"]) if scope is not None else 0
                 raise ProviderGrantFloorConflict(
-                    f"scope revision CAS failed: expected {expected_revision}, actual {scope['revision']}"
+                    f"scope revision CAS failed: expected {expected_revision}, actual {actual}"
                 )
             if (
                 scope["pending_operation_id"] != operation_id
-                or scope["pending_command_digest"] != command_digest
+                or scope["pending_command_digest"] != operation["command_digest"]
                 or int(scope["pending_generation"]) != int(operation["generation"])
                 or scope["pending_action"] != operation["action"]
             ):
                 raise ProviderGrantFloorConflict("Provider receipt does not match the pending scope operation")
+            if operation["action"] == "ACTIVATE":
+                if scope["last_fence_command_digest"] != operation["fence_command_digest"]:
+                    raise ProviderGrantFloorConflict("ACTIVATE receipt does not match the latest confirmed FENCE")
+                fence_row = connection.execute(
+                    """SELECT provider_applied_at_unix FROM provider_grant_floor_operations
+                       WHERE provider_id=? AND tenant_id=? AND scope=? AND action='FENCE'
+                         AND state='CONFIRMED' AND command_digest=?""",
+                    (
+                        operation["provider_id"],operation["tenant_id"],operation["scope"],
+                        operation["fence_command_digest"],
+                    ),
+                ).fetchone()
+                if (
+                    fence_row is None or fence_row["provider_applied_at_unix"] is None
+                    or verified.applied_at_unix < float(fence_row["provider_applied_at_unix"])
+                ):
+                    raise ProviderGrantFloorConflict(
+                        "ACTIVATE receipt applied time precedes its confirmed FENCE receipt"
+                    )
+
             next_state = "FENCED" if operation["action"] == "FENCE" else "ACTIVE"
             next_revision = int(scope["revision"]) + 1
             authority_revision = self._bump_authority_revision(connection)
@@ -724,7 +1009,7 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                        last_fence_command_digest=?, last_fence_receipt_digest=?,
                        revision=? WHERE provider_id=? AND tenant_id=? AND scope=?""",
                     (
-                        next_state, command_digest, provider_receipt_digest,
+                        next_state, operation["command_digest"], verified.receipt_digest,
                         next_revision, *key_values,
                     ),
                 )
@@ -737,15 +1022,21 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                        last_activation_command_digest=?, last_activation_receipt_digest=?,
                        revision=? WHERE provider_id=? AND tenant_id=? AND scope=?""",
                     (
-                        next_state, command_digest, provider_receipt_digest,
+                        next_state, operation["command_digest"], verified.receipt_digest,
                         next_revision, *key_values,
                     ),
                 )
             connection.execute(
                 """UPDATE provider_grant_floor_operations SET state='CONFIRMED',
-                   provider_receipt_digest=?, confirmed_scope_revision=?, authority_revision=?
+                   provider_receipt_digest=?, receipt_signer_key_id=?,
+                   receipt_key_fingerprint=?, receipt_trust_revision=?,
+                   provider_applied_at_unix=?, confirmed_scope_revision=?, authority_revision=?
                    WHERE operation_id=?""",
-                (provider_receipt_digest, next_revision, authority_revision, operation_id),
+                (
+                    verified.receipt_digest, verified.signer_key_id,
+                    verified.signer_public_key_sha256, verified.trust_revision,
+                    verified.applied_at_unix, next_revision, authority_revision, operation_id,
+                ),
             )
             result_row = connection.execute(
                 """SELECT * FROM provider_grant_floor_scopes
