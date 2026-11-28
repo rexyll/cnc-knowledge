@@ -442,3 +442,21 @@ Quality Run [46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/4
 3. `frozen=true`是Provider签名的原生write-gate声明。此离线验证器不探测真实写API，也不证明所有mutation路径都受冻结门控制，因此结果明确保留 `provider_write_freeze_enforced=false`。
 4. 本模块不调用Provider/KMS/etcd，不创建冻结锁、不写Provider control object、不修改RBAC，也不授予应用启用/Provider操作权限。真实Provider write-path阻断测试与分布式故障演练仍属于MIG-06。
 
+
+
+### 15.12 第八十四轮：共享 etcd Provider freeze replay ledger 与Coordinator CAS绑定
+
+新增 `scripts/spare_parts_provider_freeze_etcd_replay_ledger.py`，实现共享账本候选。构造函数要求显式传入隔离namespace，仅接受 `/cnc/migration/isolated/{single-id}/`，并在该namespace下使用独立的 `provider-freeze-replay/v1/` 子路径。生产 `/cnc/admission/unified/v2/` 前缀和非单段/空隔离ID均在初始化阶段拒绝。
+
+每次消费将Provider维度的四类标识映射为SHA-256派生键：evidence UUID、challenge nonce digest、freeze generation及freeze ID。四个键必须在同一个etcd Txn中进行VERSION=0比较并Put同一规范化不可变记录；它们均不附加Leader Lease，避免Coordinator换主或Lease到期时遗失防重放历史。
+
+更关键的是，该Txn还包含Coordinator实时权威比较：提交前通过线性一致Get读取隔离namespace中的 `scheduler/state` 与 `coordinator/leader`，验证Leader ID、epoch、backend native Lease ID、Leader KV实际Lease attachment、expiry及完整scope集合/值均与已验签冻结声明匹配。Txn同时比较两个key的MOD revision与VALUE精确值，以及四个replay key的VERSION=0。因而在读取与写Txn之间发生Leader续租、换主、scope变更或native TTL key失效，事务都不能成功。
+
+响应丢失恢复遵循保守规则：
+- 四个replay键全部精确匹配同一payload时，才可将未知结果判定为已提交；
+- 四键全部不存在时，重新读取并核对Coordinator权威，再重试完全相同的Txn；
+- 任意部分键、不同payload、Lease binding不一致或无法证明的持续未知结果均隔离/阻断，不进行自动补写，也不允许上层激活。
+
+共享ledger通过 `validate_provider_freeze_attestation()` 的同一 `consume_once(record, authority_snapshot=...)` 端口调用，现有SQLite实现继续作为兼容的单机参考后端。
+
+**限制与下一步：** 本轮执行使用Etcd adapter和InMemory fake；它只验证KV比较/Txn API契约、并发消费和未知响应读回逻辑，不提供真实etcd Raft/Quorum、WAL/磁盘耐久、跨主机网络分区或生产RBAC证明。真正部署须使用独立临时etcd集群和限制在目标隔离prefix的服务端RBAC，再补充三节点故障注入。即使replay Txn成功，也只表示证据标识已在共享账本消费，并不证明Provider原生write gate已实际阻断所有对象、multipart和其他mutation接口；`provider_write_freeze_enforced`仍为false。
