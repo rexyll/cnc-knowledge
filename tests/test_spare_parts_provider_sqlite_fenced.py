@@ -1042,6 +1042,59 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         with self.assertRaises(FencingAttestationRejectedError):
             self.provider.apply_write_freeze_command(wrong_provider)
 
+    def test_freeze_generation_survives_provider_restart_backup_and_restore(self):
+        self.provider.apply_write_freeze_command(
+            self.command("FREEZE", 1, "freeze-persist")
+        )
+        self.provider.apply_write_freeze_command(
+            self.command("UNFREEZE", 2, "freeze-persist")
+        )
+        reopened = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertEqual(reopened.write_freeze_state(SCOPE)["generation"], 2)
+        self.assertEqual(reopened.write_freeze_state(SCOPE)["state"], "OPEN")
+
+        backup = self.base / "provider-freeze-backup.sqlite"
+        report = reopened.backup_to(backup)
+        self.assertEqual(report["schema_version"], 3)
+        restored_path = self.base / "provider-freeze-restored.sqlite"
+        restore_report = reopened.restore_to_new_database(
+            backup, restored_path, external_fencing_floor=0,
+            fencing_reconciliation_ref="synthetic-freeze-gate-test",
+        )
+        self.assertEqual(restore_report["result"], "RESTORED_TO_NEW_DATABASE")
+        restored = _new_provider(
+            restored_path, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertEqual(restored.write_freeze_state(SCOPE)["generation"], 2)
+        self.assertEqual(restored.write_freeze_state(SCOPE)["state"], "OPEN")
+
+    def test_schema_v2_provider_database_is_upgraded_with_freeze_gate_table(self):
+        with sqlite3.connect(self.database) as connection:
+            connection.execute("DROP TABLE provider_write_freeze_scopes")
+            connection.execute(
+                "UPDATE provider_meta SET value='2' WHERE key='schema_version'"
+            )
+        migrated = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertIsNone(migrated.write_freeze_state(SCOPE))
+        with sqlite3.connect(self.database) as connection:
+            version = connection.execute(
+                "SELECT value FROM provider_meta WHERE key='schema_version'"
+            ).fetchone()[0]
+            tables = {
+                row[0] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            }
+        self.assertEqual(version, "3")
+        self.assertIn("provider_write_freeze_scopes", tables)
+
     def test_write_transaction_and_freeze_command_have_one_sqlite_order(self):
         checked = threading.Event()
         allow_write_commit = threading.Event()
