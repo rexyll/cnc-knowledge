@@ -591,7 +591,7 @@ Provider schema升级至v5，新增`provider_scope_grants`与`provider_grant_com
 
 ## CH17-T006 Provider Grant 外部单调 Floor 与 Restore 对账（第九十一轮）
 
-新增 Provider Grant 外部单调 Floor 与 Restore 对账设计，补足第九十轮暴露的备份回滚边界：Provider Grant generation、Leader epoch 和 receipt 当前只存在 Provider SQLite 备份域内，旧备份无法证明自身是最新版本。
+新增[Provider Grant 外部单调 Floor 与 Restore 对账设计](provider-grant-external-floor-and-restore-reconciliation-design.md)，补足第九十轮暴露的备份回滚边界：Provider Grant generation、Leader epoch 和 receipt 当前只存在 Provider SQLite 备份域内，旧备份无法证明自身是最新版本。
 
 设计提出独立 ProviderGrantFloorAuthority，按Provider/tenant/scope保存单调generation、Leader epoch、FENCE/ACTIVATE pending operation、command digest和Provider receipt digest；FENCE/ACTIVATE采用外部预留、Provider本地提交、外部精确回执确认的双边协议。专用Restore必须在线性一致外部floor上对账，pending或unknown状态不能靠猜测重试。
 
