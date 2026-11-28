@@ -414,3 +414,12 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Repository readback shows 63 test method definitions in `tests/test_spare_parts_provider_sqlite_fenced.py`; this is a source inventory only, not an execution result. The working container cannot resolve `github.com`, so no local checkout/test execution was possible. `get_commit_combined_status` returned no status entries and the available commit-workflow lookup exposes PR-triggered runs only; no push-run result was obtained. Do not mark Round 90 DONE until the unit suite and Knowledge Quality workflow complete successfully.
 - This is a same-host SQLite reference only. No real etcd, remote Provider, KMS/HSM, cloud object store or IAM/RBAC was contacted; no production namespace, candidate import, application activation or cutover occurred.
 - MIG-04 remains IN_PROGRESS; MIG-05 remains IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority; ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`.
+
+
+## CNC Knowledge Base — Round 91（Provider Grant 外部 Floor / Restore 对账设计中）
+
+- Added docs/17-operation-maintenance-and-repair/provider-grant-external-floor-and-restore-reconciliation-design.md.
+- Captured the Grant backup rollback gap: a valid SQLite backup can still be stale because Provider grant generation, Leader epoch and receipt history currently live only inside that backup domain.
+- Designed the ProviderGrantFloorAuthority contract, per-provider/tenant/scope monotonic floors, FENCE/ACTIVATE external reservation and receipt-confirmation protocol, and a dedicated fail-closed Grant-aware Restore algorithm.
+- Explicitly retained the Round90 generic Restore block for any backup containing Provider Grant scope or command history. A text reconciliation reference or object fencing token floor is not sufficient Grant floor evidence.
+- Synchronized root TaskPlan, CH17 TaskPlan, README and migration design. This is architecture-only; no external floor adapter, production authority change, real etcd/Provider integration or Restore/Cutover occurred.
