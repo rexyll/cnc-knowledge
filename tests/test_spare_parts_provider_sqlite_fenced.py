@@ -1020,7 +1020,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
     ):
         issued = time.time() if issued_at is None else issued_at
         lease_expiry = issued + 120.0 if lease_expires is None else lease_expires
-        grant_expiry = issued + 60.0 if expires is None else expires
+        grant_expiry = min(issued + 60.0, lease_expiry) if expires is None else expires
         claims = {
             "format": PROVIDER_GRANT_CLAIMS_FORMAT,
             "issuer_id": ISSUER_ID,
