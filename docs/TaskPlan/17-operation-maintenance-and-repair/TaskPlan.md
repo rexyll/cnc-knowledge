@@ -1407,3 +1407,11 @@
 - 新增执行级测试，通过`EtcdV3CoordinatorAuthorityStore`调用`InMemoryEtcdV3Client`，覆盖提交前中断/相同Txn重试、提交后响应丢失、对象重建后checkpoint续跑、竞争writer导致CAS整批拒绝，以及publish未知结果读回。
 - **CI：** [Knowledge Quality Run 46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/46092128612) success：600 unittest（40 skipped），CH12 143项通过，lint 0 errors/5 warnings，结构/data检查0 errors。
 - **限制：** fake仅证明adapter事务契约，不证明etcd集群共识、磁盘耐久性、真实多主机并发或RBAC；没有真实writer、Lease/RBAC操作、生产namespace访问或cutover。MIG-04仍IN_PROGRESS；MIG-05部分验证进行中；MIG-06未开始。
+
+### 第八十轮：MIG-05 Unified schema-v2 运行时兼容与Leader epoch floor保真
+
+- 对候选包格式升级至\`ch17-sqlite-unified-candidate-v2\`；旧v1因Leader epoch floor语义变化而被显式拒绝。
+- 旧Leader的identity和TTL key不恢复，但旧epoch必须在aggregate中持久：epoch>0时用固定marker（\`migration-epoch-floor / epoch / expires_at=0.0 / backend_lease_id=0\`）；epoch=0时保持leader=None。
+- Planner严格限定marker字段，不放宽为任意非空Leader。运行时只允许该marker的backend_lease_id=0，所有真实Leader仍需正Lease ID。
+- 完成runtime互操作测试：从已发布aggregate构造标准Admission/Coordinator runtime；验证已完成request重放拒绝、scope高水位和operation ledger保持、且不创建Admission Lease；正常claim路径自动将epoch提升至floor+1。
+- 本轮全部只在InMemory etcd fake上执行，真实三节点etcd故障演练留待MIG-06。
