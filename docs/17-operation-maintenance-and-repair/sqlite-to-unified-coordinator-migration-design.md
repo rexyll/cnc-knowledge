@@ -533,7 +533,7 @@ v4备份校验进一步要求Leader floor与command-Leader审计两张表必须�
 
 ### 15.15 第九十轮：Provider-native Revocable Grant / FENCE Barrier 本地参考实现
 
-新增`scripts/spare_parts_provider_revocable_grant.py`，采用独立域分离Ed25519签名命令；claims严格绑定Provider ID、tenant、scope、FENCE/ACTIVATE动作、grant ID、grant generation、Coordinator namespace、Leader ID/epoch/native Lease ID、Lease expiry和命令有效期。ACTIVATE额外绑定FENCE command envelope的SHA-256 digest。
+新增`scripts/spare_parts_provider_revocable_grant.py`，采用独立域分离Ed25519签名命令；claims严格绑定Provider ID、tenant、scope、FENCE/ACTIVATE动作、grant ID、grant generation、Coordinator namespace、Leader ID/epoch/native Lease ID、Lease expiry和命令有效期。ACTIVATE额外绑定FENCE command envelope的SHA-256 digest。Provider Grant命令/ACTIVE Grant的签名有效期最多300秒，且不得晚于Leader native Lease expiry；提前撤销Lease而Provider尚未收到FENCE时，残余旧Grant窗口有上限但不为零。
 
 Provider SQLite schema从v4升级到v6，新增：
 - `provider_scope_grants`：每个tenant/scope保存Coordinator Leader身份、Provider grant generation、grant ID、FENCED/ACTIVE状态、grant expiry、FENCE digest和ACTIVATE digest。
