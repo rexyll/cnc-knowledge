@@ -263,20 +263,98 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             expected_revision=activate.reserved_scope_revision,
         )
         active = self.authority.snapshot(self.key)
+        newer_fence = self.reserve_fence(
+            operation_id="newer-epoch-fence-for-regression",
+            expected_revision=active.revision,
+            leader_epoch=2,
+            leader_id="leader-b",
+            lease_id=2002,
+            lease_expiry=self.lease_expiry + 100.0,
+        )
+        self.confirm_fence(newer_fence)
+        fenced = self.authority.snapshot(self.key)
+        newer_activate = self.authority.reserve_activate(
+            operation_id="newer-epoch-activate",
+            key=self.key,
+            grant_id="grant-a",
+            command_digest=_digest("newer-epoch-activate-command"),
+            fence_command_digest=newer_fence.command_digest,
+            coordinator_namespace=self.namespace,
+            leader_id="leader-b",
+            leader_epoch=2,
+            native_lease_id=2002,
+            lease_expires_at_unix=self.lease_expiry + 100.0,
+            expected_revision=fenced.revision,
+        )
+        self.authority.confirm_provider_receipt(
+            operation_id=newer_activate.operation_id,
+            command_digest=newer_activate.command_digest,
+            provider_receipt_digest=_digest("newer-epoch-activate-receipt"),
+            expected_revision=newer_activate.reserved_scope_revision,
+        )
+        current = self.authority.snapshot(self.key)
 
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "below the external floor"):
             self.reserve_fence(
                 operation_id="old-epoch-fence",
-                expected_revision=active.revision,
-                leader_epoch=0,
+                expected_revision=current.revision,
+                leader_epoch=1,
+                leader_id="leader-a",
+                lease_id=1001,
             )
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "same Leader epoch"):
             self.reserve_fence(
                 operation_id="same-epoch-new-leader",
-                expected_revision=active.revision,
+                expected_revision=current.revision,
+                leader_epoch=2,
                 leader_id="leader-substitute",
+                lease_id=2003,
+                lease_expiry=self.lease_expiry + 100.0,
             )
         self.assertEqual(self.authority.snapshot(self.key).state, "ACTIVE")
+
+    def test_coordinator_namespace_cannot_change_even_with_a_newer_leader_epoch(self):
+        fence = self.reserve_fence()
+        self.confirm_fence(fence)
+        activate = self.activate()
+        active = self.authority.confirm_provider_receipt(
+            operation_id=activate.operation_id,
+            command_digest=activate.command_digest,
+            provider_receipt_digest=_digest("activate-receipt"),
+            expected_revision=activate.reserved_scope_revision,
+        )
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "namespace is immutable"):
+            self.authority.reserve_fence(
+                operation_id="namespace-change",
+                key=self.key,
+                grant_id="grant-a",
+                command_digest=_digest("namespace-change-command"),
+                coordinator_namespace="/cnc/migration/other-namespace/",
+                leader_id="leader-b",
+                leader_epoch=2,
+                native_lease_id=2002,
+                lease_expires_at_unix=self.lease_expiry + 100.0,
+                expected_revision=active.revision,
+            )
+
+    def test_activate_native_lease_expiry_cannot_regress_below_fence_snapshot(self):
+        fence = self.reserve_fence()
+        self.confirm_fence(fence)
+        snapshot = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "expiry cannot regress"):
+            self.authority.reserve_activate(
+                operation_id="activate-lease-regression",
+                key=self.key,
+                grant_id="grant-a",
+                command_digest=_digest("activate-lease-regression-command"),
+                fence_command_digest=fence.command_digest,
+                coordinator_namespace=self.namespace,
+                leader_id=self.leader_id,
+                leader_epoch=1,
+                native_lease_id=self.lease_id,
+                lease_expires_at_unix=self.lease_expiry - 1.0,
+                expected_revision=snapshot.revision,
+            )
 
     def test_same_leader_native_lease_expiry_cannot_regress_on_fence(self):
         fence = self.reserve_fence()
