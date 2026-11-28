@@ -130,7 +130,7 @@ class CandidateImporterTests(unittest.TestCase):
             "leader_id": "migration-epoch-floor",
             "epoch": 8,
             "expires_at": 0.0,
-            "backend_lease_id": 1,
+            "backend_lease_id": 0,
         })
         self.assertTrue(
             result["recovery_requirements"][
@@ -139,7 +139,7 @@ class CandidateImporterTests(unittest.TestCase):
         )
         self.assertEqual(
             result["recovery_requirements"]["leader_epoch_floor_backend_lease_id_sentinel"],
-            1,
+            0,
         )
         self.assertEqual(result["recovery_requirements"]["leader_epoch_floor"], 8)
         self.assertIsNone(result["recovery_requirements"]["external_fencing_floor"])
