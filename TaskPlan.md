@@ -1350,3 +1350,15 @@
 - Txn响应未知时只允许通过四个键全量逐字节读回确认，或在全部键均不存在且Coordinator binding仍一致时重试完全相同Txn；部分键、冲突值和无法确定结果一律隔离，不自动补写。
 - 测试覆盖成功消费、并发竞争仅一个成功、证据重放、Txn提交后响应丢失、提交前超时及相同Txn重试、Coordinator aggregate竞态、scope drift、部分ledger状态和生产namespace拒绝。
 - InMemoryEtcdV3Client仅为API/事务契约替身；本轮不连接真实etcd、不执行真实RBAC或多节点故障演练，也不证明Provider写冻结真正生效。
+
+
+### 第八十五轮任务计划：Provider-native 持久化写冻结门
+
+- 在现有 SQLite Fenced Provider 中增加Provider/tenant/scope绑定的持久化freeze generation表；数据库schema从v2升级到v3，旧v2数据库启动时执行加法迁移，创建冻结表并更新schema标识。
+- 新增独立Ed25519签名控制命令协议，命令严格绑定issuer、Provider ID、tenant、scope、FREEZE/UNFREEZE、freeze ID、generation和短有效期；命令必须通过Provider本地信任公钥与数据库key registry双重校验。
+- FREEZE/UNFREEZE按scope严格单调递增generation，每次只能推进+1；UNFREEZE必须匹配当前活动freeze ID；相同命令精确重放幂等，不同payload复用代次、旧代次、跳号、错误freeze ID和签名篡改全部拒绝。
+- 将冻结检查放进Provider现有BEGIN IMMEDIATE写事务，覆盖普通对象fenced PUT、multipart begin、part、complete；不允许在事务外先查冻结状态再写对象。
+- UNFREEZE后，所有新的fenced写证明必须携带当前Provider freeze generation；旧证明（缺失代次或代次不匹配）拒绝。读取保持可用；未fenced写和unfenced multipart abort继续拒绝。
+- 备份验证必须要求v3 schema和freeze table，备份/恢复准备保留冻结状态；缺失冻结表或旧schema备份不得被验证为可恢复。
+- 测试覆盖四类mutation阻断、签名/身份/有效期校验、代次单调性与重放、解除冻结后旧proof拒绝、同库事务竞态顺序、进程重启及backup/restore持久化。
+- 该实现只证明同机SQLite参考模型；真实Provider Gateway、云对象存储、KMS/HSM、远程控制API、IAM/RBAC和跨主机线性化尚未完成，不将此轮测试视为生产Provider冻结验收。
