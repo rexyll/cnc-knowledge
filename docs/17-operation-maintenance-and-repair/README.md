@@ -518,3 +518,17 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字节匹配才确认已提交；四个键全部不存在时，重新确认Coordinator binding后只重试完全相同的Txn；部分写入、冲突或持续未知均fail-closed/QUARANTINE，不自动修补。
 
 **证据边界：** 自动化测试使用 `EtcdV3CoordinatorAuthorityStore` 与 `InMemoryEtcdV3Client`，证明当前客户端Txn映射、CAS竞态和未知结果分类契约；它不提供etcd Raft/Quorum、磁盘耐久性、跨主机故障或真实RBAC保证。namespace虽然限定为isolated路径，但真实部署仍须用一次性临时集群及服务端最小权限RBAC。SQLite ledger仍只适用于同机参考，生产多实例需真实etcd验证；Provider实际对象/multipart写路径是否真正冻结仍未验证，授权输出继续全部为false。
+
+
+## CH17-T006 Provider-native持久化写冻结门（第八十五轮）
+
+新增 `scripts/spare_parts_provider_write_freeze_gate.py`，定义与既有fencing proof分离的Ed25519签名控制命令协议。命令绑定issuer、Provider ID、tenant、scope、动作、freeze ID、generation和短有效期；Provider验证签名后，还在同一个SQLite控制事务中检查数据库可信key registry、算法、key fingerprint、状态和有效时间。
+
+扩展 `scripts/spare_parts_provider_sqlite_fenced.py`：
+- 新增可选Provider identity配置；未配置identity的实例不能应用freeze命令。
+- 数据库schema从v2升级到v3，新增 `provider_write_freeze_scopes`，保存每个tenant+scope的单调generation、freeze ID、FROZEN/OPEN状态、命令摘要和更新时间。已有v2数据库启动时执行加法迁移。
+- 新增 `apply_write_freeze_command()` 和只读 `write_freeze_state()`。每个scope只接受连续的下一代命令；同一精确命令可幂等重放；UNFREEZE必须匹配当前活动freeze ID。旧代次、跳号、相同generation不同内容、错误freeze ID、错误Provider/tenant和无效签名均拒绝。
+- 普通对象fenced PUT、multipart begin、part、complete均在现有 `BEGIN IMMEDIATE` 事务中检查冻结状态。FROZEN立即拒绝；UNFREEZE后写proof必须携带当前 `provider_freeze_generation`，旧proof无法复用。只读路径保持可用，unfenced mutation仍不可用。
+- Provider备份校验要求v3 schema和冻结表，备份/恢复准备会保留freeze generation和状态；缺少冻结表的旧v2备份不被当作可验证恢复输入。
+
+**边界：** 这证明的是同机SQLite写事务中的Provider参考门禁与事务排序，不是云对象存储或远程Provider服务的冻结保证。签名控制命令目前由本地Provider类接收，尚无远程Gateway、KMS/HSM、服务端RBAC或跨主机CAS。独立的Provider freeze attestation验证器仍将 `provider_write_freeze_enforced=false`，因为它没有查询真实Provider部署状态。
