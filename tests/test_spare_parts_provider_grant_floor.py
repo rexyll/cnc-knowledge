@@ -240,7 +240,10 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
     def test_activate_requires_confirmed_fence_and_exact_fence_digest(self):
         self.reserve_fence()
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "requires a confirmed FENCED"):
-            self.activate(operation_id="activate-before-fence")
+            self.activate(
+                operation_id="activate-before-fence",
+                fence_command_digest=_digest("unconfirmed-fence"),
+            )
         fence = self.authority.operation_status("fence-op-1")
         self.assertEqual(fence.state, "PENDING")
 
