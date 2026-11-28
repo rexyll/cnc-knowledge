@@ -1530,7 +1530,7 @@
 - 新增独立Ed25519 Provider grant命令协议，严格签署FENCE/ACTIVATE命令，绑定Provider、tenant、scope、grant ID、代次、Coordinator namespace、Leader epoch/native Lease及期限。
 - FENCE将scope状态推进为FENCED；不同Leader/Lease身份要求Leader epoch严格高于已观察epoch，同epoch仅允许完全相同Leader/Lease撤销当前ACTIVE grant，已FENCED状态拒绝重复推进。ACTIVATE只有在当前scope处于FENCED、完整Leader/Lease/grant身份一致，且command digest精确引用已持久化FENCE receipt时才可执行。
 - Provider schema升级至v5，新增`provider_scope_grants`和`provider_grant_commands`；v2/v3/v4升级通过`CREATE TABLE IF NOT EXISTS`加法迁移，backup validator要求新表存在。
-- 新增可选`require_revocable_grant` mutation gate。启用时必须配置Provider ID、Ed25519命令信任公钥和在线Coordinator Leader checker；四个实际写入口必须通过签名proof绑定grant ID和generation，并在同一Provider BEGIN IMMEDIATE事务中检查ACTIVE、未过期及代次匹配。在线Leader校验是FENCE/ACTIVATE命令的前置条件，但不消除跨系统TOCTOU。
+- 新增可选`require_revocable_grant` mutation gate。启用时必须配置Provider ID、Ed25519命令信任公钥和在线Coordinator Leader checker；四个实际写入口必须通过签名proof绑定grant ID和generation，并在同一Provider BEGIN IMMEDIATE事务中检查ACTIVE、未过期及代次匹配，且当前FENCE receipt的Provider ID必须一致。Grant应用API禁止调用方传入时钟；命令在获取写锁后、在线Leader读取后重新验证expiry。在线Leader校验是FENCE/ACTIVATE命令的前置条件，但不消除跨系统TOCTOU。
 - FENCE与mutation竞争同一SQLite写事务域：旧mutation若先取得并提交事务，则在线性化顺序上先于FENCE；FENCE先提交后，旧grant写入被拒绝。
 - FENCE/ACTIVATE精确命令digest提供历史receipt读回；提交后响应丢失按原digest恢复，不重复推进generation。
 - 测试覆盖Grant模式缺失配置拒绝、在线Leader inactive fail-closed、FENCE receipt前置及ACTIVATE签发时间不早于FENCE持久回执、新epoch撤销旧grant、同Leader/Lease主动轮换、对象与multipart四类mutation、提交后响应丢失及backup/restore回执恢复、并发事务顺序、schema v2/v3/v4迁移。
