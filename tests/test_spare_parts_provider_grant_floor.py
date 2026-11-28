@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import sqlite3
 import tempfile
 import threading
 import time
@@ -433,6 +434,169 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         with self.assertRaises(ProviderGrantFloorRevisionRegression):
             self.authority.snapshot(self.key, minimum_revision=99)
         self.assertEqual(self.authority.snapshot(self.key, minimum_revision=2).revision, 2)
+
+
+    def test_floor_persists_verified_receipt_signer_and_trust_metadata(self):
+        reservation = self.reserve_fence()
+        receipt = self.receipt_envelope(reservation)
+        applied_at = receipt["receipt"]["applied_at_unix"]
+        self.confirm_receipt(reservation, receipt)
+        operation = self.authority.operation_status(reservation.operation_id)
+        self.assertEqual(operation.receipt_signer_key_id, "provider-receipt-a")
+        self.assertEqual(
+            operation.receipt_key_fingerprint,
+            hashlib.sha256(self.receipt_public_key).hexdigest(),
+        )
+        self.assertEqual(operation.receipt_trust_revision, 1)
+        self.assertEqual(operation.provider_applied_at_unix, applied_at)
+
+    def test_unknown_provider_receipt_key_is_rejected_without_advancing_floor(self):
+        reservation = self.reserve_fence()
+        receipt = self.receipt_envelope(reservation)
+        receipt["signature"]["key_id"] = "unknown-provider-key"
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "not trusted"):
+            self.confirm_receipt(reservation, receipt)
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "FENCE_PENDING")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_receipt_claim_provider_identity_mismatch_is_rejected_without_floor_advance(self):
+        reservation = self.reserve_fence()
+        receipt = self.receipt_envelope(reservation, provider_id="provider-other")
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "signer identity"):
+            self.confirm_receipt(reservation, receipt)
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "FENCE_PENDING")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_retiring_provider_key_accepts_pre_retirement_receipt_but_rejects_new_receipts(self):
+        reservation = self.reserve_fence()
+        now = time.time()
+        old_receipt = self.receipt_envelope(
+            reservation,
+            command_issued_at_unix=now - 2.0,
+            command_expires_at_unix=now + 20.0,
+            applied_at_unix=now - 1.0,
+        )
+        retired = self.authority.admin_set_provider_receipt_key_status(
+            provider_id="provider-a", key_id="provider-receipt-a", status="RETIRING"
+        )
+        self.assertGreater(retired["trust_revision"], 1)
+        self.confirm_receipt(reservation, old_receipt)
+        self.assertEqual(self.authority.snapshot(self.key).state, "FENCED")
+
+        next_reservation = self.reserve_fence(
+            operation_id="retiring-key-new-receipt",
+            expected_revision=self.authority.snapshot(self.key).revision,
+            leader_epoch=2, leader_id="leader-b", lease_id=2002,
+            lease_expiry=self.lease_expiry + 100.0,
+        )
+        retirement_time = retired["retiring_effective_at"]
+        new_receipt = self.receipt_envelope(
+            next_reservation,
+            command_issued_at_unix=retirement_time + 0.2,
+            command_expires_at_unix=retirement_time + 30.0,
+            applied_at_unix=retirement_time + 0.3,
+        )
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "stopped issuing"):
+            self.confirm_receipt(next_reservation, new_receipt)
+        self.assertEqual(self.authority.snapshot(self.key).state, "FENCE_PENDING")
+
+    def test_revoked_provider_key_rejects_post_revocation_receipt_without_floor_advance(self):
+        reservation = self.reserve_fence()
+        revoked = self.authority.admin_set_provider_receipt_key_status(
+            provider_id="provider-a",
+            key_id="provider-receipt-a",
+            status="REVOKED",
+            revocation_effective_at=time.time() - 1.0,
+            revocation_reason="synthetic key compromise test",
+        )
+        receipt = self.receipt_envelope(
+            reservation,
+            command_issued_at_unix=revoked["revocation_effective_at"] + 0.1,
+            command_expires_at_unix=revoked["revocation_effective_at"] + 30.0,
+            applied_at_unix=revoked["revocation_effective_at"] + 0.2,
+        )
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "stopped issuing"):
+            self.confirm_receipt(reservation, receipt)
+        self.assertEqual(self.authority.snapshot(self.key).state, "FENCE_PENDING")
+
+    def test_schema_v1_migration_preserves_unverified_legacy_digest_without_trusting_it(self):
+        legacy_path = self.base / "legacy-floor-v1.sqlite"
+        connection = sqlite3.connect(legacy_path)
+        try:
+            connection.executescript(
+                """
+                CREATE TABLE provider_grant_floor_meta (
+                    singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+                    schema_version INTEGER NOT NULL,
+                    authority_revision INTEGER NOT NULL
+                );
+                INSERT INTO provider_grant_floor_meta(singleton,schema_version,authority_revision)
+                VALUES(1,1,7);
+                CREATE TABLE provider_grant_floor_operations (
+                    operation_id TEXT PRIMARY KEY,
+                    provider_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    scope TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    grant_id TEXT NOT NULL,
+                    generation INTEGER NOT NULL,
+                    command_digest TEXT NOT NULL,
+                    fence_command_digest TEXT,
+                    coordinator_namespace TEXT NOT NULL,
+                    leader_id TEXT NOT NULL,
+                    leader_epoch INTEGER NOT NULL,
+                    native_lease_id INTEGER NOT NULL,
+                    lease_expires_at_unix REAL NOT NULL,
+                    state TEXT NOT NULL,
+                    provider_receipt_digest TEXT,
+                    reserved_scope_revision INTEGER NOT NULL,
+                    confirmed_scope_revision INTEGER,
+                    authority_revision INTEGER NOT NULL
+                );
+                """
+            )
+            connection.execute(
+                """INSERT INTO provider_grant_floor_operations(
+                    operation_id,provider_id,tenant_id,scope,action,grant_id,generation,
+                    command_digest,fence_command_digest,coordinator_namespace,leader_id,
+                    leader_epoch,native_lease_id,lease_expires_at_unix,state,
+                    provider_receipt_digest,reserved_scope_revision,confirmed_scope_revision,
+                    authority_revision
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    "legacy-confirmed-op","provider-a","tenant-a","cnc/ch17/backup-reference-001",
+                    "FENCE","grant-legacy",1,_digest("legacy-command"),None,self.namespace,
+                    self.leader_id,1,self.lease_id,self.lease_expiry,"CONFIRMED",
+                    _digest("legacy-unverified-receipt"),1,2,7,
+                ),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+
+        migrated = SQLiteProviderGrantFloorAuthority(legacy_path)
+        operation = migrated.operation_status("legacy-confirmed-op")
+        self.assertEqual(operation.state, "CONFIRMED")
+        self.assertEqual(operation.provider_receipt_digest, _digest("legacy-unverified-receipt"))
+        self.assertIsNone(operation.receipt_signer_key_id)
+        self.assertIsNone(operation.receipt_key_fingerprint)
+        self.assertIsNone(operation.receipt_trust_revision)
+        self.assertIsNone(operation.provider_applied_at_unix)
+        with sqlite3.connect(legacy_path) as check:
+            version = check.execute(
+                "SELECT schema_version FROM provider_grant_floor_meta WHERE singleton=1"
+            ).fetchone()[0]
+            trust_revision = check.execute(
+                "SELECT trust_revision FROM provider_grant_floor_meta WHERE singleton=1"
+            ).fetchone()[0]
+        self.assertEqual(version, 3)
+        self.assertEqual(trust_revision, 0)
 
     def test_database_permissions_are_restricted(self):
         self.assertEqual(self.database.stat().st_mode & 0o777, 0o600)
