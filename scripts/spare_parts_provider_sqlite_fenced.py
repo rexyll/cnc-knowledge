@@ -1235,6 +1235,8 @@ class SQLiteFencedObjectStorageProvider:
             raise FencingAttestationRejectedError(
                 "write proof is not bound to the current Provider freeze generation"
             )
+        # Deterministic synchronization point used by the local race fixture.
+        self._inject("after_provider_write_freeze_check")
 
     @staticmethod
     def _validate_fenced_arguments(
