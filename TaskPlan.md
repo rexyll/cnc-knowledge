@@ -1362,3 +1362,11 @@
 - 备份验证必须要求v3 schema和freeze table，备份/恢复准备保留冻结状态；缺失冻结表或旧schema备份不得被验证为可恢复。
 - 测试覆盖四类mutation阻断、签名/身份/有效期校验、代次单调性与重放、解除冻结后旧proof拒绝、同库事务竞态顺序、进程重启及backup/restore持久化。
 - 该实现只证明同机SQLite参考模型；真实Provider Gateway、云对象存储、KMS/HSM、远程控制API、IAM/RBAC和跨主机线性化尚未完成，不将此轮测试视为生产Provider冻结验收。
+
+
+### 第八十六轮完成状态（2026-11-28）
+
+- **状态：** DONE（Provider freeze命令持久化收据及本地未知响应恢复查询；仅SQLite参考实现）。
+- **实现：** 新增 provider_write_freeze_commands，以完整签名envelope SHA-256为主键；收据与scope状态推进同事务提交。任意历史精确命令重放只返回ALREADY_APPLIED及历史结果，不会覆盖当前更高generation状态。
+- **恢复查询：** 新增只读 write_freeze_command_status()，分别返回历史命令结果和当前scope状态；收据包含在数据库backup/restore中。
+- **限制：** 未查到本地receipt不能证明远程未知请求未提交；远程Provider仍需线性一致receipt查询、可靠命令分发和多副本一致性。未连接真实Provider/KMS/etcd，未进行生产迁移或cutover。
