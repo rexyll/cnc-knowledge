@@ -99,3 +99,16 @@ Provider在SQLite事务内重查trusted_fencing_keys，支持ACTIVE/RETIRING/REV
 **验收：** CI Run 45758028329两个必需Job均success；全库248项unittest、CH12 143项测试通过；strict lint 0 errors/5 warnings；Provider CLI self-check PASS（Artifact 15087973420）。
 
 **保留限制：** HMAC秘密同时注入Coordinator及Provider本地进程，不是公钥验签；已签proof在lease release后仍可使用到expires_at，默认最多15秒。生产远端Provider应采用Coordinator/KMS私钥+Provider公钥的非对称签名，并实现在线撤销、时钟同步及KMS/HSM；本地SQLite仍不支持多主机。生产备份关闭。
+
+
+## 9. 第八十五轮：Provider-native写冻结门与generation fencing
+
+本地SQLite Provider schema升级到v3，新增 `provider_write_freeze_scopes`，按tenant+fencing_scope持久化generation、freeze ID、FROZEN/OPEN状态、命令摘要和更新时间。已有v2数据库在Provider启动时执行加法迁移；备份验证要求v3 schema及冻结表，避免恢复不含冻结代次的旧备份。
+
+新增 `scripts/spare_parts_provider_write_freeze_gate.py`。控制命令采用独立Ed25519签名域，claims固定包含issuer、Provider ID、tenant、scope、FREEZE/UNFREEZE、freeze ID、generation及短有效期。Provider应用命令时同时核对运行时公钥、数据库trusted Ed25519 key registry、key fingerprint和key状态。
+
+FREEZE/UNFREEZE按scope严格连续+1代次推进。UNFREEZE必须匹配当前FROZEN状态及freeze ID；同一命令摘要的相同代次重放返回ALREADY_APPLIED；同代次不同内容、旧代次、跳号和不匹配freeze ID均拒绝。UNFREEZE后，所有mutation proof必须携带当前 `provider_freeze_generation`，旧proof（未携带代次或旧代次）不能恢复写入。
+
+Provider的对象PUT、multipart begin、part、complete四个fenced入口均在现有 `BEGIN IMMEDIATE` 数据库事务中读取冻结表并检查proof代次。冻结状态与Provider对象/分块提交因此由同一个SQLite写锁串行化：已先取得写事务的mutation在线性顺序上先于freeze命令；freeze命令先提交时，后续mutation看到FROZEN并拒绝。读取不受冻结影响；未fenced写和unfenced multipart abort仍明确拒绝。
+
+**证据限制：** 本协议与实现只适用于同机SQLite参考Provider。它不证明远程Provider Gateway、云对象存储、KMS/HSM、IAM/RBAC或跨主机分布式事务；本地进程和数据库文件仍是信任边界。freeze attestation validator没有连接此Provider实例，因此其 `provider_write_freeze_enforced` 输出仍必须为false，不能据此批准生产cutover。
