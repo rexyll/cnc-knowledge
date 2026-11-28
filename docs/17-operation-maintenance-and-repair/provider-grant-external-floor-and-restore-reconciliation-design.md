@@ -104,7 +104,7 @@
 
 ## 8. 当前状态与明确限制
 
-- 当前 Provider SQLite schema v6 本地 Grant 状态机已实现；命令回执持久化规范化完整签名envelope与签名公钥材料，备份校验重算digest并重新验证Ed25519签名。schema v5历史回执缺少原始envelope，迁移后仍为不可验证状态。
+- Provider SQLite 本地 Grant 状态机已在第九十六轮升级至 schema v7；命令回执与 Provider 独立 signed Receipt 分列持久化，FENCE/ACTIVATE同事务生成回执，按 command digest 精确查询，备份校验完整 Provider Receipt 签名链。旧 schema v5 历史回执缺少原始envelope，迁移后仍为不可验证状态。
 - 通用 Restore 已明确拒绝含有 Grant 历史的备份；此门禁不得移除，直到本设计的独立 floor authority 与专用 Restore 流程实现并通过测试。
 - 本文不实现 ProviderGrantFloorAuthority adapter，不修改 Unified schema-v2 生产 authority，不连接真实 etcd/Provider/KMS/HSM，不修改 IAM/RBAC，不执行生产迁移或 Cutover。
 - FENCE/ACTIVATE command 与 ACTIVE Grant 的有效期上限在本地参考实现中为300秒，且不能晚于Coordinator native Lease expiry。提前撤销Lease而Provider未及时收到FENCE时，旧Grant仍可能在剩余有效期内被接受；该残余窗口有上限但非零，不能宣称瞬时撤销。
@@ -181,3 +181,79 @@ Floor状态先预留、Provider本地事务再提交、最后外部确认，是�
 - 测试运行链接：[Knowledge Quality Run 46152883043](https://github.com/rexyll/cnc-knowledge/actions/runs/46152883043)。
 
 本地 SQLite Floor 依然不能识别自身数据库被恢复到旧快照；`minimum_revision` 只有在调用者持有该数据库备份域外的可信 revision checkpoint 时才有回滚检测意义。Provider 回执仍仅以摘要存入 Floor adapter，adapter 本身尚未验证回执签名或来源。该缺口列入下一轮设计任务。
+
+
+## 11. 第九十七轮：Floor Coordinator Signed Command 来源认证（schema v5）
+
+第九十七轮将 Coordinator command authentication 加入外部 Floor 本地参考模型。此前 Round95/96已能验证 Provider 独立签名 Receipt，但 Floor 的 reservation仍接受调用方直接提供command digest与claims，因此Provider Receipt虽可证明Provider签署了某组claim，却不能证明Floor预留的claim本身来自受信Coordinator。
+
+### 11.1 Coordinator trust registry
+
+Floor schema从v4升级至v5，新增 `provider_grant_floor_coordinator_keys` 表，以 (`issuer_id`, `key_id`) 为主键保存：
+
+- Ed25519 public key 的 Base64副本及SHA-256 fingerprint；
+- ACTIVE / RETIRING / REVOKED；
+- not_before / not_after；
+- retiring_effective_at / revocation_effective_at / revocation_reason；
+- trust_revision与created_at。
+
+新增本地数据库owner管理API `admin_register_coordinator_command_key()` 与 `admin_set_coordinator_command_key_status()`。Coordinator command envelope中携带的任何公钥都不会自动加入trust registry。撤销和退役状态只能向前推进，不能重新激活；轮换通过注册新key ID/public key完成。
+
+当前策略对新reservation只接受ACTIVE且当前时间与command签发时间均符合key有效期的key；RETIRING/REVOKED key不能创建新operation。此前已经成功认证并持久化的operation会保存signer key ID、fingerprint和trust revision，作为该reservation当时的认证审计材料；exact operation replay只返回既有operation，不重新分配generation或推进revision。
+
+### 11.2 Signed command reservation API
+
+Floor新增：
+
+- `reserve_fence_from_command(operation_id, key, command_envelope, expected_revision)`
+- `reserve_activate_from_command(operation_id, key, command_envelope, expected_revision)`
+
+其中调用方必须传入预期目标 `ProviderGrantScopeKey`。Floor不会仅从命令自报的Provider/Tenant/scope来决定写入哪个scope；它将已验签claims与调用方选择的目标key逐字段比较，防止一个在Coordinator trust registry中有效的命令被调用方用来申请另一个Provider/Tenant/scope的Floor状态。
+
+新API接受Coordinator原始signed envelope（object、UTF-8 bytes或JSON text），JSON text parser拒绝重复object key和非有限数值。Floor使用Coordinator命令签名模块相同的canonical JSON规则重算完整envelope SHA-256，再从issuer/key ID查询独立Coordinator key registry并执行Ed25519验签。验证内容包括：
+
+- issuer、key ID、key fingerprint、algorithm、status及有效期；
+- Provider ID、Tenant ID、scope与明确传入的目标ProviderGrantScopeKey；
+- FENCE/ACTIVATE action、Grant ID、generation；
+- Coordinator namespace、Leader ID/epoch、native Lease ID与Lease expiry；
+- command issued_at/expires_at、native Lease上限及精确FENCE command digest；
+- canonical signed-envelope digest与reservation command digest必须一致。
+
+ACTIVATE除了验证签名和claims，还必须匹配Floor当前FENCED scope的Grant、Leader/native Lease identity及最近一次已确认FENCE command digest。命令中的generation必须恰好等于Floor状态机计算的下一generation，调用方不能选择或跳过代次。
+
+### 11.3 同事务验证与Strict migration
+
+Coordinator key lookup、签名验证、claims binding、当前scope状态/CAS和pending operation创建均在同一个SQLite `BEGIN IMMEDIATE` 事务内完成。所有校验成功之前，不会创建scope记录、不占用operation ID、不推进scope revision或authority revision。
+
+Floor metadata增加 `coordinator_command_auth_required`：
+- 新Floor默认strict=1；
+- v1–v4旧库依序迁移至v5，并默认strict=1；
+- 只有显式创建的本地兼容/测试库才能用 `allow_legacy_unsigned_reservations=True` 开启legacy API；
+- 已经strict的Floor数据库不能被重新打开为legacy模式；
+- legacy raw `reserve_fence()` / `reserve_activate()` 在strict模式下拒绝调用方直接提交digest/claims。
+
+Operation表新增Coordinator signer key ID、key fingerprint、trust revision字段。迁移历史操作保留原记录，但不补造Coordinator签名来源。strict mode下，迁移进来的旧PENDING operation如果缺少这些Coordinator认证元数据，`confirm_provider_receipt()` 不能只凭一个Provider签名Receipt将其追认为已认证reservation；已经CONFIRMED的历史operation只保留原有历史结果，不自动升级来源等级。
+
+### 11.4 测试与验收
+
+Floor测试使用独立合成Coordinator Ed25519 key，覆盖：
+
+- 正常FENCE/ACTIVATE signed-envelope reservation与Provider Receipt确认；
+- 命令签名篡改、未知issuer/key、wrong key/fingerprint和重复JSON key；
+- Provider/Tenant/scope错配，generation不等于Floor下一代；
+- native Lease/command validity边界及FENCE digest错误；
+- ACTIVE、RETIRING、REVOKED与key rotation；
+- exact operation replay与signer audit metadata；
+- strict默认拒绝裸digest/claims、strict不能降级；
+- v1→v5迁移、旧历史不补造签名来源、旧PENDING operation不能通过新确认路径；
+- 失败时scope revision与authority revision不推进；
+- Provider真实本地FENCE/ACTIVATE签名回执与Floor双信任域端到端集成。
+
+[Knowledge Quality Run 46159157703](https://github.com/rexyll/cnc-knowledge/actions/runs/46159157703) 在代码测试提交上两个必需Job均success：全库757项测试运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings；结构/数据检查0 errors。最终完整文档同步仍以对应文档提交的CI为准。
+
+### 11.5 保留的生产边界
+
+此实现仍是单机SQLite参考模型，不是etcd linearizable KV/Txn、Raft quorum、多主机authority或生产Coordinator trust plane。Coordinator key registry由本地数据库owner API管理，不含生产审批、多节点安全发布、KMS/HSM或硬件密钥隔离。Floor文件及其trust registry仍不能识别自身旧快照回滚，必须依赖Floor备份域外可信checkpoint。
+
+没有连接真实Coordinator/etcd/Provider/object storage/KMS/HSM/IAM/RBAC，没有修改Unified schema-v2 production authority。Provider receipt authentication、Coordinator command source authentication和跨系统mutation atomicity仍是不同保证，当前参考代码不把其中任何一个夸大为生产分布式原子授权。Grant-aware Restore仍未实现，所有包含Provider Grant历史的通用Restore继续fail-closed；不执行候选导入、Restore、应用激活或Cutover。
+
