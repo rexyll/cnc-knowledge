@@ -1607,10 +1607,14 @@
 
 ### 第九十七轮：外部 Floor Coordinator Grant Command 来源认证
 
-- Floor reserve API目前仍接受调用方传入的command digest和独立claims字段；虽然Provider Receipt可证明Provider对该digest执行了操作，但Floor自身尚未证明该Reservation claims来自受信Coordinator签名命令。
-- 新增Coordinator Ed25519 key trust registry，绑定issuer/key ID/public-key fingerprint、有效期、ACTIVE/RETIRING/REVOKED及trust revision；不可从command envelope自动信任其自带key。
-- reserve API迁移为接收原始Coordinator Grant command envelope；Floor自行验签并提取Provider/tenant/scope/action/Grant/generation/namespace/Leader/native Lease/issue-expiry/FENCE digest，按原Coordinator canonical bytes重算command digest。
-- 对generation/epoch、native Lease、namespace和ACTIVATE→FENCE chain做与当前Floor状态的精确比较；裸摘要和caller-supplied claims不再作为strict路径。
-- 覆盖命令签名篡改、身份错配、未知/撤销key、命令时间窗/Lease、generation/epoch回退、错误FENCE digest、并发CAS、失败revision不前进和旧schema迁移。
-- 仅本地SQLite和合成Coordinator Ed25519 key；不连接生产etcd/Coordinator/Provider/KMS/HSM，不改变Unified authority/RBAC，不解除Grant历史Restore fail-closed，不执行Cutover。
-- **状态：** TODO。
+- 外部 Floor schema 由 v4 升级至 v5，新增 Coordinator Ed25519 key registry（issuer/key ID/public key/fingerprint、ACTIVE/RETIRING/REVOKED、有效期、退役/撤销 effective time 与 reason、trust revision），并在 Floor metadata 保存 `coordinator_command_auth_required`。
+- 新建 Floor 默认启用严格 Coordinator command authentication；v1–v4 历史数据库迁移到 v5 后同样默认 strict。原 `reserve_fence()` / `reserve_activate()` 只保留为显式 `allow_legacy_unsigned_reservations=True` 的本地兼容/测试路径，strict DB 不能降级。
+- 新增 `admin_register_coordinator_command_key()` 与 `admin_set_coordinator_command_key_status()`，通过显式本地 owner 控制入口管理 key；command envelope 不得自带公钥建立信任。ACTIVE key 可签发新 reservation；RETIRING/REVOKED key 不能建立新的 reservation；已接受 operation 保留 signer ID/fingerprint/trust revision 作为历史审计材料。
+- 新增 `reserve_fence_from_command(operation_id, key, command_envelope, expected_revision)` 与 `reserve_activate_from_command(...)`。`key` 是调用方明确选择的 Provider/Tenant/scope 目标上下文；Floor 对 signed claims 做精确身份绑定，不允许 signed command 自行切换目标 scope。
+- Floor 在同一 `BEGIN IMMEDIATE` 事务内解析/验签 Coordinator Ed25519 signed envelope，拒绝重复 JSON key，重算完整 canonical command SHA-256，检查 issuer/key fingerprint/lifecycle/time window、Provider/Tenant/scope、FENCE/ACTIVATE、Grant ID、generation、namespace、Leader epoch/native Lease、command issued/expiry 和 FENCE digest。命令 generation 必须正好等于下一 Floor generation，ACTIVATE 必须引用最近一次已确认 FENCE。
+- operation 持久化 Coordinator signer key ID/fingerprint/trust revision。签名未知/撤销/篡改、身份不匹配、generation/Lease/window/CAS冲突均 fail-closed；签名验证及全部 claims 匹配完成前不会推进 scope revision 或 authority revision。
+- strict 模式下历史 v1–v4 的 PENDING operation 若无 Coordinator signer audit metadata，不允许仅凭 Provider Receipt 被追认；已确认历史记录继续保留原值，不自动补造认证来源。
+- Provider Receipt confirm 仍必须验证 Round95 独立 Provider signed Receipt；Provider→Floor 端到端测试现已先注册两套独立 Coordinator/Provider 公钥，再使用 Provider 真实 FENCE/ACTIVATE signed Receipt 推进 Floor。
+- 测试覆盖 Coordinator 签名、未知/撤销 key、key rotation、重复 JSON key、跨 Provider/Tenant/scope、wrong generation、命令时间/native Lease、裸 claims 拒绝、strict no-downgrade、v1→v5 migration、legacy PENDING fail-closed、CAS/revision 不前进及 Provider→Floor E2E。
+- 仅本地 SQLite 和合成 Ed25519 key；没有生产 Coordinator/etcd/Provider/KMS/HSM/IAM/RBAC 或多节点 trust plane。Grant-aware Restore 仍未实现，通用 Restore 含 Grant 历史继续 fail-closed。
+- **状态：** IN_PROGRESS；等待代码与完整文档同步的主分支 Knowledge Quality CI 两个必需 Job 均成功后 DONE。
