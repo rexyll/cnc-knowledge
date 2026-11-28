@@ -1203,7 +1203,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
 
         backup = self.base / "provider-freeze-backup.sqlite"
         report = reopened.backup_to(backup)
-        self.assertEqual(report["schema_version"], 3)
+        self.assertEqual(report["schema_version"], 4)
         restored_path = self.base / "provider-freeze-restored.sqlite"
         restore_report = reopened.restore_to_new_database(
             backup, restored_path, external_fencing_floor=0,
@@ -1237,8 +1237,36 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "3")
+        self.assertEqual(version, "4")
         self.assertIn("provider_write_freeze_scopes", tables)
+        self.assertIn("provider_write_freeze_commands", tables)
+        self.assertIn("provider_write_freeze_leader_floors", tables)
+        self.assertIn("provider_write_freeze_command_leaders", tables)
+
+    def test_schema_v3_provider_database_adds_leader_epoch_floors(self):
+        with sqlite3.connect(self.database) as connection:
+            connection.execute("DROP TABLE provider_write_freeze_leader_floors")
+            connection.execute("DROP TABLE provider_write_freeze_command_leaders")
+            connection.execute(
+                "UPDATE provider_meta SET value='3' WHERE key='schema_version'"
+            )
+        migrated = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertIsNone(migrated.write_freeze_state(SCOPE))
+        with sqlite3.connect(self.database) as connection:
+            version = connection.execute(
+                "SELECT value FROM provider_meta WHERE key='schema_version'"
+            ).fetchone()[0]
+            tables = {
+                row[0] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            }
+        self.assertEqual(version, "4")
+        self.assertIn("provider_write_freeze_leader_floors", tables)
+        self.assertIn("provider_write_freeze_command_leaders", tables)
 
     def test_write_transaction_and_freeze_command_have_one_sqlite_order(self):
         checked = threading.Event()
