@@ -395,6 +395,7 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Added `scripts/spare_parts_provider_revocable_grant.py`: domain-separated Ed25519 FENCE/ACTIVATE command envelope and strict claims validation.
 - Extended `scripts/spare_parts_provider_sqlite_fenced.py`: Provider schema v5; additive grant state and durable command receipt tables; FENCE requires a strictly newer Coordinator Leader epoch; ACTIVATE requires an exact persisted FENCE receipt and matching namespace/Leader/Lease/grant identity.
 - Added optional `require_revocable_grant=True`. When enabled, object PUT and multipart begin/part/complete proofs must include signed Grant ID/generation; the check occurs in each actual Provider BEGIN IMMEDIATE mutation transaction.
+- FENCE permits same-epoch self-revocation only when the exact same Leader ID/native Lease remains current and ACTIVE; an identity change still requires a strictly higher epoch. FENCE IDs cannot be reused, FENCED scopes cannot be fenced repeatedly, and same-epoch Lease expiry cannot regress. Added a same-Leader grant rotation test.
 - Added receipt lookup by exact envelope SHA-256, including lost-response recovery without reapplying a generation.
 - Extended Provider tests for missing FENCE receipt, activation, newer-epoch revocation of the old grant, all four mutation entrypoints, post-commit response loss, transaction ordering, and v2/v3 additive schema migration.
 
