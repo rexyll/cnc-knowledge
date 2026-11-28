@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from scripts.spare_parts_provider_grant_floor import (
+    ProviderGrantFloorError,
     ProviderGrantScopeKey,
     SQLiteProviderGrantFloorAuthority,
 )
@@ -24,7 +25,6 @@ from scripts.spare_parts_provider_grant_floor_checkpoint import (
     ProviderGrantFloorCheckpointMismatch,
     ProviderGrantFloorCheckpointMissing,
     ProviderGrantFloorCheckpointUncertain,
-    ProviderGrantFloorCheckpointError,
 )
 from scripts.spare_parts_provider_grant_receipt import (
     CLAIMS_FORMAT as RECEIPT_CLAIMS_FORMAT,
@@ -295,7 +295,7 @@ class CheckpointedProviderGrantFloorTests(unittest.TestCase):
         bad = self._command(
             "FENCE", 1, fence_digest="1" * 64
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(ProviderGrantFloorError):
             self.floor.reserve_fence_from_command(
                 operation_id="bad-checkpoint-command",
                 key=self.key,
@@ -335,7 +335,7 @@ class CheckpointedProviderGrantFloorTests(unittest.TestCase):
             guard.snapshot(self.key)
 
     def test_external_checkpoint_rollback_is_detected(self):
-        current = self.floor.verify_checkpoint()
+        self.floor.verify_checkpoint()
         self.store._checkpoint = self.initial
         with self.assertRaises(ProviderGrantFloorCheckpointMismatch):
             self.floor.snapshot(self.key)
