@@ -382,3 +382,25 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - This round is design only. No grant/FENCE writer, real etcd/Provider/KMS/HSM integration, RBAC change, production namespace access, candidate import, application activation or cutover occurred.
 - MIG-04 remains IN_PROGRESS; MIG-05 remains IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED.
 - Production Unified schema-v2 remains the sole authority; ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`.
+
+
+## CNC Knowledge Base — Round 90（Provider grant/FENCE 本地参考实现进行中）
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: implement a same-host SQLite Provider reference for Provider-native revocable grants and FENCE barrier.
+
+### Code changes
+
+- Added `scripts/spare_parts_provider_revocable_grant.py`: domain-separated Ed25519 FENCE/ACTIVATE command envelope and strict claims validation.
+- Extended `scripts/spare_parts_provider_sqlite_fenced.py`: Provider schema v5; additive grant state and durable command receipt tables; FENCE requires a strictly newer Coordinator Leader epoch; ACTIVATE requires an exact persisted FENCE receipt and matching namespace/Leader/Lease/grant identity.
+- Added optional `require_revocable_grant=True`. When enabled, object PUT and multipart begin/part/complete proofs must include signed Grant ID/generation; the check occurs in each actual Provider BEGIN IMMEDIATE mutation transaction.
+- Added receipt lookup by exact envelope SHA-256, including lost-response recovery without reapplying a generation.
+- Extended Provider tests for missing FENCE receipt, activation, newer-epoch revocation of the old grant, all four mutation entrypoints, post-commit response loss, transaction ordering, and v2/v3 additive schema migration.
+
+### Validation / safety boundary
+
+- Code and test commits: grant command module `705a7a0d82ffa26685eacd32d33f98d668efe385`; Provider state machine `88f72910cc9b4c913a3fb9ebf09e25b1e31277b1`; primary tests `5313f5d72abd8e174e534511c3e73e3caac2489c`, schema migration assertions `3358a930c88c7d2b27e1f9920b66387ad1417bff`, multipart gate and FENCE ordering coverage `0fc9ee43b833469eba40fb9d5c97b687b3daf746`.
+- Required main-branch CI results have not yet been retrieved; do not mark Round 90 DONE until the unit suite and Knowledge Quality workflow complete successfully.
+- This is a same-host SQLite reference only. No real etcd, remote Provider, KMS/HSM, cloud object store or IAM/RBAC was contacted; no production namespace, candidate import, application activation or cutover occurred.
+- MIG-04 remains IN_PROGRESS; MIG-05 remains IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority; ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`.
