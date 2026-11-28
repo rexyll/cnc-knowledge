@@ -1468,6 +1468,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         )
         fence_reservation = floor.reserve_fence_from_command(
             operation_id="provider-fence-operation",
+            key=scope_key,
             command_envelope=fence_command,
             expected_revision=0,
         )
@@ -1500,6 +1501,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         current_floor = floor.snapshot(scope_key)
         activate_reservation = floor.reserve_activate_from_command(
             operation_id="provider-activate-operation",
+            key=scope_key,
             command_envelope=activate_command,
             expected_revision=current_floor.revision,
         )
