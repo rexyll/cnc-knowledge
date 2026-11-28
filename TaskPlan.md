@@ -1370,3 +1370,11 @@
 - **实现：** 新增 provider_write_freeze_commands，以完整签名envelope SHA-256为主键；收据与scope状态推进同事务提交。任意历史精确命令重放只返回ALREADY_APPLIED及历史结果，不会覆盖当前更高generation状态。
 - **恢复查询：** 新增只读 write_freeze_command_status()，分别返回历史命令结果和当前scope状态；收据包含在数据库backup/restore中。
 - **限制：** 未查到本地receipt不能证明远程未知请求未提交；远程Provider仍需线性一致receipt查询、可靠命令分发和多副本一致性。未连接真实Provider/KMS/etcd，未进行生产迁移或cutover。
+
+### 第八十七轮完成状态（2026-11-28）
+
+- **状态：** DONE（本地SQLite Provider Freeze命令绑定Coordinator Leader epoch及native Lease声明）。
+- **协议：** freeze command v2签名包含Coordinator namespace、Leader ID/epoch/native Lease ID及Lease expiry；命令expiry不得超过Lease expiry。
+- **Provider schema：** v4新增per-scope Leader epoch floor及per-command Leader审计表；v3→v4加法迁移。
+- **防回退：** Provider已观察更高epoch后拒绝低epoch新命令；相同epoch禁止更换Leader/Lease身份；scope namespace固定。命令receipt、freeze状态、Leader floor和审计同事务提交。
+- **限制：** 这是签名声明和已观察epoch的单调性保护，不是实时etcd Lease有效性证明。Provider尚未观察新epoch时，提前撤销的旧Lease仍存在有限但真实的接受窗口；生产必须增加在线线性一致Leader/Lease验证或等价可撤销机制。
