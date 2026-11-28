@@ -655,10 +655,12 @@ Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执
 
 新增 [外部 Floor checkpoint 保护模块](../../scripts/spare_parts_provider_grant_floor_checkpoint.py) 与 [专项测试](../../tests/test_spare_parts_provider_grant_floor_checkpoint.py)。
 
-- \`ProviderGrantFloorCheckpointStore\` 定义独立 checkpoint 读取与单调 CAS 接口；checkpoint 同时绑定独立 sequence、Floor authority revision 和完整逻辑数据库 SHA-256。
-- \`calculate_floor_checkpoint_state()\` 对 SQLite schema、metadata、scope、operation 以及 Provider/Coordinator trust registry 全量摘要；检测同一 authority revision 下的内容变化，而不只比较 revision 数字。
-- \`CheckpointedSQLiteProviderGrantFloorAuthority\` 包装所有公开读写 API，读写前核验外部 checkpoint，写入改变状态后 CAS 推进；严格空库 bootstrap，非空未锚定库拒绝自动接管。
+- `ProviderGrantFloorCheckpointStore` 定义独立 checkpoint 读取与单调 CAS 接口；checkpoint 同时绑定独立 sequence、Floor authority revision 和完整逻辑数据库 SHA-256。
+- `calculate_floor_checkpoint_state()` 对 SQLite schema、metadata、scope、operation 以及 Provider/Coordinator trust registry 全量摘要；检测同一 authority revision 下的内容变化，而不只比较 revision 数字。
+- `CheckpointedSQLiteProviderGrantFloorAuthority` 包装所有公开读写 API，读写前核验外部 checkpoint，写入改变状态后 CAS 推进；严格空库 bootstrap，非空未锚定库拒绝自动接管。
 - SQLite 提交后 checkpoint 更新不确定时，不自动回滚或猜测；只有预期 checkpoint 的精确 read-back 才能确认成功，否则后续操作 fail-closed。
 - 测试包含正常 FENCE/ACTIVATE、trust-key 变化、精确重放、SQLite 旧快照恢复、同 revision 内容篡改、checkpoint 回退、CAS 响应丢失和后端故障。
 
 **边界：** 当前仅为单进程 SQLite wrapper + in-memory CAS fake；fake 不持久、不防回滚，wrapper 不提供跨进程锁。没有实现生产外部 checkpoint service 或共同事务域，也没有接入真实 etcd/KMS/HSM/Provider。Grant-aware Restore 尚未实现，含 Grant history 的通用 Restore 仍 fail-closed。
+
+- **最终验证：** [Knowledge Quality Run 46162907743](https://github.com/rexyll/cnc-knowledge/actions/runs/46162907743) 两个必需Job均成功；全库776项测试运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings。Round98专项测试14项全部通过。
