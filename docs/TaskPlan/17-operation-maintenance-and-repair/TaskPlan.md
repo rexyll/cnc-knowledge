@@ -1536,3 +1536,13 @@
 - 测试覆盖Grant模式缺失配置拒绝、在线Leader inactive fail-closed、FENCE receipt前置及ACTIVATE签发时间不早于FENCE持久回执、新epoch撤销旧grant、同Leader/Lease主动轮换、跨Provider身份拒绝、对象与multipart四类mutation、Freeze/Grant调用方时钟注入拒绝、SQLite锁等待期间命令过期拒绝、Grant expiry、整数溢出拒绝、提交后响应丢失、backup回执链校验、无独立Grant floor时Restore fail-closed及schema v2/v3/v4迁移。
 - **安全边界：** 当前仅同机SQLite参考实现。在线Coordinator检查与Provider commit仍不构成跨系统原子事务；不代表真实Provider或云对象存储已具备强fencing。真实三节点etcd、远程Provider、IAM/RBAC与生产写路径验收留待后续MIG-06。
 - **状态：** 代码/测试初版已提交；CI与文档最终质量验收待完成。本轮不触达生产基础设施。
+
+
+### 第九十一轮：Provider Grant 外部单调 Floor 与专用 Restore 对账
+
+- 基于第九十轮新增设计文档，定义独立的 ProviderGrantFloorAuthority 端口；外部数据按Provider/tenant/scope保存generation floor、Leader epoch floor、pending command digest、FENCE/ACTIVATE receipt digest及revision。
+- 定义FENCE/ACTIVATE外部预留→Provider提交→精确receipt确认的双边协议，未知结果禁止生成新operation identity猜测重试。
+- 设计Grant-aware Restore：读取外部线性一致floor并逐scope对账；缺失floor、revision回退、pending未决或receipt不一致一律中止；恢复目标在新FENCE receipt确认前保持不可写。
+- 保持当前通用Restore限制：任何含Grant scope或command history的备份，在独立Grant floor authority实现前继续fail-closed。
+- **交付：** provider-grant-external-floor-and-restore-reconciliation-design.md。
+- **状态：** 架构设计初稿已创建；本轮不改生产authority、不连接真实外部服务、不执行Restore/Cutover。
