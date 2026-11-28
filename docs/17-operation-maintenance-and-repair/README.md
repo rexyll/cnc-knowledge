@@ -550,3 +550,5 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 - **限制：** Provider本地只验证签名声明的Lease expiry，不在线查询真实etcd Lease是否存在、是否附着或是否提前撤销。未观察新epoch前的旧Leader有效窗口仍存在；生产必须增加线性一致在线Leader/Lease检查或等价撤销机制。
 
 - 追加防回退：Coordinator namespace必须为规范绝对前缀；同一epoch/Lease ID的Lease expiry不得低于Provider已观察值。
+
+- v4备份校验强制要求freeze scope、command receipt、Leader floor和command-Leader审计四类表全部存在；备份恢复保留Leader epoch/Lease绑定。
