@@ -52,7 +52,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     _sha,
 )
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 PBKDF2_ITERATIONS = 210_000
 MAX_FENCING_TOKEN = (1 << 63) - 1
 DEFAULT_ACTIONS = (
@@ -242,7 +242,30 @@ class SQLiteFencedObjectStorageProvider:
                 )"""
             )
             connection.execute(
-                "UPDATE provider_meta SET value=? WHERE key='schema_version' AND value='2'",
+                """CREATE TABLE IF NOT EXISTS provider_write_freeze_leader_floors (
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    coordinator_namespace TEXT NOT NULL,
+                    leader_id TEXT NOT NULL,
+                    leader_epoch INTEGER NOT NULL CHECK(leader_epoch > 0),
+                    leader_lease_id INTEGER NOT NULL CHECK(leader_lease_id > 0),
+                    leader_lease_expires_at REAL NOT NULL,
+                    observed_at REAL NOT NULL,
+                    PRIMARY KEY(tenant_id,fencing_scope)
+                )"""
+            )
+            connection.execute(
+                """CREATE TABLE IF NOT EXISTS provider_write_freeze_command_leaders (
+                    command_sha256 TEXT PRIMARY KEY CHECK(length(command_sha256)=64),
+                    coordinator_namespace TEXT NOT NULL,
+                    leader_id TEXT NOT NULL,
+                    leader_epoch INTEGER NOT NULL CHECK(leader_epoch > 0),
+                    leader_lease_id INTEGER NOT NULL CHECK(leader_lease_id > 0),
+                    leader_lease_expires_at REAL NOT NULL
+                )"""
+            )
+            connection.execute(
+                "UPDATE provider_meta SET value=? WHERE key='schema_version' AND value IN ('2','3')",
                 (str(SCHEMA_VERSION),),
             )
             version_row = connection.execute(
@@ -933,6 +956,36 @@ class SQLiteFencedObjectStorageProvider:
                     "current_state": current["state"] if current else None,
                 }
 
+            leader = {
+                "coordinator_namespace": claims["coordinator_namespace"],
+                "leader_id": claims["leader_id"],
+                "leader_epoch": int(claims["leader_epoch"]),
+                "leader_lease_id": int(claims["leader_lease_id"]),
+                "leader_lease_expires_at": float(claims["leader_lease_expires_at_unix"]),
+            }
+            floor = c.execute(
+                """SELECT coordinator_namespace,leader_id,leader_epoch,leader_lease_id
+                   FROM provider_write_freeze_leader_floors
+                   WHERE tenant_id=? AND fencing_scope=?""",
+                (self.tenant_id, scope),
+            ).fetchone()
+            if floor is not None:
+                if leader["coordinator_namespace"] != floor["coordinator_namespace"]:
+                    raise FencingAttestationRejectedError(
+                        "Coordinator namespace changed for an established Provider scope"
+                    )
+                if leader["leader_epoch"] < int(floor["leader_epoch"]):
+                    raise FencingAttestationRejectedError(
+                        "freeze command was issued by a stale Coordinator Leader epoch"
+                    )
+                if leader["leader_epoch"] == int(floor["leader_epoch"]) and (
+                    leader["leader_id"] != floor["leader_id"]
+                    or leader["leader_lease_id"] != int(floor["leader_lease_id"])
+                ):
+                    raise FencingAttestationRejectedError(
+                        "Coordinator Leader identity or native Lease changed without an epoch advance"
+                    )
+
             current = c.execute(
                 """SELECT generation,freeze_id,state FROM provider_write_freeze_scopes
                    WHERE tenant_id=? AND fencing_scope=?""",
@@ -980,6 +1033,34 @@ class SQLiteFencedObjectStorageProvider:
                     scope, action, freeze_id, generation, state, now,
                 ),
             )
+            c.execute(
+                """INSERT INTO provider_write_freeze_leader_floors(
+                    tenant_id,fencing_scope,coordinator_namespace,leader_id,
+                    leader_epoch,leader_lease_id,leader_lease_expires_at,observed_at
+                ) VALUES(?,?,?,?,?,?,?,?)
+                ON CONFLICT(tenant_id,fencing_scope) DO UPDATE SET
+                    coordinator_namespace=excluded.coordinator_namespace,
+                    leader_id=excluded.leader_id,leader_epoch=excluded.leader_epoch,
+                    leader_lease_id=excluded.leader_lease_id,
+                    leader_lease_expires_at=excluded.leader_lease_expires_at,
+                    observed_at=excluded.observed_at""",
+                (
+                    self.tenant_id, scope, leader["coordinator_namespace"],
+                    leader["leader_id"], leader["leader_epoch"],
+                    leader["leader_lease_id"], leader["leader_lease_expires_at"], now,
+                ),
+            )
+            c.execute(
+                """INSERT INTO provider_write_freeze_command_leaders(
+                    command_sha256,coordinator_namespace,leader_id,leader_epoch,
+                    leader_lease_id,leader_lease_expires_at
+                ) VALUES(?,?,?,?,?,?)""",
+                (
+                    command_digest, leader["coordinator_namespace"], leader["leader_id"],
+                    leader["leader_epoch"], leader["leader_lease_id"],
+                    leader["leader_lease_expires_at"],
+                ),
+            )
         return {"result": "APPLIED", "scope": scope, "generation": generation, "state": state}
 
     def write_freeze_command_status(self, command_sha256: str) -> dict[str, Any] | None:
@@ -990,10 +1071,14 @@ class SQLiteFencedObjectStorageProvider:
             raise BackupStorageError("Provider identity must be configured for freeze receipt lookup")
         with self._read_transaction() as c:
             receipt = c.execute(
-                """SELECT command_sha256,issuer_id,key_id,provider_id,tenant_id,
-                          fencing_scope,action,freeze_id,generation,result_state,applied_at
-                   FROM provider_write_freeze_commands
-                   WHERE command_sha256=? AND provider_id=? AND tenant_id=?""",
+                """SELECT c.command_sha256,c.issuer_id,c.key_id,c.provider_id,c.tenant_id,
+                          c.fencing_scope,c.action,c.freeze_id,c.generation,c.result_state,c.applied_at,
+                          l.coordinator_namespace,l.leader_id,l.leader_epoch,l.leader_lease_id,
+                          l.leader_lease_expires_at
+                   FROM provider_write_freeze_commands c
+                   LEFT JOIN provider_write_freeze_command_leaders l
+                     ON l.command_sha256=c.command_sha256
+                   WHERE c.command_sha256=? AND c.provider_id=? AND c.tenant_id=?""",
                 (command_sha256, self.provider_id, self.tenant_id),
             ).fetchone()
             if receipt is None:
@@ -1016,7 +1101,18 @@ class SQLiteFencedObjectStorageProvider:
                    WHERE tenant_id=? AND fencing_scope=?""",
                 (self.tenant_id, scope),
             ).fetchone()
-            return dict(row) if row is not None else None
+            if row is None:
+                return None
+            result = dict(row)
+            leader = c.execute(
+                """SELECT coordinator_namespace,leader_id,leader_epoch,leader_lease_id,
+                          leader_lease_expires_at,observed_at
+                   FROM provider_write_freeze_leader_floors
+                   WHERE tenant_id=? AND fencing_scope=?""",
+                (self.tenant_id, scope),
+            ).fetchone()
+            result["leader_floor"] = dict(leader) if leader is not None else None
+            return result
 
     def _connect(self) -> sqlite3.Connection:
         c = sqlite3.connect(
