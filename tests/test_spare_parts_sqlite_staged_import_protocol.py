@@ -218,6 +218,40 @@ class StagedImportProtocolTests(unittest.TestCase):
             observed_leader_exists=False,
         ), UNKNOWN_COMMITTED)
 
+    def test_batch_unknown_rejects_checkpoint_not_in_plan_chain(self):
+        candidate = multi_request_candidate(2)
+        plan = self.build(candidate)
+        batch = plan["transactions"]["request_batches"][0]
+        previous = plan["transactions"]["initialize_checkpoint"]["checkpoint_value"]
+        previous_bytes = json.dumps(
+            previous, sort_keys=True, separators=(",", ":")
+        ).encode()
+        expected_checkpoint = json.dumps(
+            batch["checkpoint_after"], sort_keys=True, separators=(",", ":")
+        ).encode()
+        forged = dict(batch["checkpoint_after"])
+        forged["progress_sha256"] = "f" * 64
+        forged_bytes = json.dumps(
+            forged, sort_keys=True, separators=(",", ":")
+        ).encode()
+        expected_values = {
+            PREFIX + item["key"].encode(): json.dumps(
+                item["record"], sort_keys=True, separators=(",", ":")
+            ).encode()
+            for item in candidate["terminal_request_indexes"]
+        }
+        self.assertEqual(classify_batch_unknown(
+            plan_sha256=plan["plan_sha256"],
+            expected_previous_checkpoint=previous_bytes,
+            observed_checkpoint=forged_bytes,
+            expected_completed_request_count=2,
+            expected_successor_checkpoints=[expected_checkpoint],
+            observed_request_values=expected_values,
+            expected_request_values=expected_values,
+            observed_state_exists=False,
+            observed_leader_exists=False,
+        ), UNKNOWN_QUARANTINE)
+
     def test_publish_unknown_conflicting_state_is_quarantined(self):
         candidate = multi_request_candidate(0)
         plan = self.build(candidate)
