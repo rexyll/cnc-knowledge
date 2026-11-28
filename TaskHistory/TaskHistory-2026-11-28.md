@@ -684,3 +684,20 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Final expanded code/test validation: [Knowledge Quality Run 46159590900](https://github.com/rexyll/cnc-knowledge/actions/runs/46159590900) succeeded on both required jobs; 762 repository tests ran with 40 environment-guarded skips, CH12 numerical resource tests passed 143, knowledge lint had 0 errors / 5 warnings, and structure/data checks had 0 errors. Additional tests cover explicit Provider/Tenant/scope target binding, command expiry beyond native Lease, exact signed-operation replay, and preventing legacy unsigned PENDING operations from being confirmed after strict migration.
 - Final documentation synchronization: [Knowledge Quality Run 46159822572](https://github.com/rexyll/cnc-knowledge/actions/runs/46159822572) completed successfully on commit `05f79003c1069ed7f84fe0d3db6cd6f2efdd29b8`; both required jobs succeeded, and the run covered the Round97 root/CH17 TaskPlans, README, reconciliation design and this TaskHistory record.
 - **Status:** DONE for Round97 local Floor Coordinator signed-command authentication and documentation synchronization; production Coordinator/etcd/KMS/HSM integration and Grant-aware Restore remain out of scope.
+
+
+## CNC Knowledge Base — Round 98（Provider Grant Floor 外部单调检查点与快照回滚检测）
+
+- **时间：** 2026-11-28T23:54:41+08:00（Asia/Shanghai）
+- **Repository / branch：** rexyll/cnc-knowledge / main；未创建新分支。
+- **背景：** Round97 已完成Floor对Coordinator签名Grant Command的独立验签，但Floor SQLite及其Provider/Coordinator trust registry仍可能整体回滚到旧快照。原 minimum_revision 依赖调用方另外持有可信值，不会自行产生外部防回滚证据。
+- **实现：**
+  - 新增 scripts/spare_parts_provider_grant_floor_checkpoint.py：定义不可变 checkpoint record、外部 ProviderGrantFloorCheckpointStore CAS port、仅供测试的 InMemoryProviderGrantFloorCheckpointStore，以及 CheckpointedSQLiteProviderGrantFloorAuthority。
+  - 新增 calculate_floor_checkpoint_state()：以只读SQLite事务和完整性检查覆盖Floor schema objects、五张业务表列定义与全部逻辑记录，包含Provider Receipt与Coordinator Command信任注册表；确定性规范化后计算完整SHA-256，不仅比较authority revision。
+  - wrapper覆盖snapshot、operation status、legacy/signed FENCE/ACTIVATE reservation、signed Provider Receipt确认及Provider/Coordinator trust key注册/状态管理；操作前校验旧checkpoint，状态变化后使用expected sequence执行CAS，并在结束前再次核对。
+  - 首次bootstrap仅接受无scope、operation、Provider key、Coordinator key历史且meta revision为0、strict Coordinator auth开启的空数据库。非空无checkpoint数据库拒绝自动接管。
+  - SQLite提交后checkpoint CAS结果不确定时，只有精确read-back与预期新checkpoint完全一致才确认；否则隔离并fail-closed。exact idempotent replay不改变状态时不虚增checkpoint sequence。
+  - 新增 tests/test_spare_parts_provider_grant_floor_checkpoint.py，现有13项专项测试涵盖空库bootstrap、未锚定历史拒绝、缺失checkpoint、完整FENCE/ACTIVATE流程、trust registry变化、旧SQLite快照恢复、同authority revision内容篡改、外部checkpoint回退、业务失败不推进、CAS响应丢失、CAS冲突及后端故障。
+- **主要提交：** TaskPlan登记 9358598503b95d7b62d8ae1397dc8e50b9aa80e3 / 979a8f003b5c2b1d3a38f09f982b26f0078f004c；checkpoint模块和修正 c76f78b7e7ed82944a0c367c113b2aedcb4bca2f、59c885d8f533105644fca376dd19d4dfa681f5f5、1023dbb36558c2c8791f9b57295fece8ea94b20b、631f0e6d5808bb6183aab3f386e7612c8cc5c1ff；专项测试与修正 fede52d95a3cd00cab70b5edd95a45d9f9672d70、4c141717b7c044d58687d514bd8e62ef0c6bdec5、62a83c8be2d4b21c1cf7a04f5f359f91d55b001f、f71926fd493ce305be282caedb47ead05a3a8264；设计文档 8302a3896ab21f2f43ce6cff165203fe4380276d；章节README e95d1140edc95cb9506fbf6522f25acdbe8cfbf3。
+- **验证与边界：** 已确认Knowledge Quality workflow会在main分支push时自动触发，但当前未取得可核验的最终run与两个必需Job结果；本地仓库测试也未执行。因此本轮保持IN_PROGRESS，不声称测试通过或CI完成。内存CAS fake不持久也不防自身回滚；wrapper仅单进程/单实例，不提供跨进程锁。生产仍需独立、持久、线性一致checkpoint authority，最好与Floor数据处于共同事务域。未连接真实etcd/Coordinator/Provider/KMS/HSM/object storage/IAM/RBAC；Production Unified schema-v2仍为唯一authority；Grant-aware Restore未实现，含Grant history的通用Restore继续fail-closed。
+- **状态：** IN_PROGRESS；待取得全库unittest、CH12数值资源测试、strict knowledge lint、结构/data检查的完整CI成功结果后再结项。
