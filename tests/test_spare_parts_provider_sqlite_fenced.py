@@ -1533,7 +1533,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertEqual(provider.provider_grant_state(SCOPE)["leader_epoch"], 1)
         self.assertEqual(provider.provider_grant_state(SCOPE)["grant_generation"], 4)
 
-    def test_grant_receipt_recovers_lost_fence_response(self):
+    def test_grant_receipt_recovers_lost_response_and_restore_fails_closed_without_external_floor(self):
         import json
         provider = self.enable_revocable_grants()
         command = self.grant_command("FENCE", 1, "grant-lost-response")
@@ -1557,20 +1557,16 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertEqual(provider.provider_grant_state(SCOPE)["state"], "FENCED")
 
         backup = self.base / "provider-grant-receipt-backup.sqlite"
-        provider.backup_to(backup)
+        backup_report = provider.backup_to(backup)
+        self.assertEqual(backup_report["provider_grant_scope_count"], 1)
+        self.assertEqual(backup_report["provider_grant_command_count"], 1)
         restored_path = self.base / "provider-grant-receipt-restored.sqlite"
-        provider.restore_to_new_database(
-            backup, restored_path, external_fencing_floor=0,
-            fencing_reconciliation_ref="synthetic-provider-grant-backup",
-        )
-        restored = _new_provider(
-            restored_path, provider_id="provider-test-a",
-            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
-        )
-        restored_receipt = restored.provider_grant_command_status(digest)
-        self.assertEqual(restored_receipt["action"], "FENCE")
-        self.assertEqual(restored_receipt["result_state"], "FENCED")
-        self.assertEqual(restored.provider_grant_state(SCOPE)["state"], "FENCED")
+        with self.assertRaisesRegex(BackupStorageError, "independent Provider grant-generation"):
+            provider.restore_to_new_database(
+                backup, restored_path, external_fencing_floor=0,
+                fencing_reconciliation_ref="synthetic-provider-grant-backup",
+            )
+        self.assertFalse(restored_path.exists())
 
     def test_provider_grant_fence_and_inflight_mutation_share_one_sqlite_order(self):
         checked = threading.Event()
