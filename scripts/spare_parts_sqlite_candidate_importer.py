@@ -300,7 +300,20 @@ def build_candidate(
         "next_waiter_sequence": 0,
         "active": {},
         "waiters": [],
-        "coordinator": {"leader": None, "scopes": scopes, "operations": operations},
+        "coordinator": {
+            "leader": (
+                {
+                    "leader_id": "migration-epoch-floor",
+                    "epoch": leader_epoch,
+                    "expires_at": 0.0,
+                    # Terminal historical marker only; never bound to a native Lease.
+                    "backend_lease_id": 1,
+                }
+                if leader_epoch > 0 else None
+            ),
+            "scopes": scopes,
+            "operations": operations,
+        },
         "counters": {
             "issued_leases": _meta_int(admission_meta, "issued_leases"),
             "expired_leases": _meta_int(admission_meta, "expired_leases"),
@@ -349,6 +362,8 @@ def build_candidate(
         "terminal_request_indexes": request_indexes,
         "recovery_requirements": {
             "leader_epoch_floor": leader_epoch_floor,
+            "leader_epoch_floor_is_embedded_as_inactive_coordinator_record": True,
+            "leader_epoch_floor_backend_lease_id_sentinel": 1,
             "leader_must_be_reclaimed": True,
             "external_fencing_reconciliation": external_fencing_reconciliation,
             "external_fencing_floor": None,
