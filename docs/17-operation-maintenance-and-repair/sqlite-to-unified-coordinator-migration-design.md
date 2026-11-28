@@ -399,3 +399,12 @@ Quality Run [46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/4
 候选bundle的数据语义发生了不兼容变化，因此格式从 \`ch17-sqlite-unified-candidate-v1\` 升级为 \`ch17-sqlite-unified-candidate-v2\`。旧v1候选包必须拒绝；需从新的只读Inventory/Export重新构建manifest、records、policy与candidate。Planner单独有测试确认v1不再被接受。
 
 新增的内存互操作测试在模拟完成分批request导入及最终state publish后，使用标准Admission/Coordinator runtime重新构造对象，验证scope high-water/operation sequence、COMMITTED operation、终态request拒绝重放，以及旧epoch 8后的新Leader epoch 9。另验证epoch-zero来源不生成marker。该测试只说明候选aggregate与当前客户端运行时结构契约兼容；不等价于真实etcd导入演练、Lease TTL验证、Provider外部fencing验收或生产cutover。MIG-05仍为IN_PROGRESS，MIG-06仍为TODO。
+
+
+### 15.9 第八十一轮：外部Provider fencing floor只读对账门禁
+
+新增脚本 spare_parts_sqlite_provider_fencing_reconciliation.py，用于在候选导入/激活审批前校验操作员提供的Provider只读盘点证据。证据固定包含Provider ID、Unix观察时间和逐scope记录。scope集合必须与候选aggregate完全相同；每个scope的provider_generation必须与候选精确匹配；Provider观察到的fencing high-water token和operation sequence必须分别小于或等于候选floor。若Provider任一floor更高，当前候选不安全，必须停止并从经核验的更高floor重建候选；禁止把Provider floor向下覆盖，也不在此工具内自动修改候选。
+
+证据默认必须在当前时刻之前且不超过300秒，拒绝未来时间、陈旧证据、scope遗漏/多余、generation不匹配、未知字段和非法floor。校验结果包含canonical evidence SHA-256及逐scope对账值，可供运维审计引用。
+
+**关键限制：** 此validator只检查调用方提供的数据，不连接Provider、不证明证据来源身份、不验证数字签名、不写Provider控制记录，也不保证观察后没有并发写入。输出中的 provider_fencing_reconciliation=PASS 仅表示这份输入快照在采样时满足候选floor约束；application_activation_authorized 和 provider_operations_authorized 始终为false。真实Provider签名/可信采样、观察窗口冻结、审批和切换门禁仍属于后续工作，不能将本工具结果当作生产授权。
