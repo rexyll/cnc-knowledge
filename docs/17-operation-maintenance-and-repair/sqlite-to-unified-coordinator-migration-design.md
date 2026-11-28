@@ -509,3 +509,5 @@ Provider schema升级到v4，新增：
 v3 Provider数据库升级到v4时以加法方式创建Leader floor及命令审计表；旧freeze scopes与receipt保留。此实现仍是同机SQLite参考，不连接真实etcd。
 
 补充校验：Coordinator namespace必须是规范绝对前缀（以/开头和结尾，拒绝空段、双斜线、. / ..路径段及空白字符）。同一Leader epoch及同一native Lease ID下，Provider还拒绝Lease expiry相对已观察floor回退，避免旧Lease快照覆盖较新的续租观察。
+
+v4备份校验进一步要求Leader floor与command-Leader审计两张表必须存在；备份/恢复测试验证Leader epoch和native Lease绑定随receipt持久保留。
