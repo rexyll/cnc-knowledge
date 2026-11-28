@@ -548,3 +548,12 @@ FENCE若更换Leader/Lease身份，必须使用比该scope当前记录更高的L
 schema v2/v3/v4→v5均为加法迁移；各旧版测试fixture升级后必须创建新grant表。Provider backup validator要求两张grant表及Ed25519 trust registry存在，并逐项校验FENCE/ACTIVATE回执链及当前scope状态。v4→v5加法升级与backup receipt完整性有测试覆盖。**Restore限制：** 当前restore接口只接收外部对象fencing token floor，不接收独立Provider Grant generation/Leader epoch floor；因此只要备份含有任何Grant scope或命令历史，通用Restore必须fail-closed拒绝，不能把备份内的较旧Grant状态当作最新权威。下一阶段需设计独立、单调、不可随Provider SQLite备份回滚的Grant floor/receipt reconciliation authority，完成对账后才可新增专用恢复路径。ACTIVATE的issued_at还必须不早于Provider实际提交FENCE回执的applied_at，防止预签名命令在屏障尚未持久化时被激活。
 
 **严格边界：** 目前是同机SQLite参考实现。它只证明当前对象与multipart写入口在这个SQLite Provider中的事务排序，不证明远程Provider、云对象存储、异步后台任务或多主机强fencing。Provider FENCE的线性化点不是etcd Lease独立过期的物理瞬间；Coordinator必须等待Provider receipt后才能声明Provider侧handoff完成。真实Provider、三节点etcd、KMS/HSM、RBAC和跨系统联合故障验证仍未完成。
+
+
+### 15.16 第九十一轮：Provider Grant 外部单调 Floor 与专用 Restore 对账
+
+新增 Provider Grant 外部单调 Floor 与 Restore 对账设计文档。核心问题是：Provider Grant generation/Leader epoch/receipt 当前全部存储在Provider SQLite文件中，因此合法备份的内部完整性不代表它是最新备份。
+
+拟新增独立于Provider SQLite备份域的 ProviderGrantFloorAuthority，按(provider_id, tenant_id, fencing_scope)保存单调generation floor、Leader epoch floor、pending FENCE/ACTIVATE operation、command digest、Provider receipt digest与revision。FENCE/ACTIVATE采用Coordinator外部预留、Provider本地事务提交、Coordinator按精确receipt确认的双边协议；响应丢失只能查询/重试原digest。
+
+专用Grant-aware Restore必须在线性一致外部floor上逐scope对账；外部authority不可达、revision回退、pending operation未知或Provider receipt不匹配时，中止并保持不可写。当前通用Restore已拒绝所有包含Grant scope或command history的备份；该限制保持，直到独立floor authority和专用Restore实现经测试验收。
