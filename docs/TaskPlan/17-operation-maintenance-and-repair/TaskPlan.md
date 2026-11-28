@@ -1498,3 +1498,5 @@
 - 安全边界：签名的Lease expiry声明不等于实时Lease存在性/附着性证明。Provider尚未观察更高epoch时，旧Leader在声明窗口内仍可能被接受。生产需要线性一致在线Leader/Lease状态检查或等价的可撤销授权。仅做本地SQLite参考，不连接真实etcd/KMS，不执行生产切换。
 
 - 追加测试：拒绝非规范Coordinator namespace及同一epoch/native Lease ID下Lease expiry回退。
+
+- 备份校验/恢复需强制保留Leader floor和每命令Leader绑定；测试验证恢复后的epoch与Lease ID。
