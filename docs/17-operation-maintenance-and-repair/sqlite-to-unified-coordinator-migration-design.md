@@ -557,3 +557,12 @@ schema v2/v3/v4/v5→v6均采用加法迁移；各旧版测试fixture升级后�
 拟新增独立于Provider SQLite备份域的 ProviderGrantFloorAuthority，按(provider_id, tenant_id, fencing_scope)保存单调generation floor、Leader epoch floor、pending FENCE/ACTIVATE operation、command digest、Provider receipt digest与revision。FENCE/ACTIVATE采用Coordinator外部预留、Provider本地事务提交、Coordinator按精确receipt确认的双边协议；响应丢失只能查询/重试原digest。
 
 专用Grant-aware Restore必须在线性一致外部floor上逐scope对账；外部authority不可达、revision回退、pending operation未知或Provider receipt不匹配时，中止并保持不可写。当前通用Restore已拒绝所有包含Grant scope或command history的备份；该限制保持，直到独立floor authority和专用Restore实现经测试验收。
+
+
+### 15.18 第九十二轮：Provider Grant Floor 本地参考适配器与迁移边界
+
+新增独立SQLite参考模块 scripts/spare_parts_provider_grant_floor.py，通过scope revision CAS和全局唯一operation ID模拟Provider Grant外部Floor的预留/确认状态机。其独立数据库文件不得与Provider SQLite数据库共享快照或备份域。新模块尚未接入 StoreBackedCoordinatorAuthority、现有Unified schema-v2 aggregate或任何生产namespace；不改变现有Coordinator生产数据结构。
+
+本地参考状态机把FENCE/ACTIVATE分成外部reserve、Provider实际提交、外部receipt confirm三个阶段。generation和Leader epoch floor单调推进；未知结果按原operation ID及command digest查询；ACTIVATE必须绑定最近一次已确认FENCE。它为后续评估Unified schema-v2中Provider scope floor子状态提供本地契约样例，但尚未给出可直接部署的etcd Txn比较/Put实现、RBAC prefix或生产数据迁移脚本。
+
+**迁移控制不变：** 不创建/写入生产namespace，不改变Unified schema-v2生产authority，不进行Provider备份Restore或Cutover。SQLite参考authority自身可被旧快照回滚，不能作为生产独立单调权威；任何未来生产实现必须依赖线性一致CAS/Txn和该备份域之外的耐久性/回滚治理。通用Restore对含Grant历史的Provider备份继续fail-closed。
