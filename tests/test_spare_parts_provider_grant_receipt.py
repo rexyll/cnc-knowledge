@@ -139,6 +139,30 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderGrantReceiptError, "does not match reservation"):
             self.verify(envelope, command_sha256="f" * 64)
 
+    def test_all_reservation_claim_fields_are_exactly_bound(self):
+        envelope = self.sign()
+        mismatches = {
+            "tenant_id": "tenant-other",
+            "scope": "cnc/ch17/other-scope",
+            "action": "ACTIVATE",
+            "grant_id": "grant-other",
+            "generation": 12,
+            "fence_command_sha256": "2" * 64,
+            "coordinator_namespace": "/cnc/migration/isolated/other-scope/",
+            "leader_id": "coordinator-leader-other",
+            "leader_epoch": 8,
+            "native_lease_id": 702,
+            "native_lease_expires_at_unix": self.now + 121.0,
+            "command_issued_at_unix": self.now - 2.0,
+            "command_expires_at_unix": self.now + 31.0,
+        }
+        for field, value in mismatches.items():
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(
+                    ProviderGrantReceiptError, "does not match reservation"
+                ):
+                    self.verify(envelope, **{field: value})
+
     def test_provider_identity_must_match_the_registered_signer(self):
         envelope = self.sign()
         wrong_key = ProviderReceiptTrustKey(
