@@ -1415,3 +1415,12 @@
 - Planner严格限定marker字段，不放宽为任意非空Leader。运行时只允许该marker的backend_lease_id=0，所有真实Leader仍需正Lease ID。
 - 完成runtime互操作测试：从已发布aggregate构造标准Admission/Coordinator runtime；验证已完成request重放拒绝、scope高水位和operation ledger保持、且不创建Admission Lease；正常claim路径自动将epoch提升至floor+1。
 - 本轮全部只在InMemory etcd fake上执行，真实三节点etcd故障演练留待MIG-06。
+
+
+### 第八十一轮：MIG-05 外部 Provider fencing floor只读对账门禁
+
+- 新增 Provider fencing reconciliation validator，验证候选scope集合与外部Provider只读证据集合完全一致。
+- 精确核对provider_generation；检查Provider high-water token及operation sequence均不高于候选floor。任何更高值均阻断并要求重建候选，不能自动抬高或覆盖历史数据。
+- 证据限定Provider ID、采样时间和固定schema；拒绝超过300秒的陈旧证据、未来时间、缺失/多余scope和未知字段。
+- 输出证据摘要与逐scope对账结果，但明确不授予应用访问或Provider写操作权限。
+- 全部通过内存构造数据进行测试；真实Provider对账、签名来源认证及MIG-06真实etcd演练仍未完成。
