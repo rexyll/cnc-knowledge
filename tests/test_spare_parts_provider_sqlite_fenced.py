@@ -1233,6 +1233,57 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(BackupStorageError, "broken FENCE/ACTIVATE receipt chain"):
             SQLiteFencedObjectStorageProvider.validate_backup(backup)
 
+    def test_active_grant_mutation_reverifies_persisted_activation_signature(self):
+        import json
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-live-signature-check",
+            issued_at=now, lease_expires=now + 90.0,
+        )
+        fence_digest = hashlib.sha256(
+            json.dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence)
+        fence_receipt = provider.provider_grant_command_status(fence_digest)
+        activate = self.grant_command(
+            "ACTIVATE", 2, "grant-live-signature-check",
+            issued_at=float(fence_receipt["applied_at"]) + 0.01,
+            lease_expires=now + 90.0, expires=time.time() + 45.0,
+            fence_digest=fence_digest,
+        )
+        provider.apply_provider_grant_command(activate)
+
+        with sqlite3.connect(self.database) as connection:
+            row = connection.execute(
+                "SELECT command_sha256,envelope_json FROM provider_grant_commands WHERE action='ACTIVATE'"
+            ).fetchone()
+            digest, envelope_json = row
+            envelope = json.loads(envelope_json)
+            signature = envelope["signature"]["value_base64"]
+            envelope["signature"]["value_base64"] = ("A" if signature[0] != "A" else "B") + signature[1:]
+            tampered_json = json.dumps(
+                envelope, sort_keys=True, separators=(",", ":"), allow_nan=False
+            )
+            connection.execute(
+                "UPDATE provider_grant_commands SET envelope_json=? WHERE command_sha256=?",
+                (tampered_json, digest),
+            )
+
+        key = SCOPE + "/grant/tampered-active-receipt.bin"
+        proof = self.proof(
+            key, 81, "object:put_if_absent", "tampered-active-receipt",
+            grant_id="grant-live-signature-check", grant_generation=2,
+        )
+        with self.assertRaisesRegex(SQLiteProviderGrantRejectedError, "signature or claims"):
+            provider.put_if_absent_fenced(
+                key, b"must-not-write", fencing_scope=SCOPE,
+                fencing_token=81, idempotency_key="tampered-active-receipt",
+                fencing_attestation=proof,
+            )
+        with self.assertRaises(SQLiteProviderObjectNotFoundError):
+            provider.get_object(key)
+
     def test_backup_validation_reverifies_persisted_grant_ed25519_signature(self):
         import json
         provider = self.enable_revocable_grants()
