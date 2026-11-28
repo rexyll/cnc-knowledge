@@ -147,7 +147,7 @@ def _new_provider(
     fault_hook=None, trusted_ed25519_public_keys=None,
     attestation_status_checker=None, require_online_attestation_status=False,
     require_atomic_online_attestation_status=False, trusted_hmac_keys=None,
-    provider_id=None,
+    provider_id=None, leader_status_checker=None, require_online_leader_status=False,
 ):
     provider = SQLiteFencedObjectStorageProvider(
         database, principal_id=principal_id, principal_secret=secret,
@@ -162,6 +162,8 @@ def _new_provider(
         attestation_status_checker=attestation_status_checker,
         require_online_attestation_status=require_online_attestation_status,
         require_atomic_online_attestation_status=require_atomic_online_attestation_status,
+        leader_status_checker=leader_status_checker,
+        require_online_leader_status=require_online_leader_status,
         fault_hook=fault_hook,
     )
     return _wrap_test_attestations(provider)
@@ -917,6 +919,19 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
             self.provider.put_if_absent("cnc/ch17/legacy.bin", b"legacy")
 
 
+class MutableLeaderStatusChecker:
+    def __init__(self, active=True, error=None):
+        self.active = active
+        self.error = error
+        self.calls = []
+
+    def is_leader_active(self, claims, *, now_unix):
+        self.calls.append((dict(claims), now_unix))
+        if self.error:
+            raise self.error
+        return self.active
+
+
 class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -961,6 +976,45 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             idempotency_key=idempotency_key, operation=operation,
             provider_freeze_generation=generation,
         )
+
+    def test_online_leader_status_is_required_and_fail_closed_for_new_commands(self):
+        with self.assertRaisesRegex(BackupStorageError, "online Coordinator Leader status"):
+            _new_provider(
+                self.database, provider_id="provider-test-a",
+                trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+                require_online_leader_status=True,
+            )
+
+        checker = MutableLeaderStatusChecker(active=False)
+        self.provider = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            leader_status_checker=checker, require_online_leader_status=True,
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "absent, expired, revoked"):
+            self.provider.apply_write_freeze_command(self.command("FREEZE", 1, "online-check"))
+        self.assertEqual(len(checker.calls), 1)
+        self.assertIsNone(self.provider.write_freeze_state(SCOPE))
+
+        checker.active = True
+        command = self.command("FREEZE", 1, "online-check")
+        self.assertEqual(self.provider.apply_write_freeze_command(command)["state"], "FROZEN")
+        checker.active = False
+        # Exact historical receipt lookup precedes live-Leader verification.
+        self.assertEqual(self.provider.apply_write_freeze_command(command)["result"], "ALREADY_APPLIED")
+        self.assertEqual(len(checker.calls), 2)
+
+    def test_online_leader_status_transport_failure_refuses_freeze_command(self):
+        checker = MutableLeaderStatusChecker(error=ConnectionError("etcd partition"))
+        self.provider = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            leader_status_checker=checker, require_online_leader_status=True,
+        )
+        with self.assertRaisesRegex(FencingAttestationStatusUnavailableError, "online Leader status is unavailable"):
+            self.provider.apply_write_freeze_command(self.command("FREEZE", 1, "online-unavailable"))
+        self.assertIsNone(self.provider.write_freeze_state(SCOPE))
+
 
     def test_freeze_blocks_object_and_all_multipart_mutation_entrypoints(self):
         key = SCOPE + "/freeze/multipart.bin"
