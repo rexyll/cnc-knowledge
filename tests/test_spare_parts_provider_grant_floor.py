@@ -539,6 +539,25 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.assertEqual(after.revision, before.revision)
         self.assertEqual(after.authority_revision, before.authority_revision)
 
+    def test_activate_receipt_must_not_precede_confirmed_fence_applied_time(self):
+        fence = self.reserve_fence()
+        self.confirm_fence(fence)
+        fence_operation = self.authority.operation_status(fence.operation_id)
+        activate = self.activate()
+        receipt = self.receipt_envelope(
+            activate,
+            applied_at_unix=fence_operation.provider_applied_at_unix - 0.05,
+        )
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(
+            ProviderGrantFloorConflict, "precedes its confirmed FENCE receipt"
+        ):
+            self.confirm_receipt(activate, receipt)
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "ACTIVATE_PENDING")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
     def test_retiring_provider_key_accepts_pre_retirement_receipt_but_rejects_new_receipts(self):
         reservation = self.reserve_fence()
         old_receipt = self.receipt_envelope(reservation)
