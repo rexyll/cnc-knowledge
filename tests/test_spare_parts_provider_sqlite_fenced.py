@@ -1972,7 +1972,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
 
         backup = self.base / "provider-freeze-backup.sqlite"
         report = reopened.backup_to(backup)
-        self.assertEqual(report["schema_version"], 5)
+        self.assertEqual(report["schema_version"], 6)
         restored_path = self.base / "provider-freeze-restored.sqlite"
         restore_report = reopened.restore_to_new_database(
             backup, restored_path, external_fencing_floor=0,
@@ -2009,7 +2009,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "5")
+        self.assertEqual(version, "6")
         self.assertIn("provider_write_freeze_scopes", tables)
         self.assertIn("provider_write_freeze_commands", tables)
         self.assertIn("provider_write_freeze_leader_floors", tables)
@@ -2038,11 +2038,56 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "5")
+        self.assertEqual(version, "6")
         self.assertIn("provider_write_freeze_leader_floors", tables)
         self.assertIn("provider_write_freeze_command_leaders", tables)
         self.assertIn("provider_scope_grants", tables)
         self.assertIn("provider_grant_commands", tables)
+
+    def test_schema_v5_provider_database_adds_signed_grant_receipt_envelope_columns(self):
+        with sqlite3.connect(self.database) as connection:
+            connection.execute("DROP TABLE provider_grant_commands")
+            connection.execute(
+                """CREATE TABLE provider_grant_commands (
+                    command_sha256 TEXT PRIMARY KEY CHECK(length(command_sha256)=64),
+                    issuer_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    provider_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    action TEXT NOT NULL CHECK(action IN ('FENCE','ACTIVATE')),
+                    grant_id TEXT NOT NULL,
+                    generation INTEGER NOT NULL CHECK(generation > 0),
+                    coordinator_namespace TEXT NOT NULL,
+                    leader_id TEXT NOT NULL,
+                    leader_epoch INTEGER NOT NULL CHECK(leader_epoch > 0),
+                    leader_lease_id INTEGER NOT NULL CHECK(leader_lease_id > 0),
+                    leader_lease_expires_at REAL NOT NULL,
+                    fence_command_sha256 TEXT,
+                    result_state TEXT NOT NULL CHECK(result_state IN ('FENCED','ACTIVE')),
+                    applied_at REAL NOT NULL
+                )"""
+            )
+            connection.execute(
+                "UPDATE provider_meta SET value='5' WHERE key='schema_version'"
+            )
+        migrated = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertIsNone(migrated.provider_grant_state(SCOPE))
+        with sqlite3.connect(self.database) as connection:
+            version = connection.execute(
+                "SELECT value FROM provider_meta WHERE key='schema_version'"
+            ).fetchone()[0]
+            columns = {
+                row[1] for row in connection.execute(
+                    "PRAGMA table_info(provider_grant_commands)"
+                )
+            }
+        self.assertEqual(version, "6")
+        self.assertIn("envelope_json", columns)
+        self.assertIn("signer_public_key_base64", columns)
 
     def test_schema_v4_provider_database_adds_revocable_grant_tables(self):
         with sqlite3.connect(self.database) as connection:
@@ -2065,7 +2110,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "5")
+        self.assertEqual(version, "6")
         self.assertIn("provider_scope_grants", tables)
         self.assertIn("provider_grant_commands", tables)
 
