@@ -191,10 +191,15 @@ class ProviderFreezeAttestationTests(unittest.TestCase):
         changed["scopes"]["inventory/parts"]["high_water_token"] = 11
         with self.assertRaisesRegex(ProviderFencingReconciliationError, "differs from Coordinator"):
             self.verify(snapshot=changed)
-        expired = dict(self.snapshot)
-        expired["lease_expires_at_unix"] = 999.0
-        with self.assertRaisesRegex(ProviderFencingReconciliationError, "Lease expires"):
-            self.verify(snapshot=expired)
+        expired_claims = dict(self.claims)
+        expired_claims["coordinator"] = dict(
+            self.coordinator, lease_expires_at_unix=999.0
+        )
+        expired = dict(self.snapshot, lease_expires_at_unix=999.0)
+        with self.assertRaisesRegex(
+            ProviderFencingReconciliationError, "Coordinator Lease expires before"
+        ):
+            self.verify(self.sign_claims(expired_claims), snapshot=expired)
 
     def test_rejects_invalid_freeze_window_and_unsigned_frozen_assertion(self):
         claims = dict(self.claims)
