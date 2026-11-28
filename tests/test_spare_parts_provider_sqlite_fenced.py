@@ -33,6 +33,10 @@ from scripts.spare_parts_provider_sqlite_fenced import (
     SQLiteFencedObjectStorageProvider,
     SQLiteProviderAuthorizationError,
     SQLiteProviderObjectNotFoundError,
+    SQLiteProviderWriteFrozenError,
+)
+from scripts.spare_parts_provider_write_freeze_gate import (
+    sign_provider_write_freeze_command,
 )
 
 
@@ -54,6 +58,7 @@ def _proof(
     *, tenant_id: str, key: str, scope: str, token: int,
     idempotency_key: str, operation: str, key_id: str = KEY_ID,
     secret: str = ATTESTATION_SECRET, ttl_seconds: float = 30.0,
+    provider_freeze_generation: int | None = None,
 ) -> str:
     issued = time.time()
     domain = "write" if operation == "object:put_if_absent" else "multipart"
@@ -66,6 +71,10 @@ def _proof(
         "lease_expires_at": issued + ttl_seconds,
         "fencing_scope": scope, "resource_key": key,
         "operation": operation, "idempotency_key": idempotency_key,
+        **(
+            {"provider_freeze_generation": provider_freeze_generation}
+            if provider_freeze_generation is not None else {}
+        ),
     }, key_id=key_id, secret=secret)
 
 
@@ -138,9 +147,11 @@ def _new_provider(
     fault_hook=None, trusted_ed25519_public_keys=None,
     attestation_status_checker=None, require_online_attestation_status=False,
     require_atomic_online_attestation_status=False, trusted_hmac_keys=None,
+    provider_id=None,
 ):
     provider = SQLiteFencedObjectStorageProvider(
         database, principal_id=principal_id, principal_secret=secret,
+        provider_id=provider_id,
         trusted_attestation_keys=(
             trusted_hmac_keys if trusted_hmac_keys is not None else {
                 KEY_ID: ATTESTATION_SECRET,
@@ -904,6 +915,212 @@ class SQLiteFencedObjectStorageProviderTests(unittest.TestCase):
     def test_provider_refuses_legacy_unfenced_write_methods(self):
         with self.assertRaises(FencingNotSupportedError):
             self.provider.put_if_absent("cnc/ch17/legacy.bin", b"legacy")
+
+
+class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.base = Path(self.temp.name)
+        self.database = self.base / "provider.sqlite"
+        _provision(self.database, include_ed25519=True)
+        self.provider = _new_provider(
+            self.database,
+            provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def command(self, action, generation, freeze_id, *, now=None, scope=SCOPE):
+        issued = time.time() if now is None else now
+        claims = {
+            "format": "ch17-provider-write-freeze-command-v1",
+            "issuer_id": ISSUER_ID,
+            "provider_id": "provider-test-a",
+            "tenant_id": "tenant-a",
+            "scope": scope,
+            "action": action,
+            "freeze_id": freeze_id,
+            "generation": generation,
+            "issued_at_unix": issued,
+            "expires_at_unix": issued + 30.0,
+        }
+        return sign_provider_write_freeze_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+
+    def proof(self, key, token, operation, idempotency_key, generation=None):
+        return _proof(
+            tenant_id="tenant-a", key=key, scope=SCOPE, token=token,
+            idempotency_key=idempotency_key, operation=operation,
+            provider_freeze_generation=generation,
+        )
+
+    def test_freeze_blocks_object_and_all_multipart_mutation_entrypoints(self):
+        key = SCOPE + "/freeze/multipart.bin"
+        self.provider.begin_multipart_upload_fenced(
+            key, "upload-freeze-1", fencing_scope=SCOPE,
+            fencing_token=10, idempotency_key="begin-before-freeze",
+        )
+        freeze = self.command("FREEZE", 1, "freeze-001")
+        result = self.provider.apply_write_freeze_command(freeze)
+        self.assertEqual(result["state"], "FROZEN")
+        self.assertEqual(result["generation"], 1)
+
+        with self.assertRaises(SQLiteProviderWriteFrozenError):
+            self.provider.put_if_absent_fenced(
+                SCOPE + "/freeze/object.bin", b"blocked",
+                fencing_scope=SCOPE, fencing_token=11,
+                idempotency_key="put-while-frozen",
+            )
+        with self.assertRaises(SQLiteProviderWriteFrozenError):
+            self.provider.begin_multipart_upload_fenced(
+                SCOPE + "/freeze/new-multipart.bin", "upload-freeze-2",
+                fencing_scope=SCOPE, fencing_token=12,
+                idempotency_key="begin-while-frozen",
+            )
+        with self.assertRaises(SQLiteProviderWriteFrozenError):
+            self.provider.put_multipart_part_fenced(
+                key, "upload-freeze-1", 1, b"part",
+                hashlib.sha256(b"part").hexdigest(),
+                fencing_scope=SCOPE, fencing_token=13,
+                idempotency_key="part-while-frozen",
+            )
+        with self.assertRaises(SQLiteProviderWriteFrozenError):
+            self.provider.complete_multipart_upload_fenced(
+                key, "upload-freeze-1", expected_part_count=1,
+                expected_size_bytes=4, expected_sha256=hashlib.sha256(b"part").hexdigest(),
+                fencing_scope=SCOPE, fencing_token=14,
+                idempotency_key="complete-while-frozen",
+            )
+        self.assertEqual(self.provider.write_freeze_state(SCOPE)["state"], "FROZEN")
+        self.assertEqual(self.provider.list_multipart_parts(key, "upload-freeze-1"), [])
+
+    def test_unfreeze_advances_generation_and_rejects_pre_freeze_proofs(self):
+        key = SCOPE + "/freeze/after-unfreeze.bin"
+        old_proof = self.proof(key, 20, "object:put_if_absent", "old-proof")
+        freeze = self.command("FREEZE", 1, "freeze-002")
+        unfreeze = self.command("UNFREEZE", 2, "freeze-002")
+        self.assertEqual(self.provider.apply_write_freeze_command(freeze)["state"], "FROZEN")
+        self.assertEqual(self.provider.apply_write_freeze_command(unfreeze)["state"], "OPEN")
+
+        with self.assertRaisesRegex(
+            FencingAttestationRejectedError, "current Provider freeze generation"
+        ):
+            self.provider.put_if_absent_fenced(
+                key, b"old-proof", fencing_scope=SCOPE, fencing_token=20,
+                idempotency_key="old-proof", fencing_attestation=old_proof,
+            )
+        new_proof = self.proof(
+            key, 21, "object:put_if_absent", "new-proof", generation=2
+        )
+        result = self.provider.put_if_absent_fenced(
+            key, b"new-proof", fencing_scope=SCOPE, fencing_token=21,
+            idempotency_key="new-proof", fencing_attestation=new_proof,
+        )
+        self.assertEqual(result.data, b"new-proof")
+        self.assertEqual(self.provider.write_freeze_state(SCOPE)["generation"], 2)
+
+    def test_freeze_commands_are_signed_monotonic_and_idempotent(self):
+        freeze = self.command("FREEZE", 1, "freeze-003")
+        self.assertEqual(self.provider.apply_write_freeze_command(freeze)["result"], "APPLIED")
+        self.assertEqual(self.provider.apply_write_freeze_command(freeze)["result"], "ALREADY_APPLIED")
+
+        skipped = self.command("UNFREEZE", 3, "freeze-003")
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "skips"):
+            self.provider.apply_write_freeze_command(skipped)
+        wrong_id = self.command("UNFREEZE", 2, "another-freeze")
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "does not match"):
+            self.provider.apply_write_freeze_command(wrong_id)
+        tampered = self.command("UNFREEZE", 2, "freeze-003")
+        tampered["command"]["action"] = "FREEZE"
+        with self.assertRaises(FencingAttestationRejectedError):
+            self.provider.apply_write_freeze_command(tampered)
+        wrong_provider = self.command("UNFREEZE", 2, "freeze-003")
+        wrong_provider["command"]["provider_id"] = "provider-other"
+        with self.assertRaises(FencingAttestationRejectedError):
+            self.provider.apply_write_freeze_command(wrong_provider)
+
+    def test_write_transaction_and_freeze_command_have_one_sqlite_order(self):
+        checked = threading.Event()
+        allow_write_commit = threading.Event()
+        freeze_finished = threading.Event()
+        write_results = []
+        freeze_results = []
+        errors = []
+
+        def hook(stage):
+            if stage == "after_provider_write_freeze_check":
+                checked.set()
+                if not allow_write_commit.wait(timeout=4):
+                    raise TimeoutError("test did not release Provider write")
+
+        writer = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            fault_hook=hook,
+        )
+        control = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        control.apply_write_freeze_command(self.command("FREEZE", 1, "freeze-004"))
+        control.apply_write_freeze_command(self.command("UNFREEZE", 2, "freeze-004"))
+        key = SCOPE + "/freeze/race.bin"
+        proof = self.proof(key, 30, "object:put_if_absent", "race-write", generation=2)
+
+        def write():
+            try:
+                result = writer.put_if_absent_fenced(
+                    key, b"ordered-before-freeze", fencing_scope=SCOPE,
+                    fencing_token=30, idempotency_key="race-write",
+                    fencing_attestation=proof,
+                )
+                write_results.append(result)
+            except Exception as exc:
+                errors.append(("write", type(exc).__name__, str(exc)))
+
+        def freeze():
+            try:
+                freeze_results.append(
+                    control.apply_write_freeze_command(
+                        self.command("FREEZE", 3, "freeze-005")
+                    )
+                )
+            except Exception as exc:
+                errors.append(("freeze", type(exc).__name__, str(exc)))
+            finally:
+                freeze_finished.set()
+
+        writer_thread = threading.Thread(target=write)
+        writer_thread.start()
+        self.assertTrue(checked.wait(timeout=2), "Provider did not reach in-transaction gate check")
+        freeze_thread = threading.Thread(target=freeze)
+        freeze_thread.start()
+        try:
+            self.assertFalse(
+                freeze_finished.wait(timeout=0.15),
+                "freeze command must wait for the in-flight Provider write transaction",
+            )
+        finally:
+            allow_write_commit.set()
+        writer_thread.join(timeout=4)
+        freeze_thread.join(timeout=4)
+        self.assertFalse(writer_thread.is_alive())
+        self.assertFalse(freeze_thread.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(len(write_results), 1)
+        self.assertEqual(write_results[0].data, b"ordered-before-freeze")
+        self.assertEqual(freeze_results[0]["state"], "FROZEN")
+        with self.assertRaises(SQLiteProviderWriteFrozenError):
+            control.put_if_absent_fenced(
+                SCOPE + "/freeze/after-race.bin", b"blocked",
+                fencing_scope=SCOPE, fencing_token=31,
+                idempotency_key="after-race",
+            )
+
+
 
 
 if __name__ == "__main__":
