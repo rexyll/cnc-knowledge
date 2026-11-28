@@ -2688,13 +2688,73 @@ class SQLiteFencedObjectStorageProvider:
             for receipt in grant_receipts.values():
                 if not re.fullmatch(r"[0-9a-f]{64}", receipt["command_sha256"]):
                     raise BackupStorageError("Provider backup has an invalid grant command digest")
-                trusted_key = connection.execute(
-                    """SELECT 1 FROM trusted_ed25519_keys
-                       WHERE issuer_id=? AND key_id=? AND algorithm='ED25519'""",
-                    (receipt["issuer_id"], receipt["key_id"]),
-                ).fetchone()
-                if trusted_key is None:
-                    raise BackupStorageError("Provider backup grant receipt has no trusted Ed25519 key record")
+                if (
+                    not isinstance(receipt["envelope_json"], str)
+                    or not isinstance(receipt["signer_public_key_base64"], str)
+                ):
+                    raise BackupStorageError(
+                        "Provider backup grant receipt lacks its original signed envelope or public key"
+                    )
+                try:
+                    envelope = json.loads(receipt["envelope_json"])
+                    canonical_envelope = json.dumps(
+                        envelope, sort_keys=True, separators=(",", ":"), allow_nan=False
+                    )
+                    if canonical_envelope != receipt["envelope_json"]:
+                        raise ValueError("envelope is not canonical JSON")
+                    signer_public_key = base64.b64decode(
+                        receipt["signer_public_key_base64"], validate=True
+                    )
+                    if len(signer_public_key) != 32:
+                        raise ValueError("Ed25519 public key is not 32 bytes")
+                    trusted_key = connection.execute(
+                        """SELECT algorithm,public_key_sha256,not_before,not_after
+                           FROM trusted_ed25519_keys
+                           WHERE issuer_id=? AND key_id=?""",
+                        (receipt["issuer_id"], receipt["key_id"]),
+                    ).fetchone()
+                    if (
+                        trusted_key is None or trusted_key["algorithm"] != "ED25519"
+                        or hashlib.sha256(signer_public_key).hexdigest() != trusted_key["public_key_sha256"]
+                    ):
+                        raise ValueError("receipt signer does not match the trusted Ed25519 key registry")
+                    envelope_claims = envelope["command"]
+                    issued_at = float(envelope_claims["issued_at_unix"])
+                    expires_at = float(envelope_claims["expires_at_unix"])
+                    verify_now = issued_at + (expires_at - issued_at) / 2.0
+                    verified_claims, verified_key_id, verified_digest = verify_provider_grant_command(
+                        envelope, {receipt["key_id"]: signer_public_key},
+                        expected_provider_id=receipt["provider_id"],
+                        expected_tenant_id=receipt["tenant_id"],
+                        now_unix=verify_now,
+                    )
+                    if (
+                        verified_key_id != receipt["key_id"]
+                        or verified_digest != receipt["command_sha256"]
+                        or verified_claims["issuer_id"] != receipt["issuer_id"]
+                        or verified_claims["scope"] != receipt["fencing_scope"]
+                        or verified_claims["action"] != receipt["action"]
+                        or verified_claims["grant_id"] != receipt["grant_id"]
+                        or int(verified_claims["generation"]) != int(receipt["generation"])
+                        or verified_claims["coordinator_namespace"] != receipt["coordinator_namespace"]
+                        or verified_claims["leader_id"] != receipt["leader_id"]
+                        or int(verified_claims["leader_epoch"]) != int(receipt["leader_epoch"])
+                        or int(verified_claims["leader_lease_id"]) != int(receipt["leader_lease_id"])
+                        or float(verified_claims["leader_lease_expires_at_unix"]) != float(receipt["leader_lease_expires_at"])
+                        or verified_claims["fence_command_sha256"] != receipt["fence_command_sha256"]
+                        or issued_at < float(trusted_key["not_before"])
+                        or (
+                            trusted_key["not_after"] is not None
+                            and issued_at >= float(trusted_key["not_after"])
+                        )
+                        or float(receipt["applied_at"]) < issued_at
+                        or float(receipt["applied_at"]) > expires_at
+                    ):
+                        raise ValueError("signed envelope claims disagree with the durable receipt")
+                except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                    raise BackupStorageError(
+                        "Provider backup grant receipt signature or claims cannot be verified"
+                    ) from exc
                 if receipt["action"] == "FENCE" and (
                     receipt["fence_command_sha256"] is not None
                     or receipt["result_state"] != "FENCED"
