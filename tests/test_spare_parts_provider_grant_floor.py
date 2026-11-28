@@ -487,13 +487,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
 
     def test_retiring_provider_key_accepts_pre_retirement_receipt_but_rejects_new_receipts(self):
         reservation = self.reserve_fence()
-        now = time.time()
-        old_receipt = self.receipt_envelope(
-            reservation,
-            command_issued_at_unix=now - 2.0,
-            command_expires_at_unix=now + 20.0,
-            applied_at_unix=now - 1.0,
-        )
+        old_receipt = self.receipt_envelope(reservation)
         retired = self.authority.admin_set_provider_receipt_key_status(
             provider_id="provider-a", key_id="provider-receipt-a", status="RETIRING"
         )
@@ -506,14 +500,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             expected_revision=self.authority.snapshot(self.key).revision,
             command_issued_at_unix=time.time(),
         )
-        retirement_time = retired["retiring_effective_at"]
-        after_retirement = max(time.time(), retirement_time + 0.1)
-        new_receipt = self.receipt_envelope(
-            next_reservation,
-            command_issued_at_unix=after_retirement - 0.2,
-            command_expires_at_unix=after_retirement + 30.0,
-            applied_at_unix=after_retirement - 0.1,
-        )
+        new_receipt = self.receipt_envelope(next_reservation)
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "stopped issuing"):
             self.confirm_receipt(next_reservation, new_receipt)
         self.assertEqual(self.authority.snapshot(self.key).state, "FENCE_PENDING")
@@ -598,6 +585,8 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.assertIsNone(operation.receipt_key_fingerprint)
         self.assertIsNone(operation.receipt_trust_revision)
         self.assertIsNone(operation.provider_applied_at_unix)
+        self.assertIsNone(operation.command_issued_at_unix)
+        self.assertIsNone(operation.command_expires_at_unix)
         with sqlite3.connect(legacy_path) as check:
             version = check.execute(
                 "SELECT schema_version FROM provider_grant_floor_meta WHERE singleton=1"
@@ -605,7 +594,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             trust_revision = check.execute(
                 "SELECT trust_revision FROM provider_grant_floor_meta WHERE singleton=1"
             ).fetchone()[0]
-        self.assertEqual(version, 3)
+        self.assertEqual(version, 4)
         self.assertEqual(trust_revision, 0)
 
     def test_database_permissions_are_restricted(self):
@@ -619,14 +608,20 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
                 operation_id="bad-namespace", key=self.key, grant_id="grant-a",
                 command_digest=_digest("bad"), coordinator_namespace="/cnc//bad/",
                 leader_id=self.leader_id, leader_epoch=1, native_lease_id=1,
-                lease_expires_at_unix=self.lease_expiry, expected_revision=0,
+                lease_expires_at_unix=self.lease_expiry,
+                command_issued_at_unix=time.time() - 1.0,
+                command_expires_at_unix=time.time() + 29.0,
+                expected_revision=0,
             )
         with self.assertRaisesRegex(ProviderGrantFloorError, "SHA-256"):
             self.authority.reserve_fence(
                 operation_id="bad-digest", key=self.key, grant_id="grant-a",
                 command_digest="not-a-digest", coordinator_namespace=self.namespace,
                 leader_id=self.leader_id, leader_epoch=1, native_lease_id=1,
-                lease_expires_at_unix=self.lease_expiry, expected_revision=0,
+                lease_expires_at_unix=self.lease_expiry,
+                command_issued_at_unix=time.time() - 1.0,
+                command_expires_at_unix=time.time() + 29.0,
+                expected_revision=0,
             )
 
 
