@@ -307,7 +307,7 @@ def build_candidate(
                     "epoch": leader_epoch,
                     "expires_at": 0.0,
                     # Terminal historical marker only; never bound to a native Lease.
-                    "backend_lease_id": 1,
+                    "backend_lease_id": 0,
                 }
                 if leader_epoch > 0 else None
             ),
@@ -363,7 +363,7 @@ def build_candidate(
         "recovery_requirements": {
             "leader_epoch_floor": leader_epoch_floor,
             "leader_epoch_floor_is_embedded_as_inactive_coordinator_record": True,
-            "leader_epoch_floor_backend_lease_id_sentinel": 1,
+            "leader_epoch_floor_backend_lease_id_sentinel": 0,
             "leader_must_be_reclaimed": True,
             "external_fencing_reconciliation": external_fencing_reconciliation,
             "external_fencing_floor": None,
