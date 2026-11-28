@@ -155,3 +155,10 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - No durable nonce/evidence replay ledger is implemented; a still-fresh signed snapshot may be replayed.
 - No real Provider/KMS was contacted; no Provider control record, etcd Lease, RBAC, application access or production namespace was changed. No candidate was imported and no production cutover occurred.
 - ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`; production Unified schema-v2 remains the sole authority.
+
+### Round 82 code validation (documentation synchronization pending final CI)
+
+- [Knowledge Quality Run 46096035428](https://github.com/rexyll/cnc-knowledge/actions/runs/46096035428): success; the run includes both Round82 signed-evidence code and tests.
+- Full unittest suite: 618 tests run, 40 skipped (578 passed).
+- Both required jobs completed successfully, including CH12 numerical resource tests and Knowledge structure/data quality.
+- The run's tested commit predates the final documentation synchronization commits; a final-main validation is being triggered separately.
