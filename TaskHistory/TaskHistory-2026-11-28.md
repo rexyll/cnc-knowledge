@@ -183,7 +183,12 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 
 ### Validation
 
-- Code/test CI and final documentation synchronization CI results will be recorded after main workflows complete.
+- [Knowledge Quality Run 46108172706](https://github.com/rexyll/cnc-knowledge/actions/runs/46108172706): success on the complete Round83 implementation and documentation commit.
+- Full unittest suite: 628 tests run, 40 skipped (588 passed).
+- CH12 numerical resource tests: 143 passed.
+- Knowledge lint: 0 errors; fixture lint: 0 errors / 5 warnings.
+- Synthetic scenario replay: 30 simulated, 0 failed; external connections and writes were disabled.
+- Both required GitHub Actions jobs completed successfully.
 
 ### Safety boundary
 
