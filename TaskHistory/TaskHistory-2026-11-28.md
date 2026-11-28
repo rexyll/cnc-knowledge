@@ -601,3 +601,40 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - No Grant-aware Restore, candidate import, application activation or Cutover was implemented or executed. Generic Restore for any Provider Grant history remains fail-closed.
 - MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
 - **Status:** DONE for the Round 95 local Receipt protocol and external Floor verification reference implementation only; Provider data-plane signed Receipt persistence and production integration remain separate work.
+
+
+## CNC Knowledge Base — Round 96（Provider SQLite FENCE/ACTIVATE 同事务 Signed Receipt）
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: Extend the local SQLite Provider reference so Provider-native signed FENCE/ACTIVATE Receipts are created and persisted atomically with Grant state and the original Coordinator command receipt, then consumed by the Round95 external Floor verifier.
+
+### Implementation
+
+- Upgraded `scripts/spare_parts_provider_sqlite_fenced.py` Provider schema to v7. Kept the existing `envelope_json` and `signer_public_key_base64` fields dedicated to the Coordinator-signed command; added separate Provider Receipt envelope, digest, signer key ID and public-key copy columns.
+- Added dependency injection for an independent Provider Ed25519 private key and key ID plus strict signed-receipt mode. The private key stays in process memory only. Provider refuses a receipt signer key ID or public key that duplicates a configured Coordinator command signer.
+- Persisted `provider_grant_receipt_signing_required` in Provider metadata. Once strict mode is enabled, a later Provider instance cannot silently downgrade the database to unsigned mode. Historical command rows lacking Provider Receipt evidence are not backfilled or elevated to trusted current grants.
+- FENCE/ACTIVATE processing now signs and stores the Provider Receipt inside the same Provider `BEGIN IMMEDIATE` transaction as the Provider Grant state and original Coordinator command receipt. Claims bind Provider/tenant/scope/action/Grant/generation/command digest/FENCE digest/Coordinator namespace/Leader/native Lease/command issue-expiry/Provider applied time. Any failure before transaction commit rolls back all three durable records.
+- Added `get_provider_grant_receipt(provider_id, tenant_id, command_sha256)` for exact lookup. It revalidates the Coordinator command, Provider signature, canonical full-envelope digest and claim-to-row bindings. Exact command replay verifies and returns the original immutable receipt; post-commit response loss can be recovered by the original command digest.
+- Strict-mode protected object/multipart mutations now require both the current FENCE and ACTIVATE Provider Receipts to exist and pass verification. Provider backup validation checks Provider Receipt canonical bytes/digest, independent Provider signer signature, binding to the original Coordinator signed command and the FENCE/ACTIVATE chain. A recomputed digest with a forged signature is still rejected.
+- Added Provider→Floor end-to-end integration coverage: the local Provider produces real signed FENCE and ACTIVATE envelopes, which are then independently checked by the Round95 Floor Provider-key registry and advance the Floor to FENCED/ACTIVE.
+- Added tests for pre-commit full rollback, exact Provider/Tenant/command lookup, response-loss and restart replay, strict policy no-downgrade, schema v6→v7 migration, separate Coordinator/Provider signers, Receipt digest tamper, forged signature with recomputed digest, and backup validation rejection.
+- Updated Round96 sections in root and CH17 TaskPlans; added Round97 plan for independent Coordinator command signature verification at the Floor reservation boundary. Updated CH17 README and Receipt authentication design.
+
+### Validation
+
+- [GitHub Actions Knowledge Quality Run 46157250066](https://github.com/rexyll/cnc-knowledge/actions/runs/46157250066): both required jobs succeeded.
+- Full repository unittest: 745 tests run, 40 skipped by environment guards; all non-skipped tests passed.
+- CH12 numerical resource tests: 143 passed.
+- Repository knowledge lint: 0 errors / 5 warnings.
+- Additional repository structure/data checks: 0 errors.
+
+### Safety boundary / remaining work
+
+- This proves the same-host SQLite Provider reference only, using an in-memory synthetic Ed25519 Provider key. No real remote Provider, object storage, KMS/HSM, etcd, IAM/RBAC or production key-management plane was connected.
+- The public-key copy stored beside each Provider Receipt supports local self-consistency verification, not independent trust. The external Floor Provider key registry remains the Provider signer trust anchor.
+- Critical remaining gap: external Floor reservation still accepts caller-supplied Coordinator command digest/claims and does not independently verify the original Coordinator signed Grant command. Round97 will make the Floor accept and validate the signed command envelope against an independent Coordinator key registry.
+- Provider and Floor SQLite databases/trust registries are not rollback-resistant against their own old snapshots without independently trusted checkpoints outside their backup domains.
+- Grant-aware Restore remains unimplemented. Generic Restore for any Provider Grant history remains fail-closed. No candidate import, Restore, application activation or Cutover was performed.
+- MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
+- **Status:** DONE for the Round96 local Provider SQLite reference integration and its end-to-end tests.
