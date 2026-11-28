@@ -227,6 +227,21 @@ class SQLiteFencedObjectStorageProvider:
                 )"""
             )
             connection.execute(
+                """CREATE TABLE IF NOT EXISTS provider_write_freeze_commands (
+                    command_sha256 TEXT PRIMARY KEY CHECK(length(command_sha256)=64),
+                    issuer_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    provider_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    action TEXT NOT NULL CHECK(action IN ('FREEZE','UNFREEZE')),
+                    freeze_id TEXT NOT NULL,
+                    generation INTEGER NOT NULL CHECK(generation > 0),
+                    result_state TEXT NOT NULL CHECK(result_state IN ('FROZEN','OPEN')),
+                    applied_at REAL NOT NULL
+                )"""
+            )
+            connection.execute(
                 "UPDATE provider_meta SET value=? WHERE key='schema_version' AND value='2'",
                 (str(SCHEMA_VERSION),),
             )
@@ -842,10 +857,10 @@ class SQLiteFencedObjectStorageProvider:
     def apply_write_freeze_command(
         self, envelope: dict[str, Any], *, now_unix: float | None = None
     ) -> dict[str, Any]:
-        """Atomically install a signed FREEZE/UNFREEZE generation in Provider DB.
+        """Atomically apply a signed command and persist its durable receipt.
 
-        This local reference operation is a control-plane API. Production must
-        expose an equivalently authenticated Provider-native control endpoint.
+        Replaying any previously committed envelope returns its historical
+        result without reapplying it, even after later generations have run.
         """
         if self.provider_id is None:
             raise BackupStorageError(
@@ -854,11 +869,9 @@ class SQLiteFencedObjectStorageProvider:
         now = time.time() if now_unix is None else now_unix
         try:
             claims, key_id, command_digest = verify_provider_write_freeze_command(
-                envelope,
-                self._trusted_ed25519_public_keys,
+                envelope, self._trusted_ed25519_public_keys,
                 expected_provider_id=self.provider_id,
-                expected_tenant_id=self.tenant_id,
-                now_unix=now,
+                expected_tenant_id=self.tenant_id, now_unix=now,
             )
         except ProviderWriteFreezeCommandError as exc:
             raise FencingAttestationRejectedError(str(exc)) from exc
@@ -879,35 +892,55 @@ class SQLiteFencedObjectStorageProvider:
                 or now < float(trusted["not_before"])
                 or (trusted["not_after"] is not None and now >= float(trusted["not_after"]))
                 or float(claims["issued_at_unix"]) < float(trusted["not_before"])
-                or (trusted["not_after"] is not None
-                    and float(claims["issued_at_unix"]) >= float(trusted["not_after"]))
+                or (trusted["not_after"] is not None and float(claims["issued_at_unix"]) >= float(trusted["not_after"]))
             ):
                 raise FencingAttestationRejectedError(
                     "freeze command issuer/key is not trusted for this Provider"
                 )
+
+            # Resolve lost responses before checking the current generation.
+            receipt = c.execute(
+                """SELECT issuer_id,key_id,provider_id,tenant_id,fencing_scope,
+                          action,freeze_id,generation,result_state,applied_at
+                   FROM provider_write_freeze_commands WHERE command_sha256=?""",
+                (command_digest,),
+            ).fetchone()
+            if receipt is not None:
+                expected = (
+                    issuer_id, key_id, self.provider_id, self.tenant_id, scope,
+                    claims["action"], claims["freeze_id"], int(claims["generation"]),
+                )
+                observed = (
+                    receipt["issuer_id"], receipt["key_id"], receipt["provider_id"],
+                    receipt["tenant_id"], receipt["fencing_scope"], receipt["action"],
+                    receipt["freeze_id"], int(receipt["generation"]),
+                )
+                if observed != expected:
+                    raise FencingAttestationRejectedError(
+                        "freeze command receipt digest conflicts with its signed claims"
+                    )
+                current = c.execute(
+                    """SELECT generation,state FROM provider_write_freeze_scopes
+                       WHERE tenant_id=? AND fencing_scope=?""",
+                    (self.tenant_id, scope),
+                ).fetchone()
+                return {
+                    "result": "ALREADY_APPLIED", "scope": scope,
+                    "generation": int(receipt["generation"]),
+                    "state": receipt["result_state"],
+                    "applied_at": float(receipt["applied_at"]),
+                    "current_generation": int(current["generation"]) if current else None,
+                    "current_state": current["state"] if current else None,
+                }
+
             current = c.execute(
-                """SELECT generation,freeze_id,state,command_sha256
-                   FROM provider_write_freeze_scopes
+                """SELECT generation,freeze_id,state FROM provider_write_freeze_scopes
                    WHERE tenant_id=? AND fencing_scope=?""",
                 (self.tenant_id, scope),
             ).fetchone()
             generation = int(claims["generation"])
             action = claims["action"]
             freeze_id = claims["freeze_id"]
-            if current is not None and generation == int(current["generation"]):
-                expected_state = "FROZEN" if action == "FREEZE" else "OPEN"
-                if (
-                    current["command_sha256"] == command_digest
-                    and current["freeze_id"] == freeze_id
-                    and current["state"] == expected_state
-                ):
-                    return {
-                        "result": "ALREADY_APPLIED", "scope": scope,
-                        "generation": generation, "state": expected_state,
-                    }
-                raise FencingAttestationRejectedError(
-                    "freeze command generation was already consumed with different content"
-                )
             expected_generation = int(current["generation"]) + 1 if current else 1
             if generation != expected_generation:
                 raise FencingAttestationRejectedError(
@@ -919,15 +952,10 @@ class SQLiteFencedObjectStorageProvider:
                         "scope is already frozen; unfreeze the current generation first"
                     )
                 if current is not None and current["freeze_id"] == freeze_id:
-                    raise FencingAttestationRejectedError(
-                        "a new freeze requires a new freeze ID"
-                    )
+                    raise FencingAttestationRejectedError("a new freeze requires a new freeze ID")
                 state = "FROZEN"
             else:
-                if (
-                    current is None or current["state"] != "FROZEN"
-                    or current["freeze_id"] != freeze_id
-                ):
+                if current is None or current["state"] != "FROZEN" or current["freeze_id"] != freeze_id:
                     raise FencingAttestationRejectedError(
                         "unfreeze command does not match the active freeze"
                     )
@@ -940,15 +968,41 @@ class SQLiteFencedObjectStorageProvider:
                     generation=excluded.generation,freeze_id=excluded.freeze_id,
                     state=excluded.state,command_sha256=excluded.command_sha256,
                     updated_at=excluded.updated_at""",
+                (self.tenant_id, scope, generation, freeze_id, state, command_digest, now),
+            )
+            c.execute(
+                """INSERT INTO provider_write_freeze_commands(
+                    command_sha256,issuer_id,key_id,provider_id,tenant_id,
+                    fencing_scope,action,freeze_id,generation,result_state,applied_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    self.tenant_id, scope, generation, freeze_id, state,
-                    command_digest, now,
+                    command_digest, issuer_id, key_id, self.provider_id, self.tenant_id,
+                    scope, action, freeze_id, generation, state, now,
                 ),
             )
-        return {
-            "result": "APPLIED", "scope": scope,
-            "generation": generation, "state": state,
-        }
+        return {"result": "APPLIED", "scope": scope, "generation": generation, "state": state}
+
+    def write_freeze_command_status(self, command_sha256: str) -> dict[str, Any] | None:
+        """Read-only lookup of a historical command receipt and current scope state."""
+        if not isinstance(command_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", command_sha256):
+            raise BackupStorageError("freeze command digest must be 64 lowercase hexadecimal characters")
+        with self._transaction() as c:
+            receipt = c.execute(
+                """SELECT command_sha256,issuer_id,key_id,provider_id,tenant_id,
+                          fencing_scope,action,freeze_id,generation,result_state,applied_at
+                   FROM provider_write_freeze_commands WHERE command_sha256=?""",
+                (command_sha256,),
+            ).fetchone()
+            if receipt is None:
+                return None
+            result = dict(receipt)
+            current = c.execute(
+                """SELECT generation,freeze_id,state,updated_at FROM provider_write_freeze_scopes
+                   WHERE tenant_id=? AND fencing_scope=?""",
+                (self.tenant_id, result["fencing_scope"]),
+            ).fetchone()
+            result["current_scope_state"] = dict(current) if current is not None else None
+            return result
 
     def write_freeze_state(self, fencing_scope: str) -> dict[str, Any] | None:
         scope = _safe_key(fencing_scope)
