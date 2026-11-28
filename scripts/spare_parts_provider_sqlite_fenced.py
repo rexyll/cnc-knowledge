@@ -1278,9 +1278,38 @@ class SQLiteFencedObjectStorageProvider:
                 )
 
             if action == "FENCE":
-                if current is not None and leader_epoch <= int(current["leader_epoch"]):
+                if current is not None:
+                    current_epoch = int(current["leader_epoch"])
+                    if leader_epoch < current_epoch:
+                        raise FencingAttestationRejectedError(
+                            "FENCE was issued by a stale Coordinator Leader epoch"
+                        )
+                    if leader_epoch == current_epoch:
+                        same_identity = (
+                            leader_id == current["leader_id"]
+                            and lease_id == int(current["leader_lease_id"])
+                        )
+                        if not same_identity:
+                            raise FencingAttestationRejectedError(
+                                "same-epoch FENCE cannot change Leader or native Lease identity"
+                            )
+                        if current["state"] == "FENCED":
+                            raise SQLiteProviderGrantRejectedError(
+                                "scope is already FENCED; activate the pending grant or use a newer epoch"
+                            )
+                        if lease_expires < float(current["leader_lease_expires_at"]):
+                            raise FencingAttestationRejectedError(
+                                "same-epoch FENCE Leader Lease expiry regressed"
+                            )
+                prior_grant = c.execute(
+                    """SELECT 1 FROM provider_grant_commands
+                       WHERE provider_id=? AND tenant_id=? AND fencing_scope=? AND grant_id=?
+                       LIMIT 1""",
+                    (self.provider_id, self.tenant_id, scope, grant_id),
+                ).fetchone()
+                if prior_grant is not None:
                     raise FencingAttestationRejectedError(
-                        "FENCE must be issued by a strictly newer Coordinator Leader epoch"
+                        "Provider grant ID has already been used for this scope"
                     )
                 state = "FENCED"
                 grant_expires = None
