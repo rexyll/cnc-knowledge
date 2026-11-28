@@ -605,3 +605,5 @@ Provider schema升级至v6，新增`provider_scope_grants`与`provider_grant_com
 该适配器使用独立SQLite文件，按Provider/tenant/scope保存generation与Leader epoch floor、pending operation、命令摘要和Provider回执摘要。FENCE/ACTIVATE分别通过reserve→Provider commit→confirm推进；同一operation ID只能绑定完全相同的命令，未知结果只能查回或重试原operation。特别注意：FENCE_PENDING只是外部预留，不会立即撤销Provider旧ACTIVE Grant；旧Grant在Provider FENCE真正提交前仍可能被接受（受当前最多300秒有效期限制）。Provider事务内FENCE提交才是数据面撤销线性化点。
 
 **边界：** 这是单机SQLite事务参考，不是etcd线性一致/多节点/quorum实现；SQLite自身不能证明数据库文件未从旧快照回滚，只有与该数据库独立保存的可信revision checkpoint才能用于检测回退。适配器不验证Provider回执签名/真实性，也尚未接入Provider命令应用路径或Unified schema-v2 authority。当前没有Grant-aware Restore；通用Restore对任何Grant历史备份仍必须拒绝。测试方法定义数量不是测试执行结果。
+
+Provider Grant 外部 Floor 本地参考适配器见 [外部单调 Floor 与 Grant-aware Restore 对账设计](provider-grant-external-floor-and-restore-reconciliation-design.md)：实现文件为 [spare_parts_provider_grant_floor.py](../../scripts/spare_parts_provider_grant_floor.py)，专项测试为 [test_spare_parts_provider_grant_floor.py](../../tests/test_spare_parts_provider_grant_floor.py)。本地 SQLite 适配器仅接受 `/cnc/migration/isolated/{single-id}/` namespace，是单机事务/CAS参考模型，不是 etcd quorum、线性一致生产 authority 或自身防回滚存储；Provider 回执来源认证与专用 Grant-aware Restore 仍未实现。
