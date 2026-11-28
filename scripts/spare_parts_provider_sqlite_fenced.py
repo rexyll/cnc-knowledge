@@ -1819,33 +1819,17 @@ class SQLiteFencedObjectStorageProvider:
                 raise SQLiteProviderGrantRejectedError(
                     "Provider command exists but has no durable signed Provider Receipt"
                 )
-            try:
-                envelope = json.loads(row["provider_receipt_envelope_json"])
-                canonical = canonical_receipt_json(envelope)
-                public_key_raw = base64.b64decode(
-                    row["provider_receipt_public_key_base64"], validate=True
-                )
-            except (ValueError, TypeError, json.JSONDecodeError, ProviderGrantReceiptError) as exc:
-                raise SQLiteProviderGrantRejectedError(
-                    "persisted Provider Receipt envelope or key is malformed"
-                ) from exc
-            if (
-                canonical.decode("utf-8") != row["provider_receipt_envelope_json"]
-                or len(public_key_raw) != 32
-                or hashlib.sha256(canonical).hexdigest() != row["provider_receipt_digest"]
-            ):
-                raise SQLiteProviderGrantRejectedError(
-                    "persisted Provider Receipt canonical digest or public key is inconsistent"
-                )
+            verified = self._verify_provider_native_receipt_row(row)
+            envelope = json.loads(row["provider_receipt_envelope_json"])
             return {
                 "provider_id": provider_id,
                 "tenant_id": tenant_id,
                 "command_sha256": command_sha256,
                 "receipt_envelope": envelope,
-                "receipt_digest": row["provider_receipt_digest"],
-                "signer_key_id": row["provider_receipt_key_id"],
+                "receipt_digest": verified.receipt_digest,
+                "signer_key_id": verified.signer_key_id,
                 "signer_public_key_base64": row["provider_receipt_public_key_base64"],
-                "applied_at_unix": float(row["applied_at"]),
+                "applied_at_unix": verified.applied_at_unix,
             }
 
     def provider_grant_state(self, fencing_scope: str) -> dict[str, Any] | None:
@@ -3407,6 +3391,26 @@ class SQLiteFencedObjectStorageProvider:
                         "Provider backup is missing a required signed Provider Grant receipt"
                     )
 
+                provider_receipt_fields = (
+                    receipt["provider_receipt_envelope_json"],
+                    receipt["provider_receipt_digest"],
+                    receipt["provider_receipt_key_id"],
+                    receipt["provider_receipt_public_key_base64"],
+                )
+                has_provider_receipt = any(value is not None for value in provider_receipt_fields)
+                if has_provider_receipt and not all(
+                    isinstance(value, str) and value for value in provider_receipt_fields
+                ):
+                    raise BackupStorageError(
+                        "Provider backup has incomplete signed Provider Grant receipt fields"
+                    )
+                if has_provider_receipt:
+                    try:
+                        cls._verify_provider_native_receipt_row(receipt)
+                    except SQLiteProviderGrantRejectedError as exc:
+                        raise BackupStorageError(
+                            "Provider backup signed Provider Grant receipt cannot be verified"
+                        ) from exc
                 if receipt["action"] == "FENCE" and (
                     receipt["fence_command_sha256"] is not None
                     or receipt["result_state"] != "FENCED"
@@ -3441,6 +3445,13 @@ class SQLiteFencedObjectStorageProvider:
                     or fence["result_state"] != "FENCED"
                 ):
                     raise BackupStorageError("Provider backup grant scope has no FENCE receipt")
+                if signed_receipts_required:
+                    try:
+                        cls._verify_provider_native_receipt_row(fence)
+                    except SQLiteProviderGrantRejectedError as exc:
+                        raise BackupStorageError(
+                            "Provider backup current FENCE is missing a valid signed Provider Receipt"
+                        ) from exc
                 if (
                     fence["tenant_id"] != grant["tenant_id"]
                     or fence["fencing_scope"] != grant["fencing_scope"]
@@ -3461,6 +3472,17 @@ class SQLiteFencedObjectStorageProvider:
                         raise BackupStorageError("Provider backup FENCED scope has an invalid generation or grant expiry")
                 else:
                     activation = grant_receipts.get(grant["activation_command_sha256"])
+                    if signed_receipts_required:
+                        if activation is None:
+                            raise BackupStorageError(
+                                "Provider backup ACTIVE grant has no ACTIVATE command receipt"
+                            )
+                        try:
+                            cls._verify_provider_native_receipt_row(activation)
+                        except SQLiteProviderGrantRejectedError as exc:
+                            raise BackupStorageError(
+                                "Provider backup current ACTIVATE is missing a valid signed Provider Receipt"
+                            ) from exc
                     if (
                         grant["grant_expires_at"] is None
                         or activation is None or activation["action"] != "ACTIVATE"
