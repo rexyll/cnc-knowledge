@@ -35,6 +35,10 @@ from scripts.spare_parts_provider_write_freeze_gate import (
     ProviderWriteFreezeCommandError,
     verify_provider_write_freeze_command,
 )
+from scripts.spare_parts_provider_revocable_grant import (
+    ProviderGrantCommandError,
+    verify_provider_grant_command,
+)
 
 from scripts.spare_parts_backup_storage_adapter import (
     BackupStorageConflict,
@@ -52,7 +56,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     _sha,
 )
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 PBKDF2_ITERATIONS = 210_000
 MAX_FENCING_TOKEN = (1 << 63) - 1
 DEFAULT_ACTIONS = (
@@ -79,6 +83,10 @@ class FencingAttestationStatusUnavailableError(BackupStorageError):
 
 class SQLiteProviderWriteFrozenError(BackupStorageError):
     """A persisted Provider-native freeze gate blocks a mutation."""
+
+
+class SQLiteProviderGrantRejectedError(BackupStorageError):
+    """A Provider-native grant is absent, fenced, expired or stale."""
 
 
 class SQLiteProviderObjectNotFoundError(BackupStorageError):
@@ -112,6 +120,7 @@ class SQLiteFencedObjectStorageProvider:
         require_atomic_online_attestation_status: bool = False,
         leader_status_checker: Any | None = None,
         require_online_leader_status: bool = False,
+        require_revocable_grant: bool = False,
         busy_timeout_seconds: float = 5.0,
         fault_hook: Callable[[str], None] | None = None,
     ):
@@ -193,6 +202,9 @@ class SQLiteFencedObjectStorageProvider:
             raise BackupStorageError(
                 "online Coordinator Leader status is required but no checker is configured"
             )
+        if not isinstance(require_revocable_grant, bool):
+            raise BackupStorageError("require_revocable_grant must be boolean")
+        self.require_revocable_grant = require_revocable_grant
         self.attestation_status_checker = attestation_status_checker
         self.require_online_attestation_status = require_online_attestation_status
         self.require_atomic_online_attestation_status = require_atomic_online_attestation_status
@@ -277,7 +289,47 @@ class SQLiteFencedObjectStorageProvider:
                 )"""
             )
             connection.execute(
-                "UPDATE provider_meta SET value=? WHERE key='schema_version' AND value IN ('2','3')",
+                """CREATE TABLE IF NOT EXISTS provider_scope_grants (
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    coordinator_namespace TEXT NOT NULL,
+                    leader_id TEXT NOT NULL,
+                    leader_epoch INTEGER NOT NULL CHECK(leader_epoch > 0),
+                    leader_lease_id INTEGER NOT NULL CHECK(leader_lease_id > 0),
+                    leader_lease_expires_at REAL NOT NULL,
+                    grant_generation INTEGER NOT NULL CHECK(grant_generation > 0),
+                    grant_id TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK(state IN ('FENCED','ACTIVE')),
+                    grant_expires_at REAL,
+                    fence_command_sha256 TEXT NOT NULL CHECK(length(fence_command_sha256)=64),
+                    activation_command_sha256 TEXT,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(tenant_id,fencing_scope)
+                )"""
+            )
+            connection.execute(
+                """CREATE TABLE IF NOT EXISTS provider_grant_commands (
+                    command_sha256 TEXT PRIMARY KEY CHECK(length(command_sha256)=64),
+                    issuer_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    provider_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    fencing_scope TEXT NOT NULL,
+                    action TEXT NOT NULL CHECK(action IN ('FENCE','ACTIVATE')),
+                    grant_id TEXT NOT NULL,
+                    generation INTEGER NOT NULL CHECK(generation > 0),
+                    coordinator_namespace TEXT NOT NULL,
+                    leader_id TEXT NOT NULL,
+                    leader_epoch INTEGER NOT NULL CHECK(leader_epoch > 0),
+                    leader_lease_id INTEGER NOT NULL CHECK(leader_lease_id > 0),
+                    leader_lease_expires_at REAL NOT NULL,
+                    fence_command_sha256 TEXT,
+                    result_state TEXT NOT NULL CHECK(result_state IN ('FENCED','ACTIVE')),
+                    applied_at REAL NOT NULL
+                )"""
+            )
+            connection.execute(
+                "UPDATE provider_meta SET value=? WHERE key='schema_version' AND value IN ('2','3','4')",
                 (str(SCHEMA_VERSION),),
             )
             version_row = connection.execute(
@@ -1105,6 +1157,266 @@ class SQLiteFencedObjectStorageProvider:
             )
         return {"result": "APPLIED", "scope": scope, "generation": generation, "state": state}
 
+    def apply_provider_grant_command(
+        self, envelope: dict[str, Any], *, now_unix: float | None = None
+    ) -> dict[str, Any]:
+        """Atomically FENCE an old grant or ACTIVATE a grant after its FENCE receipt."""
+        if self.provider_id is None:
+            raise BackupStorageError("Provider identity must be configured before grant commands")
+        now = time.time() if now_unix is None else now_unix
+        try:
+            claims, key_id, command_digest = verify_provider_grant_command(
+                envelope, self._trusted_ed25519_public_keys,
+                expected_provider_id=self.provider_id,
+                expected_tenant_id=self.tenant_id,
+                now_unix=now,
+            )
+        except ProviderGrantCommandError as exc:
+            raise FencingAttestationRejectedError(str(exc)) from exc
+        scope = _safe_key(claims["scope"])
+        with self._transaction() as c:
+            trusted = c.execute(
+                """SELECT algorithm,public_key_sha256,status,not_before,not_after
+                   FROM trusted_ed25519_keys WHERE issuer_id=? AND key_id=?""",
+                (claims["issuer_id"], key_id),
+            ).fetchone()
+            public_key = self._trusted_ed25519_public_keys.get(key_id)
+            if (
+                trusted is None or trusted["algorithm"] != "ED25519"
+                or trusted["status"] not in {"ACTIVE", "RETIRING"}
+                or public_key is None
+                or self._ed25519_public_key_fingerprint(public_key) != trusted["public_key_sha256"]
+                or now < float(trusted["not_before"])
+                or (trusted["not_after"] is not None and now >= float(trusted["not_after"]))
+                or float(claims["issued_at_unix"]) < float(trusted["not_before"])
+                or (trusted["not_after"] is not None and float(claims["issued_at_unix"]) >= float(trusted["not_after"]))
+            ):
+                raise FencingAttestationRejectedError(
+                    "Provider grant issuer/key is not trusted for this Provider"
+                )
+
+            receipt = c.execute(
+                """SELECT * FROM provider_grant_commands
+                   WHERE command_sha256=? AND provider_id=? AND tenant_id=?""",
+                (command_digest, self.provider_id, self.tenant_id),
+            ).fetchone()
+            if receipt is not None:
+                expected = (
+                    claims["issuer_id"], key_id, self.provider_id, self.tenant_id,
+                    scope, claims["action"], claims["grant_id"], int(claims["generation"]),
+                    claims["coordinator_namespace"], claims["leader_id"],
+                    int(claims["leader_epoch"]), int(claims["leader_lease_id"]),
+                )
+                observed = (
+                    receipt["issuer_id"], receipt["key_id"], receipt["provider_id"],
+                    receipt["tenant_id"], receipt["fencing_scope"], receipt["action"],
+                    receipt["grant_id"], int(receipt["generation"]),
+                    receipt["coordinator_namespace"], receipt["leader_id"],
+                    int(receipt["leader_epoch"]), int(receipt["leader_lease_id"]),
+                )
+                if observed != expected:
+                    raise FencingAttestationRejectedError(
+                        "Provider grant receipt conflicts with its signed claims"
+                    )
+                current = c.execute(
+                    """SELECT grant_generation,grant_id,state,grant_expires_at
+                       FROM provider_scope_grants WHERE tenant_id=? AND fencing_scope=?""",
+                    (self.tenant_id, scope),
+                ).fetchone()
+                return {
+                    "result": "ALREADY_APPLIED", "scope": scope,
+                    "generation": int(receipt["generation"]),
+                    "state": receipt["result_state"], "command_sha256": command_digest,
+                    "current_generation": int(current["grant_generation"]) if current else None,
+                    "current_state": current["state"] if current else None,
+                }
+
+            if self.require_online_leader_status:
+                try:
+                    active = bool(self.leader_status_checker.is_leader_active(
+                        {
+                            "coordinator_namespace": claims["coordinator_namespace"],
+                            "leader_id": claims["leader_id"],
+                            "leader_epoch": claims["leader_epoch"],
+                            "leader_lease_id": claims["leader_lease_id"],
+                            "leader_lease_expires_at_unix": claims["leader_lease_expires_at_unix"],
+                        },
+                        now_unix=now,
+                    ))
+                except Exception as exc:
+                    raise FencingAttestationStatusUnavailableError(
+                        "Coordinator online Leader status is unavailable; grant command refused"
+                    ) from exc
+                if not active:
+                    raise FencingAttestationRejectedError(
+                        "Coordinator Leader is absent, expired, revoked or does not match the grant command"
+                    )
+
+            current = c.execute(
+                """SELECT * FROM provider_scope_grants
+                   WHERE tenant_id=? AND fencing_scope=?""",
+                (self.tenant_id, scope),
+            ).fetchone()
+            generation = int(claims["generation"])
+            expected_generation = int(current["grant_generation"]) + 1 if current else 1
+            if generation != expected_generation:
+                raise FencingAttestationRejectedError(
+                    "Provider grant generation is stale or skips the next generation"
+                )
+            namespace = claims["coordinator_namespace"]
+            leader_id = claims["leader_id"]
+            leader_epoch = int(claims["leader_epoch"])
+            lease_id = int(claims["leader_lease_id"])
+            lease_expires = float(claims["leader_lease_expires_at_unix"])
+            grant_id = claims["grant_id"]
+            action = claims["action"]
+            fence_digest = command_digest if action == "FENCE" else claims["fence_command_sha256"]
+
+            if current is not None and namespace != current["coordinator_namespace"]:
+                raise FencingAttestationRejectedError(
+                    "Coordinator namespace changed for an established Provider grant scope"
+                )
+
+            if action == "FENCE":
+                if current is not None and leader_epoch <= int(current["leader_epoch"]):
+                    raise FencingAttestationRejectedError(
+                        "FENCE must be issued by a strictly newer Coordinator Leader epoch"
+                    )
+                state = "FENCED"
+                grant_expires = None
+                activation_digest = None
+            else:
+                if current is None or current["state"] != "FENCED":
+                    raise SQLiteProviderGrantRejectedError(
+                        "ACTIVATE requires a previously committed Provider FENCE"
+                    )
+                identity = (
+                    namespace, leader_id, leader_epoch, lease_id, lease_expires, grant_id
+                )
+                fenced_identity = (
+                    current["coordinator_namespace"], current["leader_id"],
+                    int(current["leader_epoch"]), int(current["leader_lease_id"]),
+                    float(current["leader_lease_expires_at"]), current["grant_id"],
+                )
+                if identity != fenced_identity:
+                    raise FencingAttestationRejectedError(
+                        "ACTIVATE does not match the pending FENCE Leader, Lease or grant identity"
+                    )
+                if claims["fence_command_sha256"] != current["fence_command_sha256"]:
+                    raise FencingAttestationRejectedError(
+                        "ACTIVATE does not reference the exact current FENCE receipt"
+                    )
+                fence_receipt = c.execute(
+                    """SELECT result_state,action,provider_id,tenant_id,fencing_scope,
+                              grant_id,generation,coordinator_namespace,leader_id,
+                              leader_epoch,leader_lease_id
+                       FROM provider_grant_commands WHERE command_sha256=?""",
+                    (claims["fence_command_sha256"],),
+                ).fetchone()
+                if (
+                    fence_receipt is None or fence_receipt["action"] != "FENCE"
+                    or fence_receipt["result_state"] != "FENCED"
+                    or fence_receipt["provider_id"] != self.provider_id
+                    or fence_receipt["tenant_id"] != self.tenant_id
+                    or fence_receipt["fencing_scope"] != scope
+                    or fence_receipt["grant_id"] != grant_id
+                    or int(fence_receipt["generation"]) + 1 != generation
+                    or fence_receipt["coordinator_namespace"] != namespace
+                    or fence_receipt["leader_id"] != leader_id
+                    or int(fence_receipt["leader_epoch"]) != leader_epoch
+                    or int(fence_receipt["leader_lease_id"]) != lease_id
+                ):
+                    raise SQLiteProviderGrantRejectedError(
+                        "ACTIVATE is missing an exact durable FENCE receipt"
+                    )
+                state = "ACTIVE"
+                grant_expires = float(claims["expires_at_unix"])
+                activation_digest = command_digest
+
+            c.execute(
+                """INSERT INTO provider_scope_grants(
+                    tenant_id,fencing_scope,coordinator_namespace,leader_id,
+                    leader_epoch,leader_lease_id,leader_lease_expires_at,
+                    grant_generation,grant_id,state,grant_expires_at,
+                    fence_command_sha256,activation_command_sha256,updated_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(tenant_id,fencing_scope) DO UPDATE SET
+                    coordinator_namespace=excluded.coordinator_namespace,
+                    leader_id=excluded.leader_id,leader_epoch=excluded.leader_epoch,
+                    leader_lease_id=excluded.leader_lease_id,
+                    leader_lease_expires_at=excluded.leader_lease_expires_at,
+                    grant_generation=excluded.grant_generation,
+                    grant_id=excluded.grant_id,state=excluded.state,
+                    grant_expires_at=excluded.grant_expires_at,
+                    fence_command_sha256=excluded.fence_command_sha256,
+                    activation_command_sha256=excluded.activation_command_sha256,
+                    updated_at=excluded.updated_at""",
+                (
+                    self.tenant_id, scope, namespace, leader_id, leader_epoch,
+                    lease_id, lease_expires, generation, grant_id, state,
+                    grant_expires, fence_digest, activation_digest, now,
+                ),
+            )
+            c.execute(
+                """INSERT INTO provider_grant_commands(
+                    command_sha256,issuer_id,key_id,provider_id,tenant_id,
+                    fencing_scope,action,grant_id,generation,coordinator_namespace,
+                    leader_id,leader_epoch,leader_lease_id,leader_lease_expires_at,
+                    fence_command_sha256,result_state,applied_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    command_digest, claims["issuer_id"], key_id, self.provider_id,
+                    self.tenant_id, scope, action, grant_id, generation, namespace,
+                    leader_id, leader_epoch, lease_id, lease_expires,
+                    claims["fence_command_sha256"], state, now,
+                ),
+            )
+            self._inject("before_provider_grant_commit")
+        # This hook simulates a lost response after the durable SQLite commit.
+        self._inject("after_provider_grant_commit")
+        return {
+            "result": "APPLIED", "scope": scope, "generation": generation,
+            "state": state, "grant_id": grant_id,
+            "command_sha256": command_digest,
+        }
+
+    def provider_grant_command_status(self, command_sha256: str) -> dict[str, Any] | None:
+        """Read-only recovery lookup for an exact signed FENCE/ACTIVATE envelope."""
+        if not isinstance(command_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", command_sha256):
+            raise BackupStorageError("Provider grant command digest must be 64 lowercase hexadecimal characters")
+        if self.provider_id is None:
+            raise BackupStorageError("Provider identity is required for grant receipt lookup")
+        with self._read_transaction() as c:
+            receipt = c.execute(
+                """SELECT * FROM provider_grant_commands
+                   WHERE command_sha256=? AND provider_id=? AND tenant_id=?""",
+                (command_sha256, self.provider_id, self.tenant_id),
+            ).fetchone()
+            if receipt is None:
+                return None
+            result = dict(receipt)
+            current = c.execute(
+                """SELECT * FROM provider_scope_grants
+                   WHERE tenant_id=? AND fencing_scope=?""",
+                (self.tenant_id, result["fencing_scope"]),
+            ).fetchone()
+            result["current_scope_state"] = dict(current) if current is not None else None
+            return result
+
+    def provider_grant_state(self, fencing_scope: str) -> dict[str, Any] | None:
+        """Read-only current Provider grant state for one scope."""
+        scope = _safe_key(fencing_scope)
+        with self._read_transaction() as c:
+            row = c.execute(
+                """SELECT coordinator_namespace,leader_id,leader_epoch,leader_lease_id,
+                          leader_lease_expires_at,grant_generation,grant_id,state,
+                          grant_expires_at,fence_command_sha256,activation_command_sha256,
+                          updated_at
+                   FROM provider_scope_grants WHERE tenant_id=? AND fencing_scope=?""",
+                (self.tenant_id, scope),
+            ).fetchone()
+            return dict(row) if row is not None else None
+
     def write_freeze_command_status(self, command_sha256: str) -> dict[str, Any] | None:
         """Read-only lookup of a historical command receipt and current scope state."""
         if not isinstance(command_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", command_sha256):
@@ -1371,9 +1683,14 @@ class SQLiteFencedObjectStorageProvider:
             raise FencingAttestationRejectedError("fencing attestation is expired or exceeds its lease")
         base_claim_count = 15 if algorithm == "HMAC-SHA256" else 16
         has_freeze_generation = "provider_freeze_generation" in claims
+        has_grant_id = "provider_grant_id" in claims
+        has_grant_generation = "provider_grant_generation" in claims
+        if has_grant_id != has_grant_generation:
+            raise FencingAttestationRejectedError("Provider grant claims must be supplied together")
+        has_provider_grant = has_grant_id and has_grant_generation
         if (
             algorithm not in {"HMAC-SHA256", "ED25519"}
-            or len(claims) != base_claim_count + int(has_freeze_generation)
+            or len(claims) != base_claim_count + int(has_freeze_generation) + 2 * int(has_provider_grant)
             or (algorithm == "ED25519" and claims.get("alg") != "ED25519")
         ):
             raise FencingAttestationRejectedError("fencing attestation contains unknown or missing claims")
@@ -1383,6 +1700,15 @@ class SQLiteFencedObjectStorageProvider:
             or claims["provider_freeze_generation"] <= 0
         ):
             raise FencingAttestationRejectedError("provider freeze generation claim is invalid")
+        if has_provider_grant and (
+            not isinstance(claims["provider_grant_id"], str)
+            or not claims["provider_grant_id"].strip()
+            or len(claims["provider_grant_id"]) > 128
+            or not isinstance(claims["provider_grant_generation"], int)
+            or isinstance(claims["provider_grant_generation"], bool)
+            or claims["provider_grant_generation"] <= 0
+        ):
+            raise FencingAttestationRejectedError("Provider grant claims are invalid")
         return claims
 
     def _authorize_fencing_attestation(
@@ -1446,27 +1772,50 @@ class SQLiteFencedObjectStorageProvider:
         self, c: sqlite3.Connection, *, tenant_id: str,
         fencing_scope: str, claims: dict[str, Any],
     ) -> None:
-        row = c.execute(
+        freeze = c.execute(
             """SELECT generation,freeze_id,state FROM provider_write_freeze_scopes
                WHERE tenant_id=? AND fencing_scope=?""",
             (tenant_id, fencing_scope),
         ).fetchone()
-        if row is None:
+        if freeze is None:
             if "provider_freeze_generation" in claims:
                 raise FencingAttestationRejectedError(
                     "write proof references a Provider freeze generation that is not installed"
                 )
-            return
-        if row["state"] == "FROZEN":
-            raise SQLiteProviderWriteFrozenError(
-                "Provider-native write freeze is active for this fencing scope"
-            )
-        if claims.get("provider_freeze_generation") != int(row["generation"]):
-            raise FencingAttestationRejectedError(
-                "write proof is not bound to the current Provider freeze generation"
-            )
-        # Deterministic synchronization point used by the local race fixture.
-        self._inject("after_provider_write_freeze_check")
+        else:
+            if freeze["state"] == "FROZEN":
+                raise SQLiteProviderWriteFrozenError(
+                    "Provider-native write freeze is active for this fencing scope"
+                )
+            if claims.get("provider_freeze_generation") != int(freeze["generation"]):
+                raise FencingAttestationRejectedError(
+                    "write proof is not bound to the current Provider freeze generation"
+                )
+            self._inject("after_provider_write_freeze_check")
+
+        if self.require_revocable_grant:
+            grant = c.execute(
+                """SELECT coordinator_namespace,leader_id,leader_epoch,leader_lease_id,
+                          grant_generation,grant_id,state,grant_expires_at
+                   FROM provider_scope_grants
+                   WHERE tenant_id=? AND fencing_scope=?""",
+                (tenant_id, fencing_scope),
+            ).fetchone()
+            if grant is None or grant["state"] != "ACTIVE":
+                raise SQLiteProviderGrantRejectedError(
+                    "Provider grant is absent or fenced for this scope"
+                )
+            if (
+                claims.get("provider_grant_id") != grant["grant_id"]
+                or claims.get("provider_grant_generation") != int(grant["grant_generation"])
+            ):
+                raise SQLiteProviderGrantRejectedError(
+                    "write proof does not match the current Provider grant generation"
+                )
+            now = time.time()
+            if grant["grant_expires_at"] is None or float(grant["grant_expires_at"]) <= now:
+                raise SQLiteProviderGrantRejectedError("Provider grant has expired")
+            self._inject("after_provider_grant_check")
 
     @staticmethod
     def _validate_fenced_arguments(
@@ -2131,6 +2480,7 @@ class SQLiteFencedObjectStorageProvider:
                 "provider_objects", "multipart_sessions", "multipart_parts", "provider_audit",
                 "provider_write_freeze_scopes", "provider_write_freeze_commands",
                 "provider_write_freeze_leader_floors", "provider_write_freeze_command_leaders",
+                "provider_scope_grants", "provider_grant_commands",
             }
             tables = {
                 row["name"] for row in connection.execute(
