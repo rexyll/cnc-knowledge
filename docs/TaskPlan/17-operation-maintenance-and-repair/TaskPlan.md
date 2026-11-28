@@ -1509,5 +1509,5 @@
 - **Provider：** 增加 `leader_status_checker` 和 `require_online_leader_status` opt-in配置。开启后，在线检查false或异常均拒绝新的FREEZE/UNFREEZE；缺少checker时Provider初始化失败。历史精确命令receipt仍先于在线检查，只返回ALREADY_APPLIED，不重做状态变更。
 - **测试：** 新增 `tests/test_spare_parts_provider_live_leader_status.py`；Provider专项测试增加checker缺失、状态失效、连接异常fail-closed和历史receipt优先级用例。
 - **TOCTOU限制：** 在线Range和Provider SQLite提交没有共同事务；即使在SQLite BEGIN IMMEDIATE期间执行检查，etcd Lease仍可能在Range后、SQLite commit前撤销。本轮只拒绝检查时已经失效的Leader，不构成跨系统原子fencing。后续必须设计Provider参与的可撤销授权/屏障协议。
-- **验证：** 必需GitHub Actions CI待完成；未取得CI结果前不标记验收DONE。
+- **验证：** [最终主分支CI Run 46139767853](https://github.com/rexyll/cnc-knowledge/actions/runs/46139767853) 两个必需Job均success；全库663项测试运行、40项跳过、623项通过；CH12数值资源143项通过；知识lint 0 errors/5 warnings，结构与数据检查0 errors。该CI为合成测试，不是实时Provider/etcd运行证明。
 - **安全边界：** 未连接真实etcd、Provider、KMS/HSM、对象存储或IAM/RBAC；未触碰生产namespace、未导入候选数据、未激活应用或执行cutover。ASSET-000092仍为PROPOSED_NOT_APPROVED / NOT_RUN。
