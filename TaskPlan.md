@@ -1378,3 +1378,5 @@
 - **Provider schema：** v4新增per-scope Leader epoch floor及per-command Leader审计表；v3→v4加法迁移。
 - **防回退：** Provider已观察更高epoch后拒绝低epoch新命令；相同epoch禁止更换Leader/Lease身份；scope namespace固定。命令receipt、freeze状态、Leader floor和审计同事务提交。
 - **限制：** 这是签名声明和已观察epoch的单调性保护，不是实时etcd Lease有效性证明。Provider尚未观察新epoch时，提前撤销的旧Lease仍存在有限但真实的接受窗口；生产必须增加在线线性一致Leader/Lease验证或等价可撤销机制。
+
+- **补充防回退：** namespace要求规范绝对前缀；同一epoch/Lease ID下Lease expiry不得回退，拒绝陈旧续租快照。
