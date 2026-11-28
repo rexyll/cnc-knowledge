@@ -679,3 +679,5 @@ Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执
 - Rollback witness只保存sequence/root时只能检测整体snapshot回滚，不足以重建数据；若无域外事件正文或可信备份，必须维持写隔离并逐scope受控重建。v1全局meta/event root意味着写入全局串行化，吞吐需后续实测。
 - **Round99最终验收：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663) 两个必需Job均成功；全库776项测试运行、40项环境跳过；CH12数值资源143项通过；strict knowledge lint 0 errors / 5 warnings。以上仅验收设计文档与仓库质量，不代表Etcd-native服务或生产witness已经实现。
 - **最终文档同步CI：** [Knowledge Quality Run 46164006077](https://github.com/rexyll/cnc-knowledge/actions/runs/46164006077) 两个必需Job均success；全库776项运行、40项环境跳过；CH12数值资源143项通过；lint 0 errors / 5 warnings。
+
+- **最终复核：** [Knowledge Quality Run 46164190439](https://github.com/rexyll/cnc-knowledge/actions/runs/46164190439) 两个必需Job均success，覆盖最新Round99文档同步版本。
