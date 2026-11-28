@@ -1435,3 +1435,16 @@
 - 测试覆盖合法签名、证据篡改、未知key、错误签名/算法、非法Base64、未知schema、过期证据及Provider floor超限。
 - 信任库必须通过独立可信渠道配置；本工具不验证信任库来源、不执行密钥轮换，也不提供持久化nonce/replay ledger。有效签名仅认证快照，不能证明采样后Provider持续冻结。
 - 本轮不连接真实Provider、不调用KMS、不写控制记录、不修改RBAC、不执行生产导入或cutover；MIG-05继续IN_PROGRESS，MIG-06仍需真实隔离etcd演练。
+
+
+
+### 第八十三轮：MIG-05 Provider freeze attestation 与一次性防重放
+
+- 新增 `scripts/spare_parts_sqlite_provider_freeze_attestation.py`，验证Provider Ed25519签名冻结声明，并将其绑定到一次性challenge nonce、evidence UUID、freeze ID/generation、Coordinator Leader ID/epoch/native Lease ID和scope floors。
+- 必须提供近期Coordinator Leader快照（默认不超过5秒）；签名声明中的Leader/Lease字段与快照精确一致，scope generation/token/operation sequence与Coordinator状态及Provider证据精确一致。
+- 保留第八十一轮Provider证据300秒新鲜度和候选floor校验；冻结窗口、签名窗口和Coordinator Lease期限必须满足严格先后约束。
+- 新增 `SQLiteProviderFreezeEvidenceReplayLedger`：SQLite本机参考实现，0600数据库文件、FULL同步、BEGIN IMMEDIATE和唯一约束；分别阻止同provider evidence ID、challenge nonce以及freeze ID/generation再次消费。完整校验成功后才消费，数据库错误必须fail closed。
+- 输出仅表示冻结声明签名通过、绑定关系匹配且防重放记录已消费；`provider_write_freeze_enforced`、`application_activation_authorized`、`provider_operations_authorized`均保持false。
+- 明确该ledger不支持跨主机/多实例共识，数据库备份回滚可能重置消费历史；生产必须使用共享线性一致的防重放账本（例如隔离etcd CAS/Txn），且Coordinator快照必须来自认证的线性一致读取。
+- 单元测试覆盖验签、重放、nonce、freeze generation、Leader/Lease、scope floor、时间窗、校验失败不消费、文件权限和fail-closed错误。
+- 本轮不连接真实Provider、KMS或etcd，不写Provider控制面，不调整RBAC，不执行迁移/cutover。
