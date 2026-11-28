@@ -327,10 +327,9 @@ class SQLiteFencedObjectStorageProvider:
             ).fetchone()[0])
             requested = "1" if self.require_provider_signed_grant_receipts else "0"
             if row is None:
-                if requested == "1" and existing_commands:
-                    raise BackupStorageError(
-                        "cannot enable signed Provider receipt mode after legacy Grant commands already exist"
-                    )
+                # Existing legacy command rows remain unverified. Enabling strict
+                # mode blocks their use as active grants; it does not synthesize
+                # or backfill Provider receipts for historical operations.
                 connection.execute(
                     "INSERT INTO provider_meta(key,value) VALUES('provider_grant_receipt_signing_required',?)",
                     (requested,),
@@ -344,10 +343,9 @@ class SQLiteFencedObjectStorageProvider:
                         "signed Provider receipt mode is persistent and cannot be downgraded"
                     )
                 if persisted == "0" and requested == "1":
-                    if existing_commands:
-                        raise BackupStorageError(
-                            "cannot enable signed Provider receipt mode after legacy Grant commands already exist"
-                        )
+                    # Old command rows remain legacy-unverifiable. Strict write
+                    # authorization and backup validation require a Provider
+                    # receipt for the currently active FENCE/ACTIVATE chain.
                     connection.execute(
                         "UPDATE provider_meta SET value='1' "
                         "WHERE key='provider_grant_receipt_signing_required'"
@@ -2311,6 +2309,120 @@ class SQLiteFencedObjectStorageProvider:
                 "Provider grant receipt signature or claims cannot be verified"
             ) from exc
 
+    @staticmethod
+    def _verify_provider_native_receipt_row(receipt: sqlite3.Row | dict[str, Any]):
+        """Verify the Provider-signed receipt against its exact persisted Coordinator command.
+
+        This checks cryptographic and row-to-envelope consistency. The independent
+        external Floor trust registry remains the authority for Provider signer trust.
+        """
+        try:
+            command_envelope = json.loads(receipt["envelope_json"])
+            command_public_key = base64.b64decode(
+                receipt["signer_public_key_base64"], validate=True
+            )
+            if len(command_public_key) != 32:
+                raise ValueError("Coordinator command public key is invalid")
+            command_claims = command_envelope["command"]
+            command_issued = float(command_claims["issued_at_unix"])
+            command_expires = float(command_claims["expires_at_unix"])
+            verified_command_claims, command_key_id, command_digest = verify_provider_grant_command(
+                command_envelope,
+                {receipt["key_id"]: command_public_key},
+                expected_provider_id=receipt["provider_id"],
+                expected_tenant_id=receipt["tenant_id"],
+                now_unix=command_issued + (command_expires - command_issued) / 2.0,
+            )
+            if (
+                command_key_id != receipt["key_id"]
+                or command_digest != receipt["command_sha256"]
+                or verified_command_claims["scope"] != receipt["fencing_scope"]
+                or verified_command_claims["action"] != receipt["action"]
+                or verified_command_claims["grant_id"] != receipt["grant_id"]
+                or int(verified_command_claims["generation"]) != int(receipt["generation"])
+                or verified_command_claims["coordinator_namespace"] != receipt["coordinator_namespace"]
+                or verified_command_claims["leader_id"] != receipt["leader_id"]
+                or int(verified_command_claims["leader_epoch"]) != int(receipt["leader_epoch"])
+                or int(verified_command_claims["leader_lease_id"]) != int(receipt["leader_lease_id"])
+                or float(verified_command_claims["leader_lease_expires_at_unix"])
+                != float(receipt["leader_lease_expires_at"])
+                or verified_command_claims["fence_command_sha256"] != receipt["fence_command_sha256"]
+            ):
+                raise ValueError("persisted Coordinator command fields do not match their signed envelope")
+
+            required = (
+                receipt["provider_receipt_envelope_json"],
+                receipt["provider_receipt_digest"],
+                receipt["provider_receipt_key_id"],
+                receipt["provider_receipt_public_key_base64"],
+            )
+            if not all(isinstance(value, str) and value for value in required):
+                raise ValueError("durable Provider-signed Receipt fields are incomplete")
+            provider_envelope = json.loads(receipt["provider_receipt_envelope_json"])
+            provider_canonical = canonical_receipt_json(provider_envelope)
+            provider_public_key = base64.b64decode(
+                receipt["provider_receipt_public_key_base64"], validate=True
+            )
+            if (
+                provider_canonical.decode("utf-8") != receipt["provider_receipt_envelope_json"]
+                or len(provider_public_key) != 32
+                or hashlib.sha256(provider_canonical).hexdigest()
+                != receipt["provider_receipt_digest"]
+                or receipt["provider_receipt_key_id"] == receipt["key_id"]
+                or provider_public_key == command_public_key
+            ):
+                raise ValueError("Provider Receipt digest, canonical bytes or signer separation is invalid")
+            expected_claims = {
+                "provider_id": receipt["provider_id"],
+                "tenant_id": receipt["tenant_id"],
+                "scope": receipt["fencing_scope"],
+                "action": receipt["action"],
+                "grant_id": receipt["grant_id"],
+                "generation": int(receipt["generation"]),
+                "command_sha256": receipt["command_sha256"],
+                "fence_command_sha256": (
+                    None if receipt["action"] == "FENCE"
+                    else receipt["fence_command_sha256"]
+                ),
+                "result_state": receipt["result_state"],
+                "coordinator_namespace": receipt["coordinator_namespace"],
+                "leader_id": receipt["leader_id"],
+                "leader_epoch": int(receipt["leader_epoch"]),
+                "native_lease_id": int(receipt["leader_lease_id"]),
+                "native_lease_expires_at_unix": float(receipt["leader_lease_expires_at"]),
+                "command_issued_at_unix": command_issued,
+                "command_expires_at_unix": command_expires,
+                "applied_at_unix": float(receipt["applied_at"]),
+            }
+            trust_key = ProviderReceiptTrustKey(
+                provider_id=receipt["provider_id"],
+                key_id=receipt["provider_receipt_key_id"],
+                public_key=provider_public_key,
+                public_key_sha256=hashlib.sha256(provider_public_key).hexdigest(),
+                status="ACTIVE",
+                not_before=0.0,
+                not_after=None,
+                retiring_effective_at=None,
+                revocation_effective_at=None,
+                trust_revision=1,
+            )
+            verified = verify_provider_grant_receipt(
+                provider_envelope,
+                trust_key,
+                expected_claims=expected_claims,
+                now_unix=time.time(),
+            )
+            if verified.receipt_digest != receipt["provider_receipt_digest"]:
+                raise ValueError("Provider Receipt digest does not match the verified envelope")
+            return verified
+        except (
+            KeyError, TypeError, ValueError, json.JSONDecodeError,
+            ProviderGrantCommandError, ProviderGrantReceiptError,
+        ) as exc:
+            raise SQLiteProviderGrantRejectedError(
+                "Provider-native signed Grant Receipt cannot be verified"
+            ) from exc
+
     def _authorize_provider_write_freeze(
         self, c: sqlite3.Connection, *, tenant_id: str,
         fencing_scope: str, claims: dict[str, Any],
@@ -2343,9 +2455,17 @@ class SQLiteFencedObjectStorageProvider:
                           g.grant_expires_at,g.fence_command_sha256,
                           f.provider_id,f.envelope_json AS fence_envelope_json,
                           f.signer_public_key_base64 AS fence_signer_public_key_base64,
+                          f.provider_receipt_envelope_json AS fence_provider_receipt_envelope_json,
+                          f.provider_receipt_digest AS fence_provider_receipt_digest,
+                          f.provider_receipt_key_id AS fence_provider_receipt_key_id,
+                          f.provider_receipt_public_key_base64 AS fence_provider_receipt_public_key_base64,
                           a.command_sha256 AS activation_command_sha256,
                           a.envelope_json AS activation_envelope_json,
-                          a.signer_public_key_base64 AS activation_signer_public_key_base64
+                          a.signer_public_key_base64 AS activation_signer_public_key_base64,
+                          a.provider_receipt_envelope_json AS activation_provider_receipt_envelope_json,
+                          a.provider_receipt_digest AS activation_provider_receipt_digest,
+                          a.provider_receipt_key_id AS activation_provider_receipt_key_id,
+                          a.provider_receipt_public_key_base64 AS activation_provider_receipt_public_key_base64
                    FROM provider_scope_grants g
                    JOIN provider_grant_commands f
                      ON f.command_sha256=g.fence_command_sha256 AND f.action='FENCE'
@@ -2375,6 +2495,21 @@ class SQLiteFencedObjectStorageProvider:
                 expected_action="ACTIVATE", expected_scope=fencing_scope,
                 expected_grant_id=grant["grant_id"],
             )
+            if self.require_provider_signed_grant_receipts:
+                fence_row = c.execute(
+                    "SELECT * FROM provider_grant_commands WHERE command_sha256=?",
+                    (grant["fence_command_sha256"],),
+                ).fetchone()
+                activation_row = c.execute(
+                    "SELECT * FROM provider_grant_commands WHERE command_sha256=?",
+                    (grant["activation_command_sha256"],),
+                ).fetchone()
+                if fence_row is None or activation_row is None:
+                    raise SQLiteProviderGrantRejectedError(
+                        "active Provider Grant is missing a durable signed Provider Receipt"
+                    )
+                self._verify_provider_native_receipt_row(fence_row)
+                self._verify_provider_native_receipt_row(activation_row)
             if (
                 int(activation_claims["generation"]) != int(grant["grant_generation"])
                 or activation_claims["fence_command_sha256"] != grant["fence_command_sha256"]
