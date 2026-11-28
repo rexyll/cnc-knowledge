@@ -112,19 +112,30 @@ class StoreBackedCoordinatorAuthority:
 
     @staticmethod
     def _valid_leader_record(record: Any) -> bool:
-        return (
-            isinstance(record, dict)
-            and set(record) == {"leader_id", "epoch", "expires_at", "backend_lease_id"}
-            and isinstance(record.get("leader_id"), str) and bool(record["leader_id"])
-            and isinstance(record.get("epoch"), int) and not isinstance(record["epoch"], bool)
-            and record["epoch"] > 0
-            and isinstance(record.get("expires_at"), (int, float))
-            and not isinstance(record["expires_at"], bool)
-            and math.isfinite(float(record["expires_at"]))
-            and isinstance(record.get("backend_lease_id"), int)
-            and not isinstance(record["backend_lease_id"], bool)
-            and record["backend_lease_id"] > 0
-        )
+        if not isinstance(record, dict) or set(record) != {
+            "leader_id", "epoch", "expires_at", "backend_lease_id"
+        }:
+            return False
+        if (
+            not isinstance(record.get("leader_id"), str)
+            or not record["leader_id"]
+            or not isinstance(record.get("epoch"), int)
+            or isinstance(record["epoch"], bool)
+            or record["epoch"] <= 0
+            or not isinstance(record.get("expires_at"), (int, float))
+            or isinstance(record["expires_at"], bool)
+            or not math.isfinite(float(record["expires_at"]))
+            or not isinstance(record.get("backend_lease_id"), int)
+            or isinstance(record["backend_lease_id"], bool)
+        ):
+            return False
+        # A migration epoch-floor record is a historical marker, not a live
+        # Leader lease. Zero is etcd's no-Lease value and avoids aliasing a
+        # real cluster-global Lease ID. Only this exact inactive marker may
+        # use zero; every actual Leader record must carry a positive Lease ID.
+        if record["leader_id"] == "migration-epoch-floor":
+            return record["expires_at"] == 0.0 and record["backend_lease_id"] == 0
+        return record["backend_lease_id"] > 0
 
     @staticmethod
     def _op_key(scope: str, idempotency_key: str) -> str:
