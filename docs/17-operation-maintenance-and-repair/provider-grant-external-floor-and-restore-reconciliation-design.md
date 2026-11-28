@@ -130,6 +130,8 @@
 5. Provider精确ACTIVATE回执被确认后才进入 ACTIVE。相同receipt的确认重放幂等；同一operation ID替换命令或替换已确认receipt均拒绝。
 6. Coordinator结果未知时可通过 operation_status(operation_id) 在进程重启后读取原操作状态；必须沿用原operation ID和command digest，不可猜测新generation。
 
+外部状态进入 FENCE_PENDING 仅表示Coordinator已预留代次和命令身份，**不代表旧Provider Grant已经撤销**；在Provider实际FENCE命令提交前，旧ACTIVE Grant仍可能在其剩余有效期内通过Provider mutation gate（当前本地参考上限为300秒）。只有Provider FENCE与mutation共享事务域的提交才是Provider数据面的撤销线性化点，不得把外部reserve描述为fencing。
+
 Floor状态先预留、Provider本地事务再提交、最后外部确认，是两个系统间的双边协议而不是分布式原子事务。这里不通过跨机器 issued_at/applied_at 比较决定状态先后；协议顺序由外部revision、operation identity、精确命令摘要和Provider回执摘要表示。Lease expiry仍作为签名/Leader校验材料保存，但当前时刻的Leader/Lease有效性必须由真实Coordinator authority单独线性一致验证。
 
 ### 9.3 新增测试与当前限制
