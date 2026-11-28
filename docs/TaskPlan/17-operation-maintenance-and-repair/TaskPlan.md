@@ -1557,3 +1557,12 @@
 - **测试：** 覆盖FENCE/ACTIVATE正常链、CAS/并发竞争、operation精确重试/冲突、Provider回执digest与command绑定、响应未知后的重启查询、pending阻断、epoch/namespace/Lease expiry回退、Provider/tenant/scope隔离及trusted minimum revision。
 - **验收边界：** 只证明本地SQLite参考事务语义，不证明etcd线性一致、Raft quorum、多主机可用性或自身防回滚；Provider回执真实性仍由未来认证的Provider状态接口证明。FENCE_PENDING只是外部预留，不是Provider撤销；旧Grant直到Provider FENCE提交前仍可能被接受。没有接入Provider命令执行或Unified schema-v2 authority，不能执行Grant-aware Restore。
 - **状态：** 代码与测试初版提交；测试尚未在本地或CI验证。通用Restore对Grant历史备份继续fail-closed；MIG-04/MIG-05保持IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
+
+### 第九十三轮：Provider Grant Floor Coordinator Namespace 严格隔离校验
+
+- 将 `Coordinator namespace` 从“任意规范绝对前缀”收敛为严格的 `/cnc/migration/isolated/{single-id}/`，single-id仅允许一个标识段；禁止Unified/生产前缀、根前缀、额外层级、重复分隔符、点段、路径穿越及反斜杠/编码绕过形式。
+- 在任何数据库状态变更前完成namespace校验；非法namespace应在事务开始前失败，且不得创建scope记录或推进authority revision。
+- 增加有效隔离namespace正向验证，以及生产namespace、多层/空/穿越路径负向测试；覆盖拒绝后scope snapshot仍为IDLE、revision与authority_revision保持不变。
+- 更新外部Floor设计文档与CH17 README，明确本地SQLite适配器只接受隔离演练namespace，不是通用Coordinator namespace解析器。
+- 只做本地参考实现和CI验证，不接入真实Unified authority/etcd/Provider，不修改RBAC，不执行Restore/Cutover。通用Restore对Grant历史备份继续fail-closed。
+- **状态：** TODO；以主分支全库Quality CI和静态/结构检查成功作为完成条件。
