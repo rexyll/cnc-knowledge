@@ -16,6 +16,10 @@ from scripts.spare_parts_provider_grant_receipt import (
     canonical_receipt_json,
     sign_provider_grant_receipt,
 )
+from scripts.spare_parts_provider_revocable_grant import (
+    CLAIMS_FORMAT as COMMAND_CLAIMS_FORMAT,
+    sign_provider_grant_command,
+)
 
 from scripts.spare_parts_provider_grant_floor import (
     ProviderGrantFloorConflict,
@@ -35,7 +39,21 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="ch17-provider-grant-floor-")
         self.base = Path(self.temp.name)
         self.database = self.base / "external-floor.sqlite"
-        self.authority = SQLiteProviderGrantFloorAuthority(self.database)
+        self.authority = SQLiteProviderGrantFloorAuthority(
+            self.database, allow_legacy_unsigned_reservations=True
+        )
+        self.coordinator_signer = Ed25519PrivateKey.generate()
+        self.coordinator_public_key = self.coordinator_signer.public_key().public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
+        )
+        self.coordinator_issuer = "coordinator-a"
+        self.coordinator_key_id = "coordinator-command-a"
+        self.authority.admin_register_coordinator_command_key(
+            issuer_id=self.coordinator_issuer,
+            key_id=self.coordinator_key_id,
+            public_key=self.coordinator_public_key,
+            not_before=time.time() - 60.0,
+        )
         self.receipt_signer = Ed25519PrivateKey.generate()
         self.receipt_public_key = self.receipt_signer.public_key().public_bytes(
             serialization.Encoding.Raw, serialization.PublicFormat.Raw
@@ -83,6 +101,48 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             expected_revision=expected_revision,
         )
 
+
+    def coordinator_command(
+        self, action, generation, *, issued_at=None, expires_at=None,
+        fence_digest=None, issuer_id=None, provider_id=None, tenant_id=None,
+        scope=None, coordinator_namespace=None, leader_id=None,
+        leader_epoch=1, native_lease_id=None, lease_expires_at=None,
+        key_id=None, signer=None,
+    ):
+        issued = time.time() - 0.25 if issued_at is None else issued_at
+        claims = {
+            "format": COMMAND_CLAIMS_FORMAT,
+            "issuer_id": issuer_id or self.coordinator_issuer,
+            "provider_id": provider_id or self.key.provider_id,
+            "tenant_id": tenant_id or self.key.tenant_id,
+            "scope": scope or self.key.scope,
+            "action": action,
+            "grant_id": "grant-a",
+            "generation": generation,
+            "issued_at_unix": issued,
+            "expires_at_unix": issued + 45.0 if expires_at is None else expires_at,
+            "coordinator_namespace": coordinator_namespace or self.namespace,
+            "leader_id": leader_id or self.leader_id,
+            "leader_epoch": leader_epoch,
+            "leader_lease_id": self.lease_id if native_lease_id is None else native_lease_id,
+            "leader_lease_expires_at_unix": (
+                self.lease_expiry if lease_expires_at is None else lease_expires_at
+            ),
+            "fence_command_sha256": fence_digest,
+        }
+        return sign_provider_grant_command(
+            claims,
+            key_id=key_id or self.coordinator_key_id,
+            private_key=signer or self.coordinator_signer,
+        )
+
+    @staticmethod
+    def command_digest(envelope):
+        return hashlib.sha256(
+            __import__("json").dumps(
+                envelope, sort_keys=True, separators=(",", ":"), allow_nan=False
+            ).encode("utf-8")
+        ).hexdigest()
 
     def receipt_envelope(self, reservation, **overrides):
         self._receipt_tick += 0.25
@@ -669,6 +729,264 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(version, 4)
         self.assertEqual(trust_revision, 0)
+
+
+    def test_signed_command_fence_and_activate_reservations_bind_full_coordinator_identity(self):
+        fence_command = self.coordinator_command("FENCE", 1)
+        fence = self.authority.reserve_fence_from_command(
+            operation_id="signed-fence-op",
+            command_envelope=fence_command,
+            expected_revision=0,
+        )
+        self.assertEqual(fence.action, "FENCE")
+        self.assertEqual(fence.generation, 1)
+        self.assertEqual(fence.command_digest, self.command_digest(fence_command))
+        operation = self.authority.operation_status(fence.operation_id)
+        self.assertEqual(operation.coordinator_signer_key_id, self.coordinator_key_id)
+        self.assertEqual(
+            operation.coordinator_key_fingerprint,
+            hashlib.sha256(self.coordinator_public_key).hexdigest(),
+        )
+        self.assertEqual(operation.coordinator_trust_revision, 2)
+
+        self.confirm_fence(fence)
+        fence_applied = self.authority.operation_status(fence.operation_id).provider_applied_at_unix
+        activate_issued = max(time.time() - 0.2, fence_applied + 0.25)
+        activate_command = self.coordinator_command(
+            "ACTIVATE", 2,
+            issued_at=activate_issued,
+            expires_at=activate_issued + 45.0,
+            fence_digest=fence.command_digest,
+        )
+        activate = self.authority.reserve_activate_from_command(
+            operation_id="signed-activate-op",
+            command_envelope=activate_command,
+            expected_revision=self.authority.snapshot(self.key).revision,
+        )
+        self.assertEqual(activate.action, "ACTIVATE")
+        self.assertEqual(activate.generation, 2)
+        self.assertEqual(activate.fence_command_digest, fence.command_digest)
+        self.assertEqual(
+            self.authority.operation_status(activate.operation_id).coordinator_signer_key_id,
+            self.coordinator_key_id,
+        )
+
+    def test_default_floor_rejects_caller_supplied_digest_and_claims_without_signature(self):
+        strict = SQLiteProviderGrantFloorAuthority(self.base / "strict-floor.sqlite")
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "signed command envelope is required"):
+            strict.reserve_fence(
+                operation_id="unsigned-reservation",
+                key=self.key,
+                grant_id="grant-a",
+                command_digest=_digest("caller-made"),
+                coordinator_namespace=self.namespace,
+                leader_id=self.leader_id,
+                leader_epoch=1,
+                native_lease_id=self.lease_id,
+                lease_expires_at_unix=self.lease_expiry,
+                command_issued_at_unix=time.time() - 0.1,
+                command_expires_at_unix=time.time() + 10.0,
+                expected_revision=0,
+            )
+        self.assertEqual(strict.snapshot(self.key).state, "IDLE")
+        with sqlite3.connect(strict.database_path) as connection:
+            policy = connection.execute(
+                "SELECT coordinator_command_auth_required FROM provider_grant_floor_meta"
+            ).fetchone()[0]
+        self.assertEqual(policy, 1)
+
+    def test_strict_floor_cannot_be_downgraded_to_legacy_unsigned_reservations(self):
+        strict = SQLiteProviderGrantFloorAuthority(self.base / "no-downgrade.sqlite")
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "cannot downgrade"):
+            SQLiteProviderGrantFloorAuthority(
+                strict.database_path, allow_legacy_unsigned_reservations=True
+            )
+
+    def test_unknown_coordinator_key_is_rejected_without_advancing_floor_revision(self):
+        envelope = self.coordinator_command(
+            "FENCE", 1, key_id="unknown-coordinator-key"
+        )
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "not trusted"):
+            self.authority.reserve_fence_from_command(
+                operation_id="unknown-coordinator-key-op",
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "IDLE")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_tampered_coordinator_signature_is_rejected_without_floor_advance(self):
+        envelope = self.coordinator_command("FENCE", 1)
+        signature = envelope["signature"]["value_base64"]
+        envelope["signature"]["value_base64"] = (
+            ("A" if signature[0] != "A" else "B") + signature[1:]
+        )
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "signature is invalid"):
+            self.authority.reserve_fence_from_command(
+                operation_id="tampered-coordinator-command",
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "IDLE")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_signed_command_generation_must_equal_next_floor_generation(self):
+        envelope = self.coordinator_command("FENCE", 9)
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "generation"):
+            self.authority.reserve_fence_from_command(
+                operation_id="wrong-generation-command",
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "IDLE")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_signed_command_identity_and_scope_must_match_provider_floor_key(self):
+        envelope = self.coordinator_command("FENCE", 1, tenant_id="tenant-other")
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "binding mismatch"):
+            self.authority.reserve_fence_from_command(
+                operation_id="wrong-tenant-command",
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        self.assertEqual(self.authority.snapshot(self.key).revision, before.revision)
+        self.assertEqual(self.authority.snapshot(self.key).authority_revision, before.authority_revision)
+
+    def test_retired_or_revoked_coordinator_key_cannot_issue_new_reservations(self):
+        self.authority.admin_set_coordinator_command_key_status(
+            issuer_id=self.coordinator_issuer,
+            key_id=self.coordinator_key_id,
+            status="RETIRING",
+            retiring_effective_at=time.time() - 1.0,
+        )
+        envelope = self.coordinator_command("FENCE", 1)
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "inactive, retired, revoked"):
+            self.authority.reserve_fence_from_command(
+                operation_id="retired-coordinator-key",
+                command_envelope=envelope,
+                expected_revision=0,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_coordinator_key_rotation_keeps_old_key_historical_but_accepts_new_active_key(self):
+        old = self.coordinator_command("FENCE", 1)
+        old_op = self.authority.reserve_fence_from_command(
+            operation_id="pre-rotation-op",
+            command_envelope=old,
+            expected_revision=0,
+        )
+        self.authority.admin_set_coordinator_command_key_status(
+            issuer_id=self.coordinator_issuer,
+            key_id=self.coordinator_key_id,
+            status="RETIRING",
+            retiring_effective_at=time.time() - 0.1,
+        )
+        new_signer = Ed25519PrivateKey.generate()
+        new_public = new_signer.public_key().public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
+        )
+        self.authority.admin_register_coordinator_command_key(
+            issuer_id=self.coordinator_issuer,
+            key_id="coordinator-command-b",
+            public_key=new_public,
+            not_before=time.time() - 1.0,
+        )
+        new_command = self.coordinator_command(
+            "FENCE", 1,
+            key_id="coordinator-command-b",
+            signer=new_signer,
+        )
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "inactive, retired, revoked"):
+            self.authority.reserve_fence_from_command(
+                operation_id="post-rotation-old-key",
+                command_envelope=old,
+                expected_revision=0,
+            )
+        self.assertEqual(self.authority.operation_status(old_op.operation_id).state, "PENDING")
+        before = self.authority.snapshot(self.key)
+        with self.assertRaises(ProviderGrantFloorConflict):
+            self.authority.reserve_fence_from_command(
+                operation_id="new-key-same-scope-pending",
+                command_envelope=new_command,
+                expected_revision=before.revision,
+            )
+        self.assertEqual(self.authority.snapshot(self.key).revision, before.revision)
+
+    def test_duplicate_json_object_keys_are_rejected_before_reservation(self):
+        command = self.coordinator_command("FENCE", 1)
+        raw = __import__("json").dumps(command, separators=(",", ":"))
+        raw = raw.replace('"format":', '"format":"duplicate","format":', 1)
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(ProviderGrantFloorError, "duplicate JSON"):
+            self.authority.reserve_fence_from_command(
+                operation_id="duplicate-json-key-command",
+                command_envelope=raw,
+                expected_revision=0,
+            )
+        self.assertEqual(self.authority.snapshot(self.key).revision, before.revision)
+        self.assertEqual(self.authority.snapshot(self.key).authority_revision, before.authority_revision)
+
+    def test_v1_migration_defaults_to_strict_coordinator_command_authentication(self):
+        legacy_path = self.base / "legacy-floor-v1-strict.sqlite"
+        connection = sqlite3.connect(legacy_path)
+        try:
+            connection.executescript(
+                """
+                CREATE TABLE provider_grant_floor_meta (
+                    singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+                    schema_version INTEGER NOT NULL,
+                    authority_revision INTEGER NOT NULL
+                );
+                INSERT INTO provider_grant_floor_meta(singleton,schema_version,authority_revision)
+                VALUES(1,1,0);
+                CREATE TABLE provider_grant_floor_operations (
+                    operation_id TEXT PRIMARY KEY,
+                    provider_id TEXT NOT NULL, tenant_id TEXT NOT NULL, scope TEXT NOT NULL,
+                    action TEXT NOT NULL, grant_id TEXT NOT NULL, generation INTEGER NOT NULL,
+                    command_digest TEXT NOT NULL, fence_command_digest TEXT,
+                    coordinator_namespace TEXT NOT NULL, leader_id TEXT NOT NULL,
+                    leader_epoch INTEGER NOT NULL, native_lease_id INTEGER NOT NULL,
+                    lease_expires_at_unix REAL NOT NULL, state TEXT NOT NULL,
+                    provider_receipt_digest TEXT, reserved_scope_revision INTEGER NOT NULL,
+                    confirmed_scope_revision INTEGER, authority_revision INTEGER NOT NULL
+                );
+                """
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        migrated = SQLiteProviderGrantFloorAuthority(legacy_path)
+        with sqlite3.connect(legacy_path) as connection:
+            version, policy = connection.execute(
+                """SELECT schema_version,coordinator_command_auth_required
+                   FROM provider_grant_floor_meta WHERE singleton=1"""
+            ).fetchone()
+            columns = {
+                row[1] for row in connection.execute(
+                    "PRAGMA table_info(provider_grant_floor_operations)"
+                )
+            }
+        self.assertEqual(version, 5)
+        self.assertEqual(policy, 1)
+        self.assertTrue({
+            "coordinator_signer_key_id",
+            "coordinator_key_fingerprint",
+            "coordinator_trust_revision",
+        }.issubset(columns))
+        self.assertEqual(migrated.snapshot(self.key).state, "IDLE")
 
     def test_database_permissions_are_restricted(self):
         self.assertEqual(self.database.stat().st_mode & 0o777, 0o600)
