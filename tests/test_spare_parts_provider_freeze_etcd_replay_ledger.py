@@ -1,6 +1,11 @@
+import base64
 import json
 import threading
 import unittest
+import uuid
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from scripts.spare_parts_provider_authority_store import (
     AuthorityStorePut,
@@ -13,6 +18,13 @@ from scripts.spare_parts_sqlite_provider_fencing_reconciliation import (
 from scripts.spare_parts_provider_freeze_etcd_replay_ledger import (
     EtcdProviderFreezeEvidenceReplayLedger,
     ProviderFreezeAuthorityChangedError,
+)
+from scripts.spare_parts_sqlite_provider_fencing_reconciliation import _canonical
+from scripts.spare_parts_sqlite_provider_freeze_attestation import (
+    FREEZE_SIGNATURE_DOMAIN,
+    FREEZE_ENVELOPE_FORMAT,
+    FREEZE_CLAIMS_FORMAT,
+    validate_provider_freeze_attestation,
 )
 
 
@@ -215,6 +227,89 @@ class EtcdProviderFreezeReplayLedgerTests(unittest.TestCase):
             entry, _ = self.store.linearizable_get(key)
             self.assertIsNotNone(entry)
             self.assertEqual(entry.lease_id, 0)
+
+    def test_freeze_verifier_consumes_shared_etcd_ledger_end_to_end(self):
+        private_key = Ed25519PrivateKey.generate()
+        public_bytes = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        trust_store = {
+            "format": "ch17-provider-fencing-trust-store-v1",
+            "keys": {
+                "provider-key": {
+                    "algorithm": "Ed25519",
+                    "public_key_base64": base64.b64encode(public_bytes).decode("ascii"),
+                }
+            },
+        }
+        candidate_scopes = {
+            "inventory/parts": {
+                "provider_generation": "generation-7",
+                "high_water_token": 12,
+                "latest_operation_sequence": 5,
+            },
+            "inventory/tools": {
+                "provider_generation": "generation-3",
+                "high_water_token": 4,
+                "latest_operation_sequence": 2,
+            },
+        }
+        candidate = {
+            "format": "ch17-sqlite-unified-candidate-v2",
+            "candidate_digest_sha256": "c" * 64,
+            "state_template": {"coordinator": {"scopes": candidate_scopes}},
+        }
+        provider_evidence = {
+            "format": "ch17-provider-fencing-readonly-evidence-v1",
+            "provider_id": "provider-prod-a",
+            "observed_at_unix": 997.0,
+            "scopes": self.scopes,
+        }
+        nonce = "d" * 64
+        claims = {
+            "format": FREEZE_CLAIMS_FORMAT,
+            "provider_id": "provider-prod-a",
+            "freeze_id": "freeze-e2e",
+            "freeze_generation": 9,
+            "frozen": True,
+            "freeze_mode": "provider-native-write-gate",
+            "evidence_id": str(uuid.uuid4()),
+            "challenge_nonce": nonce,
+            "freeze_started_at_unix": 996.0,
+            "freeze_expires_at_unix": 1060.0,
+            "issued_at_unix": 998.0,
+            "expires_at_unix": 1030.0,
+            "coordinator": {
+                "leader_id": self.leader["leader_id"],
+                "leader_epoch": self.leader["epoch"],
+                "lease_id": self.lease.lease_id,
+                "lease_expires_at_unix": self.leader["expires_at"],
+            },
+            "evidence": provider_evidence,
+        }
+        signature = private_key.sign(FREEZE_SIGNATURE_DOMAIN + _canonical(claims))
+        envelope = {
+            "format": FREEZE_ENVELOPE_FORMAT,
+            "evidence": claims,
+            "signature": {
+                "algorithm": "Ed25519",
+                "key_id": "provider-key",
+                "value_base64": base64.b64encode(signature).decode("ascii"),
+            },
+        }
+        result = validate_provider_freeze_attestation(
+            candidate,
+            envelope,
+            trust_store,
+            self.snapshot,
+            self.ledger,
+            expected_challenge_nonce=nonce,
+            now_unix=1000.0,
+        )
+        self.assertTrue(result["freeze_evidence_replay_consumed"])
+        self.assertEqual(result["coordinator_leader_epoch"], 12)
+        self.assertEqual(self.consume_record_count(), 4)
 
 
 if __name__ == "__main__":
