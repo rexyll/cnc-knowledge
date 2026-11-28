@@ -204,6 +204,19 @@ class SQLiteFencedObjectStorageProvider:
             )
         if not isinstance(require_revocable_grant, bool):
             raise BackupStorageError("require_revocable_grant must be boolean")
+        if require_revocable_grant and (
+            self.provider_id is None or not self._trusted_ed25519_public_keys
+        ):
+            raise BackupStorageError(
+                "revocable Provider grants require Provider identity and an Ed25519 command trust key"
+            )
+        if require_revocable_grant and (
+            not require_online_leader_status
+            or not callable(getattr(leader_status_checker, "is_leader_active", None))
+        ):
+            raise BackupStorageError(
+                "revocable Provider grants require online Coordinator Leader verification"
+            )
         self.require_revocable_grant = require_revocable_grant
         self.attestation_status_checker = attestation_status_checker
         self.require_online_attestation_status = require_online_attestation_status
