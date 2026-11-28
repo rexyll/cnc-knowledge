@@ -986,12 +986,15 @@ class SQLiteFencedObjectStorageProvider:
         """Read-only lookup of a historical command receipt and current scope state."""
         if not isinstance(command_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", command_sha256):
             raise BackupStorageError("freeze command digest must be 64 lowercase hexadecimal characters")
-        with self._transaction() as c:
+        if self.provider_id is None:
+            raise BackupStorageError("Provider identity must be configured for freeze receipt lookup")
+        with self._read_transaction() as c:
             receipt = c.execute(
                 """SELECT command_sha256,issuer_id,key_id,provider_id,tenant_id,
                           fencing_scope,action,freeze_id,generation,result_state,applied_at
-                   FROM provider_write_freeze_commands WHERE command_sha256=?""",
-                (command_sha256,),
+                   FROM provider_write_freeze_commands
+                   WHERE command_sha256=? AND provider_id=? AND tenant_id=?""",
+                (command_sha256, self.provider_id, self.tenant_id),
             ).fetchone()
             if receipt is None:
                 return None
@@ -999,7 +1002,7 @@ class SQLiteFencedObjectStorageProvider:
             current = c.execute(
                 """SELECT generation,freeze_id,state,updated_at FROM provider_write_freeze_scopes
                    WHERE tenant_id=? AND fencing_scope=?""",
-                (self.tenant_id, result["fencing_scope"]),
+                (result["tenant_id"], result["fencing_scope"]),
             ).fetchone()
             result["current_scope_state"] = dict(current) if current is not None else None
             return result
@@ -1041,6 +1044,32 @@ class SQLiteFencedObjectStorageProvider:
                 pass
             raise ProviderTransientError(
                 "SQLite fenced Provider transaction failed",
+                outcome_unknown=True,
+            ) from exc
+        except Exception:
+            try:
+                c.rollback()
+            except sqlite3.Error:
+                pass
+            raise
+        finally:
+            c.close()
+
+    @contextmanager
+    def _read_transaction(self):
+        """Consistent read snapshot without taking SQLite's RESERVED write lock."""
+        c = self._connect()
+        try:
+            c.execute("BEGIN")
+            yield c
+            c.commit()
+        except sqlite3.Error as exc:
+            try:
+                c.rollback()
+            except sqlite3.Error:
+                pass
+            raise ProviderTransientError(
+                "SQLite fenced Provider read transaction failed",
                 outcome_unknown=True,
             ) from exc
         except Exception:
