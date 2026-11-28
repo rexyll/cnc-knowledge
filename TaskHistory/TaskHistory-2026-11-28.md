@@ -590,7 +590,7 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - CH12 numerical resource tests: 143 passed.
 - Knowledge lint: 0 errors / 5 warnings; additional structure/data checks: 0 errors.
 - The 737-test suite includes the Receipt protocol, Floor trust lifecycle, v1→v4 migration, naked-digest rejection, exact reservation claims, command-time/Lease bounds, FENCE/ACTIVATE chronology, idempotency/replacement and no-revision-advance-on-invalid-receipt tests.
-- The run above validates the code/test head before the final README/TaskPlan/TaskHistory synchronization. A final-main CI run is required for the complete documentation state.
+- Final complete-main documentation synchronization: [Knowledge Quality Run 46155719334](https://github.com/rexyll/cnc-knowledge/actions/runs/46155719334) completed successfully on commit `b96831952e5e0e8148870f3d46637252a848394f`; both required jobs succeeded, including Knowledge structure/data quality and CH12 numerical resource tests. Root TaskPlan, CH17 TaskPlan, README, this TaskHistory record, design document, and implementation code are all covered by the final successful main-branch CI.
 
 ### Safety boundary / remaining work
 
@@ -600,4 +600,4 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Provider receipt authenticity, external Floor consistency and Provider mutation atomicity remain separate guarantees. SQLite Floor/trust registry snapshot rollback still requires an independently trusted checkpoint outside its own backup domain.
 - No Grant-aware Restore, candidate import, application activation or Cutover was implemented or executed. Generic Restore for any Provider Grant history remains fail-closed.
 - MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
-- **Status:** Implementation code and tests passed; final documentation synchronization CI pending.
+- **Status:** DONE for the Round 95 local Receipt protocol and external Floor verification reference implementation only; Provider data-plane signed Receipt persistence and production integration remain separate work.
