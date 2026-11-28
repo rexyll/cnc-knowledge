@@ -315,7 +315,12 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 
 ### Validation
 
-- CI validation pending; do not treat this round as accepted until required main-branch workflows complete successfully.
+- [Provider code and test quality run 46137931408](https://github.com/rexyll/cnc-knowledge/actions/runs/46137931408): success.
+- [Final Round87 documentation/history quality run 46137972275](https://github.com/rexyll/cnc-knowledge/actions/runs/46137972275): both required jobs succeeded.
+- Full unittest suite: 653 tests run, 40 skipped (613 passed).
+- CH12 numerical resource tests: 143 passed.
+- Knowledge lint and repository structure/data checks: 0 errors; fixture lint retains 5 existing warnings.
+- The CI run before final history synchronization also exercised the complete Round87 code and migration tests; final history synchronization is validated separately by the run above.
 
 ### Safety boundary
 
