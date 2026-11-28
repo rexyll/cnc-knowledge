@@ -572,3 +572,18 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 **语义限制：** Provider FENCE提交是Provider侧撤销的线性化点，不是etcd Lease物理过期的同一瞬间。若业务要求跨独立系统零窗口撤销，必须具备共享事务权威或Provider原生原子条件写；单纯在线Range、签名expiry或异步Watch均不能证明这一点。
 
 本轮为架构决策文档，不包含grant/FENCE实现、真实Provider/etcd联调、RBAC变更或生产迁移。
+
+
+## CH17-T006 Provider-native Revocable Grant / FENCE Barrier（第九十轮）
+
+第九十轮新增`scripts/spare_parts_provider_revocable_grant.py`，定义独立Ed25519签名的FENCE/ACTIVATE命令；扩展`scripts/spare_parts_provider_sqlite_fenced.py`，增加按tenant/scope隔离的Provider grant状态与完整命令receipt。
+
+状态转换采用两步：
+1. **FENCE：** 必须由比当前记录更高的Coordinator Leader epoch发起，将scope推进至FENCED；旧grant立即不能再通过Provider本地mutation gate。
+2. **ACTIVATE：** 必须引用已提交FENCE命令的精确SHA-256 receipt，并保持Coordinator namespace、Leader ID/epoch、native Lease和grant ID完全一致，才能创建ACTIVE grant。
+
+Provider schema升级至v5，新增`provider_scope_grants`与`provider_grant_commands`，并要求备份验证包含这两张表。可选配置`require_revocable_grant=True`启用写入门禁；proof必须签署Grant ID与generation，Provider在object PUT、multipart begin、part、complete各自实际写事务内校验ACTIVE、期限和代次。FENCE与mutation共用同一SQLite `BEGIN IMMEDIATE`事务，因此本地参考实现中的两个操作具有可观察的串行顺序。
+
+命令收据按完整envelope digest持久化；提交后模拟响应丢失时可按原digest读回并判定ALREADY_APPLIED，不能通过新命令猜测重试。
+
+**证据边界：** 这是同机SQLite参考模型，不是远程对象存储/Provider写路径证明，不证明跨主机一致性或etcd与Provider跨系统原子fencing。Provider FENCE提交是Provider侧撤销屏障的线性化点；它不等于独立etcd Lease物理过期的同一瞬间。当前实现没有连接真实etcd、Provider、KMS/HSM或IAM/RBAC，也未启用生产授权。
