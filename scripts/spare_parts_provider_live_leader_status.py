@@ -31,7 +31,7 @@ class EtcdCoordinatorLeaderStatusChecker:
             if end[index] != 0xFF:
                 end[index] += 1
                 return bytes(end[: index + 1])
-        return b"\\x00"
+        return bytes((0,))
 
     def is_leader_active(
         self, claims: dict[str, Any], *, now_unix: float
