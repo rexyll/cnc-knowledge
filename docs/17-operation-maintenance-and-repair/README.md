@@ -584,6 +584,6 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 
 Provider schema升级至v5，新增`provider_scope_grants`与`provider_grant_commands`，并要求备份验证包含这两张表。可选配置`require_revocable_grant=True`启用写入门禁；proof必须签署Grant ID与generation，Provider在object PUT、multipart begin、part、complete各自实际写事务内校验ACTIVE、期限和代次。FENCE与mutation共用同一SQLite `BEGIN IMMEDIATE`事务，因此本地参考实现中的两个操作具有可观察的串行顺序。
 
-命令收据按完整envelope digest持久化；提交后模拟响应丢失时可按原digest读回并判定ALREADY_APPLIED，不能通过新命令猜测重试。
+命令收据按完整envelope digest持久化；ACTIVATE签发时间不得早于FENCE回执的Provider本地提交时间。提交后模拟响应丢失时可按原digest读回并判定ALREADY_APPLIED，回执可经backup/restore保留；不能通过新命令猜测重试。
 
 **证据边界：** 这是同机SQLite参考模型，不是远程对象存储/Provider写路径证明，不证明跨主机一致性或etcd与Provider跨系统原子fencing。Provider FENCE提交是Provider侧撤销屏障的线性化点；它不等于独立etcd Lease物理过期的同一瞬间。当前实现没有连接真实etcd、Provider、KMS/HSM或IAM/RBAC，也未启用生产授权。
