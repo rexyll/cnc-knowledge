@@ -677,3 +677,4 @@ Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执
 **边界：** 本轮只有架构设计；Etcd-native业务服务、生产witness持久化与RBAC、真实Etcd多节点/网络分区/快照恢复验证未实现。Production Unified schema-v2仍为唯一生产authority；未执行迁移、Grant-aware Restore或Cutover。
 - Witness取消语义已细化：Etcd PREPARE结果未知时不能只凭一次未发现pending的Range就标记ABORTED；COMMIT/ABORT必须由同intent compare竞争，Etcd COMMIT确定后不可回退。
 - Rollback witness只保存sequence/root时只能检测整体snapshot回滚，不足以重建数据；若无域外事件正文或可信备份，必须维持写隔离并逐scope受控重建。v1全局meta/event root意味着写入全局串行化，吞吐需后续实测。
+- **Round99最终验收：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663) 两个必需Job均成功；全库776项测试运行、40项环境跳过；CH12数值资源143项通过；strict knowledge lint 0 errors / 5 warnings。以上仅验收设计文档与仓库质量，不代表Etcd-native服务或生产witness已经实现。
