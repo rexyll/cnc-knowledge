@@ -1461,3 +1461,15 @@
 - 未知Txn响应采用严格恢复：四键全部精确匹配才确认提交；全部不存在且Leader/aggregate仍一致时仅重试相同Txn；部分或冲突状态QUARANTINE；持续未知不得激活。
 - 执行级测试基于EtcdV3CoordinatorAuthorityStore + InMemoryEtcdV3Client，覆盖一次成功、双线程竞争、未知提交/未提交、CAS过期、scope不一致、部分账本和端到端签名声明消费。
 - 不将内存fake测试描述为真实etcd共识/耐久性证据；真实集群、RBAC排他、Provider write-path冻结和生产切换仍未完成。
+
+
+## CH17-T006 第八十五轮：Provider-native持久化写冻结门
+
+- 新增 `scripts/spare_parts_provider_write_freeze_gate.py`：定义独立域分离的Ed25519签名控制命令，严格验证Provider/tenant/scope/action/freeze ID/generation/有效期和签名。
+- 扩展 `SQLiteFencedObjectStorageProvider`：可配置Provider identity；在Provider数据库中持久化每个tenant+scope的freeze generation、freeze ID、FROZEN/OPEN状态及command digest。
+- Schema升级v2→v3；已有v2数据库在启动时加法创建冻结表并更新schema_version。v3备份验证必须包含冻结表，禁止恢复缺少冻结状态的旧schema备份。
+- 增加 `apply_write_freeze_command()` 与 `write_freeze_state()`。签名命令需同时匹配运行时公钥和Provider DB中的可信Ed25519 key registry；FREEZE/UNFREEZE严格按+1代次推进，UNFREEZE须匹配当前freeze ID，精确命令重放幂等。
+- Provider四个fenced写入口（object PUT、multipart begin、part、complete）在同一 `BEGIN IMMEDIATE` 事务内检查冻结状态；FROZEN拒绝所有写入，OPEN时要求proof的 `provider_freeze_generation` 与当前代次一致，旧proof拒绝。
+- 保持只读查询可用；legacy unfenced写和unfenced multipart abort继续拒绝。
+- 测试覆盖签名和命令重放、generation skip/stale、错误Provider/freeze ID、四种mutation拒绝、解除冻结后旧proof拒绝、SQLite写事务与freeze命令竞态排序、重启和备份/恢复持久化。
+- 参考实现限定为本地SQLite同库事务；Provider Freeze attestation验证器不会因此自动报告真实Provider已冻结，生产授权字段仍false。远程Provider Gateway、KMS/HSM、服务端IAM/RBAC及多主机一致性仍待MIG-06/后续真实集成。
