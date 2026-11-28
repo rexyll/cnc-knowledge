@@ -552,7 +552,7 @@ schema v2/v3/v4→v5均为加法迁移；各旧版测试fixture升级后必须�
 
 ### 15.16 第九十一轮：Provider Grant 外部单调 Floor 与专用 Restore 对账
 
-新增 Provider Grant 外部单调 Floor 与 Restore 对账设计文档。核心问题是：Provider Grant generation/Leader epoch/receipt 当前全部存储在Provider SQLite文件中，因此合法备份的内部完整性不代表它是最新备份。
+新增[Provider Grant 外部单调 Floor 与 Restore 对账设计](provider-grant-external-floor-and-restore-reconciliation-design.md)。核心问题是：Provider Grant generation/Leader epoch/receipt 当前全部存储在Provider SQLite文件中，因此合法备份的内部完整性不代表它是最新备份。
 
 拟新增独立于Provider SQLite备份域的 ProviderGrantFloorAuthority，按(provider_id, tenant_id, fencing_scope)保存单调generation floor、Leader epoch floor、pending FENCE/ACTIVATE operation、command digest、Provider receipt digest与revision。FENCE/ACTIVATE采用Coordinator外部预留、Provider本地事务提交、Coordinator按精确receipt确认的双边协议；响应丢失只能查询/重试原digest。
 
