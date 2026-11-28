@@ -110,8 +110,8 @@ Receipt 不需要独立接收调用方提供的 operation ID。Floor reservation
 
 ### 3.3 Canonical serialization 与摘要
 
-- 只允许 UTF-8 JSON；键名按 Unicode code point 排序，采用无多余空格的紧凑序列化。
-- 禁止 NaN、Infinity、重复键、未知字段、重复分隔符和非规范数字表示。
+- Receipt claims 与 envelope 使用 RFC 8785 JSON Canonicalization Scheme（JCS），以避免不同语言对键排序、Unicode 和数字表示产生不同签名字节。实现必须通过 JCS 一致性向量，不能仅把某语言的普通 JSON stringify 当作跨语言标准。
+- 禁止 NaN、Infinity、重复键、未知字段、无效 Unicode 和非规范数字表示。
 - 整数身份字段必须使用 JSON integer，不能把 bool 当作整数；generation / epoch / Lease ID 限定在 SQLite signed 64-bit 正整数范围。
 - 浮点时间必须有限、非负；比较时不将其转换为本地时区字符串。
 - receipt_digest 由完整 canonical envelope（含 signature）直接计算：SHA-256(canonical_json(envelope))。
@@ -121,7 +121,7 @@ Receipt 不需要独立接收调用方提供的 operation ID。Floor reservation
 
 建议定义固定签名域：
 
-    SIGNING_DOMAIN = b"cnc-provider-grant-receipt-v1\\x00"
+    SIGNING_DOMAIN = b"cnc-provider-grant-receipt-v1\x00"
     signing_input = SIGNING_DOMAIN || key_id_ascii || b"." || canonical_json(receipt)
 
 验证必须满足：
