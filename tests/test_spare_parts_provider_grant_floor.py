@@ -922,15 +922,20 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             public_key=new_public,
             not_before=time.time() - 1.0,
         )
+        retired_scope = ProviderGrantScopeKey(
+            provider_id=self.key.provider_id,
+            tenant_id=self.key.tenant_id,
+            scope="cnc/ch17/rotation-retired-old",
+        )
         retired_command = self.coordinator_command(
-            "FENCE", 1, scope=old_scope.scope
+            "FENCE", 1, scope=retired_scope.scope
         )
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "inactive, retired, revoked"):
             self.authority.reserve_fence_from_command(
                 operation_id="post-rotation-old-key",
-                key=old_scope,
+                key=retired_scope,
                 command_envelope=retired_command,
-                expected_revision=old_op.reserved_scope_revision,
+                expected_revision=0,
             )
         self.assertEqual(self.authority.operation_status(old_op.operation_id).state, "PENDING")
 
