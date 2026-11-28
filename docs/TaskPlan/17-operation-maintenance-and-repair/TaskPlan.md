@@ -1593,7 +1593,7 @@
 
 ### 第九十六轮：Provider SQLite FENCE/ACTIVATE durable signed Receipt 集成
 
-- 先审查 \`spare_parts_provider_sqlite_fenced.py\` 当前 FENCE/ACTIVATE mutation 和 SQLite 原子事务边界，再设计最小 schema/API 变更；不预设当前函数/事务布局。
+- 当前 `provider_grant_commands.envelope_json` 保存的是 Coordinator 签名的 Grant command；`provider_grant_command_status()` 是现有精确 command/result 恢复查询，不是 Provider 独立签发的 Receipt。Round96 必须保留该命令验签/幂等链，另行增加 Provider-native Receipt。先审查 `spare_parts_provider_sqlite_fenced.py` 当前 FENCE/ACTIVATE mutation 和 SQLite 原子事务边界，再设计最小 schema/API 变更；不预设当前函数/事务布局。
 - 为本地 Provider 注入与 Coordinator command signer 分离的 Ed25519 receipt signer/key ID；私钥不能写入 Provider/Floor SQLite 或备份。
 - 在同一 Provider 写事务内更新 Grant state、command receipt、生成签名 claims，并持久化完整 canonical signed Receipt envelope/digest；事务回滚时不得留下成功 Receipt。
 - 新增按 Provider/tenant/exact command SHA-256 查回不可变 Receipt 的 API；同一 command 的重复执行/响应丢失后查询必须返回同一 envelope/digest，不重新推进 generation。
