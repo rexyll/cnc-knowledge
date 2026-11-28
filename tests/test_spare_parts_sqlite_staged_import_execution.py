@@ -323,6 +323,7 @@ class StagedImportInMemoryExecutionTests(unittest.TestCase):
         self.assertEqual(before["leader_id"], "migration-epoch-floor")
         self.assertEqual(before["epoch"], 8)
         self.assertFalse(before["active"])
+        self.assertEqual(state_template["coordinator"]["leader"]["backend_lease_id"], 0)
         self.assertIsNone(self.store.linearizable_get(self.leader_key)[0])
         self.assertEqual(self.client._leases, {})
 
