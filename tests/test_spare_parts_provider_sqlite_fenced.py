@@ -1235,6 +1235,22 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertEqual(replay["generation"], 1)
         self.assertEqual(provider.provider_grant_state(SCOPE)["state"], "FENCED")
 
+        backup = self.base / "provider-grant-receipt-backup.sqlite"
+        provider.backup_to(backup)
+        restored_path = self.base / "provider-grant-receipt-restored.sqlite"
+        provider.restore_to_new_database(
+            backup, restored_path, external_fencing_floor=0,
+            fencing_reconciliation_ref="synthetic-provider-grant-backup",
+        )
+        restored = _new_provider(
+            restored_path, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        restored_receipt = restored.provider_grant_command_status(digest)
+        self.assertEqual(restored_receipt["action"], "FENCE")
+        self.assertEqual(restored_receipt["result_state"], "FENCED")
+        self.assertEqual(restored.provider_grant_state(SCOPE)["state"], "FENCED")
+
     def test_provider_grant_fence_and_inflight_mutation_share_one_sqlite_order(self):
         checked = threading.Event()
         allow_write_commit = threading.Event()
