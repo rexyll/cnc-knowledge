@@ -1434,5 +1434,5 @@
 - **状态协议：** FENCE和ACTIVATE分别实现外部reserve→Provider实际提交→精确receipt confirm；每步使用scope revision CAS，operation ID全局唯一且只绑定单一精确命令；响应未知后只可通过operation ID查询或按原命令重试。
 - **安全约束：** Leader epoch单调；同epoch Leader/native Lease不可变；Coordinator namespace固定；同一Lease的expiry不可回退；ACTIVATE只允许在FENCED后，并绑定最近确认的FENCE command digest；不同Provider/tenant/scope互相隔离。
 - **测试矩阵：** 正常FENCE/ACTIVATE、并发CAS单赢家、旧revision冲突、pending阻断、operation ID精确重放/冲突、错误Provider receipt拒绝、响应未知重启查询、Leader epoch与namespace/Lease expiry回退、scope隔离、trusted minimum revision和数据库权限。
-- **严格限制：** 本地SQLite适配器不是etcd/quorum或生产authority；SQLite数据库自身无法识别自身快照回滚，必须依赖数据库之外可信revision checkpoint；适配器只存储Provider receipt digest，不验证回执真实性。没有接入Coordinator/Provider生产路径或Grant-aware Restore。通用Restore含Grant历史备份仍保持fail-closed。
+- **严格限制：** 本地SQLite适配器不是etcd/quorum或生产authority；SQLite数据库自身无法识别自身快照回滚，必须依赖数据库之外可信revision checkpoint；适配器只存储Provider receipt digest，不验证回执真实性。FENCE_PENDING只代表外部预留，旧Grant直到Provider FENCE提交前仍可能被接受，外部预留不是数据面撤销。没有接入Coordinator/Provider生产路径或Grant-aware Restore。通用Restore含Grant历史备份仍保持fail-closed。
 - **状态：** 代码和20个测试方法定义已提交；尚无测试执行结果，必须等待本地/CI验证后才能继续推进。MIG-04/MIG-05保持IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
