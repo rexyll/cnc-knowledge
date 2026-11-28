@@ -176,6 +176,9 @@ def _new_provider(
     provider_id=None, leader_status_checker=None, require_online_leader_status=False,
     require_revocable_grant=False,
 ):
+    if require_revocable_grant:
+        leader_status_checker = leader_status_checker or MutableLeaderStatusChecker(active=True)
+        require_online_leader_status = True
     provider = SQLiteFencedObjectStorageProvider(
         database, principal_id=principal_id, principal_secret=secret,
         provider_id=provider_id,
@@ -1047,6 +1050,27 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             require_revocable_grant=True, fault_hook=fault_hook,
         )
         return self.provider
+
+    def test_revocable_grant_mode_requires_provider_identity_ed25519_and_online_leader_checker(self):
+        with self.assertRaisesRegex(BackupStorageError, "online Coordinator Leader verification"):
+            SQLiteFencedObjectStorageProvider(
+                self.database, principal_id="writer-a", principal_secret=SECRET_A,
+                provider_id="provider-test-a",
+                trusted_attestation_keys={KEY_ID: ATTESTATION_SECRET},
+                trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+                require_revocable_grant=True,
+            )
+        checker = MutableLeaderStatusChecker(active=True)
+        with self.assertRaisesRegex(BackupStorageError, "Provider identity and an Ed25519"):
+            SQLiteFencedObjectStorageProvider(
+                self.database, principal_id="writer-a", principal_secret=SECRET_A,
+                provider_id="provider-test-a",
+                trusted_attestation_keys={KEY_ID: ATTESTATION_SECRET},
+                trusted_ed25519_public_keys={},
+                leader_status_checker=checker,
+                require_online_leader_status=True,
+                require_revocable_grant=True,
+            )
 
     def test_provider_grant_requires_durable_fence_receipt_before_activation(self):
         provider = self.enable_revocable_grants()
