@@ -195,10 +195,13 @@ class CheckpointedProviderGrantFloorTests(unittest.TestCase):
         first = self.initial
         self.assertEqual(first.sequence, 1)
         self.assertEqual(first.authority_revision, 0)
-        self.assertEqual(self.store.read_checkpoint(), first)
 
+        # setUp registers two independent trust keys after the explicit
+        # bootstrap; each durable trust-registry mutation must advance the
+        # external checkpoint even though authority_revision remains zero.
         after_keys = self.floor.verify_checkpoint()
-        self.assertGreater(after_keys.sequence, first.sequence)
+        self.assertEqual(after_keys.sequence, first.sequence + 2)
+        self.assertEqual(self.store.read_checkpoint(), after_keys)
         self.assertEqual(after_keys.authority_revision, 0)
         self.assertNotEqual(after_keys.state_sha256, first.state_sha256)
 
