@@ -120,7 +120,7 @@ Coordinator来源schema当前版本为1。现场迁移前必须对实际数据�
 | MIG-02 | 冻结、TTL、校验、cutover与回滚设计 | DONE（设计；未获生产批准） |
 | MIG-03 | 只读SQLite inventory/export及snapshot manifest | DONE（工具、单元测试、Quality CI通过） |
 | MIG-04 | Unified schema-v2 candidate importer、分批和未知结果恢复 | IN_PROGRESS（候选包、隔离namespace、空空间预检、单Txn只读规划完成；实际写入/恢复未完成） |
-| MIG-05 | 映射、fencing、幂等、TTL与故障注入测试 | TODO |
+| MIG-05 | 映射、fencing、幂等、TTL与故障注入测试 | IN_PROGRESS（分阶段导入内存adapter事务契约与未知结果恢复已部分验证；完整映射/fencing/TTL与真实etcd验证未完成） |
 | MIG-06 | 临时真实etcd迁移及反向迁移演练 | TODO |
 | MIG-07 | 容量、停写窗口、Provider owner及生产审批 | BLOCKED |
 
@@ -375,3 +375,9 @@ Quality Run [46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/4
 新增的严格判据单元测试还证明：即使plan digest和request值匹配，只要progress digest被篡改、checkpoint不属于本计划的预期后继链，就不能判定COMMITTED。
 
 **证据边界：** `InMemoryEtcdV3Client`是单进程测试替身，不提供Raft、Quorum、磁盘耐久性、真正多客户端网络并发、节点故障或服务端配置约束。新store adapter重建只模拟进程对象重建，并不等同真实OS进程重启后的服务器持久性验证。本轮没有etcd真实Range/Txn/Lease写入、RBAC修改、应用启停、生产namespace访问或cutover。真实临时三节点etcd故障注入仍属于MIG-06后续门禁。
+
+### 15.7 第七十九轮验证记录
+
+Quality Run [46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/46092128612) success：全库600 unittest（40 skipped，560 passed）、CH12数值资源测试143项通过、knowledge lint 0 errors/5 warnings、结构/data检查0 errors。新增执行测试走现有Etcd adapter与InMemory fake，覆盖批次原子性、checkpoint未知结果恢复、竞争writer CAS冲突、重启续跑和最终state发布。MIG-05因此进入IN_PROGRESS，但只完成本轮涉及的一部分事务恢复测试；完整状态映射、fencing、幂等/TTL、外部Provider fencing和真实etcd故障注入仍未完成。
+
+本轮没有连接真实etcd、执行Lease Grant/Revoke、修改RBAC、启动应用、写生产namespace或进行生产cutover。MIG-04仍IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
