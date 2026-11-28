@@ -1511,3 +1511,15 @@
 - **TOCTOU限制：** 在线Range和Provider SQLite提交没有共同事务；即使在SQLite BEGIN IMMEDIATE期间执行检查，etcd Lease仍可能在Range后、SQLite commit前撤销。本轮只拒绝检查时已经失效的Leader，不构成跨系统原子fencing。后续必须设计Provider参与的可撤销授权/屏障协议。
 - **验证：** [最终主分支CI Run 46139767853](https://github.com/rexyll/cnc-knowledge/actions/runs/46139767853) 两个必需Job均success；全库663项测试运行、40项跳过、623项通过；CH12数值资源143项通过；知识lint 0 errors/5 warnings，结构与数据检查0 errors。该CI为合成测试，不是实时Provider/etcd运行证明。
 - **安全边界：** 未连接真实etcd、Provider、KMS/HSM、对象存储或IAM/RBAC；未触碰生产namespace、未导入候选数据、未激活应用或执行cutover。ASSET-000092仍为PROPOSED_NOT_APPROVED / NOT_RUN。
+
+
+### 第八十九轮：Provider 可撤销授权与撤销屏障架构决策
+
+- 明确在线Coordinator Leader检查与Provider mutation提交之间的TOCTOU不可由“把Range移入SQLite事务”消除。
+- 比较单一事务权威、Provider原生条件写、Provider参与的撤销屏障及单纯在线Range；拒绝将最后一种描述为完整fencing。
+- 设计Provider-native grant状态、单调epoch/generation、FENCE命令、持久化receipt和新grant激活顺序。
+- 定义Provider侧撤销的线性化点：FENCE与实际mutation必须共享Provider事务/原生条件写域；FENCE提交后旧epoch mutation必须失败。
+- 明确Coordinator handoff必须等待Provider FENCE receipt；Provider不可达时阻断新grant，不允许降级绕过。
+- 记录边界：Provider侧屏障不等于etcd Lease物理过期瞬间同步撤销；若要求跨独立系统零窗口，必须有共享事务权威或Provider原生原子条件写。
+- **交付：** `docs/17-operation-maintenance-and-repair/provider-revocation-barrier-architecture.md`。
+- **状态：** 设计文档已创建；待章节/根计划同步及CI验收。本轮不实现代码，不连接真实基础设施，不进行生产变更。
