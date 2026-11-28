@@ -400,6 +400,9 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Added receipt chronology enforcement: ACTIVATE `issued_at_unix` must not predate the FENCE Provider receipt's persisted `applied_at`; a pre-signed early ACTIVATE is rejected. Added schema v4→v5 migration coverage and verified the FENCE receipt survives Provider backup/restore.
 - Added same-Leader grant rotation, pre-issued ACTIVATE rejection, schema v4 migration, and backup/restore test commits: `bf938e779990de5e76b8d3972d0857cd779ddd31`, `548e350e7d72d68e50d4fe03d1f092365543d118`, `881d79418c6f039a322df09cb41bd2aeef7c4e1a`.
 - Added receipt lookup by exact envelope SHA-256, including lost-response recovery without reapplying a generation.
+- Hardened SQLite commit-time validation: Grant commands no longer accept caller-supplied `now_unix`; signed command and key time windows are revalidated after acquiring `BEGIN IMMEDIATE` and again after online Leader verification. Grant integer claims are bounded to SQLite signed 64-bit values.
+- Bound current Provider grant scope to its FENCE receipt's Provider ID at both ACTIVATE/FENCE transition and actual mutation gate; a different Provider identity cannot reuse the same SQLite scope.
+- Backup validation now requires the Ed25519 trust registry and validates every FENCE/ACTIVATE receipt chain and the current scope state against durable receipts. Added tests for caller-clock injection, lock-wait expiry, active-grant expiry, integer overflow, cross-Provider reuse and tampered backup receipt chains.
 - Extended Provider tests for missing/early FENCE receipt, activation, newer-epoch revocation of the old grant, same-Leader grant rotation, all four mutation entrypoints, post-commit response loss, backup/restore persistence, transaction ordering, and v2/v3/v4 additive schema migration.
 
 ### Validation / safety boundary
