@@ -1181,7 +1181,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             "ACTIVATE", 2, "grant-short-lived",
             issued_at=float(fence_receipt["applied_at"]) + 0.01,
             lease_expires=now + 30.0,
-            expires=now + 0.8, fence_digest=digest,
+            expires=time.time() + 0.8, fence_digest=digest,
         ))
         key = SCOPE + "/grant/expired.bin"
         proof = self.proof(
