@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
-"""Verify signed, read-only Provider fencing evidence before reconciliation.
-
-This module verifies an Ed25519 signature against an operator-supplied trust
-store, then delegates all freshness/scope/floor checks to the existing
-read-only reconciler. It never contacts or mutates a Provider.
-"""
+"""Verify signed Provider evidence using a caller-supplied Ed25519 trust store."""
 from __future__ import annotations
 
 import base64
 import hashlib
-import json
 from typing import Any
 
 from cryptography.exceptions import InvalidSignature
@@ -34,25 +28,22 @@ def _decode_base64(value: Any, field: str) -> bytes:
         raise ProviderFencingReconciliationError(f"{field} is invalid base64") from exc
 
 
-def validate_signed_provider_fencing_reconciliation(
-    candidate: dict[str, Any],
+def verify_signed_provider_payload(
     envelope: dict[str, Any],
     trust_store: dict[str, Any],
     *,
-    now_unix: float,
-    maximum_age_seconds: float = 300.0,
-) -> dict[str, Any]:
-    """Verify a detached Ed25519 signature and reconcile its evidence.
-
-    The trust store is caller-supplied. Its provenance and protection are an
-    external responsibility; a valid signature alone is not a freeze proof.
-    """
+    expected_envelope_format: str,
+    signature_domain: bytes,
+) -> tuple[dict[str, Any], str, str]:
+    """Verify an exact Ed25519 envelope and return payload, key ID and trust digest."""
     if not isinstance(envelope, dict) or set(envelope) != {
         "format", "evidence", "signature"
     }:
         raise ProviderFencingReconciliationError("signed Provider envelope schema mismatch")
-    if envelope.get("format") != "ch17-provider-fencing-signed-evidence-v1":
+    if envelope.get("format") != expected_envelope_format:
         raise ProviderFencingReconciliationError("unsupported signed Provider evidence format")
+    if not isinstance(signature_domain, bytes) or not signature_domain:
+        raise ProviderFencingReconciliationError("signature domain separator is required")
     if not isinstance(trust_store, dict) or set(trust_store) != {"format", "keys"}:
         raise ProviderFencingReconciliationError("Provider trust store schema mismatch")
     if trust_store.get("format") != "ch17-provider-fencing-trust-store-v1":
@@ -86,17 +77,34 @@ def validate_signed_provider_fencing_reconciliation(
     if len(public_key_bytes) != 32 or len(signature_bytes) != 64:
         raise ProviderFencingReconciliationError("Ed25519 key or signature length is invalid")
 
-    evidence = envelope.get("evidence")
-    signed_payload = SIGNATURE_DOMAIN + _canonical(evidence)
+    payload = envelope.get("evidence")
+    signed_message = signature_domain + _canonical(payload)
     try:
         Ed25519PublicKey.from_public_bytes(public_key_bytes).verify(
-            signature_bytes, signed_payload
+            signature_bytes, signed_message
         )
     except (InvalidSignature, ValueError) as exc:
         raise ProviderFencingReconciliationError(
             "Provider evidence signature verification failed"
         ) from exc
+    return payload, key_id, hashlib.sha256(_canonical(trust_store)).hexdigest()
 
+
+def validate_signed_provider_fencing_reconciliation(
+    candidate: dict[str, Any],
+    envelope: dict[str, Any],
+    trust_store: dict[str, Any],
+    *,
+    now_unix: float,
+    maximum_age_seconds: float = 300.0,
+) -> dict[str, Any]:
+    """Verify signed read-only floors and then run normal reconciliation."""
+    evidence, key_id, trust_digest = verify_signed_provider_payload(
+        envelope,
+        trust_store,
+        expected_envelope_format="ch17-provider-fencing-signed-evidence-v1",
+        signature_domain=SIGNATURE_DOMAIN,
+    )
     result = validate_provider_fencing_reconciliation(
         candidate,
         evidence,
@@ -107,14 +115,13 @@ def validate_signed_provider_fencing_reconciliation(
     result["evidence_signature_verified"] = True
     result["signature_algorithm"] = "Ed25519"
     result["signer_key_id"] = key_id
-    result["trust_store_sha256"] = hashlib.sha256(_canonical(trust_store)).hexdigest()
+    result["trust_store_sha256"] = trust_digest
     result["limitations"] = [
         "The trust store is caller-supplied; its provenance, approval and protection must be independently established.",
         "A valid signature authenticates the signed snapshot only; it does not prove continuous Provider freeze or prevent post-sample mutation.",
         "This result is not production cutover approval, application-access authorization or permission to perform Provider operations.",
         "Replay prevention requires an independently durable evidence-id/nonce ledger and is not provided by this offline verifier.",
     ]
-    # Deliberately retain both authorization flags as false.
     result["application_activation_authorized"] = False
     result["provider_operations_authorized"] = False
     return result
