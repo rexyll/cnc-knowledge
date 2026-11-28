@@ -1448,3 +1448,16 @@
 - 明确该ledger不支持跨主机/多实例共识，数据库备份回滚可能重置消费历史；生产必须使用共享线性一致的防重放账本（例如隔离etcd CAS/Txn），且Coordinator快照必须来自认证的线性一致读取。
 - 单元测试覆盖验签、重放、nonce、freeze generation、Leader/Lease、scope floor、时间窗、校验失败不消费、文件权限和fail-closed错误。
 - 本轮不连接真实Provider、KMS或etcd，不写Provider控制面，不调整RBAC，不执行迁移/cutover。
+
+
+
+### 第八十四轮：MIG-05 共享 etcd Provider freeze replay ledger
+
+- 新增 `scripts/spare_parts_provider_freeze_etcd_replay_ledger.py`，以CoordinatorAuthorityStore为端口实现共享防重放消费。
+- namespace严格限定 `/cnc/migration/isolated/{single-id}/`；生产Unified schema-v2 namespace和多段/空namespace均拒绝。
+- 四个唯一键（Provider evidence UUID、challenge nonce digest、freeze generation、freeze ID）必须在同一Txn中执行VERSION=0比较及Put，永久键不附着Leader Lease。
+- 写入Txn还必须比较同一隔离namespace下 `scheduler/state` 与 `coordinator/leader` 的精确VALUE及MOD revision；预读校验Leader ID/epoch、native Lease ID/attachment/expiry、以及完整scope floors与签名快照一致。
+- 将新ledger接入 `validate_provider_freeze_attestation()`；SQLite ledger继续兼容单机参考调用。
+- 未知Txn响应采用严格恢复：四键全部精确匹配才确认提交；全部不存在且Leader/aggregate仍一致时仅重试相同Txn；部分或冲突状态QUARANTINE；持续未知不得激活。
+- 执行级测试基于EtcdV3CoordinatorAuthorityStore + InMemoryEtcdV3Client，覆盖一次成功、双线程竞争、未知提交/未提交、CAS过期、scope不一致、部分账本和端到端签名声明消费。
+- 不将内存fake测试描述为真实etcd共识/耐久性证据；真实集群、RBAC排他、Provider write-path冻结和生产切换仍未完成。
