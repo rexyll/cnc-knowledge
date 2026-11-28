@@ -1581,10 +1581,23 @@
 
 ### 第九十五轮：Provider Grant Receipt 签名协议模块与 Floor 验签门禁
 
-- 新增纯协议模块，使用固定版本 RFC 8785 JCS 对 receipt claims/envelope 规范化；使用独立 Provider Ed25519 key 做 domain-separated 签名，严格校验 envelope/claims 字段集合、字段类型、SQLite-safe整数、时间和FENCE/ACTIVATE结果约束。
-- 为外部 Floor 建立 Provider receipt key trust registry（schema v2），按Provider ID + key ID登记公钥指纹、状态、有效期、撤销生效时间与trust revision；只允许显式管理接口修改，不允许从回执自带公钥自动建立信任。
-- Floor 的 receipt confirm 接口改为接收signed envelope，在持有BEGIN IMMEDIATE与CAS事务中校验Provider key与reservation全部绑定字段，并在成功时由Floor自行计算receipt digest及保存signer/trust元数据。
-- 严格处理key状态：未知key、fingerprint不符、有效期外、撤销生效后的回执拒绝；RETIRING只验证既有有效期内的历史回执。已确认同一回执幂等；不同digest/key/claims不得替换。
-- v1数据库迁移到v2时旧裸digest记录保留为未认证历史；禁止伪造签名或自动把旧记录升级成可信证据。测试覆盖schema迁移、JCS向量、签名/字段篡改、身份错配、时间和key lifecycle、FENCE/ACTIVATE链、幂等/替换、revision保持和并发。
-- 仅使用合成Ed25519密钥与本地SQLite；本轮不改Provider mutation路径、不连接真实Provider/KMS/HSM/etcd、不修改Unified authority/RBAC，不解除Grant历史备份Restore门禁，不执行导入/激活/Cutover。
-- **状态：** TODO；需主分支完整Knowledge Quality CI通过后完成。
+- 新增 \`scripts/spare_parts_provider_grant_receipt.py\`：RFC 8785 JCS、独立 Provider Ed25519 domain-separated signer/verifier、严格 Envelope/claims parser 和 Verified Receipt 对象。
+- 外部 Floor 升级为 **schema v4**，增加 Provider receipt key trust registry、fingerprint、ACTIVE/RETIRING/REVOKED、退休/撤销生效时间和 trust revision；仅允许显式本地 owner 管理 API 注册/改变状态。
+- Floor confirm 改为 signed Envelope，在 BEGIN IMMEDIATE + scope revision CAS 中验证 Provider identity/key、reservation claims、command digest、FENCE digest、namespace、Leader/native Lease、原 Coordinator command issue/expiry、action/result/time 和 ACTIVATE chronology；拒绝裸 digest，Floor 自行计算完整 canonical envelope SHA-256。
+- Reservation 持久化 command issue/expiry，且命令 expiry 不得超过 native Lease。schema v1→v4 顺序迁移；旧裸摘要保留为未认证历史，receipt signer 元数据/命令时间保持 NULL，不伪造或自动提升。
+- 测试覆盖JCS、合法FENCE/ACTIVATE、签名/claims篡改、所有Reservation绑定字段、key fingerprint/有效期/退休/撤销、未知 key、裸digest API拒绝、Lease时间上限、ACTIVATE不得早于FENCE回执、幂等/替换、失败revision不变与v1迁移。
+- 仅本地SQLite与合成Ed25519 key；Provider SQLite mutation 尚未实际签名/持久化 Receipt，Floor 尚不独立验Coordinator command signature；不连接真实Provider/KMS/HSM/etcd，不修改Unified authority/RBAC，不解除Grant历史备份Restore门禁，不执行导入/激活/Cutover。
+- **设计与实现文档：** [Provider Grant Floor 回执来源认证与签名证据设计](../../17-operation-maintenance-and-repair/provider-grant-receipt-authentication-design.md)；[Provider Receipt 协议模块](../../../scripts/spare_parts_provider_grant_receipt.py)；[协议测试](../../../tests/test_spare_parts_provider_grant_receipt.py)。
+- **CI：** [Knowledge Quality Run 46155354641](https://github.com/rexyll/cnc-knowledge/actions/runs/46155354641)，两个必需 Job success；全库 737 项运行、40 项按环境跳过；CH12 数值资源 143 项通过。
+- **状态：** DONE（2026-11-28；只限本地 Receipt 协议和 Floor 验签参考实现）。
+
+### 第九十六轮：Provider SQLite FENCE/ACTIVATE durable signed Receipt 集成
+
+- 先审查 \`spare_parts_provider_sqlite_fenced.py\` 当前 FENCE/ACTIVATE mutation 和 SQLite 原子事务边界，再设计最小 schema/API 变更；不预设当前函数/事务布局。
+- 为本地 Provider 注入与 Coordinator command signer 分离的 Ed25519 receipt signer/key ID；私钥不能写入 Provider/Floor SQLite 或备份。
+- 在同一 Provider 写事务内更新 Grant state、command receipt、生成签名 claims，并持久化完整 canonical signed Receipt envelope/digest；事务回滚时不得留下成功 Receipt。
+- 新增按 Provider/tenant/exact command SHA-256 查回不可变 Receipt 的 API；同一 command 的重复执行/响应丢失后查询必须返回同一 envelope/digest，不重新推进 generation。
+- 使用本地真实 Provider signer 输出的 FENCE/ACTIVATE Envelope 驱动 Round95 Floor confirm，覆盖签名/绑定/回执链、幂等、commit失败回滚、commit后响应丢失和精确查询。
+- 只用合成 SQLite Provider 和内存 Ed25519 key；不连接真实 Provider/KMS/HSM/etcd/object storage，不修改Unified schema-v2、IAM/RBAC，不解除Restore fail-closed，不执行Cutover。
+- **状态：** TODO；需 Provider→Floor 端到端集成测试和主分支 Knowledge Quality CI 通过后完成。
+
