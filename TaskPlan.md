@@ -1278,3 +1278,11 @@
 - **验证：** [Knowledge Quality Run 46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) success：594 unittest（40 skipped/554 passed）、CH12 143项、lint 0 errors/5 warnings、结构0 errors。
 - **未完成：** 无实际etcd writer/自动resume；未执行Lease、RBAC、应用启动或生产迁移。MIG-04仍IN_PROGRESS，MIG-05/06待完成，MIG-07 BLOCKED。
 
+### 第七十九轮任务计划：MIG-05 分阶段导入执行契约与故障注入模拟
+
+- **目标：** 在不连接真实etcd的前提下，将第七十八轮只读分阶段导入协议映射到现有 `EtcdV3CoordinatorAuthorityStore` 事务端口，并在 `InMemoryEtcdV3Client` 上执行初始化、批次提交和最终发布流程。
+- **恢复判定：** batch未知结果必须匹配由同一不可变导入计划生成的当前批或后续批checkpoint精确字节值；仅凭plan digest、完成数量或request值匹配不能证明checkpoint可信。无法精确匹配时QUARANTINE。
+- **故障场景：** 覆盖Txn提交后响应丢失、提交前连接中断、checkpoint持久化后模拟进程重启并续跑、竞争writer抢先写入目标request key，以及最终发布Txn响应丢失。
+- **原子性：** 每批request索引与checkpoint必须由同一Txn提交；CAS失败时不得写入其余request值或推进checkpoint；scheduler/state只允许最后发布Txn写入。
+- **验收：** 所有恢复分支通过自动化测试；新增测试必须走真实Etcd adapter映射及内存客户端，而不是仅对plan dict做断言；main Quality CI通过。
+- **安全边界：** 该模拟只验证客户端事务契约，不验证etcd Raft/Quorum、磁盘耐久性、跨主机并发、网络分区或真实服务端Txn限制。不得写生产namespace、创建生产Lease、变更RBAC或执行cutover。
