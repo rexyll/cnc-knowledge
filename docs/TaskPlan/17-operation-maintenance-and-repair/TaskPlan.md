@@ -1533,6 +1533,6 @@
 - 新增可选`require_revocable_grant` mutation gate。启用后，四个实际写入口必须通过签名proof绑定grant ID和generation，并在同一Provider BEGIN IMMEDIATE事务中检查ACTIVE、未过期及代次匹配。
 - FENCE与mutation竞争同一SQLite写事务域：旧mutation若先取得并提交事务，则在线性化顺序上先于FENCE；FENCE先提交后，旧grant写入被拒绝。
 - FENCE/ACTIVATE精确命令digest提供历史receipt读回；提交后响应丢失按原digest恢复，不重复推进generation。
-- 测试覆盖FENCE receipt前置、激活门禁、新epoch撤销旧grant、对象与multipart四类mutation、提交后响应丢失、并发事务顺序及schema v2/v3迁移。
+- 测试覆盖FENCE receipt前置及ACTIVATE签发时间不早于FENCE持久回执、新epoch撤销旧grant、同Leader/Lease主动轮换、对象与multipart四类mutation、提交后响应丢失及backup/restore回执恢复、并发事务顺序、schema v2/v3/v4迁移。
 - **安全边界：** 当前仅同机SQLite参考实现。在线Coordinator检查与Provider commit仍不构成跨系统原子事务；不代表真实Provider或云对象存储已具备强fencing。真实三节点etcd、远程Provider、IAM/RBAC与生产写路径验收留待后续MIG-06。
 - **状态：** 代码/测试初版已提交；CI与文档最终质量验收待完成。本轮不触达生产基础设施。
