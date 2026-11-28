@@ -55,7 +55,12 @@ class EtcdProviderFreezeEvidenceReplayLedger:
     FORMAT = "ch17-provider-freeze-etcd-replay-ledger-v1"
 
     def __init__(self, store: Any, *, namespace_prefix: bytes) -> None:
-        validate_isolated_namespace(namespace_prefix)
+        try:
+            validate_isolated_namespace(namespace_prefix)
+        except MigrationNamespaceError as exc:
+            raise ProviderFreezeReplayLedgerError(
+                "Provider freeze replay ledger namespace is not isolated"
+            ) from exc
         required = ("linearizable_get", "transact")
         if any(not callable(getattr(store, name, None)) for name in required):
             raise ProviderFreezeReplayLedgerError(
