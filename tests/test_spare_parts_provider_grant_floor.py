@@ -152,23 +152,24 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.assertEqual(fenced.state, "FENCED")
         self.assertEqual(fenced.provider_generation_floor, 1)
         self.assertEqual(fenced.last_fence_command_digest, fence.command_digest)
-        self.assertEqual(fenced.last_fence_receipt_digest, _digest("fence-op-1-provider-receipt"))
+        self.assertEqual(
+            fenced.last_fence_receipt_digest,
+            hashlib.sha256(canonical_receipt_json(self.last_receipts[fence.operation_id])).hexdigest(),
+        )
 
         activate = self.activate()
         self.assertEqual(activate.generation, 2)
         self.assertEqual(activate.fence_command_digest, fence.command_digest)
         self.assertEqual(self.authority.snapshot(self.key).state, "ACTIVATE_PENDING")
 
-        active = self.authority.confirm_provider_receipt(
-            operation_id=activate.operation_id,
-            command_digest=activate.command_digest,
-            provider_receipt_digest=_digest("activate-receipt"),
-            expected_revision=activate.reserved_scope_revision,
-        )
+        active = self.confirm_receipt(activate)
         self.assertEqual(active.state, "ACTIVE")
         self.assertEqual(active.provider_generation_floor, 2)
         self.assertEqual(active.last_activation_command_digest, activate.command_digest)
-        self.assertEqual(active.last_activation_receipt_digest, _digest("activate-receipt"))
+        self.assertEqual(
+            active.last_activation_receipt_digest,
+            hashlib.sha256(canonical_receipt_json(self.last_receipts[activate.operation_id])).hexdigest(),
+        )
 
     def test_reservation_is_idempotent_by_exact_operation_identity(self):
         first = self.reserve_fence()
