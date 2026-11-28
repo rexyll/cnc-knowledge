@@ -408,3 +408,15 @@ Quality Run [46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/4
 证据默认必须在当前时刻之前且不超过300秒，拒绝未来时间、陈旧证据、scope遗漏/多余、generation不匹配、未知字段和非法floor。校验结果包含canonical evidence SHA-256及逐scope对账值，可供运维审计引用。
 
 **关键限制：** 此validator只检查调用方提供的数据，不连接Provider、不证明证据来源身份、不验证数字签名、不写Provider控制记录，也不保证观察后没有并发写入。输出中的 provider_fencing_reconciliation=PASS 仅表示这份输入快照在采样时满足候选floor约束；application_activation_authorized 和 provider_operations_authorized 始终为false。真实Provider签名/可信采样、观察窗口冻结、审批和切换门禁仍属于后续工作，不能将本工具结果当作生产授权。
+
+
+
+### 15.10 第八十二轮：Provider fencing 证据 Ed25519 验签门禁
+
+新增 `scripts/spare_parts_sqlite_provider_fencing_signed_evidence.py`，在第八十一轮只读floor对账器之前增加离线来源签名验证。输入签名信封固定为 `ch17-provider-fencing-signed-evidence-v1`，包含完整的原始只读证据对象及签名记录；签名记录限定 `algorithm=Ed25519`、`key_id` 和Base64签名。签名消息由固定域分离前缀与证据规范化JSON拼接，避免同一签名被其他协议上下文复用。
+
+信任库固定为 `ch17-provider-fencing-trust-store-v1`，按key ID登记Ed25519 32字节公钥。未知key、错误算法、未知字段、非法Base64、错误key/signature长度、签名不匹配均fail-closed。验签通过后仍调用原有对账器，继续校验候选v2、300秒新鲜度、完整scope集合、provider_generation以及Provider token/sequence floor；任何一项不满足均拒绝。
+
+验签结果增加 `evidence_signature_verified`、`signer_key_id` 和 `trust_store_sha256`。两个授权字段仍严格为false。
+
+**信任与重放边界：** 公钥信任库由调用方提供，工具不能证明其来源、审批状态或安全分发；真实部署必须通过独立可信渠道固定信任根并制定轮换/撤销流程。Ed25519签名认证的是某个不可变快照，不提供Provider持续冻结证明。当前离线校验器没有持久化nonce/evidence-id账本，不能阻止有效签名快照在新鲜度窗口内重放；应在真实Provider冻结协议和演练环境中另行设计防重放及冻结租约。该验签结果不等于生产cutover审批或Provider写权限。
