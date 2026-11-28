@@ -159,7 +159,7 @@ def _validate_claims(claims: Any) -> dict[str, Any]:
         raise ProviderGrantReceiptError("Provider receipt Coordinator namespace is not isolated")
 
     action = claims.get("action")
-    if action not in {"FENCE", "ACTIVATE"}:
+    if not isinstance(action, str) or action not in {"FENCE", "ACTIVATE"}:
         raise ProviderGrantReceiptError("Provider receipt action must be FENCE or ACTIVATE")
     result_state = claims.get("result_state")
     expected_state = "FENCED" if action == "FENCE" else "ACTIVE"
@@ -298,16 +298,32 @@ def verify_provider_grant_receipt(
         or hashlib.sha256(trust_key.public_key).hexdigest() != trust_key.public_key_sha256
     ):
         raise ProviderGrantReceiptError("Provider receipt trusted public-key fingerprint mismatch")
-    if trust_key.status not in {"ACTIVE", "RETIRING", "REVOKED"}:
+    if not isinstance(trust_key.status, str) or trust_key.status not in {
+        "ACTIVE", "RETIRING", "REVOKED"
+    }:
         raise ProviderGrantReceiptError("Provider receipt signing key status is unsupported")
+    not_before = _timestamp(trust_key.not_before, "key_not_before")
+    not_after = (
+        _timestamp(trust_key.not_after, "key_not_after")
+        if trust_key.not_after is not None else None
+    )
+    if not_after is not None and not_after <= not_before:
+        raise ProviderGrantReceiptError("Provider receipt key validity interval is invalid")
+    if (
+        not isinstance(trust_key.trust_revision, int)
+        or isinstance(trust_key.trust_revision, bool)
+        or trust_key.trust_revision < 1
+        or trust_key.trust_revision > MAX_SQLITE_INTEGER
+    ):
+        raise ProviderGrantReceiptError("Provider receipt trust revision is invalid")
 
     applied = claims["applied_at_unix"]
     now = time.time() if now_unix is None else _timestamp(now_unix, "verification_time_unix")
     if applied > now + MAX_CLOCK_SKEW_SECONDS:
         raise ProviderGrantReceiptError("Provider receipt applied time is in the future")
-    if applied < float(trust_key.not_before):
+    if applied < not_before:
         raise ProviderGrantReceiptError("Provider receipt was signed before the key validity window")
-    if trust_key.not_after is not None and applied >= float(trust_key.not_after):
+    if not_after is not None and applied >= not_after:
         raise ProviderGrantReceiptError("Provider receipt was signed after the key validity window")
     if trust_key.status == "REVOKED":
         effective = trust_key.revocation_effective_at
