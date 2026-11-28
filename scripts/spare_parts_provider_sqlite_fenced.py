@@ -1960,6 +1960,98 @@ class SQLiteFencedObjectStorageProvider:
                     "Coordinator reports the fencing lease is released, expired or unknown"
                 )
 
+    def _verify_persisted_provider_grant_receipt(
+        self, c: sqlite3.Connection, *, command_sha256: str,
+        expected_action: str, expected_scope: str, expected_grant_id: str,
+    ) -> dict[str, Any]:
+        """Re-verify a durable grant envelope against the configured trust root."""
+        receipt = c.execute(
+            """SELECT * FROM provider_grant_commands WHERE command_sha256=?""",
+            (command_sha256,),
+        ).fetchone()
+        if (
+            receipt is None
+            or receipt["provider_id"] != self.provider_id
+            or receipt["tenant_id"] != self.tenant_id
+            or receipt["fencing_scope"] != expected_scope
+            or receipt["action"] != expected_action
+            or receipt["grant_id"] != expected_grant_id
+            or not isinstance(receipt["envelope_json"], str)
+            or not isinstance(receipt["signer_public_key_base64"], str)
+        ):
+            raise SQLiteProviderGrantRejectedError(
+                "Provider grant receipt is missing, legacy-unverifiable or bound to another identity"
+            )
+        try:
+            envelope = json.loads(receipt["envelope_json"])
+            canonical = json.dumps(
+                envelope, sort_keys=True, separators=(",", ":"), allow_nan=False
+            )
+            if canonical != receipt["envelope_json"]:
+                raise ValueError("grant receipt envelope is not canonical JSON")
+            signer_public_key = base64.b64decode(
+                receipt["signer_public_key_base64"], validate=True
+            )
+            if len(signer_public_key) != 32:
+                raise ValueError("grant receipt signer public key is invalid")
+            configured_public_key = self._trusted_ed25519_public_keys.get(receipt["key_id"])
+            if (
+                configured_public_key is None
+                or self._ed25519_public_key_raw(configured_public_key) != signer_public_key
+            ):
+                raise ValueError("grant receipt signer does not match configured Provider trust")
+            trusted = c.execute(
+                """SELECT algorithm,public_key_sha256,status,not_before,not_after
+                   FROM trusted_ed25519_keys WHERE issuer_id=? AND key_id=?""",
+                (receipt["issuer_id"], receipt["key_id"]),
+            ).fetchone()
+            if (
+                trusted is None or trusted["algorithm"] != "ED25519"
+                or hashlib.sha256(signer_public_key).hexdigest() != trusted["public_key_sha256"]
+                or trusted["status"] not in {"ACTIVE", "RETIRING"}
+            ):
+                raise ValueError("grant receipt signer is no longer trusted")
+            claims = envelope["command"]
+            issued_at = float(claims["issued_at_unix"])
+            expires_at = float(claims["expires_at_unix"])
+            now = time.time()
+            if (
+                now < float(trusted["not_before"])
+                or (trusted["not_after"] is not None and now >= float(trusted["not_after"]))
+                or issued_at < float(trusted["not_before"])
+                or (trusted["not_after"] is not None and issued_at >= float(trusted["not_after"]))
+            ):
+                raise ValueError("grant receipt signer is outside its trusted time window")
+            verified_claims, verified_key_id, verified_digest = verify_provider_grant_command(
+                envelope, {receipt["key_id"]: signer_public_key},
+                expected_provider_id=self.provider_id,
+                expected_tenant_id=self.tenant_id,
+                now_unix=issued_at + (expires_at - issued_at) / 2.0,
+            )
+            if (
+                verified_key_id != receipt["key_id"]
+                or verified_digest != command_sha256
+                or verified_claims["issuer_id"] != receipt["issuer_id"]
+                or verified_claims["scope"] != expected_scope
+                or verified_claims["action"] != expected_action
+                or verified_claims["grant_id"] != expected_grant_id
+                or int(verified_claims["generation"]) != int(receipt["generation"])
+                or verified_claims["coordinator_namespace"] != receipt["coordinator_namespace"]
+                or verified_claims["leader_id"] != receipt["leader_id"]
+                or int(verified_claims["leader_epoch"]) != int(receipt["leader_epoch"])
+                or int(verified_claims["leader_lease_id"]) != int(receipt["leader_lease_id"])
+                or float(verified_claims["leader_lease_expires_at_unix"]) != float(receipt["leader_lease_expires_at"])
+                or verified_claims["fence_command_sha256"] != receipt["fence_command_sha256"]
+                or float(receipt["applied_at"]) < issued_at
+                or float(receipt["applied_at"]) > expires_at
+            ):
+                raise ValueError("signed grant receipt claims disagree with persisted fields")
+            return verified_claims
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError, ProviderGrantCommandError) as exc:
+            raise SQLiteProviderGrantRejectedError(
+                "Provider grant receipt signature or claims cannot be verified"
+            ) from exc
+
     def _authorize_provider_write_freeze(
         self, c: sqlite3.Connection, *, tenant_id: str,
         fencing_scope: str, claims: dict[str, Any],
@@ -2011,6 +2103,27 @@ class SQLiteFencedObjectStorageProvider:
             ):
                 raise SQLiteProviderGrantRejectedError(
                     "Provider grant is absent or fenced for this scope"
+                )
+            fence_claims = self._verify_persisted_provider_grant_receipt(
+                c, command_sha256=grant["fence_command_sha256"],
+                expected_action="FENCE", expected_scope=fencing_scope,
+                expected_grant_id=grant["grant_id"],
+            )
+            activation_claims = self._verify_persisted_provider_grant_receipt(
+                c, command_sha256=grant["activation_command_sha256"],
+                expected_action="ACTIVATE", expected_scope=fencing_scope,
+                expected_grant_id=grant["grant_id"],
+            )
+            if (
+                int(activation_claims["generation"]) != int(grant["grant_generation"])
+                or activation_claims["fence_command_sha256"] != grant["fence_command_sha256"]
+                or int(fence_claims["generation"]) + 1 != int(activation_claims["generation"])
+                or fence_claims["leader_id"] != activation_claims["leader_id"]
+                or int(fence_claims["leader_epoch"]) != int(activation_claims["leader_epoch"])
+                or int(fence_claims["leader_lease_id"]) != int(activation_claims["leader_lease_id"])
+            ):
+                raise SQLiteProviderGrantRejectedError(
+                    "Provider grant FENCE/ACTIVATE receipt chain is inconsistent"
                 )
             if (
                 claims.get("provider_grant_id") != grant["grant_id"]
