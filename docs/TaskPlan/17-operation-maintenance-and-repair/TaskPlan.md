@@ -1555,5 +1555,5 @@
 - **状态机：** FENCE reserve→Provider commit→receipt confirm；ACTIVATE reserve→Provider commit→receipt confirm。每个状态推进必须通过scope revision CAS和BEGIN IMMEDIATE事务；同operation ID只能绑定相同scope/action/grant/generation/command claims，重复确认只允许同一Provider receipt digest。
 - **单调约束：** Leader epoch不得降低；同epoch禁止替换Leader/native Lease；Coordinator namespace固定；同一native Lease expiry不得回退；ACTIVATE必须关联最近一次已确认FENCE；pending或RECOVERY_REQUIRED状态不得分配新代次。
 - **测试：** 覆盖FENCE/ACTIVATE正常链、CAS/并发竞争、operation精确重试/冲突、Provider回执digest与command绑定、响应未知后的重启查询、pending阻断、epoch/namespace/Lease expiry回退、Provider/tenant/scope隔离及trusted minimum revision。
-- **验收边界：** 只证明本地SQLite参考事务语义，不证明etcd线性一致、Raft quorum、多主机可用性或自身防回滚；Provider回执真实性仍由未来认证的Provider状态接口证明。没有接入Provider命令执行或Unified schema-v2 authority，不能执行Grant-aware Restore。
+- **验收边界：** 只证明本地SQLite参考事务语义，不证明etcd线性一致、Raft quorum、多主机可用性或自身防回滚；Provider回执真实性仍由未来认证的Provider状态接口证明。FENCE_PENDING只是外部预留，不是Provider撤销；旧Grant直到Provider FENCE提交前仍可能被接受。没有接入Provider命令执行或Unified schema-v2 authority，不能执行Grant-aware Restore。
 - **状态：** 代码与测试初版提交；测试尚未在本地或CI验证。通用Restore对Grant历史备份继续fail-closed；MIG-04/MIG-05保持IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
