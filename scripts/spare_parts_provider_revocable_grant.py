@@ -119,8 +119,13 @@ def verify_provider_grant_command(
         raise ProviderGrantCommandError("Provider grant action must be FENCE or ACTIVATE")
     for field in ("generation", "leader_epoch", "leader_lease_id"):
         value = claims[field]
-        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
-            raise ProviderGrantCommandError(f"Provider grant {field} must be a positive integer")
+        if (
+            not isinstance(value, int) or isinstance(value, bool)
+            or value <= 0 or value > MAX_SQLITE_INTEGER
+        ):
+            raise ProviderGrantCommandError(
+                f"Provider grant {field} must be a positive SQLite-safe integer"
+            )
     times = (
         claims["issued_at_unix"], claims["expires_at_unix"],
         claims["leader_lease_expires_at_unix"], now_unix,
