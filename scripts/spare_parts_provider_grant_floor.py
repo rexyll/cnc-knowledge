@@ -287,7 +287,10 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                     receipt_trust_revision INTEGER,
                     provider_applied_at_unix REAL,
                     command_issued_at_unix REAL,
-                    command_expires_at_unix REAL
+                    command_expires_at_unix REAL,
+                    coordinator_signer_key_id TEXT,
+                    coordinator_key_fingerprint TEXT,
+                    coordinator_trust_revision INTEGER
                 );
                 CREATE TABLE IF NOT EXISTS provider_grant_floor_receipt_keys (
                     provider_id TEXT NOT NULL,
@@ -755,26 +758,6 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 return existing
 
             coordinator_trust = None
-            if coordinator_command_envelope is not None:
-                coordinator_trust = self._verify_coordinator_command(
-                    connection,
-                    coordinator_command_envelope,
-                    key=key,
-                    action=action,
-                    grant_id=grant_id,
-                    generation=int(existing.generation) if existing is not None else None,
-                    command_digest=command_digest,
-                    fence_command_digest=fence_command_digest,
-                    coordinator_namespace=coordinator_namespace,
-                    leader_id=leader_id,
-                    leader_epoch=leader_epoch,
-                    native_lease_id=native_lease_id,
-                    lease_expires_at_unix=lease_expires_at_unix,
-                    command_issued_at_unix=command_issued_at_unix,
-                    command_expires_at_unix=command_expires_at_unix,
-                    now_unix=time.time(),
-                )
-
             key_values = self._key_tuple(key)
             connection.execute(
                 """INSERT OR IGNORE INTO provider_grant_floor_scopes
@@ -846,6 +829,25 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 next_state = "ACTIVATE_PENDING"
                 next_fence_digest = fence_command_digest
 
+            if coordinator_command_envelope is not None:
+                coordinator_trust = self._verify_coordinator_command(
+                    connection,
+                    coordinator_command_envelope,
+                    key=key,
+                    action=action,
+                    grant_id=grant_id,
+                    generation=next_generation,
+                    command_digest=command_digest,
+                    fence_command_digest=fence_command_digest,
+                    coordinator_namespace=coordinator_namespace,
+                    leader_id=leader_id,
+                    leader_epoch=leader_epoch,
+                    native_lease_id=native_lease_id,
+                    lease_expires_at_unix=lease_expires_at_unix,
+                    command_issued_at_unix=command_issued_at_unix,
+                    command_expires_at_unix=command_expires_at_unix,
+                    now_unix=time.time(),
+                )
             next_revision = actual_revision + 1
             authority_revision = self._bump_authority_revision(connection)
             connection.execute(
