@@ -116,8 +116,6 @@ def _validate_candidate(candidate: Any) -> tuple[dict[str, Any], list[tuple[byte
     if state.get("active") != {} or state.get("waiters") != []:
         raise ImportPlanError("candidate must not contain active leases or waiters")
     coordinator = state.get("coordinator", {})
-    if coordinator.get("leader") is not None:
-        raise ImportPlanError("legacy Leader must not be imported")
     if not isinstance(state.get("next_fencing_token"), int) or isinstance(
         state.get("next_fencing_token"), bool
     ):
@@ -196,9 +194,27 @@ def _validate_candidate(candidate: Any) -> tuple[dict[str, Any], list[tuple[byte
         or recovery.get("active_lease_ttl_keys_are_not_imported") is not True
         or recovery.get("terminal_request_backend_lease_id_sentinel") != 1
         or recovery.get("terminal_request_backend_lease_id_is_not_a_live_lease") is not True
+        or recovery.get("leader_epoch_floor_is_embedded_as_inactive_coordinator_record") is not True
+        or recovery.get("leader_epoch_floor_backend_lease_id_sentinel") != 1
     ):
         raise ImportPlanError("candidate recovery requirements do not preserve safety barriers")
-    _required_int(recovery.get("leader_epoch_floor"), "leader_epoch_floor")
+    leader_epoch_floor = _required_int(
+        recovery.get("leader_epoch_floor"), "leader_epoch_floor"
+    )
+    leader_floor_record = coordinator.get("leader")
+    expected_leader_floor_record = {
+        "leader_id": "migration-epoch-floor",
+        "epoch": leader_epoch_floor,
+        "expires_at": 0.0,
+        "backend_lease_id": 1,
+    }
+    if leader_epoch_floor == 0:
+        if leader_floor_record is not None:
+            raise ImportPlanError("unexpected Leader record when legacy epoch floor is zero")
+    elif leader_floor_record != expected_leader_floor_record:
+        raise ImportPlanError(
+            "Coordinator Leader must be the exact inactive migration epoch-floor sentinel"
+        )
 
     indexes = candidate.get("terminal_request_indexes")
     if not isinstance(indexes, list):
