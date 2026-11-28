@@ -1294,3 +1294,12 @@
 - **执行测试：** 新增 `tests/test_spare_parts_sqlite_staged_import_execution.py`，通过实际Etcd adapter映射和InMemory fake执行checkpoint初始化、批次Txn及最终publish；覆盖提交前中断、提交后响应丢失、重启续跑、竞争writer触发CAS失败与最终发布响应丢失。
 - **CI：** [Knowledge Quality Run 46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/46092128612) success：600 unittest（40 skipped，560 passed），CH12数值资源测试143项通过，knowledge lint 0 errors/5 warnings，结构/data检查0 errors。
 - **边界：** InMemory fake不提供Raft/Quorum、持久性或真正跨主机网络并发。未实现真实etcd writer/自动resume，未执行Lease/RBAC/应用启停或生产迁移。MIG-04继续IN_PROGRESS；MIG-05进入IN_PROGRESS（仅完成内存事务契约测试的一部分）；MIG-06 TODO；MIG-07 BLOCKED。
+
+### 第八十轮任务计划：MIG-05 Unified schema-v2 运行时兼容与 Leader epoch floor 保真
+
+- **目标：** 验证分阶段导入最终发布的 aggregate 可被现有 \`StoreBackedProviderAdmissionCoordinator\` 与 \`StoreBackedCoordinatorAuthority\` 直接读取和继续运行。
+- **Leader epoch：** 旧Leader身份和TTL key都不得恢复，但历史epoch floor不能在\`coordinator.leader=None\`时丢失。仅当旧epoch大于0时，在schema-v2 aggregate保留固定的失效历史标记：\`leader_id=migration-epoch-floor\`、\`epoch=legacy floor\`、\`expires_at=0.0\`、\`backend_lease_id=0\`。该标记不是Leader、无原生Lease，不得参与业务授权；标准claim路径应据此从floor+1开始。epoch floor为0时保持None，首次claim为1。
+- **严格验证：** Planner只接受上述完整精确标记，拒绝旧Leader身份、非零Lease ID、有效TTL及任何其他非规范Leader对象。Coordinator runtime只允许该特殊标记使用\`backend_lease_id=0\`，正常Leader仍须持有正数原生Lease ID。
+- **候选格式：** 因候选bundle语义变化升级为\`ch17-sqlite-unified-candidate-v2\`；旧v1候选包必须拒绝，要求重新执行只读Inventory/Export后生成新候选。
+- **互操作验收：** 执行模拟分阶段导入和最终发布，再由标准Unified runtime构造函数读入；验证scope fencing/sequence、已提交operation及终态request幂等行为，确保终态重放不会grant Admission Lease，并验证新Leader自动epoch递增。
+- **边界：** 仅使用InMemoryEtcdV3Client；不连接真实etcd、不Grant/Revoke真实Lease、不改RBAC、不启动生产应用、不写生产namespace、不执行cutover。
