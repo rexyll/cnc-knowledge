@@ -1310,6 +1310,16 @@ class SQLiteFencedObjectStorageProvider:
                    WHERE tenant_id=? AND fencing_scope=?""",
                 (self.tenant_id, scope),
             ).fetchone()
+            if current is not None:
+                current_fence = c.execute(
+                    """SELECT provider_id FROM provider_grant_commands
+                       WHERE command_sha256=? AND action='FENCE'""",
+                    (current["fence_command_sha256"],),
+                ).fetchone()
+                if current_fence is None or current_fence["provider_id"] != self.provider_id:
+                    raise SQLiteProviderGrantRejectedError(
+                        "Provider identity does not match the established grant scope"
+                    )
             generation = int(claims["generation"])
             expected_generation = int(current["grant_generation"]) + 1 if current else 1
             if generation != expected_generation:
@@ -1878,13 +1888,19 @@ class SQLiteFencedObjectStorageProvider:
 
         if self.require_revocable_grant:
             grant = c.execute(
-                """SELECT coordinator_namespace,leader_id,leader_epoch,leader_lease_id,
-                          grant_generation,grant_id,state,grant_expires_at
-                   FROM provider_scope_grants
-                   WHERE tenant_id=? AND fencing_scope=?""",
+                """SELECT g.coordinator_namespace,g.leader_id,g.leader_epoch,g.leader_lease_id,
+                          g.grant_generation,g.grant_id,g.state,g.grant_expires_at,
+                          f.provider_id
+                   FROM provider_scope_grants g
+                   JOIN provider_grant_commands f
+                     ON f.command_sha256=g.fence_command_sha256 AND f.action='FENCE'
+                   WHERE g.tenant_id=? AND g.fencing_scope=?""",
                 (tenant_id, fencing_scope),
             ).fetchone()
-            if grant is None or grant["state"] != "ACTIVE":
+            if (
+                grant is None or grant["provider_id"] != self.provider_id
+                or grant["state"] != "ACTIVE"
+            ):
                 raise SQLiteProviderGrantRejectedError(
                     "Provider grant is absent or fenced for this scope"
                 )
