@@ -322,3 +322,5 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - The Provider validates a signed Lease-expiry assertion; it does not query live etcd Lease existence, Leader-key attachment, or early revocation.
 - Before the Provider observes a higher epoch, an old Leader can still be accepted within the signed command/Lease validity window if its Lease was revoked early. Production requires a linearizable online Leader/Lease status check at the Provider or an equivalent independently revocable authorization mechanism.
 - Same-host SQLite tests do not establish etcd consensus, remote Provider behavior or multi-host consistency. No real etcd, Provider, KMS/HSM, cloud object store or IAM/RBAC service was contacted; no production application access, candidate import or cutover occurred. ASSET-000092 remains PROPOSED_NOT_APPROVED / NOT_RUN; production Unified schema-v2 remains the sole authority.
+
+- Additional hardening: Coordinator namespace must be a canonical absolute prefix; within the same Leader epoch and native Lease ID, a lower Lease-expiry snapshot is rejected. Tests cover both conditions.
