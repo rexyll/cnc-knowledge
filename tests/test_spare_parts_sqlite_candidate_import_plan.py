@@ -43,7 +43,7 @@ def candidate_fixture():
                 "leader_id": "migration-epoch-floor",
                 "epoch": 8,
                 "expires_at": 0.0,
-                "backend_lease_id": 1,
+                "backend_lease_id": 0,
             },
             "scopes": {
                 "scope-1": {
@@ -88,7 +88,7 @@ def candidate_fixture():
         "recovery_requirements": {
             "leader_epoch_floor": 8,
             "leader_epoch_floor_is_embedded_as_inactive_coordinator_record": True,
-            "leader_epoch_floor_backend_lease_id_sentinel": 1,
+            "leader_epoch_floor_backend_lease_id_sentinel": 0,
             "leader_must_be_reclaimed": True,
             "external_fencing_reconciliation": "REQUIRED",
             "external_fencing_floor": None,
