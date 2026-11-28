@@ -1540,3 +1540,5 @@
 - **最终设计审查：** 已补充Witness PREPARE在Etcd PREPARE响应未知时的安全取消规则、Etcd COMMIT/ABORT的同intent竞争、COMMIT后不得ABORT、Etcd整体回滚后仅凭root不能重建数据的限制，以及v1全局meta序列化的吞吐代价。
 - **最终验收：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663) 两个必需Job均success；全库776项unittest运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings；结构/data检查0 errors；CH17场景校验自检30项模拟、failed=0、business_test_status=NOT_RUN、external_connections=NO、writes=NO。
 - **状态：** DONE（2026-11-29；Etcd-native原子权威与外部witness设计任务完成并通过main Quality CI；不代表Etcd-native业务服务已实现或生产部署已验收）。
+
+- **最终文档同步CI：** [Knowledge Quality Run 46164006077](https://github.com/rexyll/cnc-knowledge/actions/runs/46164006077) 对最终main文档提交 `df6c807f495b805f71ad351594c0a87c265f606f` 验证通过，两个必需Job均success；全库776项运行、40项环境跳过，CH12 143项通过，lint 0 errors / 5 warnings。
