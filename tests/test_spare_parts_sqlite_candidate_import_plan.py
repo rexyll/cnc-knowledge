@@ -181,6 +181,17 @@ class CandidateImportPlanTests(unittest.TestCase):
         self.assertFalse(plan["limits"]["fits"])
         self.assertTrue(any("bytes" in reason for reason in plan["limits"]["reasons"]))
 
+    def test_rejects_any_legacy_or_noncanonical_leader_epoch_record(self):
+        candidate = self.candidate()
+        candidate["state_template"]["coordinator"]["leader"]["leader_id"] = "old-leader"
+        resign(candidate)
+        with self.assertRaisesRegex(
+            ImportPlanError, "exact inactive migration epoch-floor sentinel"
+        ):
+            build_import_plan(
+                candidate, PREFIX, max_txn_ops=100, max_txn_bytes=1_000_000
+            )
+
     def test_rejects_scope_identity_that_could_restore_live_lease(self):
         candidate = self.candidate()
         scope = next(iter(candidate["state_template"]["coordinator"]["scopes"].values()))
