@@ -1578,3 +1578,13 @@
 - **设计文档：** [Provider Grant Floor 回执来源认证与签名证据设计](../../17-operation-maintenance-and-repair/provider-grant-receipt-authentication-design.md)。
 - **交付：** 新增 Provider Grant receipt 认证设计文档；同步根 TaskPlan、CH17 TaskPlan、README 和 TaskHistory。设计评审完成后再决定独立实现轮次。
 - **状态：** DONE（2026-11-28；Knowledge Quality Run 46153427280 两个必需 Job 均 success）。
+
+### 第九十五轮：Provider Grant Receipt 签名协议模块与 Floor 验签门禁
+
+- 新增纯协议模块，使用固定版本 RFC 8785 JCS 对 receipt claims/envelope 规范化；使用独立 Provider Ed25519 key 做 domain-separated 签名，严格校验 envelope/claims 字段集合、字段类型、SQLite-safe整数、时间和FENCE/ACTIVATE结果约束。
+- 为外部 Floor 建立 Provider receipt key trust registry（schema v2），按Provider ID + key ID登记公钥指纹、状态、有效期、撤销生效时间与trust revision；只允许显式管理接口修改，不允许从回执自带公钥自动建立信任。
+- Floor 的 receipt confirm 接口改为接收signed envelope，在持有BEGIN IMMEDIATE与CAS事务中校验Provider key与reservation全部绑定字段，并在成功时由Floor自行计算receipt digest及保存signer/trust元数据。
+- 严格处理key状态：未知key、fingerprint不符、有效期外、撤销生效后的回执拒绝；RETIRING只验证既有有效期内的历史回执。已确认同一回执幂等；不同digest/key/claims不得替换。
+- v1数据库迁移到v2时旧裸digest记录保留为未认证历史；禁止伪造签名或自动把旧记录升级成可信证据。测试覆盖schema迁移、JCS向量、签名/字段篡改、身份错配、时间和key lifecycle、FENCE/ACTIVATE链、幂等/替换、revision保持和并发。
+- 仅使用合成Ed25519密钥与本地SQLite；本轮不改Provider mutation路径、不连接真实Provider/KMS/HSM/etcd、不修改Unified authority/RBAC，不解除Grant历史备份Restore门禁，不执行导入/激活/Cutover。
+- **状态：** TODO；需主分支完整Knowledge Quality CI通过后完成。
