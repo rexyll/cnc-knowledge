@@ -1171,12 +1171,12 @@ class SQLiteFencedObjectStorageProvider:
         return {"result": "APPLIED", "scope": scope, "generation": generation, "state": state}
 
     def apply_provider_grant_command(
-        self, envelope: dict[str, Any], *, now_unix: float | None = None
+        self, envelope: dict[str, Any]
     ) -> dict[str, Any]:
         """Atomically FENCE an old grant or ACTIVATE a grant after its FENCE receipt."""
         if self.provider_id is None:
             raise BackupStorageError("Provider identity must be configured before grant commands")
-        now = time.time() if now_unix is None else now_unix
+        now = time.time()
         try:
             claims, key_id, command_digest = verify_provider_grant_command(
                 envelope, self._trusted_ed25519_public_keys,
@@ -1192,7 +1192,7 @@ class SQLiteFencedObjectStorageProvider:
             # signed command after acquiring the Provider serialization lock so
             # an expired command cannot commit merely because it was valid
             # before the lock wait.
-            now = time.time() if now_unix is None else float(now_unix)
+            now = time.time()
             try:
                 claims, key_id, command_digest = verify_provider_grant_command(
                     envelope, self._trusted_ed25519_public_keys,
@@ -1282,7 +1282,7 @@ class SQLiteFencedObjectStorageProvider:
 
             # The online check may take time. Re-check command and Lease
             # expiry immediately before persisting the transition.
-            now = time.time() if now_unix is None else float(now_unix)
+            now = time.time()
             try:
                 claims, key_id, command_digest = verify_provider_grant_command(
                     envelope, self._trusted_ed25519_public_keys,
