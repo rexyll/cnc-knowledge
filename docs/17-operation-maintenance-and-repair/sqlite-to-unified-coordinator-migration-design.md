@@ -545,6 +545,6 @@ FENCE若更换Leader/Lease身份，必须使用比该scope当前记录更高的L
 
 未知响应处理：完整命令envelope digest作为收据主键；新增`provider_grant_command_status()`只读查询历史receipt与当前scope状态。测试通过commit后response-loss hook验证：客户端收到异常后读回原digest得到FENCED历史结果；精确重放返回ALREADY_APPLIED，不重复推进generation。ACTIVATE缺失或错误FENCE receipt会拒绝。
 
-schema v4→v5为加法迁移；旧v2/v3测试fixture升级后也必须创建新grant表。Provider backup validator将两张grant表加入必需表集合；backup/restore不得丢失grant floor或命令receipt。
+schema v2/v3/v4→v5均为加法迁移；各旧版测试fixture升级后必须创建新grant表。Provider backup validator将两张grant表加入必需表集合；backup/restore不得丢失grant floor或命令receipt。专用测试覆盖v4→v5及FENCE回执在backup/restore后仍可查询。ACTIVATE的issued_at还必须不早于Provider实际提交FENCE回执的applied_at，防止预签名命令在屏障尚未持久化时被激活。
 
 **严格边界：** 目前是同机SQLite参考实现。它只证明当前对象与multipart写入口在这个SQLite Provider中的事务排序，不证明远程Provider、云对象存储、异步后台任务或多主机强fencing。Provider FENCE的线性化点不是etcd Lease独立过期的物理瞬间；Coordinator必须等待Provider receipt后才能声明Provider侧handoff完成。真实Provider、三节点etcd、KMS/HSM、RBAC和跨系统联合故障验证仍未完成。
