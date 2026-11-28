@@ -830,6 +830,128 @@ class SQLiteFencedObjectStorageProvider:
     def capabilities(self) -> ProviderCapabilities:
         return self._capabilities
 
+    def apply_write_freeze_command(
+        self, envelope: dict[str, Any], *, now_unix: float | None = None
+    ) -> dict[str, Any]:
+        """Atomically install a signed FREEZE/UNFREEZE generation in Provider DB.
+
+        This local reference operation is a control-plane API. Production must
+        expose an equivalently authenticated Provider-native control endpoint.
+        """
+        if self.provider_id is None:
+            raise BackupStorageError(
+                "Provider identity must be configured before applying freeze commands"
+            )
+        now = time.time() if now_unix is None else now_unix
+        try:
+            claims, key_id, command_digest = verify_provider_write_freeze_command(
+                envelope,
+                self._trusted_ed25519_public_keys,
+                expected_provider_id=self.provider_id,
+                expected_tenant_id=self.tenant_id,
+                now_unix=now,
+            )
+        except ProviderWriteFreezeCommandError as exc:
+            raise FencingAttestationRejectedError(str(exc)) from exc
+        scope = _safe_key(claims["scope"])
+        issuer_id = claims["issuer_id"]
+        with self._transaction() as c:
+            trusted = c.execute(
+                """SELECT algorithm,public_key_sha256,status,not_before,not_after
+                   FROM trusted_ed25519_keys WHERE issuer_id=? AND key_id=?""",
+                (issuer_id, key_id),
+            ).fetchone()
+            public_key = self._trusted_ed25519_public_keys.get(key_id)
+            if (
+                trusted is None or trusted["algorithm"] != "ED25519"
+                or trusted["status"] not in {"ACTIVE", "RETIRING"}
+                or public_key is None
+                or self._ed25519_public_key_fingerprint(public_key) != trusted["public_key_sha256"]
+                or now < float(trusted["not_before"])
+                or (trusted["not_after"] is not None and now >= float(trusted["not_after"]))
+                or float(claims["issued_at_unix"]) < float(trusted["not_before"])
+                or (trusted["not_after"] is not None
+                    and float(claims["issued_at_unix"]) >= float(trusted["not_after"]))
+            ):
+                raise FencingAttestationRejectedError(
+                    "freeze command issuer/key is not trusted for this Provider"
+                )
+            current = c.execute(
+                """SELECT generation,freeze_id,state,command_sha256
+                   FROM provider_write_freeze_scopes
+                   WHERE tenant_id=? AND fencing_scope=?""",
+                (self.tenant_id, scope),
+            ).fetchone()
+            generation = int(claims["generation"])
+            action = claims["action"]
+            freeze_id = claims["freeze_id"]
+            if current is not None and generation == int(current["generation"]):
+                expected_state = "FROZEN" if action == "FREEZE" else "OPEN"
+                if (
+                    current["command_sha256"] == command_digest
+                    and current["freeze_id"] == freeze_id
+                    and current["state"] == expected_state
+                ):
+                    return {
+                        "result": "ALREADY_APPLIED", "scope": scope,
+                        "generation": generation, "state": expected_state,
+                    }
+                raise FencingAttestationRejectedError(
+                    "freeze command generation was already consumed with different content"
+                )
+            expected_generation = int(current["generation"]) + 1 if current else 1
+            if generation != expected_generation:
+                raise FencingAttestationRejectedError(
+                    "freeze command generation is stale or skips the next generation"
+                )
+            if action == "FREEZE":
+                if current is not None and current["state"] == "FROZEN":
+                    raise FencingAttestationRejectedError(
+                        "scope is already frozen; unfreeze the current generation first"
+                    )
+                if current is not None and current["freeze_id"] == freeze_id:
+                    raise FencingAttestationRejectedError(
+                        "a new freeze requires a new freeze ID"
+                    )
+                state = "FROZEN"
+            else:
+                if (
+                    current is None or current["state"] != "FROZEN"
+                    or current["freeze_id"] != freeze_id
+                ):
+                    raise FencingAttestationRejectedError(
+                        "unfreeze command does not match the active freeze"
+                    )
+                state = "OPEN"
+            c.execute(
+                """INSERT INTO provider_write_freeze_scopes(
+                    tenant_id,fencing_scope,generation,freeze_id,state,command_sha256,updated_at
+                ) VALUES(?,?,?,?,?,?,?)
+                ON CONFLICT(tenant_id,fencing_scope) DO UPDATE SET
+                    generation=excluded.generation,freeze_id=excluded.freeze_id,
+                    state=excluded.state,command_sha256=excluded.command_sha256,
+                    updated_at=excluded.updated_at""",
+                (
+                    self.tenant_id, scope, generation, freeze_id, state,
+                    command_digest, now,
+                ),
+            )
+        return {
+            "result": "APPLIED", "scope": scope,
+            "generation": generation, "state": state,
+        }
+
+    def write_freeze_state(self, fencing_scope: str) -> dict[str, Any] | None:
+        scope = _safe_key(fencing_scope)
+        with self._transaction() as c:
+            row = c.execute(
+                """SELECT generation,freeze_id,state,command_sha256,updated_at
+                   FROM provider_write_freeze_scopes
+                   WHERE tenant_id=? AND fencing_scope=?""",
+                (self.tenant_id, scope),
+            ).fetchone()
+            return dict(row) if row is not None else None
+
     def _connect(self) -> sqlite3.Connection:
         c = sqlite3.connect(
             str(self.database_path),
@@ -1017,12 +1139,20 @@ class SQLiteFencedObjectStorageProvider:
             or float(lease_expires) <= now
         ):
             raise FencingAttestationRejectedError("fencing attestation is expired or exceeds its lease")
+        base_claim_count = 15 if algorithm == "HMAC-SHA256" else 16
+        has_freeze_generation = "provider_freeze_generation" in claims
         if (
-            (algorithm == "HMAC-SHA256" and len(claims) != 15)
-            or (algorithm == "ED25519" and (len(claims) != 16 or claims.get("alg") != "ED25519"))
-            or algorithm not in {"HMAC-SHA256", "ED25519"}
+            algorithm not in {"HMAC-SHA256", "ED25519"}
+            or len(claims) != base_claim_count + int(has_freeze_generation)
+            or (algorithm == "ED25519" and claims.get("alg") != "ED25519")
         ):
             raise FencingAttestationRejectedError("fencing attestation contains unknown or missing claims")
+        if has_freeze_generation and (
+            not isinstance(claims["provider_freeze_generation"], int)
+            or isinstance(claims["provider_freeze_generation"], bool)
+            or claims["provider_freeze_generation"] <= 0
+        ):
+            raise FencingAttestationRejectedError("provider freeze generation claim is invalid")
         return claims
 
     def _authorize_fencing_attestation(
@@ -1081,6 +1211,30 @@ class SQLiteFencedObjectStorageProvider:
                 raise FencingAttestationRejectedError(
                     "Coordinator reports the fencing lease is released, expired or unknown"
                 )
+
+    def _authorize_provider_write_freeze(
+        self, c: sqlite3.Connection, *, tenant_id: str,
+        fencing_scope: str, claims: dict[str, Any],
+    ) -> None:
+        row = c.execute(
+            """SELECT generation,freeze_id,state FROM provider_write_freeze_scopes
+               WHERE tenant_id=? AND fencing_scope=?""",
+            (tenant_id, fencing_scope),
+        ).fetchone()
+        if row is None:
+            if "provider_freeze_generation" in claims:
+                raise FencingAttestationRejectedError(
+                    "write proof references a Provider freeze generation that is not installed"
+                )
+            return
+        if row["state"] == "FROZEN":
+            raise SQLiteProviderWriteFrozenError(
+                "Provider-native write freeze is active for this fencing scope"
+            )
+        if claims.get("provider_freeze_generation") != int(row["generation"]):
+            raise FencingAttestationRejectedError(
+                "write proof is not bound to the current Provider freeze generation"
+            )
 
     @staticmethod
     def _validate_fenced_arguments(
@@ -1222,6 +1376,10 @@ class SQLiteFencedObjectStorageProvider:
             action=operation, object_key=normalized_key, fencing_scope=normalized_scope
         ) as (c, tenant_id):
             self._authorize_fencing_attestation(c, claims=claims, tenant_id=tenant_id)
+            self._authorize_provider_write_freeze(
+                c, tenant_id=tenant_id, fencing_scope=claims["fencing_scope"],
+                claims=claims,
+            )
             prior = self._prepare_fenced_operation(
                 c, tenant_id=tenant_id, fencing_scope=normalized_scope,
                 fencing_token=fencing_token, idempotency_key=idempotency_key,
