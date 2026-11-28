@@ -1325,3 +1325,16 @@
 - 明确签名只认证快照内容，不证明持续冻结；离线验证不提供持久化nonce/replay ledger，不能防止有效旧快照在有效期内重放。
 - 增加有效签名、篡改、未知key、错误签名/算法、非法编码、未知字段、过期及floor超限测试。
 - 本轮不连接真实Provider、不访问KMS、不写Provider控制记录、不修改RBAC、不执行生产迁移或cutover。
+
+
+
+### 第八十三轮任务计划：MIG-05 Provider freeze attestation 与一次性防重放账本
+
+- 定义Provider签名冻结声明，要求包含Provider身份、freeze ID/generation、证据UUID、一次性Coordinator challenge nonce、冻结起止时间、签名时间窗、当前Coordinator Leader ID/epoch/native Lease ID及完整scope floors。
+- 验证必须同时对照调用方从权威Coordinator取得的近期Leader快照；Leader身份、epoch、Lease ID/expiry及每个scope的generation/token/operation sequence必须与Provider签名声明精确一致。
+- 证明必须在freeze窗口和签名期限内，Coordinator Lease有效期必须覆盖证明期限；仍复用既有Provider证据300秒新鲜度及候选floor校验。
+- 实现SQLite本机参考replay ledger，使用0600普通文件、SQLite FULL同步、BEGIN IMMEDIATE和唯一约束，一次性消费provider/evidence ID、challenge nonce及freeze ID/generation；校验失败不得提前消费。
+- 输出只证明签名声明通过并已写入本机防重放账本；不得声称Provider真实写路径被冻结。Provider write freeze enforced、application activation及Provider operations授权保持false。
+- 明确SQLite ledger只适用于单机参考/演练；生产多实例必须迁移至同一线性一致etcd事务或其他具备耐久性、CAS和防回滚治理的共享账本，并从认证的Coordinator读取当前Leader快照。
+- 测试覆盖有效证明、同证据重放、nonce复用、freeze generation复用、challenge mismatch、stale/不匹配Coordinator、scope floor不一致、Lease期限不足、窗口非法、验证失败不消费、权限位和文件权限。
+- 不连接真实Provider/KMS/etcd，不修改Provider控制记录或RBAC，不开放应用访问，不执行候选导入或生产cutover。
