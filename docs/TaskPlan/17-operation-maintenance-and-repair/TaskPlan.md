@@ -1528,7 +1528,7 @@
 ### 第九十轮：MIG-05 Provider-native Revocable Grant / FENCE Barrier 本地参考实现
 
 - 新增独立Ed25519 Provider grant命令协议，严格签署FENCE/ACTIVATE命令，绑定Provider、tenant、scope、grant ID、代次、Coordinator namespace、Leader epoch/native Lease及期限。
-- FENCE将scope状态推进为FENCED，要求Leader epoch严格高于已观察epoch；ACTIVATE只有在当前scope处于FENCED、完整Leader/Lease/grant身份一致，且command digest精确引用已持久化FENCE receipt时才可执行。
+- FENCE将scope状态推进为FENCED；不同Leader/Lease身份要求Leader epoch严格高于已观察epoch，同epoch仅允许完全相同Leader/Lease撤销当前ACTIVE grant，已FENCED状态拒绝重复推进。ACTIVATE只有在当前scope处于FENCED、完整Leader/Lease/grant身份一致，且command digest精确引用已持久化FENCE receipt时才可执行。
 - Provider schema升级至v5，新增`provider_scope_grants`和`provider_grant_commands`；v2/v3/v4升级通过`CREATE TABLE IF NOT EXISTS`加法迁移，backup validator要求新表存在。
 - 新增可选`require_revocable_grant` mutation gate。启用后，四个实际写入口必须通过签名proof绑定grant ID和generation，并在同一Provider BEGIN IMMEDIATE事务中检查ACTIVE、未过期及代次匹配。
 - FENCE与mutation竞争同一SQLite写事务域：旧mutation若先取得并提交事务，则在线性化顺序上先于FENCE；FENCE先提交后，旧grant写入被拒绝。
