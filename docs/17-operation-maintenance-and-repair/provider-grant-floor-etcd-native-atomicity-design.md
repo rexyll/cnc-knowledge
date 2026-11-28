@@ -232,3 +232,50 @@ Etcd与Witness不共享物理事务，因此此协议仍不是跨系统单Txn。
 10. 整体Etcd snapshot恢复到旧revision时，域外witness预检拒绝服务恢复；witness不可用/签名错误/旧值回滚均fail-closed。
 
 **验证边界：** 本设计基于仓库已有KV/Txn接口审计，不代表上述Etcd-native Floor service已实现。Round99不连接真实Etcd、不运行多节点故障演练、不配置生产RBAC/KMS/HSM、不执行SQLite迁移、候选导入、Restore、应用激活或Cutover。Round98 SQLite参考实现继续保留；含Provider Grant history的通用Restore继续fail-closed。
+
+## 10. 外部Witness PREPARE的取消语义与并发仲裁
+
+前述严格耐久模式还必须明确PREPARED intent如何安全终止，不能因一次线性一致读暂时未发现pending key就直接把外部intent标成ABORTED。Etcd客户端超时不等于服务端一定没有继续处理原Txn。
+
+### 10.1 Witness PREPARE之后、Etcd PREPARE之前或响应未知
+
+- 若Etcd PREPARE返回明确的Compare-failed结果，必须检查同Txn failure branch返回的meta：pending intent仍为空，previous sequence/root/revision与本次intent完全一致。只有这一确定失败证据才能把Witness PREPARED通过CAS转为ABORTED。
+- 若Etcd PREPARE transport timeout或响应丢失，不能仅凭一次独立Range读到pending为空就取消Witness intent；原Txn仍可能在服务端提交。只能以相同intent ID、相同previous meta和相同新root重试同一个Compare/Txn，或继续精确读回，直到得到成功或明确的Compare-failed结论。
+- 如果读回meta发现pending intent等于本intent，则Etcd PREPARE已提交，进入Etcd COMMIT或经严格Compare竞争的取消过程；若发现其他intent或previous root已经变化，立即隔离。
+
+### 10.2 Etcd PREPARE成功后、业务Etcd COMMIT之前
+
+- 可发起Etcd ABORT Txn：Compare pending intent ID、previous meta root/sequence及scope/operation仍保持预期旧状态；success分支只清除pending intent并记录abort marker，不写业务scope/operation。
+- Etcd COMMIT与ABORT必须比较同一个pending intent和同一previous state。二者在Etcd里串行化，最多一个Txn成功：COMMIT先成功则ABORT compare失败并必须继续Witness COMMIT/Etcd FINALIZE；ABORT先成功则COMMIT compare失败。
+- 只有ABORT Txn得到确定成功，且其完整结果精确读回后，Witness才能将对应PREPARED intent转为ABORTED。若ABORT响应未知，继续以原intent精确读回；不能新建替代intent。
+
+### 10.3 Etcd COMMIT之后
+
+Etcd业务COMMIT一旦确定完成，不得再把Witness intent标成ABORTED。即使Witness不可达或响应未知，也必须保持pending intent并阻断后续写；恢复后只能完成同一intent的Witness COMMIT与Etcd FINALIZE。这样不会出现业务数据已推进、witness却被取消的分叉。
+
+## 11. Etcd整体回滚后的检测与重建不是同一能力
+
+域外witness只保存最近可信sequence/root，可以识别Etcd当前状态低于witness，但单独一个root digest无法重建丢失的scope、operation、trust key和事件正文。恢复设计必须选择并明确一种数据重建来源：
+
+1. **完整外部事件日志：** 在Witness COMMITTED边界之外，持久保存每个已确认event的canonical正文和签名/摘要链，并定期生成可验证快照。恢复时从受信快照加事件日志重建Etcd隔离前缀，然后逐scope重新验签和对账。
+2. **受信Etcd备份 + 外部事件补齐：** Etcd snapshot只作为基线，必须验证snapshot revision/root不高于witness，并使用域外持久事件记录补齐到witness已确认sequence/root；只有完全匹配才可以重新开放。
+3. **不具备重建材料：** 若只有witness sequence/root、没有可信事件正文或可验证备份，则只能检测回滚，不能声称可自动恢复。保持写隔离，通过Provider只读状态、已签Receipt和人工审批逐scope重建/重新FENCE；在重建完成前Grant Floor不可用。
+
+任何重建路径都必须使用新隔离namespace，不能把旧snapshot中低于witness的ACTIVE Grant直接恢复为ACTIVE。Coordinator/Provider key trust状态、key lifecycle事件和pending operation也必须一并恢复；无法确认的scope进入RECOVERY_REQUIRED。
+
+## 12. 全局Meta序列化与吞吐权衡
+
+本设计v1让同一隔离namespace的所有写入竞争一个meta revision/event sequence/state-root，以换取简单且可验证的全序事件链。这会让不同scope的写操作也在meta Compare上串行化，形成潜在吞吐热点。Round99接受该取舍作为首个正确性基线，不据此宣称高吞吐或无限扩展。
+
+未来如果需要分片，必须设计每分片sequence/root与上层汇总root的原子/可验证关系，明确跨分片查询和witness顺序；不得简单删除全局meta Compare而让事件顺序出现分叉。任何分片改造都应先有负载模型和并发/故障演练。
+
+## 13. 本轮设计审查清单
+
+- Etcd KV/Txn primitive与应用服务端口边界已明确；没有把当前SQLite DurableCoordinator业务服务称为Etcd生产实现。
+- 普通Floor状态转移使用单Etcd Txn原子写scope、operation、trust audit、event和meta root。
+- 签名验证依赖的trust rows在同一Txn中精确Compare，阻止验签与提交间的key lifecycle竞态。
+- OUTCOME_UNKNOWN只使用原intent/operation ID和原signed envelope精确恢复；不得更换身份猜测重试。
+- 外部Witness严格耐久模式已定义PREPARE、Etcd PREPARE/COMMIT、Witness COMMIT、Etcd FINALIZE及ABORT的相互竞争语义。
+- 明确witness digest可以检测Etcd整群snapshot回滚，但不提供event正文，不单独具备状态重建能力。
+- 明确v1全局meta的串行化性能代价；txn容量限制不允许拆分单个状态转移。
+- 真实Etcd、RBAC、KMS/HSM、生产Coordinator、Provider与Grant-aware Restore均未实现或验收。
