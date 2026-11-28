@@ -14,6 +14,7 @@ from scripts.spare_parts_fencing_attestation import _load_ed25519_public_key
 ENVELOPE_FORMAT = "ch17-provider-revocable-grant-envelope-v1"
 CLAIMS_FORMAT = "ch17-provider-revocable-grant-command-v1"
 SIGNING_DOMAIN = b"cnc-knowledge-provider-revocable-grant-command-v1\x00"
+MAX_SQLITE_INTEGER = (1 << 63) - 1
 CLAIM_FIELDS = {
     "format", "issuer_id", "provider_id", "tenant_id", "scope", "action",
     "grant_id", "generation", "issued_at_unix", "expires_at_unix",
