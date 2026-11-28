@@ -1094,6 +1094,18 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             provider.apply_provider_grant_command(command, now_unix=0.0)
         self.assertIsNone(provider.provider_grant_state(SCOPE))
 
+    def test_provider_grant_command_lifetime_is_capped_at_five_minutes(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        command = self.grant_command(
+            "FENCE", 1, "grant-overlong-lifetime",
+            issued_at=now, lease_expires=now + 360.0,
+            expires=now + 301.0,
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "expired or exceeds"):
+            provider.apply_provider_grant_command(command)
+        self.assertIsNone(provider.provider_grant_state(SCOPE))
+
     def test_grant_integer_claims_must_fit_sqlite_signed_integer(self):
         claims = {
             "format": PROVIDER_GRANT_CLAIMS_FORMAT,
