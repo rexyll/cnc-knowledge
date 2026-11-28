@@ -1573,6 +1573,22 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 operation["provider_id"], operation["tenant_id"], operation["scope"]
             )
             key_values = self._key_tuple(key)
+            floor_policy = connection.execute(
+                "SELECT coordinator_command_auth_required "
+                "FROM provider_grant_floor_meta WHERE singleton=1"
+            ).fetchone()
+            if (
+                floor_policy is not None
+                and int(floor_policy["coordinator_command_auth_required"]) == 1
+                and (
+                    operation["coordinator_signer_key_id"] is None
+                    or operation["coordinator_key_fingerprint"] is None
+                    or operation["coordinator_trust_revision"] is None
+                )
+            ):
+                raise ProviderGrantFloorConflict(
+                    "legacy pending Grant operation lacks a verified Coordinator command reservation"
+                )
             if (
                 operation["command_issued_at_unix"] is None
                 or operation["command_expires_at_unix"] is None
