@@ -1537,4 +1537,6 @@
 
 - **设计审查补强（2026-11-29）：** 进一步定义Witness PREPARE取消语义：Etcd PREPARE响应未知时不能仅凭一次Range未发现pending就ABORT；Etcd PREPARE之后通过与COMMIT竞争的精确Compare/Txn取消，只有明确ABORT成功后才能Witness ABORTED。Etcd COMMIT确定后禁止再ABORT，只能完成Witness COMMIT/Etcd FINALIZE。
 - **恢复边界补强：** Witness sequence/root只能检测Etcd整群snapshot回滚，不能仅凭摘要重建丢失数据；重建必须依赖域外完整事件日志/可信备份加事件补齐，缺少材料时只能保持隔离并逐scope人工/受控重建。v1全局meta root采用全namespace写序列，明确存在吞吐热点，未来分片需重新证明root/顺序语义。
-- **状态：** IN_PROGRESS（架构设计初稿已交付，待README/TaskHistory/全库质量CI和设计审查完成；未实现Etcd-native服务，未连接真实Etcd/配置RBAC，不执行Restore/Cutover）。
+- **最终设计审查：** 已补充Witness PREPARE在Etcd PREPARE响应未知时的安全取消规则、Etcd COMMIT/ABORT的同intent竞争、COMMIT后不得ABORT、Etcd整体回滚后仅凭root不能重建数据的限制，以及v1全局meta序列化的吞吐代价。
+- **最终验收：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663) 两个必需Job均success；全库776项unittest运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings；结构/data检查0 errors；CH17场景校验自检30项模拟、failed=0、business_test_status=NOT_RUN、external_connections=NO、writes=NO。
+- **状态：** DONE（2026-11-29；Etcd-native原子权威与外部witness设计任务完成并通过main Quality CI；不代表Etcd-native业务服务已实现或生产部署已验收）。
