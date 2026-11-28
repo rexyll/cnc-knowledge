@@ -1150,6 +1150,68 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertEqual(state["grant_generation"], 4)
         self.assertEqual(state["state"], "ACTIVE")
 
+    def test_revocable_grant_is_required_by_object_and_all_multipart_mutations(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-all-writes", issued_at=now, lease_expires=now + 180.0
+        )
+        digest = hashlib.sha256(
+            __import__("json").dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence)
+        provider.apply_provider_grant_command(self.grant_command(
+            "ACTIVATE", 2, "grant-all-writes", issued_at=now + 1.0,
+            lease_expires=now + 180.0, expires=now + 120.0,
+            fence_digest=digest,
+        ))
+
+        key = SCOPE + "/grant/multipart.bin"
+        provider.begin_multipart_upload_fenced(
+            key, "grant-upload-1", fencing_scope=SCOPE,
+            fencing_token=40, idempotency_key="grant-multipart-begin",
+            provider_grant_id="grant-all-writes", provider_grant_generation=2,
+        )
+        part = b"grant-controlled-part"
+        provider.put_multipart_part_fenced(
+            key, "grant-upload-1", 1, part, hashlib.sha256(part).hexdigest(),
+            fencing_scope=SCOPE, fencing_token=41,
+            idempotency_key="grant-multipart-part",
+            provider_grant_id="grant-all-writes", provider_grant_generation=2,
+        )
+
+        provider.apply_provider_grant_command(self.grant_command(
+            "FENCE", 3, "grant-next-leader", leader_epoch=2,
+            issued_at=now + 2.0, lease_expires=now + 180.0,
+        ))
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            provider.put_if_absent_fenced(
+                SCOPE + "/grant/blocked-object.bin", b"blocked",
+                fencing_scope=SCOPE, fencing_token=42,
+                idempotency_key="grant-object-after-fence",
+            )
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            provider.begin_multipart_upload_fenced(
+                SCOPE + "/grant/blocked-multipart.bin", "grant-upload-2",
+                fencing_scope=SCOPE, fencing_token=43,
+                idempotency_key="grant-begin-after-fence",
+            )
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            provider.put_multipart_part_fenced(
+                key, "grant-upload-1", 2, b"late",
+                hashlib.sha256(b"late").hexdigest(),
+                fencing_scope=SCOPE, fencing_token=44,
+                idempotency_key="grant-part-after-fence",
+            )
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            provider.complete_multipart_upload_fenced(
+                key, "grant-upload-1", expected_part_count=1,
+                expected_size_bytes=len(part), expected_sha256=hashlib.sha256(part).hexdigest(),
+                fencing_scope=SCOPE, fencing_token=45,
+                idempotency_key="grant-complete-after-fence",
+            )
+        self.assertEqual(provider.provider_grant_state(SCOPE)["state"], "FENCED")
+
     def test_grant_receipt_recovers_lost_fence_response(self):
         import json
         provider = self.enable_revocable_grants()
