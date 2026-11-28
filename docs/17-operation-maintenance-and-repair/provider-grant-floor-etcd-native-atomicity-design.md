@@ -177,6 +177,36 @@ Etcd自身的header revision、mod_revision、meta sequence和state-root都存�
 
 **RPO限制必须说清楚：** 如果witness只在备份/维护窗口更新，rollback检测只能覆盖到最后已确认witness点，不能证明其后的所有提交均未丢失。若要求每个已确认Floor mutation都不能在Etcd整群snapshot rollback后消失，则需要每次mutation都纳入可恢复的外部witness两阶段提交/持久intent协议，处理witness准备成功而Etcd失败、Etcd成功而witness确认失败及双方响应丢失；这属于独立的跨系统提交协议，不能由一个普通after-commit CAS实现。本轮不宣称已解决该两阶段协议。
 
+### 7.1 每笔写入的域外Witness确认模式（严格耐久模式）
+
+若业务要求“已向调用方确认成功的Grant Floor变更不能因Etcd整群恢复旧snapshot而丢失”，周期性备份witness不足以给出该保证。需要把域外witness纳入每笔写入的可恢复提交协议。推荐如下严格模式；它是设计规格，不是本轮实现：
+
+1. **Witness PREPARE：** 在独立witness CAS中登记唯一intent ID、namespace、expected previous sequence/root、拟提交的新sequence/root、operation ID/command digest、canonical event digest和协议版本。一个namespace同一时刻只允许一个PREPARED intent。
+2. **Etcd PREPARE：** 通过Txn Compare当前meta仍指向previous sequence/root且pending intent为空；在meta中写入pending intent ID和expected next sequence/root。此Txn不修改scope或operation业务状态。
+3. **Etcd COMMIT：** 通过Txn Compare pending intent ID、previous root和相关scope/operation/trust records；原子写入scope、operation、event、meta sequence和next root，但保留pending intent ID，阻断后续写操作。
+4. **Witness COMMIT：** Witness使用intent ID和expected previous sequence执行CAS，把同一intent从PREPARED推进为COMMITTED；记录next sequence/root。只有外部witness已COMMITTED，才允许认为本次变更满足严格耐久确认条件。
+5. **Etcd FINALIZE：** 再通过Txn Compare pending intent ID、已提交的next sequence/root及witness intent ID，清除pending intent并记录last witnessed sequence/root。新业务写入只有在pending intent为空且Etcd meta与witness头部一致时才可开始。
+6. **调用方确认：** 只有Etcd COMMIT已精确确认、Witness COMMIT已精确确认、Etcd FINALIZE已精确确认后，才向调用方返回最终成功。任一阶段响应丢失都保持operation ID不变并执行该阶段的精确read-back；不生成新intent或新generation。
+
+### 7.2 Witness协议未知结果与恢复矩阵
+
+| 故障位置 | 恢复判定 | 允许动作 |
+|---|---|---|
+| Witness PREPARE响应未知 | 按intent ID读取witness；若精确PREPARED已存在则继续，否则仅可重放同intent CAS | 不创建第二个intent |
+| Etcd PREPARE响应未知 | 线性一致读meta；pending ID精确匹配则继续，仍为空则重放同一Etcd PREPARE | pending ID为其他值时隔离 |
+| Etcd COMMIT响应未知 | 同revision读取scope、operation、event和meta；完整next state/root匹配则进入Witness COMMIT，仍为完整previous state且pending ID匹配则重放同一Txn | 不接受部分结果或替代command |
+| Witness COMMIT响应未知 | 按intent ID精确读witness；COMMITTED且next sequence/root匹配则继续，否则仅能重放同intent CAS | witness头部发生冲突时隔离 |
+| Etcd FINALIZE响应未知 | 线性一致读meta；pending清空且last-witnessed sequence/root精确匹配则确认，否则同intent重试 | pending ID不匹配或root不一致时隔离 |
+| Etcd snapshot回退 | Etcd当前sequence/root低于witness COMMITTED头部 | 禁止写入；进入受控恢复/重新FENCE流程 |
+
+Etcd与Witness不共享物理事务，因此此协议仍不是跨系统单Txn。安全性来自：域外PREPARED intent先持久化、Etcd事务具备明确pending intent、任何阶段未知结果都可精确恢复、FINALIZE前禁止下一笔写、调用方在witness确认前不收到最终成功。它牺牲写入可用性和延迟，换取明确的跨系统确认边界。
+
+**重要限制：**
+- 如果witness只提供周期性checkpoint而非每笔COMMIT，则必须按最近一次witness COMMITTED sequence计算并公开RPO；不能宣称零已确认提交丢失。
+- Witness自身必须有独立的持久化、权限隔离和备份回滚检测。把Witness文件放在Etcd snapshot相同的回滚域会使该设计失效。
+- Etcd恢复旧snapshot后，PREPARED/COMMITTED intent不能仅由服务自动猜测。必须冻结旧client写入、确认所有旧Txn不再可能到达，再依据Etcd状态和witness状态执行专用恢复操作；不确定时永久保持写隔离并升级人工审查。
+- 对外最终成功响应必须发生在Witness COMMITTED与Etcd FINALIZE之后。PREPARED或Etcd COMMIT但未完成witness/finalize的operation只能报告PENDING/OUTCOME_UNKNOWN，不能报告ACTIVE已确认。
+
 ## 8. 安全、运维与观测要求
 
 - Etcd服务身份只对专属Floor前缀拥有必要KV读写权限；普通Coordinator调用身份不得直接写scope/meta/event或trust key。
