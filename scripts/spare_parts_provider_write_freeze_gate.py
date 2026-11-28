@@ -110,7 +110,8 @@ def verify_provider_write_freeze_command(
         )
     except (InvalidSignature, ValueError) as exc:
         raise ProviderWriteFreezeCommandError("freeze command signature verification failed") from exc
-    return claims, key_id, hashlib.sha256(_canonical(claims)).hexdigest()
+    # Bind receipts to the exact signed envelope, not only equivalent claims.
+    return claims, key_id, hashlib.sha256(_canonical(envelope)).hexdigest()
 
 
 def sign_provider_write_freeze_command(
