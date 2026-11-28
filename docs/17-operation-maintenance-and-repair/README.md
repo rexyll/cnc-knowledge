@@ -475,3 +475,12 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 新增运行时互操作测试：分阶段写入终态request索引并最终发布aggregate后，用标准Unified Admission和Coordinator runtime读入。测试检查scope fencing/sequence floor、COMMITTED operation历史以及终态request幂等拒绝；终态request无论相同身份重放还是不同owner复用，都不得创建Admission Lease；正常Leader claim不传显式恢复floor也能从旧epoch 8推进至新epoch 9。epoch-zero测试则确保不会人为抬高floor。
 
 **证据边界：** 互操作测试仅使用 \`InMemoryEtcdV3Client\` 和现有Store adapter。它验证运行时schema解析与应用逻辑，不证明真实etcd Raft/Quorum、磁盘耐久性、Lease超时精度、网络分区、跨进程并发或RBAC。没有在真实etcd上写入、Grant/Revoke Lease、修改RBAC、启动应用、触碰生产namespace或执行cutover。
+
+
+## CH17-T006 外部Provider fencing floor只读对账门禁（第八十一轮）
+
+新增脚本 spare_parts_sqlite_provider_fencing_reconciliation.py，对候选 v2 与操作员提供的Provider只读证据执行fail-closed逐scope对账。要求Provider证据覆盖候选全部scope且无多余scope；provider_generation必须精确匹配；Provider观察到的fencing token和operation sequence floor必须分别不高于候选floor。若Provider floor更高，则当前候选不能安全导入，必须先重新盘点并重建候选。
+
+证据必须包含Provider ID、观察时间和固定schema，默认最多接受300秒内的采样。缺少scope、未知字段、generation不匹配、过期/未来采样及非法floor均会拒绝。成功结果包含canonical evidence SHA-256和逐scope比较明细。
+
+**安全边界：** 该工具只验证调用方传入的数据，不连接真实Provider、不验证证据签名或身份、不写入Provider控制记录，也不授予应用访问或Provider mutation权限。采样后发生的Provider写入会使结果失效。真实可信采样、签名认证、写冻结和生产审批仍未完成。
