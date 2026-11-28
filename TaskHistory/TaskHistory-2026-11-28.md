@@ -125,3 +125,33 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - No Provider control object was written, no generation/fencing floor was changed, no etcd Lease or RBAC was touched, no application access was enabled, and no production cutover occurred.
 - The 300-second freshness check is only a timestamp policy; it does not prevent Provider mutation after observation. The result is not a signature, trust attestation or production authorization.
 - ASSET-000092 remains \`PROPOSED_NOT_APPROVED / NOT_RUN\`; production Unified schema-v2 remains the sole authority.
+
+
+
+## CNC Knowledge Base — Round 82
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: MIG-05 Ed25519 signature verification for external Provider fencing evidence.
+
+### Code changes
+
+- Added `scripts/spare_parts_sqlite_provider_fencing_signed_evidence.py`.
+- Added `tests/test_spare_parts_sqlite_provider_fencing_signed_evidence.py`.
+- The signed envelope and trust-store schemas are exact and reject unknown fields.
+- Signature verification uses Ed25519 over a domain-separated prefix plus canonical JSON for the complete evidence object.
+- Only after signature verification succeeds does the wrapper invoke the existing read-only reconciliation validator; freshness, complete scope coverage, Provider generation and fencing/operation floors remain mandatory.
+- The result reports signature verification, signer key ID and trust-store SHA-256. Application activation and Provider operation authorization remain false.
+- Tests cover valid signature, tampered evidence, unknown signer, invalid signature/algorithm, malformed Base64, unknown schema, stale evidence and Provider floor above candidate.
+
+### Validation
+
+- CI for the code and documentation commits is pending; do not treat this round as accepted until the required main-branch workflow runs complete successfully.
+
+### Safety boundary
+
+- The trust store is caller-supplied; this verifier does not establish its provenance, approval or secure distribution.
+- A signature authenticates a snapshot only. It does not prove continuous Provider freeze or prevent post-sample mutation.
+- No durable nonce/evidence replay ledger is implemented; a still-fresh signed snapshot may be replayed.
+- No real Provider/KMS was contacted; no Provider control record, etcd Lease, RBAC, application access or production namespace was changed. No candidate was imported and no production cutover occurred.
+- ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`; production Unified schema-v2 remains the sole authority.
