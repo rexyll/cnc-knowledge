@@ -476,6 +476,30 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.assertEqual(operation.command_issued_at_unix, reservation.command_issued_at_unix)
         self.assertEqual(operation.command_expires_at_unix, reservation.command_expires_at_unix)
 
+    def test_naked_provider_receipt_digest_api_is_no_longer_accepted(self):
+        reservation = self.reserve_fence()
+        before = self.authority.snapshot(self.key)
+        with self.assertRaises(TypeError):
+            self.authority.confirm_provider_receipt(
+                operation_id=reservation.operation_id,
+                command_digest=reservation.command_digest,
+                provider_receipt_digest=_digest("caller-supplied-naked-digest"),
+                expected_revision=reservation.reserved_scope_revision,
+            )
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "FENCE_PENDING")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
+
+    def test_command_validity_window_cannot_outlive_native_lease(self):
+        with self.assertRaisesRegex(ProviderGrantFloorError, "not exceed its native Lease"):
+            self.reserve_fence(
+                operation_id="command-outlives-native-lease",
+                command_issued_at_unix=self.lease_expiry - 10.0,
+                command_expires_at_unix=self.lease_expiry + 1.0,
+            )
+        self.assertEqual(self.authority.snapshot(self.key).state, "IDLE")
+
     def test_receipt_command_time_window_must_match_exact_reservation(self):
         reservation = self.reserve_fence()
         receipt = self.receipt_envelope(
