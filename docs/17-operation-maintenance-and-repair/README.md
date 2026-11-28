@@ -664,3 +664,14 @@ Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执
 **边界：** 当前仅为单进程 SQLite wrapper + in-memory CAS fake；fake 不持久、不防回滚，wrapper 不提供跨进程锁。没有实现生产外部 checkpoint service 或共同事务域，也没有接入真实 etcd/KMS/HSM/Provider。Grant-aware Restore 尚未实现，含 Grant history 的通用 Restore 仍 fail-closed。
 
 - **最终验证：** [Knowledge Quality Run 46162907743](https://github.com/rexyll/cnc-knowledge/actions/runs/46162907743) 两个必需Job均成功；全库776项测试运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings。Round98专项测试14项全部通过。
+
+### 第九十九轮：Provider Grant Floor Etcd-native 单事务权威架构
+
+新增 [Etcd-native Floor 原子权威设计](provider-grant-floor-etcd-native-atomicity-design.md)。本轮审计发现，仓库现有 CoordinatorAuthorityStore / EtcdV3CoordinatorAuthorityStore 是KV/Txn primitive，而应用级 DurableCoordinatorAuthorityBackend仍是SQLite服务；不能把Etcd primitive adapter误称为已实现的生产Grant Floor状态机。
+
+- 设计以Etcd Txn为Provider Grant Floor唯一运行期权威；scope、operation、Coordinator/Provider trust metadata、append-only event、authority revision、event sequence与state-root必须在同一Txn Compare+Put。
+- 签名验签使用的Coordinator/Provider trust row必须通过同一Txn的VALUE/MOD Compare固定，避免key在验签后、提交前被并发撤销或轮换。
+- Etcd Txn timeout按OUTCOME_UNKNOWN处理；只有原operation ID、原signed envelope和完整meta/scope/operation/event精确读回匹配时才能确认，部分/冲突状态隔离。
+- 将Etcd集群snapshot整体回滚与正常运行期Txn原子性分开；Etcd内部revision/state-root不能自证没有整体回滚。设计域外witness，并定义逐笔PREPARE → Etcd PREPARE/COMMIT → Witness COMMIT → Etcd FINALIZE严格耐久模式。
+
+**边界：** 本轮只有架构设计；Etcd-native业务服务、生产witness持久化与RBAC、真实Etcd多节点/网络分区/快照恢复验证未实现。Production Unified schema-v2仍为唯一生产authority；未执行迁移、Grant-aware Restore或Cutover。
