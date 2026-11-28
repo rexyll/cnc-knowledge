@@ -2046,6 +2046,7 @@ class SQLiteFencedObjectStorageProvider:
                 # A command may be issued up to the verifier's bounded clock-skew
                 # allowance before the Provider applies it; the durable receipt must
                 # still be no later than the signed expiry.
+                or float(receipt["applied_at"]) < issued_at - 5.0
                 or float(receipt["applied_at"]) > expires_at
             ):
                 raise ValueError("signed grant receipt claims disagree with persisted fields")
@@ -2892,7 +2893,9 @@ class SQLiteFencedObjectStorageProvider:
                             trusted_key["not_after"] is not None
                             and issued_at >= float(trusted_key["not_after"])
                         )
-                        or float(receipt["applied_at"]) < issued_at
+                        # Provider application may precede signed issue time only
+                        # within the verifier's explicit five-second skew allowance.
+                        or float(receipt["applied_at"]) < issued_at - 5.0
                         or float(receipt["applied_at"]) > expires_at
                     ):
                         raise ValueError("signed envelope claims disagree with the durable receipt")
