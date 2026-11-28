@@ -465,3 +465,13 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 这些测试验证现有adapter与内存fake上的事务/恢复契约，不是etcd服务端或三节点共识实验；不覆盖真实网络分区、节点掉电、跨主机并发、磁盘持久性、服务端Txn配置和RBAC。仍不包含真实writer或自动resume程序，本轮不触碰生产namespace。
 
 **第七十九轮验证：** [Knowledge Quality Run 46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/46092128612) success：600 unittest（40 skipped，560 passed），CH12数值资源测试143项通过，knowledge lint 0 errors/5 warnings，结构/data检查0 errors。此结果证明当前内存adapter模拟和仓库质量门禁通过，不构成真实etcd三节点或生产迁移验收。
+
+## CH17-T005 Unified schema-v2 运行时互操作与Leader epoch floor保真（第八十轮）
+
+迁移候选包现把旧Leader epoch floor保存在统一aggregate内部的固定失效历史标记中。对旧epoch大于0的快照，marker严格为 \`leader_id="migration-epoch-floor"\`、\`epoch=旧epoch\`、\`expires_at=0.0\`、\`backend_lease_id=0\`。旧Leader真实身份和 \`coordinator/leader\` TTL key不恢复，也不为该marker创建原生Lease；它只用于让既有 \`claim_leadership()\` 在新Leader claim时自动推进至旧floor+1。若旧epoch为0，aggregate中的leader仍为 \`None\`，第一次claim为epoch 1。
+
+候选bundle格式升级为 \`ch17-sqlite-unified-candidate-v2\`。Planner对marker进行完整字段精确校验，并拒绝旧v1候选包；修改前生成的v1 bundle必须从新的只读Inventory/Export重新构建，不能直接沿用。Coordinator runtime仅允许这个精确marker使用backend_lease_id=0；正常活动Leader记录仍必须持有正数Lease ID。
+
+新增运行时互操作测试：分阶段写入终态request索引并最终发布aggregate后，用标准Unified Admission和Coordinator runtime读入。测试检查scope fencing/sequence floor、COMMITTED operation历史以及终态request幂等拒绝；终态request无论相同身份重放还是不同owner复用，都不得创建Admission Lease；正常Leader claim不传显式恢复floor也能从旧epoch 8推进至新epoch 9。epoch-zero测试则确保不会人为抬高floor。
+
+**证据边界：** 互操作测试仅使用 \`InMemoryEtcdV3Client\` 和现有Store adapter。它验证运行时schema解析与应用逻辑，不证明真实etcd Raft/Quorum、磁盘耐久性、Lease超时精度、网络分区、跨进程并发或RBAC。没有在真实etcd上写入、Grant/Revoke Lease、修改RBAC、启动应用、触碰生产namespace或执行cutover。
