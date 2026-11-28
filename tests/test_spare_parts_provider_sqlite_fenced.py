@@ -1857,18 +1857,19 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             self.provider.apply_write_freeze_command(invalid)
 
     def test_same_epoch_rejects_regressed_leader_lease_expiry_snapshot(self):
-        first = self.command("FREEZE", 1, "lease-expiry-floor", now=1000.0)
+        now = time.time()
+        first = self.command("FREEZE", 1, "lease-expiry-floor", now=now)
         self.assertEqual(
-            self.provider.apply_write_freeze_command(first, now_unix=1000.0)["state"],
+            self.provider.apply_write_freeze_command(first)["state"],
             "FROZEN",
         )
-        claims = dict(self.command("UNFREEZE", 2, "lease-expiry-floor", now=1005.0)["command"])
-        claims["leader_lease_expires_at_unix"] = 1040.0
+        claims = dict(self.command("UNFREEZE", 2, "lease-expiry-floor", now=now + 1.0)["command"])
+        claims["leader_lease_expires_at_unix"] = first["command"]["leader_lease_expires_at_unix"] - 1.0
         stale_snapshot = sign_provider_write_freeze_command(
             claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
         )
         with self.assertRaisesRegex(FencingAttestationRejectedError, "expiry regressed"):
-            self.provider.apply_write_freeze_command(stale_snapshot, now_unix=1005.0)
+            self.provider.apply_write_freeze_command(stale_snapshot)
         self.assertEqual(self.provider.write_freeze_state(SCOPE)["generation"], 1)
 
     def test_command_expiry_cannot_outlive_leader_lease(self):
