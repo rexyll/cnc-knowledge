@@ -17,9 +17,9 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 
-FREEZE_GATE_ENVELOPE_FORMAT = "ch17-provider-write-freeze-command-envelope-v1"
-FREEZE_GATE_CLAIMS_FORMAT = "ch17-provider-write-freeze-command-v1"
-FREEZE_GATE_SIGNATURE_DOMAIN = b"cnc-knowledge-provider-write-freeze-command-v1\x00"
+FREEZE_GATE_ENVELOPE_FORMAT = "ch17-provider-write-freeze-command-envelope-v2"
+FREEZE_GATE_CLAIMS_FORMAT = "ch17-provider-write-freeze-command-v2"
+FREEZE_GATE_SIGNATURE_DOMAIN = b"cnc-knowledge-provider-write-freeze-command-v2\x00"
 
 
 class ProviderWriteFreezeCommandError(ValueError):
@@ -52,6 +52,8 @@ def verify_provider_write_freeze_command(
     if not isinstance(claims, dict) or set(claims) != {
         "format", "issuer_id", "provider_id", "tenant_id", "scope",
         "action", "freeze_id", "generation", "issued_at_unix", "expires_at_unix",
+        "coordinator_namespace", "leader_id", "leader_epoch", "leader_lease_id",
+        "leader_lease_expires_at_unix",
     } or claims.get("format") != FREEZE_GATE_CLAIMS_FORMAT:
         raise ProviderWriteFreezeCommandError("freeze command claims schema mismatch")
     signature = envelope.get("signature")
@@ -77,7 +79,7 @@ def verify_provider_write_freeze_command(
         or claims.get("tenant_id") != expected_tenant_id
     ):
         raise ProviderWriteFreezeCommandError("freeze command Provider or tenant binding mismatch")
-    for field in ("issuer_id", "scope", "freeze_id"):
+    for field in ("issuer_id", "scope", "freeze_id", "coordinator_namespace", "leader_id"):
         value = claims.get(field)
         if not isinstance(value, str) or not value.strip():
             raise ProviderWriteFreezeCommandError(f"freeze command {field} is invalid")
@@ -86,12 +88,19 @@ def verify_provider_write_freeze_command(
     generation = claims.get("generation")
     if not isinstance(generation, int) or isinstance(generation, bool) or generation <= 0:
         raise ProviderWriteFreezeCommandError("freeze command generation must be positive")
+    leader_epoch = claims.get("leader_epoch")
+    leader_lease_id = claims.get("leader_lease_id")
+    if not isinstance(leader_epoch, int) or isinstance(leader_epoch, bool) or leader_epoch <= 0:
+        raise ProviderWriteFreezeCommandError("Coordinator Leader epoch must be positive")
+    if not isinstance(leader_lease_id, int) or isinstance(leader_lease_id, bool) or leader_lease_id <= 0:
+        raise ProviderWriteFreezeCommandError("Coordinator native Leader Lease ID must be positive")
     issued = claims.get("issued_at_unix")
     expires = claims.get("expires_at_unix")
+    lease_expires = claims.get("leader_lease_expires_at_unix")
     if any(
         not isinstance(value, (int, float)) or isinstance(value, bool)
         or not math.isfinite(float(value))
-        for value in (issued, expires, now_unix, maximum_lifetime_seconds)
+        for value in (issued, expires, lease_expires, now_unix, maximum_lifetime_seconds)
     ):
         raise ProviderWriteFreezeCommandError("freeze command timestamps are invalid")
     if (
@@ -99,8 +108,10 @@ def verify_provider_write_freeze_command(
         or float(expires) <= float(now_unix)
         or float(expires) <= float(issued)
         or float(expires) - float(issued) > float(maximum_lifetime_seconds)
+        or float(lease_expires) <= float(now_unix)
+        or float(expires) > float(lease_expires)
     ):
-        raise ProviderWriteFreezeCommandError("freeze command is expired or outside its validity window")
+        raise ProviderWriteFreezeCommandError("freeze command or Coordinator Leader Lease is expired or outside its validity window")
     if not isinstance(public_key, Ed25519PublicKey):
         raise ProviderWriteFreezeCommandError("configured freeze command key is not Ed25519")
     try:
