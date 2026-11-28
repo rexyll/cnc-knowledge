@@ -463,3 +463,5 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 新增 `tests/test_spare_parts_sqlite_staged_import_execution.py`，通过现有 `EtcdV3CoordinatorAuthorityStore` 适配器与 `InMemoryEtcdV3Client` 直接执行checkpoint初始化、request批次Txn和最终state发布。场景覆盖：提交后响应丢失并读回判定COMMITTED、提交前中断并仅重试相同Txn、模拟执行进程重建后从checkpoint续跑、竞争writer先写入目标key导致CAS整批失败，以及最终publish响应丢失后的精确读回确认。
 
 这些测试验证现有adapter与内存fake上的事务/恢复契约，不是etcd服务端或三节点共识实验；不覆盖真实网络分区、节点掉电、跨主机并发、磁盘持久性、服务端Txn配置和RBAC。仍不包含真实writer或自动resume程序，本轮不触碰生产namespace。
+
+**第七十九轮验证：** [Knowledge Quality Run 46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/46092128612) success：600 unittest（40 skipped，560 passed），CH12数值资源测试143项通过，knowledge lint 0 errors/5 warnings，结构/data检查0 errors。此结果证明当前内存adapter模拟和仓库质量门禁通过，不构成真实etcd三节点或生产迁移验收。
