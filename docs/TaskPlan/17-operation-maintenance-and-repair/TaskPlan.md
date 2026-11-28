@@ -1523,3 +1523,16 @@
 - 记录边界：Provider侧屏障不等于etcd Lease物理过期瞬间同步撤销；若要求跨独立系统零窗口，必须有共享事务权威或Provider原生原子条件写。
 - **交付：** `docs/17-operation-maintenance-and-repair/provider-revocation-barrier-architecture.md`。
 - **状态：** 设计文档、根计划、章节计划、README、迁移设计和TaskHistory均已同步；CI状态尚未取得，不标记本轮DONE。本轮不实现代码，不连接真实基础设施，不进行生产变更。
+
+
+### 第九十轮：MIG-05 Provider-native Revocable Grant / FENCE Barrier 本地参考实现
+
+- 新增独立Ed25519 Provider grant命令协议，严格签署FENCE/ACTIVATE命令，绑定Provider、tenant、scope、grant ID、代次、Coordinator namespace、Leader epoch/native Lease及期限。
+- FENCE将scope状态推进为FENCED，要求Leader epoch严格高于已观察epoch；ACTIVATE只有在当前scope处于FENCED、完整Leader/Lease/grant身份一致，且command digest精确引用已持久化FENCE receipt时才可执行。
+- Provider schema升级至v5，新增`provider_scope_grants`和`provider_grant_commands`；v2/v3/v4升级通过`CREATE TABLE IF NOT EXISTS`加法迁移，backup validator要求新表存在。
+- 新增可选`require_revocable_grant` mutation gate。启用后，四个实际写入口必须通过签名proof绑定grant ID和generation，并在同一Provider BEGIN IMMEDIATE事务中检查ACTIVE、未过期及代次匹配。
+- FENCE与mutation竞争同一SQLite写事务域：旧mutation若先取得并提交事务，则在线性化顺序上先于FENCE；FENCE先提交后，旧grant写入被拒绝。
+- FENCE/ACTIVATE精确命令digest提供历史receipt读回；提交后响应丢失按原digest恢复，不重复推进generation。
+- 测试覆盖FENCE receipt前置、激活门禁、新epoch撤销旧grant、对象与multipart四类mutation、提交后响应丢失、并发事务顺序及schema v2/v3迁移。
+- **安全边界：** 当前仅同机SQLite参考实现。在线Coordinator检查与Provider commit仍不构成跨系统原子事务；不代表真实Provider或云对象存储已具备强fencing。真实三节点etcd、远程Provider、IAM/RBAC与生产写路径验收留待后续MIG-06。
+- **状态：** 代码/测试初版已提交；CI与文档最终质量验收待完成。本轮不触达生产基础设施。
