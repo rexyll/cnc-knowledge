@@ -206,6 +206,27 @@ class ProviderGrantReceiptProtocolTests(unittest.TestCase):
         )
         self.assertEqual(self.verify(envelope, trust_key=retiring).signer_key_id, self.key_id)
 
+    def test_retiring_key_rejects_receipts_applied_after_retirement_boundary(self):
+        envelope = self.sign(
+            command_issued_at_unix=self.now - 2.0,
+            command_expires_at_unix=self.now + 20.0,
+            applied_at_unix=self.now - 0.1,
+        )
+        retiring = ProviderReceiptTrustKey(
+            provider_id="provider-test-a",
+            key_id=self.key_id,
+            public_key=self.public_key,
+            public_key_sha256=self.fingerprint,
+            status="RETIRING",
+            not_before=self.now - 3600.0,
+            not_after=None,
+            retiring_effective_at=self.now - 0.5,
+            revocation_effective_at=None,
+            trust_revision=5,
+        )
+        with self.assertRaisesRegex(ProviderGrantReceiptError, "stopped issuing"):
+            self.verify(envelope, trust_key=retiring)
+
     def test_revoked_key_rejects_receipts_at_or_after_effective_time(self):
         envelope = self.sign()
         revoked = ProviderReceiptTrustKey(
