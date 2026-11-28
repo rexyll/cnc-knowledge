@@ -638,3 +638,47 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Grant-aware Restore remains unimplemented. Generic Restore for any Provider Grant history remains fail-closed. No candidate import, Restore, application activation or Cutover was performed.
 - MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
 - **Status:** DONE for the Round96 local Provider SQLite reference integration and its end-to-end tests.
+
+
+## CNC Knowledge Base — Round 97（外部 Floor Coordinator Grant Command 来源认证）
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: Close the Coordinator command source-authentication gap in the local external Grant Floor reference. The Floor now accepts original Coordinator-signed FENCE/ACTIVATE envelopes and independently verifies them before reserving a generation.
+
+### Implementation
+
+- Upgraded `scripts/spare_parts_provider_grant_floor.py` external Floor schema from v4 to v5.
+  - Added `provider_grant_floor_coordinator_keys`, keyed by issuer ID + key ID, containing Ed25519 public-key material/fingerprint, ACTIVE/RETIRING/REVOKED, validity window, retirement/revocation effective timestamps and reason, and trust revision.
+  - Added persistent `coordinator_command_auth_required` policy. New Floor databases default to strict command authentication; v1-v4 migrations also default to strict.
+  - Added Coordinator signer key ID, fingerprint and trust revision columns to operation history. Historical operations are not retroactively assigned a signer or fabricated trust evidence.
+- Added local owner management APIs `admin_register_coordinator_command_key()` and `admin_set_coordinator_command_key_status()`. Coordinator command envelopes cannot auto-register their own public keys. Key rotation registers a new key ID/material; retired/revoked keys cannot create new reservations. Exact previously accepted operation identity is retained for historical audit/idempotency.
+- Added strict signed-command APIs:
+  - `reserve_fence_from_command(operation_id, key, command_envelope, expected_revision)`
+  - `reserve_activate_from_command(operation_id, key, command_envelope, expected_revision)`
+- Both APIs require an explicit expected `ProviderGrantScopeKey` selected by the caller. The Floor compares signed Provider/Tenant/scope claims with that target context, so a valid command cannot choose a different Floor scope by self-declaration.
+- The Floor parses original Coordinator signed envelopes, rejects duplicate JSON object keys and non-finite JSON constants, recomputes the canonical full-envelope command digest, loads the Coordinator public key from its own trust registry, and verifies the Ed25519 signature. It checks issuer/key/fingerprint/lifecycle/time, Provider/Tenant/scope, action, Grant ID/generation, namespace, Leader epoch/native Lease, command issued/expiry and FENCE digest.
+- Coordinator signature verification, claims binding, next-generation calculation, scope state validation, scope revision CAS and pending operation creation occur inside the same SQLite `BEGIN IMMEDIATE` transaction. The signed command generation must equal the exact next Floor generation; ACTIVATE must reference the latest confirmed FENCE. Invalid signature, unknown/revoked key, identity mismatch, time/Lease violation, generation mismatch or CAS failure does not advance scope or authority revision.
+- Strict mode rejects caller-supplied digest/claims through the legacy `reserve_fence()` / `reserve_activate()` methods. `allow_legacy_unsigned_reservations=True` is an explicit local test/compatibility option for a newly created non-strict database only; strict Floor databases cannot be downgraded.
+- In strict mode, legacy migrated PENDING operations that lack Coordinator signer ID/fingerprint/trust revision cannot be upgraded merely by presenting a Provider signed Receipt. Previously confirmed history remains unaltered and is not relabeled as authenticated Coordinator command evidence.
+- Updated Provider→Floor integration to register independent Coordinator command and Provider Receipt public keys, pass the actual signed Coordinator command envelope through the strict Floor API, then confirm with the actual Provider-signed Receipt.
+- Added tests covering valid FENCE/ACTIVATE, signed-command tamper, duplicate JSON keys, unknown/retired/revoked keys, key rotation, cross-Provider/Tenant/scope, wrong generation, Lease/time bounds, exact FENCE chain, strict-default/no-downgrade, v1→v5 migration, legacy PENDING fail-closed and no-revision-advance on invalid commands.
+- Updated Round97 root and CH17 TaskPlans, CH17 README, and the external Floor/Restore reconciliation design document.
+
+### Validation
+
+- Code/test validation: [Knowledge Quality Run 46159157703](https://github.com/rexyll/cnc-knowledge/actions/runs/46159157703), both required jobs succeeded.
+- Full repository unittest: 757 tests run, 40 skipped by environment guards; all non-skipped tests passed.
+- CH12 numerical resource tests: 143 passed.
+- Knowledge lint: 0 errors / 5 warnings.
+- Additional structure/data checks: 0 errors.
+- The run above validates the Floor schema v5 Coordinator trust implementation and regression suite. Final complete documentation synchronization is validated by the subsequent main-branch CI run after this TaskHistory update.
+
+### Safety boundary / remaining work
+
+- This is a same-host SQLite Floor reference with synthetic Coordinator/Provider Ed25519 keys; it is not a production Coordinator/etcd trust plane, quorum authority, or multi-host linearizable service.
+- The Coordinator key registry is managed through local database-owner APIs, not a production approval workflow or KMS/HSM integration. Floor SQLite and its trust registry remain vulnerable to rollback of their own database snapshots unless an independently trusted checkpoint is stored outside that backup domain.
+- No real Coordinator, etcd, remote Provider, object storage, KMS/HSM, IAM/RBAC or production trust control plane was connected. Production Unified schema-v2 remains the sole authority.
+- Grant-aware Restore remains unimplemented. Generic Restore for any Provider Grant history remains fail-closed. No candidate import, Restore, application activation or Cutover was performed.
+- MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED.
+- **Status:** Round97 implementation and code/test CI passed; final documentation synchronization CI pending.
