@@ -1474,7 +1474,7 @@
 
 ### 第九十六轮任务计划：Provider SQLite FENCE/ACTIVATE durable signed Receipt 集成
 
-- **背景：** 第九十五轮完成了 Provider Receipt signer/verifier 和外部 Floor signed-envelope 门禁；但当前 Provider SQLite FENCE/ACTIVATE 路径仍只持久化原 Coordinator command receipt，尚未在 Provider 状态变更事务中生成和保存 Provider signed Receipt。
+- **背景：** 第九十五轮完成了 Provider Receipt signer/verifier 和外部 Floor signed-envelope 门禁。当前 `provider_grant_commands.envelope_json` 保存的是 Coordinator 签名的 Grant command，`provider_grant_command_status()` 提供其 durable command/result 查询；它不是 Provider 独立私钥签发的 Receipt。Provider 仍未在 FENCE/ACTIVATE 状态变更事务中生成并保存 Provider-native signed Receipt。
 - **目标：** 在本地 Provider SQLite 参考实现内，把 Grant 状态转换、原 command receipt 与 Provider signed Receipt envelope 绑定为同一持久化事务，并提供按 Provider/tenant/exact command digest 查询 immutable receipt 的接口。
 - **实施前检查：** 先审查 \`spare_parts_provider_sqlite_fenced.py\` 的 FENCE/ACTIVATE mutation、command idempotency、SQLite transaction/rollback 边界和现有 schema migration；不假设当前方法/事务结构，按代码事实设计最小变更。
 - **Signer 注入：** 使用独立的 Provider Ed25519 private key 与 key ID，通过依赖注入提供给本地参考 Provider；不得复用 Coordinator command signing key，不把私钥写入 Provider/Floor SQLite 数据库或备份。KMS/HSM 只记录接口需求，本轮不接真实服务。
