@@ -1976,6 +1976,7 @@ class SQLiteFencedObjectStorageProvider:
             or receipt["fencing_scope"] != expected_scope
             or receipt["action"] != expected_action
             or receipt["grant_id"] != expected_grant_id
+            or receipt["result_state"] != ("FENCED" if expected_action == "FENCE" else "ACTIVE")
             or not isinstance(receipt["envelope_json"], str)
             or not isinstance(receipt["signer_public_key_base64"], str)
         ):
@@ -2080,7 +2081,8 @@ class SQLiteFencedObjectStorageProvider:
         if self.require_revocable_grant:
             grant = c.execute(
                 """SELECT g.coordinator_namespace,g.leader_id,g.leader_epoch,g.leader_lease_id,
-                          g.grant_generation,g.grant_id,g.state,g.grant_expires_at,
+                          g.leader_lease_expires_at,g.grant_generation,g.grant_id,g.state,
+                          g.grant_expires_at,g.fence_command_sha256,
                           f.provider_id,f.envelope_json AS fence_envelope_json,
                           f.signer_public_key_base64 AS fence_signer_public_key_base64,
                           a.envelope_json AS activation_envelope_json,
@@ -2121,6 +2123,15 @@ class SQLiteFencedObjectStorageProvider:
                 or fence_claims["leader_id"] != activation_claims["leader_id"]
                 or int(fence_claims["leader_epoch"]) != int(activation_claims["leader_epoch"])
                 or int(fence_claims["leader_lease_id"]) != int(activation_claims["leader_lease_id"])
+                or fence_claims["coordinator_namespace"] != activation_claims["coordinator_namespace"]
+                or float(fence_claims["leader_lease_expires_at_unix"]) != float(activation_claims["leader_lease_expires_at_unix"])
+                or activation_claims["coordinator_namespace"] != grant["coordinator_namespace"]
+                or activation_claims["leader_id"] != grant["leader_id"]
+                or int(activation_claims["leader_epoch"]) != int(grant["leader_epoch"])
+                or int(activation_claims["leader_lease_id"]) != int(grant["leader_lease_id"])
+                or float(activation_claims["leader_lease_expires_at_unix"]) != float(grant["leader_lease_expires_at"])
+                or activation_claims["fence_command_sha256"] != grant["fence_command_sha256"]
+                or float(activation_claims["expires_at_unix"]) != float(grant["grant_expires_at"])
             ):
                 raise SQLiteProviderGrantRejectedError(
                     "Provider grant FENCE/ACTIVATE receipt chain is inconsistent"
