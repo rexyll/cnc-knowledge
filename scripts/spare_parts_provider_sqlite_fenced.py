@@ -7,6 +7,7 @@ multi-host object store, cloud-provider integration, or production approval.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import hmac
 import json
@@ -56,7 +57,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     _sha,
 )
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 PBKDF2_ITERATIONS = 210_000
 MAX_FENCING_TOKEN = (1 << 63) - 1
 DEFAULT_ACTIONS = (
@@ -266,6 +267,8 @@ class SQLiteFencedObjectStorageProvider:
             connection.execute(
                 """CREATE TABLE IF NOT EXISTS provider_write_freeze_commands (
                     command_sha256 TEXT PRIMARY KEY CHECK(length(command_sha256)=64),
+                    envelope_json TEXT NOT NULL,
+                    signer_public_key_base64 TEXT NOT NULL,
                     issuer_id TEXT NOT NULL,
                     key_id TEXT NOT NULL,
                     provider_id TEXT NOT NULL,
@@ -341,8 +344,21 @@ class SQLiteFencedObjectStorageProvider:
                     applied_at REAL NOT NULL
                 )"""
             )
+            grant_columns = {
+                row[1] for row in connection.execute(
+                    "PRAGMA table_info(provider_grant_commands)"
+                ).fetchall()
+            }
+            if "envelope_json" not in grant_columns:
+                connection.execute(
+                    "ALTER TABLE provider_grant_commands ADD COLUMN envelope_json TEXT"
+                )
+            if "signer_public_key_base64" not in grant_columns:
+                connection.execute(
+                    "ALTER TABLE provider_grant_commands ADD COLUMN signer_public_key_base64 TEXT"
+                )
             connection.execute(
-                "UPDATE provider_meta SET value=? WHERE key='schema_version' AND value IN ('2','3','4')",
+                "UPDATE provider_meta SET value=? WHERE key='schema_version' AND value IN ('2','3','4','5')",
                 (str(SCHEMA_VERSION),),
             )
             version_row = connection.execute(
@@ -501,6 +517,14 @@ class SQLiteFencedObjectStorageProvider:
             format=serialization.PublicFormat.Raw,
         )
         return hashlib.sha256(raw).hexdigest()
+
+    @staticmethod
+    def _ed25519_public_key_raw(public_key: Any) -> bytes:
+        from cryptography.hazmat.primitives import serialization
+        return public_key.public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
 
     @classmethod
     def admin_register_trusted_ed25519_key(
@@ -1295,6 +1319,16 @@ class SQLiteFencedObjectStorageProvider:
                     raise FencingAttestationRejectedError(
                         "Provider grant receipt conflicts with its signed claims"
                     )
+                expected_envelope = json.dumps(
+                    envelope, sort_keys=True, separators=(",", ":"), allow_nan=False
+                )
+                if (
+                    receipt["envelope_json"] is not None
+                    and receipt["envelope_json"] != expected_envelope
+                ):
+                    raise FencingAttestationRejectedError(
+                        "Provider grant receipt does not retain the exact signed envelope"
+                    )
                 current = c.execute(
                     """SELECT grant_generation,grant_id,state,grant_expires_at
                        FROM provider_scope_grants WHERE tenant_id=? AND fencing_scope=?""",
@@ -1499,17 +1533,24 @@ class SQLiteFencedObjectStorageProvider:
                     grant_expires, fence_digest, activation_digest, now,
                 ),
             )
+            public_key_raw = self._ed25519_public_key_raw(public_key)
+            envelope_json = json.dumps(
+                envelope, sort_keys=True, separators=(",", ":"), allow_nan=False
+            )
             c.execute(
                 """INSERT INTO provider_grant_commands(
-                    command_sha256,issuer_id,key_id,provider_id,tenant_id,
-                    fencing_scope,action,grant_id,generation,coordinator_namespace,
+                    command_sha256,envelope_json,signer_public_key_base64,
+                    issuer_id,key_id,provider_id,tenant_id,fencing_scope,
+                    action,grant_id,generation,coordinator_namespace,
                     leader_id,leader_epoch,leader_lease_id,leader_lease_expires_at,
                     fence_command_sha256,result_state,applied_at
-                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    command_digest, claims["issuer_id"], key_id, self.provider_id,
-                    self.tenant_id, scope, action, grant_id, generation, namespace,
-                    leader_id, leader_epoch, lease_id, lease_expires,
+                    command_digest, envelope_json,
+                    base64.b64encode(public_key_raw).decode("ascii"),
+                    claims["issuer_id"], key_id, self.provider_id,
+                    self.tenant_id, scope, action, grant_id, generation,
+                    namespace, leader_id, leader_epoch, lease_id, lease_expires,
                     claims["fence_command_sha256"], state, now,
                 ),
             )
