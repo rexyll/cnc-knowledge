@@ -324,3 +324,5 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Same-host SQLite tests do not establish etcd consensus, remote Provider behavior or multi-host consistency. No real etcd, Provider, KMS/HSM, cloud object store or IAM/RBAC service was contacted; no production application access, candidate import or cutover occurred. ASSET-000092 remains PROPOSED_NOT_APPROVED / NOT_RUN; production Unified schema-v2 remains the sole authority.
 
 - Additional hardening: Coordinator namespace must be a canonical absolute prefix; within the same Leader epoch and native Lease ID, a lower Lease-expiry snapshot is rejected. Tests cover both conditions.
+
+- Backup validation now requires all four freeze/receipt/Leader-floor/audit tables; backup/restore tests assert the persisted Leader epoch and native Lease binding survive restore.
