@@ -1402,3 +1402,15 @@
 - **交付：** 新增 `docs/17-operation-maintenance-and-repair/provider-revocation-barrier-architecture.md`；同步CH17章节计划、README和TaskHistory。
 - **验收：** 状态机、授权语义、未知结果恢复、Provider mutation覆盖范围、时钟/重启/备份风险及不可实现边界均有明确描述；文档链接和知识质量CI通过。
 - **边界：** 本轮只做架构设计，不实现grant/FENCE writer，不连接真实etcd/Provider/KMS/HSM，不修改RBAC，不触达生产namespace，不执行候选导入、应用激活或cutover。MIG-04继续IN_PROGRESS，MIG-05继续IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
+
+
+### 第九十轮任务计划：Provider-native Revocable Grant / FENCE Barrier 本地参考实现
+
+- **目标：** 将第八十九轮架构决策推进为可执行的同机Provider参考状态机，证明FENCE与实际对象/multipart mutation共享Provider SQLite事务顺序。
+- **协议：** 新增独立Ed25519签名命令FENCE/ACTIVATE。FENCE必须推进到更高Coordinator Leader epoch并将scope置为FENCED；ACTIVATE必须绑定完全匹配的Leader/Lease/grant身份以及已持久化的FENCE command digest。
+- **状态存储：** Provider schema升级v4→v5；新增逐tenant/scope Provider grant状态和完整命令receipt表。升级必须是加法迁移，backup验证要求新表存在。
+- **Mutation Gate：** 新增可选`require_revocable_grant`；启用时，object PUT、multipart begin/part/complete均必须携带签名proof中的Grant ID与代次，并在实际写入事务内核对ACTIVE状态、代次和期限。FENCE与mutation都使用同一SQLite BEGIN IMMEDIATE事务域。
+- **故障恢复：** 对精确envelope digest提供只读receipt查询；提交后响应丢失只能确认历史receipt，不得重做generation推进。FENCE未提交则不得允许ACTIVATE。
+- **验收测试：** 覆盖先FENCE后ACTIVATE、缺失receipt拒绝、旧epoch Grant被新epoch FENCE撤销、四类mutation门禁、响应丢失回执恢复、旧写与FENCE并发事务排序、schema v2/v3加法迁移。
+- **边界：** 只证明同机SQLite参考事务语义；不证明远程Provider/对象存储、跨主机、etcd与Provider跨系统原子性。不得连接生产Provider/etcd/KMS，不修改RBAC，不触达生产namespace，不执行候选导入、应用激活或cutover。
+- **交付：** 新增grant签名协议模块、Provider grant状态机/测试、迁移设计、README、TaskPlan及TaskHistory同步；所有必需主分支CI成功后才能标记DONE。
