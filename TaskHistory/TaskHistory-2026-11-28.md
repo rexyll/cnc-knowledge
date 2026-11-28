@@ -378,7 +378,7 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 
 ### Status / validation
 
-- Architecture document created; plan/history synchronization and required main-branch CI validation remain pending.
+- Architecture document and all plan/README/migration-design/history indexes synchronized on main. Latest documentation commit: `f405f1223421c73485feaac8543cf06401c0e9fa`. Branch verification shows `main` only. Combined commit status currently reports no checks; required CI result is not yet available, so Round 89 is not marked DONE.
 - This round is design only. No grant/FENCE writer, real etcd/Provider/KMS/HSM integration, RBAC change, production namespace access, candidate import, application activation or cutover occurred.
 - MIG-04 remains IN_PROGRESS; MIG-05 remains IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED.
 - Production Unified schema-v2 remains the sole authority; ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`.
