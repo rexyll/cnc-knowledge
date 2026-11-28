@@ -444,6 +444,8 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Commits:
   - Initial adapter: f7c520ac6f1f2950b2e40a611f4b79d5627ca85f
   - Initial tests: 1c3943080ffed1a0279bdf095230336118477778
+- Follow-up test-path correction: the pending-FENCE ACTIVATE rejection test now supplies a syntactically valid, unconfirmed FENCE digest so it reaches the intended state-machine branch. Commit: d2c7e7a6081a410bf1c38df01440898ffaf3ad8c.
+- Clarified the critical state boundary: external FENCE_PENDING is only a reservation; the prior ACTIVE Grant can remain accepted until Provider FENCE actually commits. Provider-side FENCE remains the mutation revocation linearization point.
   - Namespace and Lease-expiry monotonicity hardening: 5311c20232af022cd36bb932a06001e2bde655b8
   - Additional regression tests: 3e848b2c1ffe66c41c033d6c78961b5ce4832c0a
 - Documentation synchronized in root TaskPlan.md, CH17 TaskPlan, CH17 README, migration design and this history.
