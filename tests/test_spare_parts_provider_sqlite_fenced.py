@@ -1087,6 +1087,84 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertEqual(len(checker.calls), 1)
         self.assertIsNone(provider.provider_grant_state(SCOPE))
 
+    def test_grant_integer_claims_must_fit_sqlite_signed_integer(self):
+        claims = {
+            "format": PROVIDER_GRANT_CLAIMS_FORMAT,
+            "issuer_id": ISSUER_ID,
+            "provider_id": "provider-test-a",
+            "tenant_id": "tenant-a",
+            "scope": SCOPE,
+            "action": "FENCE",
+            "grant_id": "grant-overflow",
+            "generation": 1,
+            "issued_at_unix": time.time(),
+            "expires_at_unix": time.time() + 30.0,
+            "coordinator_namespace": "/cnc/migration/isolated/provider-grant-test/",
+            "leader_id": "coordinator-leader-overflow",
+            "leader_epoch": 1 << 63,
+            "leader_lease_id": 201,
+            "leader_lease_expires_at_unix": time.time() + 60.0,
+            "fence_command_sha256": None,
+        }
+        command = sign_provider_grant_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        provider = self.enable_revocable_grants()
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "SQLite-safe integer"):
+            provider.apply_provider_grant_command(command)
+        self.assertIsNone(provider.provider_grant_state(SCOPE))
+
+    def test_grant_expiring_while_waiting_for_provider_write_lock_is_rejected(self):
+        provider = self.enable_revocable_grants()
+        acquired = threading.Event()
+        release = threading.Event()
+        result = []
+        errors = []
+
+        def hold_writer_lock():
+            connection = sqlite3.connect(
+                str(self.database), timeout=5.0, isolation_level=None
+            )
+            try:
+                connection.execute("BEGIN IMMEDIATE")
+                acquired.set()
+                if not release.wait(timeout=4.0):
+                    raise TimeoutError("test did not release SQLite write lock")
+                connection.commit()
+            finally:
+                connection.close()
+
+        def apply_expiring_command():
+            try:
+                result.append(provider.apply_provider_grant_command(
+                    self.grant_command(
+                        "FENCE", 1, "grant-lock-expiry",
+                        issued_at=time.time(), lease_expires=time.time() + 5.0,
+                        expires=time.time() + 0.6,
+                    )
+                ))
+            except Exception as exc:
+                errors.append(exc)
+
+        lock_thread = threading.Thread(target=hold_writer_lock)
+        lock_thread.start()
+        self.assertTrue(acquired.wait(timeout=2.0))
+        apply_thread = threading.Thread(target=apply_expiring_command)
+        apply_thread.start()
+        try:
+            time.sleep(0.8)
+        finally:
+            release.set()
+        lock_thread.join(timeout=3.0)
+        apply_thread.join(timeout=3.0)
+        self.assertFalse(lock_thread.is_alive())
+        self.assertFalse(apply_thread.is_alive())
+        self.assertEqual(result, [])
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], FencingAttestationRejectedError)
+        self.assertIn("expired", str(errors[0]))
+        self.assertIsNone(provider.provider_grant_state(SCOPE))
+
     def test_provider_grant_requires_durable_fence_receipt_before_activation(self):
         provider = self.enable_revocable_grants()
         now = time.time()
