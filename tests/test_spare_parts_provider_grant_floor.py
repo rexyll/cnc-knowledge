@@ -951,7 +951,10 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             command_envelope=new_command,
             expected_revision=0,
         )
-        self.assertEqual(new_operation.coordinator_signer_key_id, "coordinator-command-b")
+        new_operation_status = self.authority.operation_status(new_operation.operation_id)
+        self.assertEqual(
+            new_operation_status.coordinator_signer_key_id, "coordinator-command-b"
+        )
         self.assertEqual(self.authority.snapshot(new_scope).state, "FENCE_PENDING")
 
     def test_duplicate_json_object_keys_are_rejected_before_reservation(self):
