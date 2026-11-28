@@ -21,6 +21,11 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -242,10 +247,7 @@ class SQLiteFencedObjectStorageProvider:
                 )
             provider_receipt_public_key_raw = None
         else:
-            if (
-                not callable(getattr(provider_receipt_signing_key, "sign", None))
-                or not callable(getattr(provider_receipt_signing_key, "public_key", None))
-            ):
+            if not isinstance(provider_receipt_signing_key, Ed25519PrivateKey):
                 raise BackupStorageError(
                     "Provider receipt signing key must be an Ed25519 private-key object"
                 )
@@ -253,16 +255,24 @@ class SQLiteFencedObjectStorageProvider:
                 r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", provider_receipt_key_id
             ):
                 raise BackupStorageError("Provider receipt signing key ID is invalid")
-            try:
-                provider_receipt_public_key_raw = self._ed25519_public_key_raw(
-                    provider_receipt_signing_key.public_key()
-                )
-            except Exception as exc:
+            if provider_receipt_key_id in self._trusted_ed25519_public_keys:
                 raise BackupStorageError(
-                    "Provider receipt signing key is not a usable Ed25519 private key"
-                ) from exc
+                    "Provider receipt key ID must be separate from Coordinator command key IDs"
+                )
+            provider_receipt_public_key_raw = self._ed25519_public_key_raw(
+                provider_receipt_signing_key.public_key()
+            )
             if len(provider_receipt_public_key_raw) != 32:
                 raise BackupStorageError("Provider receipt public key must contain 32 bytes")
+            for command_public_key in self._trusted_ed25519_public_keys.values():
+                if self._ed25519_public_key_raw(command_public_key) == provider_receipt_public_key_raw:
+                    raise BackupStorageError(
+                        "Provider receipt signing key must not reuse a Coordinator command key"
+                    )
+            if not require_provider_signed_grant_receipts:
+                raise BackupStorageError(
+                    "Provider receipt signing key requires strict Provider signed Receipt mode"
+                )
         if require_provider_signed_grant_receipts and (
             not require_revocable_grant or self.provider_id is None
             or provider_receipt_signing_key is None
@@ -3055,6 +3065,9 @@ class SQLiteFencedObjectStorageProvider:
             meta = dict(connection.execute("SELECT key,value FROM provider_meta").fetchall())
             if meta.get("schema_version") != str(SCHEMA_VERSION):
                 raise BackupStorageError("Provider backup schema version is unsupported")
+            signed_receipts_required = meta.get("provider_grant_receipt_signing_required") == "1"
+            if meta.get("provider_grant_receipt_signing_required", "0") not in {"0", "1"}:
+                raise BackupStorageError("Provider signed receipt policy metadata is invalid")
             required = {
                 "provider_principals", "trusted_fencing_keys", "fencing_scopes", "fenced_operations",
                 "provider_objects", "multipart_sessions", "multipart_parts", "provider_audit",
@@ -3148,6 +3161,117 @@ class SQLiteFencedObjectStorageProvider:
                     raise BackupStorageError(
                         "Provider backup grant receipt signature or claims cannot be verified"
                     ) from exc
+                provider_receipt_values = (
+                    receipt["provider_receipt_envelope_json"],
+                    receipt["provider_receipt_digest"],
+                    receipt["provider_receipt_key_id"],
+                    receipt["provider_receipt_public_key_base64"],
+                )
+                has_provider_receipt = any(value is not None for value in provider_receipt_values)
+                if signed_receipts_required and not all(
+                    isinstance(value, str) and value for value in provider_receipt_values
+                ):
+                    raise BackupStorageError(
+                        "Provider backup is missing a required signed Provider Grant receipt"
+                    )
+                if has_provider_receipt:
+                    if not all(
+                        isinstance(value, str) and value for value in provider_receipt_values
+                    ):
+                        raise BackupStorageError(
+                            "Provider backup has incomplete signed Provider Grant receipt fields"
+                        )
+                    try:
+                        provider_receipt_envelope = json.loads(
+                            receipt["provider_receipt_envelope_json"]
+                        )
+                        provider_receipt_canonical = canonical_receipt_json(
+                            provider_receipt_envelope
+                        )
+                        provider_receipt_public_key = base64.b64decode(
+                            receipt["provider_receipt_public_key_base64"], validate=True
+                        )
+                        if (
+                            provider_receipt_canonical.decode("utf-8")
+                            != receipt["provider_receipt_envelope_json"]
+                            or len(provider_receipt_public_key) != 32
+                            or hashlib.sha256(provider_receipt_canonical).hexdigest()
+                            != receipt["provider_receipt_digest"]
+                        ):
+                            raise ValueError("Provider Receipt canonical bytes or digest mismatch")
+                        if (
+                            receipt["provider_receipt_key_id"]
+                            == receipt["key_id"]
+                            or provider_receipt_public_key == signer_public_key
+                        ):
+                            raise ValueError("Provider Receipt signer reused the Coordinator command key")
+                        provider_trust_key = ProviderReceiptTrustKey(
+                            provider_id=receipt["provider_id"],
+                            key_id=receipt["provider_receipt_key_id"],
+                            public_key=provider_receipt_public_key,
+                            public_key_sha256=hashlib.sha256(
+                                provider_receipt_public_key
+                            ).hexdigest(),
+                            status="ACTIVE",
+                            not_before=0.0,
+                            not_after=None,
+                            retiring_effective_at=None,
+                            revocation_effective_at=None,
+                            trust_revision=1,
+                        )
+                        expected_provider_claims = {
+                            "provider_id": receipt["provider_id"],
+                            "tenant_id": receipt["tenant_id"],
+                            "scope": receipt["fencing_scope"],
+                            "action": receipt["action"],
+                            "grant_id": receipt["grant_id"],
+                            "generation": int(receipt["generation"]),
+                            "command_sha256": receipt["command_sha256"],
+                            "fence_command_sha256": (
+                                None if receipt["action"] == "FENCE"
+                                else receipt["fence_command_sha256"]
+                            ),
+                            "result_state": receipt["result_state"],
+                            "coordinator_namespace": receipt["coordinator_namespace"],
+                            "leader_id": receipt["leader_id"],
+                            "leader_epoch": int(receipt["leader_epoch"]),
+                            "native_lease_id": int(receipt["leader_lease_id"]),
+                            "native_lease_expires_at_unix": float(
+                                receipt["leader_lease_expires_at"]
+                            ),
+                            "command_issued_at_unix": float(
+                                verified_claims["issued_at_unix"]
+                            ),
+                            "command_expires_at_unix": float(
+                                verified_claims["expires_at_unix"]
+                            ),
+                            "applied_at_unix": float(receipt["applied_at"]),
+                        }
+                        verified_provider_receipt = verify_provider_grant_receipt(
+                            provider_receipt_envelope,
+                            provider_trust_key,
+                            expected_claims=expected_provider_claims,
+                            now_unix=time.time(),
+                        )
+                        if (
+                            verified_provider_receipt.receipt_digest
+                            != receipt["provider_receipt_digest"]
+                            or verified_provider_receipt.signer_key_id
+                            != receipt["provider_receipt_key_id"]
+                        ):
+                            raise ValueError("Provider Receipt digest or signer key ID mismatch")
+                    except (
+                        KeyError, TypeError, ValueError, json.JSONDecodeError,
+                        ProviderGrantReceiptError,
+                    ) as exc:
+                        raise BackupStorageError(
+                            "Provider backup signed Provider Grant receipt cannot be verified"
+                        ) from exc
+                elif signed_receipts_required:
+                    raise BackupStorageError(
+                        "Provider backup is missing a required signed Provider Grant receipt"
+                    )
+
                 if receipt["action"] == "FENCE" and (
                     receipt["fence_command_sha256"] is not None
                     or receipt["result_state"] != "FENCED"
