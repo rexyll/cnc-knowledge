@@ -1292,6 +1292,18 @@ class SQLiteFencedObjectStorageProvider:
                 )
             except ProviderGrantCommandError as exc:
                 raise FencingAttestationRejectedError(str(exc)) from exc
+            if (
+                now < float(trusted["not_before"])
+                or (trusted["not_after"] is not None and now >= float(trusted["not_after"]))
+                or float(claims["issued_at_unix"]) < float(trusted["not_before"])
+                or (
+                    trusted["not_after"] is not None
+                    and float(claims["issued_at_unix"]) >= float(trusted["not_after"])
+                )
+            ):
+                raise FencingAttestationRejectedError(
+                    "Provider grant issuer/key is outside its trusted time window at commit"
+                )
 
             current = c.execute(
                 """SELECT * FROM provider_scope_grants
@@ -2551,7 +2563,7 @@ class SQLiteFencedObjectStorageProvider:
                 "provider_objects", "multipart_sessions", "multipart_parts", "provider_audit",
                 "provider_write_freeze_scopes", "provider_write_freeze_commands",
                 "provider_write_freeze_leader_floors", "provider_write_freeze_command_leaders",
-                "provider_scope_grants", "provider_grant_commands",
+                "trusted_ed25519_keys", "provider_scope_grants", "provider_grant_commands",
             }
             tables = {
                 row["name"] for row in connection.execute(
