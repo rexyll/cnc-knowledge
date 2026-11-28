@@ -1530,4 +1530,8 @@
 - **事务预算：** 按Etcd Txn compare/op/byte限制定义显式预算与失败策略；超预算不得静默拆分会破坏scope/operation/meta/root原子性的单个状态转移。多scope snapshot可线性一致Range读取，但需要同revision/事务内读保证。
 - **实施规格：** 给出未来EtcdProviderGrantFloorAuthority端口映射、schema/key示例、FENCE/ACTIVATE与Receipt确认事务图、精确unknown-outcome readback矩阵、密钥轮换并发、migration/bootstrap和故障测试清单；本轮仅冻结架构设计，不实现生产Adapter、不连接真实Etcd、不修改RBAC、不执行Restore/Cutover。
 - **交付：** 新增CH17 Etcd-native Floor原子权威设计文档；同步CH17 README、根/章节TaskPlan和TaskHistory。现有SQLite authority仍仅为本地参考实现，Grant历史通用Restore继续fail-closed。
-- **状态：** IN_PROGRESS（先完成计划登记，再执行设计与审查；通过main Quality CI后方可标记DONE）。
+- **审计与设计进展（2026-11-29T00:09:11+08:00）：** 已审计 scripts/spare_parts_provider_authority_store.py、scripts/spare_parts_provider_etcd3gw_driver.py、现有SQLite Grant Floor和Round98 wrapper。确认CoordinatorAuthorityStore/EtcdV3CoordinatorAuthorityStore仅是KV/Txn primitive；DurableCoordinatorAuthorityBackend仍是SQLite业务服务，不得把二者等同为生产Etcd Floor状态机。
+- **设计交付：** 新增 docs/17-operation-maintenance-and-repair/provider-grant-floor-etcd-native-atomicity-design.md。定义Etcd-native meta/scope/operation/trust/event键布局、同Txn Compare+Put、验签trust row并发固定、FENCE/ACTIVATE/Receipt确认、exact unknown-outcome readback、txn预算、隔离namespace和迁移边界。
+- **回滚与耐久模式：** 明确Etcd内部revision/state-root无法检测整个Etcd集群恢复旧snapshot；设计域外witness checkpoint，并增加每笔写入PREPARE → Etcd PREPARE/COMMIT → Witness COMMIT → Etcd FINALIZE的严格耐久模式及故障恢复矩阵。该模式尚未实现，不能表述为当前运行保证。
+- **提交：** 根/章节计划登记 963106fa606db1a10c478205768b45fa91a315ed / 266b4408bf9d4af6fa1b4bf69e2abd40e8a27299；Etcd-native架构文档 ac7cb81b5992fb7d2793894fd9d736583dcde090；外部witness严格提交协议补充 0ff3dc613e3ec001cc9afd6054b95fbabf0c9026。
+- **状态：** IN_PROGRESS（架构设计初稿已交付，待README/TaskHistory/全库质量CI和设计审查完成；未实现Etcd-native服务，未连接真实Etcd/配置RBAC，不执行Restore/Cutover）。
