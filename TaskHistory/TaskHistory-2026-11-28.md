@@ -197,3 +197,35 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - SQLite ledger is single-host only; it provides no multi-host consensus and can be reset by restoring a trusted old database backup. Production must use a shared durable linearizable replay ledger, such as an isolated etcd CAS/Txn design, with nonce issuance and consumption tied to the same authority lifecycle.
 - No real Provider/KMS/etcd was contacted, no Provider control object, RBAC, Lease or production namespace was changed, no application access was enabled, and no candidate import/cutover occurred.
 - ASSET-000092 remains \`PROPOSED_NOT_APPROVED / NOT_RUN\`; production Unified schema-v2 remains the sole authority.
+
+
+
+## CNC Knowledge Base — Round 84
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: MIG-05 shared etcd CAS/Txn replay ledger candidate integrated with signed Provider freeze attestation.
+
+### Code changes
+
+- Added `scripts/spare_parts_provider_freeze_etcd_replay_ledger.py`.
+- Added `tests/test_spare_parts_provider_freeze_etcd_replay_ledger.py`.
+- Added `EtcdProviderFreezeEvidenceReplayLedger` using the existing CoordinatorAuthorityStore linearizable Get/Txn interface.
+- The ledger accepts only a single-segment isolated migration namespace and rejects the production Unified namespace.
+- Each consumption atomically creates four permanent uniqueness keys: Provider evidence UUID, challenge nonce digest, freeze generation and freeze ID.
+- The same Txn compares exact VALUE and MOD revision for `scheduler/state` and the native-lease-attached `coordinator/leader` key. The adapter pre-reads and checks Leader ID/epoch/Lease attachment/expiry and exact per-scope floors against the signed snapshot.
+- Integrated with `validate_provider_freeze_attestation()`; SQLite replay ledger remains a same-host reference implementation.
+- Unknown Txn outcome is resolved only by exact read-back of all four records or retrying the exact same Txn after proving all four keys absent and rechecking authority. Partial/conflicting state is quarantined.
+- Tests cover end-to-end signed claim consumption, single-winner concurrent use, unknown commit response, known-not-committed retry, aggregate CAS race, scope drift, partial ledger state and namespace rejection.
+
+### Validation
+
+- Full main quality CI results will be added after code/test and final metadata commits complete.
+
+### Safety boundary
+
+- Tests use `EtcdV3CoordinatorAuthorityStore` + `InMemoryEtcdV3Client`; they are not evidence of real etcd cluster consensus, disk durability, multi-host failures or server-side RBAC.
+- SQLite replay remains single-host only. The etcd implementation is a candidate over the generic store port, not a connected production service.
+- No real etcd, Provider, KMS or external service was contacted; no RBAC/Lease/provider-control state was mutated outside the in-memory fake; no application access, candidate import or production cutover occurred.
+- `provider_write_freeze_enforced`, application activation and Provider operations authorization remain false.
+- ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`; production Unified schema-v2 remains the sole authority.
