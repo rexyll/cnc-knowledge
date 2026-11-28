@@ -496,11 +496,12 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             lease_expiry=self.lease_expiry + 100.0,
         )
         retirement_time = retired["retiring_effective_at"]
+        after_retirement = max(time.time(), retirement_time + 0.1)
         new_receipt = self.receipt_envelope(
             next_reservation,
-            command_issued_at_unix=retirement_time + 0.2,
-            command_expires_at_unix=retirement_time + 30.0,
-            applied_at_unix=retirement_time + 0.3,
+            command_issued_at_unix=after_retirement - 0.2,
+            command_expires_at_unix=after_retirement + 30.0,
+            applied_at_unix=after_retirement - 0.1,
         )
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "stopped issuing"):
             self.confirm_receipt(next_reservation, new_receipt)
