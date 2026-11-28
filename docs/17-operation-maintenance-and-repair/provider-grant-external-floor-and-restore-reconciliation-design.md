@@ -107,4 +107,5 @@
 - 当前 Provider SQLite schema v6 本地 Grant 状态机已实现；命令回执持久化规范化完整签名envelope与签名公钥材料，备份校验重算digest并重新验证Ed25519签名。schema v5历史回执缺少原始envelope，迁移后仍为不可验证状态。
 - 通用 Restore 已明确拒绝含有 Grant 历史的备份；此门禁不得移除，直到本设计的独立 floor authority 与专用 Restore 流程实现并通过测试。
 - 本文不实现 ProviderGrantFloorAuthority adapter，不修改 Unified schema-v2 生产 authority，不连接真实 etcd/Provider/KMS/HSM，不修改 IAM/RBAC，不执行生产迁移或 Cutover。
+- FENCE/ACTIVATE command 与 ACTIVE Grant 的有效期上限在本地参考实现中为300秒，且不能晚于Coordinator native Lease expiry。提前撤销Lease而Provider未及时收到FENCE时，旧Grant仍可能在剩余有效期内被接受；该残余窗口有上限但非零，不能宣称瞬时撤销。
 - 当前无真实多主机、远程对象存储或跨系统联合故障证据；MIG-05 继续 IN_PROGRESS，MIG-06 和 MIG-07 不因此解锁。
