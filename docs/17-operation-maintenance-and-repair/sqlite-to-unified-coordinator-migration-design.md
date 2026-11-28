@@ -475,3 +475,14 @@ SQLite Provider schema由v2升级为v3，新增 `provider_write_freeze_scopes`�
 Provider backup validation要求v3 schema和冻结表，backup/restore preparation保留freeze state，避免使用不含冻结代次的旧v2备份绕过门禁。
 
 **严格限制：** 这是同机SQLite参考实现。它不构成S3/GCS/Azure或远程Provider Gateway的服务端冻结证明，也不提供跨主机原子性。新命令尚未通过远程Gateway/KMS/HSM发布，Provider DB文件和进程仍属于本地信任边界。第八十三轮freeze attestation validator没有直接读取本Provider gate状态，因此 `provider_write_freeze_enforced`仍为false；必须另做真实Provider集成、控制命令分发、IAM/RBAC与故障演练后才能评估MIG-06。
+
+
+### 第八十六轮：Provider freeze 命令持久化收据与未知响应恢复
+
+Provider schema v3新增 provider_write_freeze_commands 命令收据账本。每条收据以完整签名envelope（规范化JSON，包含签名与key ID）的SHA-256为主键，并记录issuer/key、Provider/tenant/scope、action、freeze ID、generation、历史结果状态和提交时间。收据与 provider_write_freeze_scopes 状态推进在同一个 BEGIN IMMEDIATE 事务内提交。
+
+apply_write_freeze_command() 在完成签名和当前信任注册表校验后，先按envelope digest查询历史收据，再校验当前generation。若精确命令曾成功提交，即使scope后来已经推进到更高generation，也只返回 ALREADY_APPLIED 和该命令的历史结果，并同时返回当前generation/state；不会重新应用旧FREEZE/UNFREEZE。不同签名envelope即使claims相同，也不是同一条已提交命令，必须遵守正常generation规则。
+
+新增只读 write_freeze_command_status(digest)，用于Coordinator在超时/连接断开后查询历史收据。返回值明确区分命令当时的 result_state 与当前scope状态；未知digest返回None，格式非法拒绝。命令账本随Provider数据库备份/恢复保留。
+
+**恢复规则：** Coordinator遇到命令响应未知时，必须使用原始签名envelope的digest查询状态。查到收据表示原命令已提交，不得重发为新命令；未查到收据不自动证明原请求永远不会提交，调用方仍需按控制通道策略处理不确定性，不能改用新generation猜测。此本地API只验证SQLite持久化和同机事务原子性，不证明远程网络、Provider多副本或Coordinator跨主机恢复语义。
