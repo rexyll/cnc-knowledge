@@ -22,6 +22,7 @@ from scripts.spare_parts_backup_storage_adapter import (
     _synthetic_ledger,
 )
 from scripts.spare_parts_inventory_ledger_persistence import create_backup, publish_generation
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from scripts.spare_parts_provider_admission_sqlite import SQLiteProviderAdmissionCoordinator
 from scripts.spare_parts_fencing_attestation import (
@@ -68,8 +69,7 @@ PROVIDER_RECEIPT_PRIVATE = Ed25519PrivateKey.from_private_bytes(
     hashlib.sha256(b"CH17 synthetic Provider receipt signer seed").digest()
 )
 PROVIDER_RECEIPT_PUBLIC = PROVIDER_RECEIPT_PRIVATE.public_key().public_bytes(
-    __import__("cryptography.hazmat.primitives.serialization", fromlist=["Encoding"]).Encoding.Raw,
-    __import__("cryptography.hazmat.primitives.serialization", fromlist=["PublicFormat"]).PublicFormat.Raw,
+    serialization.Encoding.Raw, serialization.PublicFormat.Raw
 )
 
 
