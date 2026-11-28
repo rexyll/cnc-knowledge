@@ -1064,7 +1064,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             backup, restored_path, external_fencing_floor=0,
             fencing_reconciliation_ref="synthetic-freeze-gate-test",
         )
-        self.assertEqual(restore_report["result"], "RESTORED_TO_NEW_DATABASE")
+        self.assertEqual(restore_report["result"], "PREPARED_NEW_DATABASE_NOT_CUTOVER")
         restored = _new_provider(
             restored_path, provider_id="provider-test-a",
             trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
