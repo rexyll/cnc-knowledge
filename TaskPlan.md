@@ -1444,4 +1444,15 @@
 - **验证：** 保留合法隔离 namespace 正向路径；新增测试拒绝生产/Unified namespace、isolated 根路径、额外路径层级、空段及路径穿越。验证拒绝输入不会推进任何scope或authority revision。
 - **同步：** 更新CH17外部Floor设计文档、README、章节任务计划、根任务计划和TaskHistory；知识质量CI通过后才记录完成。
 - **边界：** 只加强本地参考模型的输入边界；不修改Unified schema-v2生产authority，不连接真实etcd/Provider/KMS/HSM，不修改IAM/RBAC，不执行Restore、候选导入、应用激活或Cutover。MIG-04/MIG-05保持IN_PROGRESS，MIG-06保持TODO，MIG-07保持BLOCKED。
+- **状态：** DONE（2026-11-28；Knowledge Quality Run 46152883043 两个必需 Job 均 success）。
+
+### 第九十四轮任务计划：Provider Grant Floor 回执来源认证与签名证据设计
+
+- **背景：** 当前 Floor adapter 的 `confirm_provider_receipt()` 仅接收调用方提供的 SHA-256 digest；它能检查 digest 与 operation/command 的绑定，但不能证明该回执确实由目标 Provider 生成。错误或被攻陷的 Coordinator 调用方可以提交任意摘要并错误推进外部 floor 状态。
+- **目标：** 冻结 Provider Grant FENCE/ACTIVATE 回执的可认证证据格式与信任模型，明确 Provider 身份、tenant、scope、action、Grant ID/generation、command digest、result state、Provider applied time、Coordinator Leader/native Lease 绑定以及签名者 key ID 的绑定关系。
+- **设计内容：** 评估由 Provider 持有独立 Ed25519 receipt signing key 对规范化 receipt envelope 做 domain-separated 签名；定义 canonical serialization、签名输入、Provider public-key trust registry、密钥轮换/撤销、历史 receipt 验证及时间偏差策略；明确回执摘要必须由验签后的 canonical envelope 计算，不能由调用方任意填写。
+- **Floor API：** 设计从裸 `provider_receipt_digest` 到强类型已验证 Receipt Evidence 的接口迁移；定义验证失败、密钥未知/撤销、Provider/tenant/scope/command mismatch、重复 operation、响应丢失查询以及历史回执重放的 fail-closed 行为。
+- **验收规格：** 提供正常 FENCE/ACTIVATE 回执、篡改字段/签名、跨 Provider/tenant/scope、错 command/generation/action、过期/撤销密钥、同一回执幂等和不同回执替换等测试矩阵；确保未经认证回执不能将 PENDING 推进为 FENCED/ACTIVE。
+- **边界：** 本轮先设计协议和测试规格，不连接生产 Provider/KMS/HSM/etcd，不修改 Unified schema-v2 authority、IAM/RBAC，不实现 Grant-aware Restore，不解除通用 Restore 对 Grant 历史备份的 fail-closed 门禁，不执行候选导入、应用激活或 Cutover。
+- **交付：** 新增 Provider Grant receipt 认证设计文档；同步根 TaskPlan、CH17 TaskPlan、README 和 TaskHistory。设计评审完成后再决定独立实现轮次。
 - **状态：** TODO。
