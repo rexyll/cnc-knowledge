@@ -1286,3 +1286,11 @@
 - **原子性：** 每批request索引与checkpoint必须由同一Txn提交；CAS失败时不得写入其余request值或推进checkpoint；scheduler/state只允许最后发布Txn写入。
 - **验收：** 所有恢复分支通过自动化测试；新增测试必须走真实Etcd adapter映射及内存客户端，而不是仅对plan dict做断言；main Quality CI通过。
 - **安全边界：** 该模拟只验证客户端事务契约，不验证etcd Raft/Quorum、磁盘耐久性、跨主机并发、网络分区或真实服务端Txn限制。不得写生产namespace、创建生产Lease、变更RBAC或执行cutover。
+
+### 第七十九轮完成状态（2026-11-28）
+
+- **状态：** DONE（分阶段导入事务契约的内存执行模拟与恢复判定收紧；不是实际etcd迁移写入器）。
+- **实现：** `classify_batch_unknown()` 现在要求读回checkpoint逐字节匹配当前不可变计划生成的当前批或后续批checkpoint集合。计划外checkpoint即使plan digest和request值匹配也必须QUARANTINE。
+- **执行测试：** 新增 `tests/test_spare_parts_sqlite_staged_import_execution.py`，通过实际Etcd adapter映射和InMemory fake执行checkpoint初始化、批次Txn及最终publish；覆盖提交前中断、提交后响应丢失、重启续跑、竞争writer触发CAS失败与最终发布响应丢失。
+- **CI：** [Knowledge Quality Run 46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/46092128612) success：600 unittest（40 skipped，560 passed），CH12数值资源测试143项通过，knowledge lint 0 errors/5 warnings，结构/data检查0 errors。
+- **边界：** InMemory fake不提供Raft/Quorum、持久性或真正跨主机网络并发。未实现真实etcd writer/自动resume，未执行Lease/RBAC/应用启停或生产迁移。MIG-04继续IN_PROGRESS；MIG-05进入IN_PROGRESS（仅完成内存事务契约测试的一部分）；MIG-06 TODO；MIG-07 BLOCKED。
