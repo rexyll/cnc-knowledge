@@ -427,3 +427,26 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Designed the ProviderGrantFloorAuthority contract, per-provider/tenant/scope monotonic floors, FENCE/ACTIVATE external reservation and receipt-confirmation protocol, and a dedicated fail-closed Grant-aware Restore algorithm.
 - Explicitly retained the Round90 generic Restore block for any backup containing Provider Grant scope or command history. A text reconciliation reference or object fencing token floor is not sufficient Grant floor evidence.
 - Synchronized root TaskPlan, CH17 TaskPlan, README and migration design. This is architecture-only; no external floor adapter, production authority change, real etcd/Provider integration or Restore/Cutover occurred.
+
+
+## CNC Knowledge Base — Round 92（Provider Grant 外部 Floor 本地参考实现进行中）
+
+- Repository: rexyll/cnc-knowledge
+- Branch: main only; no branch created.
+- New module: scripts/spare_parts_provider_grant_floor.py
+  - Added ProviderGrantFloorAuthority port base and immutable scope/snapshot/reservation/operation records.
+  - Added separate-file SQLiteProviderGrantFloorAuthority schema v1. The adapter persists per Provider/tenant/scope generation and Leader epoch floors, Leader/native Lease identity, pending operation, exact command digest, Provider receipt digest and scope revision.
+  - FENCE and ACTIVATE use BEGIN IMMEDIATE + scope-revision CAS. Pending operations prevent another generation reservation. ACTIVATE requires a confirmed FENCE and binds the latest FENCE command digest.
+  - Exact operation ID replay returns the original reservation; operation ID reuse with a different command/scope/identity is rejected. Exact Provider receipt confirmation is idempotent; receipt replacement is rejected.
+  - Leader epoch cannot regress; same epoch cannot change Leader/native Lease identity; Coordinator namespace is immutable after first use; same native Lease expiry cannot regress.
+  - snapshot(minimum_revision=...) can detect a floor below a trusted external checkpoint. The SQLite authority cannot detect rollback of its own database snapshot.
+- New tests: tests/test_spare_parts_provider_grant_floor.py, 20 test method definitions covering the state machine, CAS concurrency, unknown-operation restart lookup, exact receipt confirmation, epoch/namespace/Lease monotonicity, scope isolation, revision floor and file permissions. These definitions are a source inventory only; no claim of execution or pass result.
+- Commits:
+  - Initial adapter: f7c520ac6f1f2950b2e40a611f4b79d5627ca85f
+  - Initial tests: 1c3943080ffed1a0279bdf095230336118477778
+  - Namespace and Lease-expiry monotonicity hardening: 5311c20232af022cd36bb932a06001e2bde655b8
+  - Additional regression tests: 3e848b2c1ffe66c41c033d6c78961b5ce4832c0a
+- Documentation synchronized in root TaskPlan.md, CH17 TaskPlan, CH17 README, migration design and this history.
+- Validation: get_commit_combined_status returned no status entries; the available commit-workflow lookup returned no workflow runs for the test commit. No local checkout/test execution was performed. Do not mark Round 92 or Round 90 DONE from source inventory.
+- Safety boundary: this is a single-host SQLite reference, not etcd linearizable/quorum authority or production integration. The adapter stores Provider receipt digests but does not authenticate the receipt; a future Coordinator must verify an authenticated Provider status response. No Provider command path, Unified schema-v2 authority, real etcd/Provider/KMS/HSM, IAM/RBAC, production namespace, Restore, candidate import, application activation or Cutover was touched.
+- Status: MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority; ASSET-000092 remains PROPOSED_NOT_APPROVED / NOT_RUN.
