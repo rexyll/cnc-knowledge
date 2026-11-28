@@ -1414,3 +1414,14 @@
 - **验收测试：** 覆盖Grant模式缺失信任配置拒绝、在线Leader inactive fail-closed、先FENCE后ACTIVATE、缺失/提前签发的ACTIVATE拒绝、旧epoch Grant被新epoch FENCE撤销、同Leader/Lease安全轮换、跨Provider身份复用拒绝、四类mutation门禁、Freeze/Grant调用方时钟注入拒绝、锁等待期间命令过期拒绝、Grant expiry、64位整数边界、响应丢失回执与backup链完整性、无独立Grant floor时Restore fail-closed、旧写与FENCE并发事务排序、schema v2/v3/v4加法迁移。
 - **边界：** 只证明同机SQLite参考事务语义；不证明远程Provider/对象存储、跨主机、etcd与Provider跨系统原子性。不得连接生产Provider/etcd/KMS，不修改RBAC，不触达生产namespace，不执行候选导入、应用激活或cutover。
 - **交付：** 新增grant签名协议模块、Provider grant状态机/测试、迁移设计、README、TaskPlan及TaskHistory同步；所有必需主分支CI成功后才能标记DONE。
+
+
+### 第九十一轮任务计划：Provider Grant 外部单调 Floor 与专用 Restore 对账
+
+- **背景：** 第九十轮已使通用 Restore 对含 Grant 历史备份 fail-closed；当前 external_fencing_floor 仅覆盖对象 fencing token，无法证明 Provider Grant generation / Leader epoch 没有随旧 SQLite 备份回滚。
+- **目标：** 设计独立于 Provider SQLite 文件及其备份域的 ProviderGrantFloorAuthority，提供每个 (provider_id, tenant_id, fencing_scope) 的 generation floor、Leader epoch floor、pending operation、FENCE/ACTIVATE command digest 与 receipt digest。
+- **协议：** 定义 Coordinator 先持久预留 FENCE/ACTIVATE operation identity，再调用 Provider，最后以 Provider 精确 receipt 回写外部 authority 的双边提交协议；未知结果只能按原 envelope digest 查询/重试。
+- **Restore：** 专用 Grant-aware Restore 必须线性一致读取外部 floor；无 floor、revision回退、pending operation 未对账、Provider receipt不匹配或外部 authority不可达时，目标数据库不得成为可写状态。现有通用 Restore 对任何 Grant 历史备份继续拒绝。
+- **验收：** 覆盖外部预留后Provider提交/响应丢失、旧备份floor低于外部记录、外部authority不可达、FENCE_PENDING/ACTIVATE_PENDING恢复、旧epoch/旧Grant proof拒绝及floor snapshot回滚拒绝。
+- **边界：** 本轮先冻结端口、状态机、事务顺序和恢复算法；不擅自修改生产 Unified schema-v2 authority，不连接生产Provider/etcd/KMS，不修改RBAC，不执行Restore cutover。
+- **交付：** docs/17-operation-maintenance-and-repair/provider-grant-external-floor-and-restore-reconciliation-design.md；同步CH17 TaskPlan、README、迁移设计和TaskHistory。
