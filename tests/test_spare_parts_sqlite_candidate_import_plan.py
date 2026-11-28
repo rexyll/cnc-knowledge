@@ -39,7 +39,12 @@ def candidate_fixture():
         "active": {},
         "waiters": [],
         "coordinator": {
-            "leader": None,
+            "leader": {
+                "leader_id": "migration-epoch-floor",
+                "epoch": 8,
+                "expires_at": 0.0,
+                "backend_lease_id": 1,
+            },
             "scopes": {
                 "scope-1": {
                     "high_water_token": 9,
@@ -82,6 +87,8 @@ def candidate_fixture():
         }],
         "recovery_requirements": {
             "leader_epoch_floor": 8,
+            "leader_epoch_floor_is_embedded_as_inactive_coordinator_record": True,
+            "leader_epoch_floor_backend_lease_id_sentinel": 1,
             "leader_must_be_reclaimed": True,
             "external_fencing_reconciliation": "REQUIRED",
             "external_fencing_floor": None,
