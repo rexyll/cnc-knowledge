@@ -484,3 +484,13 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 证据必须包含Provider ID、观察时间和固定schema，默认最多接受300秒内的采样。缺少scope、未知字段、generation不匹配、过期/未来采样及非法floor均会拒绝。成功结果包含canonical evidence SHA-256和逐scope比较明细。
 
 **安全边界：** 该工具只验证调用方传入的数据，不连接真实Provider、不验证证据签名或身份、不写入Provider控制记录，也不授予应用访问或Provider mutation权限。采样后发生的Provider写入会使结果失效。真实可信采样、签名认证、写冻结和生产审批仍未完成。
+
+
+
+## CH17-T006 Provider fencing 签名证据验签（第八十二轮）
+
+新增 `scripts/spare_parts_sqlite_provider_fencing_signed_evidence.py`。该入口接受固定格式的签名信封和调用方提供的Ed25519公钥信任库；签名覆盖带域分离前缀的规范化完整证据JSON。仅当key_id在信任库中、算法/编码/长度合法且签名验证成功时，才继续调用第八十一轮只读对账器。
+
+验签后仍执行原有300秒新鲜度、完整scope集合、provider_generation、fencing high-water token及operation sequence floor检查。输出增加签名验证状态、签名key ID和信任库SHA-256；application activation与Provider operation授权仍为false。
+
+**安全边界：** 信任库本身的来源、审批、保护和轮换必须由外部可信流程负责；工具不连接KMS或Provider、不做真实采样、不写控制记录。签名只证明证据快照由对应私钥签署，不证明Provider在采样后持续冻结。当前离线工具没有持久化nonce/replay ledger，不能阻止有效旧快照在有效期内被重放。此功能不构成生产切换或应用启用授权。
