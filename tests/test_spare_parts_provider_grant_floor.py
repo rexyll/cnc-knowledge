@@ -465,6 +465,24 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         )
         self.assertEqual(operation.receipt_trust_revision, 1)
         self.assertEqual(operation.provider_applied_at_unix, applied_at)
+        self.assertEqual(operation.command_issued_at_unix, reservation.command_issued_at_unix)
+        self.assertEqual(operation.command_expires_at_unix, reservation.command_expires_at_unix)
+
+    def test_receipt_command_time_window_must_match_exact_reservation(self):
+        reservation = self.reserve_fence()
+        receipt = self.receipt_envelope(
+            reservation,
+            command_expires_at_unix=reservation.command_expires_at_unix + 0.5,
+        )
+        before = self.authority.snapshot(self.key)
+        with self.assertRaisesRegex(
+            ProviderGrantFloorConflict, "command_expires_at_unix does not match reservation"
+        ):
+            self.confirm_receipt(reservation, receipt)
+        after = self.authority.snapshot(self.key)
+        self.assertEqual(after.state, "FENCE_PENDING")
+        self.assertEqual(after.revision, before.revision)
+        self.assertEqual(after.authority_revision, before.authority_revision)
 
     def test_unknown_provider_receipt_key_is_rejected_without_advancing_floor(self):
         reservation = self.reserve_fence()
