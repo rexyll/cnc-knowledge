@@ -537,7 +537,7 @@ v4备份校验进一步要求Leader floor与command-Leader审计两张表必须�
 
 Provider SQLite schema从v4升级到v6，新增：
 - `provider_scope_grants`：每个tenant/scope保存Coordinator Leader身份、Provider grant generation、grant ID、FENCED/ACTIVE状态、grant expiry、FENCE digest和ACTIVATE digest。
-- `provider_grant_commands`：保存完整命令digest、issuer/key、Provider/tenant/scope、动作、代次、Leader/Lease绑定、FENCE引用、结果和提交时间。
+- `provider_grant_commands`：保存完整命令digest、规范化完整`envelope_json`、签名者`signer_public_key_base64`、issuer/key、Provider/tenant/scope、动作、代次、Leader/Lease绑定、FENCE引用、结果和提交时间。
 
 FENCE若更换Leader/Lease身份，必须使用比该scope当前记录更高的Leader epoch；同epoch只允许完全相同Leader/Lease主动撤销当前ACTIVE grant，已FENCED状态不得重复推进。若无历史grant，首个FENCE可从代次1开始。ACTIVATE只能在当前状态FENCED时执行，必须匹配完整pending Leader/Lease/grant身份，引用当前FENCE digest，并验证数据库中存在相同scope/Provider/tenant/epoch且结果为FENCED的持久receipt。FENCE与ACTIVATE各自消耗一个单调grant generation。
 
@@ -545,7 +545,7 @@ FENCE若更换Leader/Lease身份，必须使用比该scope当前记录更高的L
 
 未知响应处理：完整命令envelope digest作为收据主键；新增`provider_grant_command_status()`只读查询历史receipt与当前scope状态。测试通过commit后response-loss hook验证：客户端收到异常后读回原digest得到FENCED历史结果；精确重放返回ALREADY_APPLIED，不重复推进generation。ACTIVATE缺失或错误FENCE receipt会拒绝。
 
-schema v2/v3/v4/v5→v6均采用加法迁移；各旧版测试fixture升级后创建Grant状态/receipt表，并为`provider_grant_commands`补齐`envelope_json`与`signer_public_key_base64`列。Provider backup validator要求Grant表及Ed25519 trust registry存在，重算完整envelope digest、根据回执内保存的公钥材料匹配受信key fingerprint并重新验签，之后再逐项校验FENCE/ACTIVATE回执链及当前scope状态。schema v5旧回执缺少envelope和公钥材料，迁移后继续不可验证：当前Grant mutation gate拒绝使用此类旧回执，backup validator也拒绝把它们作为已验证历史。新签名FENCE/ACTIVATE回执才可用于后续授权。v4→v5及v5→v6加法升级、receipt签名校验均有测试覆盖。**Restore限制：** 当前restore接口只接收外部对象fencing token floor，不接收独立Provider Grant generation/Leader epoch floor；因此只要备份含有任何Grant scope或命令历史，通用Restore必须fail-closed拒绝，不能把备份内的较旧Grant状态当作最新权威。下一阶段需设计独立、单调、不可随Provider SQLite备份回滚的Grant floor/receipt reconciliation authority，完成对账后才可新增专用恢复路径。ACTIVATE的issued_at还必须不早于Provider实际提交FENCE回执的applied_at，防止预签名命令在屏障尚未持久化时被激活。
+schema v2/v3/v4/v5→v6均采用加法迁移；各旧版测试fixture升级后创建Grant状态/receipt表，并为`provider_grant_commands`补齐`envelope_json`与`signer_public_key_base64`列。Provider backup validator要求Grant表及Ed25519 trust registry存在，重算完整envelope digest、根据回执内保存的公钥材料匹配受信key fingerprint并重新验签，之后再逐项校验FENCE/ACTIVATE回执链及当前scope状态。schema v5旧回执缺少envelope和公钥材料，迁移后继续不可验证：当前Grant mutation gate拒绝使用此类旧回执，backup validator也拒绝把它们作为已验证历史。新签名FENCE/ACTIVATE回执才可用于后续授权。v4→v6与v5→v6加法升级、旧v5回执fail-closed、备份签名复验及运行时ACTIVATE回执篡改拒绝均有专用测试覆盖。**Restore限制：** 当前restore接口只接收外部对象fencing token floor，不接收独立Provider Grant generation/Leader epoch floor；因此只要备份含有任何Grant scope或命令历史，通用Restore必须fail-closed拒绝，不能把备份内的较旧Grant状态当作最新权威。下一阶段需设计独立、单调、不可随Provider SQLite备份回滚的Grant floor/receipt reconciliation authority，完成对账后才可新增专用恢复路径。ACTIVATE的issued_at还必须不早于Provider实际提交FENCE回执的applied_at，防止预签名命令在屏障尚未持久化时被激活。
 
 **严格边界：** 目前是同机SQLite参考实现。它只证明当前对象与multipart写入口在这个SQLite Provider中的事务排序，不证明远程Provider、云对象存储、异步后台任务或多主机强fencing。Provider FENCE的线性化点不是etcd Lease独立过期的物理瞬间；Coordinator必须等待Provider receipt后才能声明Provider侧handoff完成。真实Provider、三节点etcd、KMS/HSM、RBAC和跨系统联合故障验证仍未完成。
 
