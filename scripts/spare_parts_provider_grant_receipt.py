@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import re
+import time
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -279,6 +280,7 @@ def verify_provider_grant_receipt(
     trust_key: ProviderReceiptTrustKey,
     *,
     expected_claims: Mapping[str, Any],
+    now_unix: float | None = None,
 ) -> VerifiedProviderGrantReceipt:
     """Verify Provider signature, key lifecycle and every expected reservation claim."""
     parsed = parse_receipt_envelope(envelope)
@@ -299,6 +301,9 @@ def verify_provider_grant_receipt(
         raise ProviderGrantReceiptError("Provider receipt signing key status is unsupported")
 
     applied = claims["applied_at_unix"]
+    now = time.time() if now_unix is None else _timestamp(now_unix, "verification_time_unix")
+    if applied > now + MAX_CLOCK_SKEW_SECONDS:
+        raise ProviderGrantReceiptError("Provider receipt applied time is in the future")
     if applied < float(trust_key.not_before):
         raise ProviderGrantReceiptError("Provider receipt was signed before the key validity window")
     if trust_key.not_after is not None and applied >= float(trust_key.not_after):
