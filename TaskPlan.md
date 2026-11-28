@@ -1409,7 +1409,7 @@
 - **目标：** 将第八十九轮架构决策推进为可执行的同机Provider参考状态机，证明FENCE与实际对象/multipart mutation共享Provider SQLite事务顺序。
 - **协议：** 新增独立Ed25519签名命令FENCE/ACTIVATE。不同Leader/Lease身份发起FENCE时必须推进到更高Coordinator Leader epoch；同epoch仅允许完全相同的Leader/Lease主动撤销其当前ACTIVE grant。FENCE将scope置为FENCED；ACTIVATE必须绑定完全匹配的Leader/Lease/grant身份以及已持久化的FENCE command digest。
 - **状态存储：** Provider schema升级v4→v5；新增逐tenant/scope Provider grant状态和完整命令receipt表。升级必须是加法迁移，backup验证要求新表存在。
-- **Mutation Gate：** 新增可选`require_revocable_grant`；启用时必须同时配置Provider ID、Ed25519命令信任公钥和在线Coordinator Leader检查器。object PUT、multipart begin/part/complete均必须携带签名proof中的Grant ID与代次，并在实际写入事务内核对ACTIVE状态、代次和期限。在线检查仅是FENCE/ACTIVATE前置门禁，不消除etcd到Provider事务的TOCTOU。FENCE与mutation都使用同一SQLite BEGIN IMMEDIATE事务域。
+- **Mutation Gate：** 新增可选`require_revocable_grant`；启用时必须同时配置Provider ID、Ed25519命令信任公钥和在线Coordinator Leader检查器。object PUT、multipart begin/part/complete均必须携带签名proof中的Grant ID与代次，并在实际写入事务内核对ACTIVE状态、代次和期限；检查当前scope的FENCE回执时还必须匹配Provider ID，拒绝跨Provider复用SQLite状态。在线检查仅是FENCE/ACTIVATE前置门禁，不消除etcd到Provider事务的TOCTOU。Grant命令应用不得接受调用方注入时钟；在获得SQLite写锁后、在线Leader读取后分别重新验证命令和Lease expiry。FENCE与mutation都使用同一SQLite BEGIN IMMEDIATE事务域。
 - **故障恢复：** 对精确envelope digest提供只读receipt查询；提交后响应丢失只能确认历史receipt，不得重做generation推进。FENCE未提交则不得允许ACTIVATE。
 - **验收测试：** 覆盖Grant模式缺失信任配置拒绝、在线Leader inactive fail-closed、先FENCE后ACTIVATE、缺失/提前签发的ACTIVATE拒绝、旧epoch Grant被新epoch FENCE撤销、同Leader/Lease安全轮换、四类mutation门禁、响应丢失回执与backup/restore恢复、旧写与FENCE并发事务排序、schema v2/v3/v4加法迁移。
 - **边界：** 只证明同机SQLite参考事务语义；不证明远程Provider/对象存储、跨主机、etcd与Provider跨系统原子性。不得连接生产Provider/etcd/KMS，不修改RBAC，不触达生产namespace，不执行候选导入、应用激活或cutover。
