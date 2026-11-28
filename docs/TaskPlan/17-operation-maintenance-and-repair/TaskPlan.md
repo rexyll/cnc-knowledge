@@ -1485,3 +1485,14 @@
 - backup/restore必须保留命令收据；测试覆盖FREEZE→UNFREEZE→旧FREEZE重放、历史/当前状态区分、未知/非法digest、重启和backup/restore。
 - 远程Coordinator恢复必须使用原始envelope digest查receipt；receipt缺失不能单独证明未知网络请求未提交，不得擅自创建新generation或改写原命令。
 - 本轮仅同机SQLite参考实现，不连接真实Provider/etcd/KMS，不开放应用访问，不执行迁移或cutover。
+
+### 第八十七轮任务计划：Coordinator Leader Epoch / Native Lease 绑定 Provider Freeze
+
+- Freeze命令协议升级v2，严格绑定Coordinator namespace、Leader ID、正整数epoch、正整数native Lease ID及Lease expiry；签名覆盖全部字段。
+- 命令expiry必须不晚于声明的Leader Lease expiry；Provider校验时命令和Lease均须未到期。
+- Provider schema升级v4，新增per-scope Leader epoch floor及per-command Leader审计记录；v3→v4采用加法迁移，不丢弃freeze scope和receipt历史。
+- Provider拒绝低于已观察epoch的任何新命令；相同epoch禁止Leader ID/Lease ID变化；scope的Coordinator namespace不可改变。只有更高epoch可接管。
+- freeze generation、receipt、Leader floor、命令Leader审计必须同一BEGIN IMMEDIATE事务提交；校验失败不推进任何floor。
+- 精确历史receipt重放先于epoch检查，只返回历史结果，不重新执行。新Leader可用更高epoch按下一freeze generation接管当前freeze，UNFREEZE仍匹配原freeze ID。
+- 测试覆盖过期Lease、命令期限超过Lease、epoch回退、相同epoch身份/Lease变更、namespace漂移、v3→v4迁移、历史receipt优先级及持久化。
+- 安全边界：签名的Lease expiry声明不等于实时Lease存在性/附着性证明。Provider尚未观察更高epoch时，旧Leader在声明窗口内仍可能被接受。生产需要线性一致在线Leader/Lease状态检查或等价的可撤销授权。仅做本地SQLite参考，不连接真实etcd/KMS，不执行生产切换。
