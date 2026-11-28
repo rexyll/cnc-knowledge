@@ -83,6 +83,14 @@ def verify_provider_write_freeze_command(
         value = claims.get(field)
         if not isinstance(value, str) or not value.strip():
             raise ProviderWriteFreezeCommandError(f"freeze command {field} is invalid")
+    namespace = claims["coordinator_namespace"]
+    namespace_parts = namespace.strip("/").split("/")
+    if (
+        not namespace.startswith("/") or not namespace.endswith("/")
+        or "//" in namespace or any(part in {"", ".", ".."} for part in namespace_parts)
+        or any(ch.isspace() for ch in namespace)
+    ):
+        raise ProviderWriteFreezeCommandError("Coordinator namespace is not a canonical absolute prefix")
     if claims["action"] not in {"FREEZE", "UNFREEZE"}:
         raise ProviderWriteFreezeCommandError("freeze command action is invalid")
     generation = claims.get("generation")
