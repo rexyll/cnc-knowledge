@@ -964,7 +964,8 @@ class SQLiteFencedObjectStorageProvider:
                 "leader_lease_expires_at": float(claims["leader_lease_expires_at_unix"]),
             }
             floor = c.execute(
-                """SELECT coordinator_namespace,leader_id,leader_epoch,leader_lease_id
+                """SELECT coordinator_namespace,leader_id,leader_epoch,leader_lease_id,
+                          leader_lease_expires_at
                    FROM provider_write_freeze_leader_floors
                    WHERE tenant_id=? AND fencing_scope=?""",
                 (self.tenant_id, scope),
