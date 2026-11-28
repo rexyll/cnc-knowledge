@@ -1351,6 +1351,189 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         finally:
             connection.close()
 
+    def admin_register_coordinator_command_key(
+        self, *, issuer_id: str, key_id: str, public_key: bytes,
+        not_before: float, not_after: float | None = None,
+    ) -> dict[str, object]:
+        """Register a Coordinator command verifier key through local owner control."""
+        self._identifier(issuer_id, "Coordinator issuer_id")
+        if not isinstance(key_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+        ):
+            raise ProviderGrantFloorError("Coordinator command key ID is invalid")
+        if not isinstance(public_key, bytes) or len(public_key) != 32:
+            raise ProviderGrantFloorError("Coordinator Ed25519 public key must contain 32 bytes")
+        before = self._lease_expiry(not_before)
+        after = self._lease_expiry(not_after) if not_after is not None else None
+        if after is not None and after <= before:
+            raise ProviderGrantFloorError("Coordinator command key validity interval is invalid")
+        fingerprint = hashlib.sha256(public_key).hexdigest()
+        encoded = base64.b64encode(public_key).decode("ascii")
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            existing = connection.execute(
+                """SELECT * FROM provider_grant_floor_coordinator_keys
+                   WHERE issuer_id=? AND key_id=?""",
+                (issuer_id, key_id),
+            ).fetchone()
+            if existing is not None:
+                if (
+                    existing["public_key_sha256"] != fingerprint
+                    or existing["public_key_base64"] != encoded
+                    or float(existing["not_before"]) != before
+                    or existing["not_after"] != after
+                ):
+                    raise ProviderGrantFloorConflict(
+                        "Coordinator key ID is already bound to different key material or validity"
+                    )
+                result = dict(existing)
+                connection.commit()
+                return result
+            connection.execute(
+                "UPDATE provider_grant_floor_meta SET trust_revision=trust_revision+1 WHERE singleton=1"
+            )
+            trust_revision = int(connection.execute(
+                "SELECT trust_revision FROM provider_grant_floor_meta WHERE singleton=1"
+            ).fetchone()["trust_revision"])
+            connection.execute(
+                """INSERT INTO provider_grant_floor_coordinator_keys(
+                    issuer_id,key_id,algorithm,public_key_base64,public_key_sha256,
+                    status,not_before,not_after,retiring_effective_at,
+                    revocation_effective_at,revocation_reason,trust_revision,created_at
+                ) VALUES(?,?,'ED25519',?,?,'ACTIVE',?,?,NULL,NULL,NULL,?,?)""",
+                (
+                    issuer_id, key_id, encoded, fingerprint, before, after,
+                    trust_revision, time.time(),
+                ),
+            )
+            result = dict(connection.execute(
+                """SELECT * FROM provider_grant_floor_coordinator_keys
+                   WHERE issuer_id=? AND key_id=?""",
+                (issuer_id, key_id),
+            ).fetchone())
+            connection.commit()
+            return result
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def admin_set_coordinator_command_key_status(
+        self, *, issuer_id: str, key_id: str, status: str,
+        retiring_effective_at: float | None = None,
+        revocation_effective_at: float | None = None,
+        revocation_reason: str | None = None,
+    ) -> dict[str, object]:
+        """Advance Coordinator trust to RETIRING/REVOKED; keys are never reactivated."""
+        self._identifier(issuer_id, "Coordinator issuer_id")
+        if not isinstance(key_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key_id
+        ):
+            raise ProviderGrantFloorError("Coordinator command key ID is invalid")
+        if status not in {"RETIRING", "REVOKED"}:
+            raise ProviderGrantFloorError(
+                "Coordinator command key may only transition to RETIRING or REVOKED"
+            )
+        retiring = (
+            self._lease_expiry(retiring_effective_at)
+            if retiring_effective_at is not None else None
+        )
+        revoked = (
+            self._lease_expiry(revocation_effective_at)
+            if revocation_effective_at is not None else None
+        )
+        reason = None
+        if status == "RETIRING":
+            if revoked is not None or revocation_reason is not None:
+                raise ProviderGrantFloorError(
+                    "RETIRING Coordinator key must not carry revocation metadata"
+                )
+            retiring = retiring if retiring is not None else time.time()
+        else:
+            if revoked is None:
+                raise ProviderGrantFloorError(
+                    "REVOKED Coordinator key requires revocation_effective_at"
+                )
+            if (
+                not isinstance(revocation_reason, str) or not revocation_reason.strip()
+                or len(revocation_reason) > 256
+                or any(ord(ch) < 32 for ch in revocation_reason)
+            ):
+                raise ProviderGrantFloorError("Coordinator command key revocation reason is invalid")
+            reason = revocation_reason.strip()
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                """SELECT * FROM provider_grant_floor_coordinator_keys
+                   WHERE issuer_id=? AND key_id=?""",
+                (issuer_id, key_id),
+            ).fetchone()
+            if row is None:
+                raise ProviderGrantFloorConflict("unknown Coordinator command trust key")
+            old_status = row["status"]
+            if old_status == status and (
+                (status == "RETIRING" and row["retiring_effective_at"] == retiring)
+                or (
+                    status == "REVOKED"
+                    and row["revocation_effective_at"] == revoked
+                    and row["revocation_reason"] == reason
+                    and (
+                        retiring is None
+                        or row["retiring_effective_at"] == retiring
+                    )
+                )
+            ):
+                result = dict(row)
+                connection.commit()
+                return result
+            if old_status not in {"ACTIVE", "RETIRING"}:
+                raise ProviderGrantFloorConflict(
+                    "Coordinator command key lifecycle transition is invalid"
+                )
+            if old_status == "RETIRING" and status != "REVOKED":
+                raise ProviderGrantFloorConflict(
+                    "Coordinator command key lifecycle transition is invalid"
+                )
+            effective_retiring = (
+                float(row["retiring_effective_at"])
+                if row["retiring_effective_at"] is not None
+                else (retiring if retiring is not None else time.time())
+            )
+            if status == "REVOKED" and revoked < effective_retiring:
+                raise ProviderGrantFloorError(
+                    "Coordinator key revocation cannot precede its retirement boundary"
+                )
+            connection.execute(
+                "UPDATE provider_grant_floor_meta SET trust_revision=trust_revision+1 WHERE singleton=1"
+            )
+            trust_revision = int(connection.execute(
+                "SELECT trust_revision FROM provider_grant_floor_meta WHERE singleton=1"
+            ).fetchone()["trust_revision"])
+            connection.execute(
+                """UPDATE provider_grant_floor_coordinator_keys SET status=?,
+                   retiring_effective_at=?,revocation_effective_at=?,revocation_reason=?,
+                   trust_revision=? WHERE issuer_id=? AND key_id=?""",
+                (
+                    status, effective_retiring, revoked, reason, trust_revision,
+                    issuer_id, key_id,
+                ),
+            )
+            result = dict(connection.execute(
+                """SELECT * FROM provider_grant_floor_coordinator_keys
+                   WHERE issuer_id=? AND key_id=?""",
+                (issuer_id, key_id),
+            ).fetchone())
+            connection.commit()
+            return result
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
     def confirm_provider_receipt(
         self, *, operation_id: str, receipt_envelope: dict | bytes | str,
         expected_revision: int,
