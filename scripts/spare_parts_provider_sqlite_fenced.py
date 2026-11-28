@@ -2582,6 +2582,18 @@ class SQLiteFencedObjectStorageProvider:
             for receipt in grant_receipts.values():
                 if not re.fullmatch(r"[0-9a-f]{64}", receipt["command_sha256"]):
                     raise BackupStorageError("Provider backup has an invalid grant command digest")
+                trusted_key = connection.execute(
+                    """SELECT 1 FROM trusted_ed25519_keys
+                       WHERE issuer_id=? AND key_id=? AND algorithm='ED25519'""",
+                    (receipt["issuer_id"], receipt["key_id"]),
+                ).fetchone()
+                if trusted_key is None:
+                    raise BackupStorageError("Provider backup grant receipt has no trusted Ed25519 key record")
+                if receipt["action"] == "FENCE" and (
+                    receipt["fence_command_sha256"] is not None
+                    or receipt["result_state"] != "FENCED"
+                ):
+                    raise BackupStorageError("Provider backup FENCE receipt has inconsistent action/result fields")
                 if receipt["action"] == "ACTIVATE":
                     fence = grant_receipts.get(receipt["fence_command_sha256"])
                     if (
@@ -2645,6 +2657,7 @@ class SQLiteFencedObjectStorageProvider:
                         or activation["leader_id"] != grant["leader_id"]
                         or int(activation["leader_epoch"]) != int(grant["leader_epoch"])
                         or int(activation["leader_lease_id"]) != int(grant["leader_lease_id"])
+                        or float(activation["leader_lease_expires_at"]) != float(grant["leader_lease_expires_at"])
                         or float(grant["grant_expires_at"]) > float(grant["leader_lease_expires_at"])
                     ):
                         raise BackupStorageError("Provider backup ACTIVE grant has an invalid ACTIVATE receipt")
