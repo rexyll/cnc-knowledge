@@ -681,4 +681,5 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - No real Coordinator, etcd, remote Provider, object storage, KMS/HSM, IAM/RBAC or production trust control plane was connected. Production Unified schema-v2 remains the sole authority.
 - Grant-aware Restore remains unimplemented. Generic Restore for any Provider Grant history remains fail-closed. No candidate import, Restore, application activation or Cutover was performed.
 - MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED.
-- **Status:** Round97 implementation and code/test CI passed; final documentation synchronization CI pending.
+- Final expanded code/test validation: [Knowledge Quality Run 46159590900](https://github.com/rexyll/cnc-knowledge/actions/runs/46159590900) succeeded on both required jobs; 762 repository tests ran with 40 environment-guarded skips, CH12 numerical resource tests passed 143, knowledge lint had 0 errors / 5 warnings, and structure/data checks had 0 errors. Additional tests cover explicit Provider/Tenant/scope target binding, command expiry beyond native Lease, exact signed-operation replay, and preventing legacy unsigned PENDING operations from being confirmed after strict migration.
+- **Status:** Round97 implementation and expanded code/test suite passed; final documentation synchronization CI pending.
