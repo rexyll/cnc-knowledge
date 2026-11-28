@@ -460,3 +460,18 @@ Quality Run [46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/4
 共享ledger通过 `validate_provider_freeze_attestation()` 的同一 `consume_once(record, authority_snapshot=...)` 端口调用，现有SQLite实现继续作为兼容的单机参考后端。
 
 **限制与下一步：** 本轮执行使用Etcd adapter和InMemory fake；它只验证KV比较/Txn API契约、并发消费和未知响应读回逻辑，不提供真实etcd Raft/Quorum、WAL/磁盘耐久、跨主机网络分区或生产RBAC证明。真正部署须使用独立临时etcd集群和限制在目标隔离prefix的服务端RBAC，再补充三节点故障注入。即使replay Txn成功，也只表示证据标识已在共享账本消费，并不证明Provider原生write gate已实际阻断所有对象、multipart和其他mutation接口；`provider_write_freeze_enforced`仍为false。
+
+
+### 15.13 第八十五轮：Provider-native持久化写冻结门与代次拒绝
+
+第八十四轮共享replay ledger已完成Coordinator证据消费，但此前签名freeze attestation仍只是离线声明；Provider写API没有读取该冻结状态。本轮在现有同机SQLite Fenced Provider中增加一层可执行的本地参考门禁。
+
+新增 `scripts/spare_parts_provider_write_freeze_gate.py`，定义独立Ed25519签名控制命令。命令claims固定绑定issuer、Provider ID、tenant、scope、动作（FREEZE/UNFREEZE）、freeze ID、generation及签发/过期时间。Provider必须先验签，再在事务中核对trusted Ed25519 key registry的issuer/key、fingerprint、ACTIVE/RETIRING状态和密钥有效期。Provider实例必须显式配置Provider ID才能接受控制命令。
+
+SQLite Provider schema由v2升级为v3，新增 `provider_write_freeze_scopes`。已有v2数据库启动时加法创建该表并将schema标识升级到v3。freeze generation按tenant+scope严格连续递增，每条命令只能是当前generation+1；同一代次、相同command digest的精确重放返回ALREADY_APPLIED。UNFREEZE必须匹配当前FROZEN记录的freeze ID；相同代次不同内容、旧代次、跳号、错误freeze ID、Provider/tenant不匹配和无效签名均拒绝。
+
+对象fenced PUT、multipart begin、part、complete四种mutation均在原有 `BEGIN IMMEDIATE` Provider事务内检查冻结表。状态为FROZEN时拒绝写入；UNFREEZE推进到OPEN后，mutation proof必须携带当前 `provider_freeze_generation`，旧proof或未绑定当前代次的proof仍被拒绝。因冻结命令与对象写共享同一个SQLite写事务，二者具备明确的同机串行顺序，不存在事务外先检查后提交的窗口。读取保持可用；未fenced写与unfenced multipart abort继续关闭。
+
+Provider backup validation要求v3 schema和冻结表，backup/restore preparation保留freeze state，避免使用不含冻结代次的旧v2备份绕过门禁。
+
+**严格限制：** 这是同机SQLite参考实现。它不构成S3/GCS/Azure或远程Provider Gateway的服务端冻结证明，也不提供跨主机原子性。新命令尚未通过远程Gateway/KMS/HSM发布，Provider DB文件和进程仍属于本地信任边界。第八十三轮freeze attestation validator没有直接读取本Provider gate状态，因此 `provider_write_freeze_enforced`仍为false；必须另做真实Provider集成、控制命令分发、IAM/RBAC与故障演练后才能评估MIG-06。
