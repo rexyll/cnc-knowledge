@@ -49,7 +49,12 @@ class SQLiteProviderFreezeEvidenceReplayLedger:
         if self.database_path.is_symlink():
             raise ProviderFreezeReplayLedgerError("replay ledger path must not be a symlink")
 
-    def consume_once(self, record: dict[str, Any]) -> None:
+    def consume_once(
+        self, record: dict[str, Any], *, authority_snapshot: dict[str, Any] | None = None
+    ) -> None:
+        # The snapshot was checked by validate_provider_freeze_attestation().
+        # This local SQLite reference ledger cannot compare it atomically with
+        # live etcd state; the shared Etcd ledger implements that stronger guard.
         required = {
             "provider_id", "evidence_id", "challenge_nonce_sha256",
             "claim_sha256", "freeze_id", "freeze_generation", "leader_id",
@@ -312,7 +317,7 @@ def validate_provider_freeze_attestation(
         "leader_epoch": leader_epoch,
         "lease_id": lease_id,
         "consumed_at_unix": now,
-    })
+    }, authority_snapshot=coordinator_snapshot)
 
     return {
         "format": "ch17-provider-freeze-attestation-result-v1",
