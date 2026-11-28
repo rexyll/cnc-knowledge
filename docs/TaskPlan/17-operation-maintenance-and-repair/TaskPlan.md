@@ -1522,4 +1522,4 @@
 - 明确Coordinator handoff必须等待Provider FENCE receipt；Provider不可达时阻断新grant，不允许降级绕过。
 - 记录边界：Provider侧屏障不等于etcd Lease物理过期瞬间同步撤销；若要求跨独立系统零窗口，必须有共享事务权威或Provider原生原子条件写。
 - **交付：** `docs/17-operation-maintenance-and-repair/provider-revocation-barrier-architecture.md`。
-- **状态：** 设计文档已创建；待章节/根计划同步及CI验收。本轮不实现代码，不连接真实基础设施，不进行生产变更。
+- **状态：** 设计文档、根计划、章节计划、README、迁移设计和TaskHistory均已同步；CI状态尚未取得，不标记本轮DONE。本轮不实现代码，不连接真实基础设施，不进行生产变更。
