@@ -935,7 +935,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
     def command(self, action, generation, freeze_id, *, now=None, scope=SCOPE):
         issued = time.time() if now is None else now
         claims = {
-            "format": "ch17-provider-write-freeze-command-v1",
+            "format": "ch17-provider-write-freeze-command-v2",
             "issuer_id": ISSUER_ID,
             "provider_id": "provider-test-a",
             "tenant_id": "tenant-a",
@@ -945,6 +945,11 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             "generation": generation,
             "issued_at_unix": issued,
             "expires_at_unix": issued + 30.0,
+            "coordinator_namespace": "/cnc/migration/isolated/provider-freeze-test/",
+            "leader_id": "coordinator-leader-a",
+            "leader_epoch": 1,
+            "leader_lease_id": 101,
+            "leader_lease_expires_at_unix": issued + 45.0,
         }
         return sign_provider_write_freeze_command(
             claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
@@ -1041,6 +1046,84 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         wrong_provider["command"]["provider_id"] = "provider-other"
         with self.assertRaises(FencingAttestationRejectedError):
             self.provider.apply_write_freeze_command(wrong_provider)
+
+    def test_provider_rejects_stale_leader_epoch_after_new_leader_is_observed(self):
+        first = self.command("FREEZE", 1, "leader-handoff")
+        self.provider.apply_write_freeze_command(first)
+
+        new_leader_claims = dict(self.command("UNFREEZE", 2, "leader-handoff")["command"])
+        new_leader_claims.update({
+            "leader_id": "coordinator-leader-b",
+            "leader_epoch": 2,
+            "leader_lease_id": 202,
+            "issued_at_unix": time.time(),
+            "expires_at_unix": time.time() + 25.0,
+            "leader_lease_expires_at_unix": time.time() + 40.0,
+        })
+        new_leader = sign_provider_write_freeze_command(
+            new_leader_claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        self.assertEqual(self.provider.apply_write_freeze_command(new_leader)["state"], "OPEN")
+        floor = self.provider.write_freeze_state(SCOPE)["leader_floor"]
+        self.assertEqual(floor["leader_epoch"], 2)
+        self.assertEqual(floor["leader_id"], "coordinator-leader-b")
+        self.assertEqual(floor["leader_lease_id"], 202)
+
+        stale_claims = dict(self.command("FREEZE", 3, "stale-leader-freeze")["command"])
+        stale_claims.update({
+            "leader_id": "coordinator-leader-a",
+            "leader_epoch": 1,
+            "leader_lease_id": 101,
+            "issued_at_unix": time.time(),
+            "expires_at_unix": time.time() + 20.0,
+            "leader_lease_expires_at_unix": time.time() + 35.0,
+        })
+        stale = sign_provider_write_freeze_command(
+            stale_claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "stale Coordinator Leader epoch"):
+            self.provider.apply_write_freeze_command(stale)
+        self.assertEqual(self.provider.write_freeze_state(SCOPE)["generation"], 2)
+
+    def test_same_leader_epoch_cannot_change_identity_lease_or_namespace(self):
+        self.provider.apply_write_freeze_command(self.command("FREEZE", 1, "same-epoch"))
+        claims = dict(self.command("UNFREEZE", 2, "same-epoch")["command"])
+        claims["leader_lease_id"] = 999
+        claims["issued_at_unix"] = time.time()
+        claims["expires_at_unix"] = time.time() + 20.0
+        claims["leader_lease_expires_at_unix"] = time.time() + 35.0
+        forged_handoff = sign_provider_write_freeze_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "identity or native Lease changed"):
+            self.provider.apply_write_freeze_command(forged_handoff)
+
+        claims["leader_lease_id"] = 101
+        claims["coordinator_namespace"] = "/cnc/admission/unified/v2/"
+        namespace_change = sign_provider_write_freeze_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "namespace changed"):
+            self.provider.apply_write_freeze_command(namespace_change)
+
+    def test_command_expiry_cannot_outlive_leader_lease(self):
+        claims = dict(self.command("FREEZE", 1, "lease-bound")["command"])
+        claims["issued_at_unix"] = time.time()
+        claims["expires_at_unix"] = time.time() + 30.0
+        claims["leader_lease_expires_at_unix"] = time.time() + 10.0
+        invalid = sign_provider_write_freeze_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "Leader Lease"):
+            self.provider.apply_write_freeze_command(invalid)
+
+        claims["expires_at_unix"] = time.time() + 5.0
+        claims["leader_lease_expires_at_unix"] = time.time() - 1.0
+        expired_lease = sign_provider_write_freeze_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        with self.assertRaisesRegex(FencingAttestationRejectedError, "Leader Lease"):
+            self.provider.apply_write_freeze_command(expired_lease)
 
     def test_historical_command_replay_after_unfreeze_never_reapplies_old_state(self):
         freeze = self.command("FREEZE", 1, "freeze-history")
