@@ -1518,3 +1518,16 @@
 - **最终验收：** [Knowledge Quality Run 46162907743](https://github.com/rexyll/cnc-knowledge/actions/runs/46162907743) 两个必需Job均success：全库776项unittest运行、40项按环境跳过（其余736项通过）；CH12数值资源测试143项通过；knowledge lint 0 errors / 5 warnings；CH17场景校验自检30项模拟、failed=0、business_test_status=NOT_RUN、external_connections=NO、writes=NO。
 - **交付同步：** CH17外部Floor恢复设计第12节、章节README、根/章节TaskPlan和Asia/Shanghai日期为2026-11-29的TaskHistory均已同步。实现与验收仅证明单进程SQLite wrapper及内存CAS测试fake；生产独立持久线性一致checkpoint backend仍未实现。
 - **状态：** DONE（2026-11-29；以最终主分支完整CI Run 46162907743为验收证据；生产外部权威、Grant-aware Restore及Cutover不在本轮范围内）。
+
+### 第九十九轮任务计划：Provider Grant Floor Etcd 原生单事务权威架构设计
+
+- **背景：** Round98已实现单进程SQLite wrapper与外部CAS接口，但该模式仍有SQLite提交和外部checkpoint推进之间的跨系统不确定窗口。仓库虽已有Etcd v3 KV/Txn primitive adapter，应用级 DurableCoordinatorAuthorityBackend 仍是SQLite服务语义，不能直接视为Provider Grant Floor的生产Etcd实现。
+- **目标：** 设计一个直接基于 CoordinatorAuthorityStore / EtcdV3CoordinatorAuthorityStore 的 Etcd-native Provider Grant Floor authority。scope状态、operation、Coordinator/Provider trust metadata、authority revision、单调事件序号和state-root checkpoint必须在同一个Etcd Txn中完成Compare+Put；不得再以“SQLite写入后更新etcd checkpoint”的双系统串行方式宣称原子。
+- **键布局：** 定义唯一隔离演练namespace /cnc/migration/isolated/{single-id}/provider-grant-floor/v1/；为meta、scope、operation、Provider key、Coordinator key和append-only event设计稳定键布局。由实体身份的规范化摘要派生路径，禁止调用方ID直接拼接任意路径。
+- **事务协议：** 规定FENCE reserve、ACTIVATE reserve、Provider signed Receipt confirm、trust-key lifecycle变更的Compare集合、成功分支写集合、revision推进、sequence推进和state-root链式摘要。Coordinator command / Provider Receipt验签所用trust row必须在相同Txn内通过VALUE/MOD revision Compare固定，防止读验签后密钥被并发撤销。
+- **未知结果恢复：** Etcd Txn transport timeout统一归类OUTCOME_UNKNOWN；只能以原operation ID和完全相同的signed envelope进行精确读取/重试。所有受影响key与meta checkpoint必须整体匹配预期后才确认成功；部分写集、身份/摘要不符或无法确定时进入隔离，不生成新operation ID、不跳代次、不接受人工摘要覆盖。
+- **回滚边界：** 同Txn中的meta sequence/state-root可证明正常运行期间写集原子推进，但不能自行检测整个Etcd cluster被旧snapshot整体回滚。单独定义域外witness/checkpoint要求：至少绑定最近被治理确认的Etcd revision、floor sequence和root digest；明确witness周期、RPO、恢复前预检及witness不可达时的fail-closed策略。不得暗示Etcd自身revision可防自身snapshot rollback。
+- **事务预算：** 按Etcd Txn compare/op/byte限制定义显式预算与失败策略；超预算不得静默拆分会破坏scope/operation/meta/root原子性的单个状态转移。多scope snapshot可线性一致Range读取，但需要同revision/事务内读保证。
+- **实施规格：** 给出未来EtcdProviderGrantFloorAuthority端口映射、schema/key示例、FENCE/ACTIVATE与Receipt确认事务图、精确unknown-outcome readback矩阵、密钥轮换并发、migration/bootstrap和故障测试清单；本轮仅冻结架构设计，不实现生产Adapter、不连接真实Etcd、不修改RBAC、不执行Restore/Cutover。
+- **交付：** 新增CH17 Etcd-native Floor原子权威设计文档；同步CH17 README、根/章节TaskPlan和TaskHistory。现有SQLite authority仍仅为本地参考实现，Grant历史通用Restore继续fail-closed。
+- **状态：** IN_PROGRESS（先完成计划登记，再执行设计与审查；通过main Quality CI后方可标记DONE）。
