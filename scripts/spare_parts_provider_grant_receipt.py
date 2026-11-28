@@ -317,6 +317,21 @@ def verify_provider_grant_receipt(
     ):
         raise ProviderGrantReceiptError("Provider receipt trust revision is invalid")
 
+    retirement = (
+        _timestamp(trust_key.retiring_effective_at, "key_retiring_effective_at")
+        if trust_key.retiring_effective_at is not None else None
+    )
+    revocation = (
+        _timestamp(trust_key.revocation_effective_at, "key_revocation_effective_at")
+        if trust_key.revocation_effective_at is not None else None
+    )
+    if trust_key.status == "ACTIVE" and (retirement is not None or revocation is not None):
+        raise ProviderGrantReceiptError("active Provider receipt key has retirement metadata")
+    if trust_key.status == "RETIRING" and (retirement is None or revocation is not None):
+        raise ProviderGrantReceiptError("retiring Provider receipt key metadata is inconsistent")
+    if trust_key.status == "REVOKED" and (retirement is None or revocation is None):
+        raise ProviderGrantReceiptError("revoked Provider receipt key metadata is incomplete")
+
     applied = claims["applied_at_unix"]
     now = time.time() if now_unix is None else _timestamp(now_unix, "verification_time_unix")
     if applied > now + MAX_CLOCK_SKEW_SECONDS:
@@ -325,16 +340,12 @@ def verify_provider_grant_receipt(
         raise ProviderGrantReceiptError("Provider receipt was signed before the key validity window")
     if not_after is not None and applied >= not_after:
         raise ProviderGrantReceiptError("Provider receipt was signed after the key validity window")
-    if trust_key.status == "REVOKED":
-        effective = trust_key.revocation_effective_at
-        if effective is None or applied >= float(effective):
-            raise ProviderGrantReceiptError("Provider receipt signing key was revoked at the applied time")
-    if trust_key.status in {"RETIRING", "REVOKED"}:
-        retirement = trust_key.retiring_effective_at
-        if retirement is None or applied >= float(retirement):
-            raise ProviderGrantReceiptError(
-                "Provider receipt was applied after the key stopped issuing new receipts"
-            )
+    if trust_key.status == "REVOKED" and applied >= revocation:
+        raise ProviderGrantReceiptError("Provider receipt signing key was revoked at the applied time")
+    if trust_key.status in {"RETIRING", "REVOKED"} and applied >= retirement:
+        raise ProviderGrantReceiptError(
+            "Provider receipt was applied after the key stopped issuing new receipts"
+        )
 
     expected = dict(expected_claims)
     if not expected or any(field not in _CLAIM_FIELDS for field in expected):
