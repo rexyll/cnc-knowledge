@@ -607,3 +607,5 @@ Provider schema升级至v6，新增`provider_scope_grants`与`provider_grant_com
 **边界：** 这是单机SQLite事务参考，不是etcd线性一致/多节点/quorum实现；SQLite自身不能证明数据库文件未从旧快照回滚，只有与该数据库独立保存的可信revision checkpoint才能用于检测回退。适配器不验证Provider回执签名/真实性，也尚未接入Provider命令应用路径或Unified schema-v2 authority。当前没有Grant-aware Restore；通用Restore对任何Grant历史备份仍必须拒绝。测试方法定义数量不是测试执行结果。
 
 Provider Grant 外部 Floor 本地参考适配器见 [外部单调 Floor 与 Grant-aware Restore 对账设计](provider-grant-external-floor-and-restore-reconciliation-design.md)：实现文件为 [spare_parts_provider_grant_floor.py](../../scripts/spare_parts_provider_grant_floor.py)，专项测试为 [test_spare_parts_provider_grant_floor.py](../../tests/test_spare_parts_provider_grant_floor.py)。本地 SQLite 适配器仅接受 `/cnc/migration/isolated/{single-id}/` namespace，是单机事务/CAS参考模型，不是 etcd quorum、线性一致生产 authority 或自身防回滚存储；Provider 回执来源认证与专用 Grant-aware Restore 仍未实现。
+
+Provider Grant 回执来源认证与签名证据协议设计见 [Provider Grant Floor 回执来源认证与签名证据设计](provider-grant-receipt-authentication-design.md)。该文档冻结 Provider 独立 Ed25519 回执签名、规范化 envelope、Provider key trust registry、FENCE/ACTIVATE 精确 command digest 绑定、回执幂等及响应丢失恢复要求；当前仍是协议设计，尚未实现签名回执或解除 Grant-aware Restore 门禁。
