@@ -1238,9 +1238,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         provider.backup_to(backup)
         with sqlite3.connect(backup) as connection:
             connection.execute(
-                """UPDATE provider_grant_commands
-                   SET fence_command_sha256=? WHERE action='ACTIVATE'""",
-                ("0" * 64,),
+                "DELETE FROM provider_grant_commands WHERE action='FENCE'"
             )
         with self.assertRaisesRegex(BackupStorageError, "broken FENCE/ACTIVATE receipt chain"):
             SQLiteFencedObjectStorageProvider.validate_backup(backup)
