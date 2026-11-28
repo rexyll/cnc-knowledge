@@ -506,3 +506,15 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 新增 `SQLiteProviderFreezeEvidenceReplayLedger` 作为单机参考实现：数据库文件权限0600，SQLite FULL同步，使用 `BEGIN IMMEDIATE` 原子插入，并通过唯一约束阻止同一Provider下的 evidence ID、challenge nonce 或 freeze ID/generation 再次消费。校验失败不消耗标识；ledger写入异常必须fail-closed。
 
 **关键安全边界：** 此模块只验证Provider签名声明，不连接Provider或确认实际对象/数据写入路径已被锁住。因此 `provider_write_freeze_enforced` 仍为false，应用启用和Provider操作权限也始终为false。Coordinator快照当前是调用方输入，生产接入必须改为认证的线性一致权威读取。SQLite replay ledger仅适合同机演练，不具备跨主机共识，也无法防止可信管理员回滚数据库备份；生产多实例需使用共享线性一致、具备耐久性与CAS语义的账本（例如隔离etcd Txn），并将challenge nonce的签发与消费绑定在同一权威生命周期内。此轮未触碰真实Provider/KMS/etcd、生产数据或RBAC。
+
+
+
+## CH17-T006 共享 etcd Provider freeze 防重放账本（第八十四轮）
+
+新增 `scripts/spare_parts_provider_freeze_etcd_replay_ledger.py`，并将其接入既有 `validate_provider_freeze_attestation()`。此实现使用现有 `CoordinatorAuthorityStore` 的线性一致Get和原子Txn端口，目标namespace只接受隔离迁移路径 `/cnc/migration/isolated/{single-id}/`。
+
+每次冻结证据消费会原子创建四个永久唯一键：Provider/evidence UUID、Provider/challenge nonce digest、Provider/freeze generation、Provider/freeze ID。Txn将四个键的VERSION=0比较与四个Put一次提交，键不附着Coordinator Leader Lease。与防重放键写入同一Txn的还有对 `scheduler/state` 和 `coordinator/leader` 的VALUE/MOD精确比较。写入前读取并校验Leader ID、epoch、native Lease ID及TTL attachment、expires_at，以及Coordinator aggregate中的逐scope floors；任何竞态更新都会让CAS失败。
+
+Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字节匹配才确认已提交；四个键全部不存在时，重新确认Coordinator binding后只重试完全相同的Txn；部分写入、冲突或持续未知均fail-closed/QUARANTINE，不自动修补。
+
+**证据边界：** 自动化测试使用 `EtcdV3CoordinatorAuthorityStore` 与 `InMemoryEtcdV3Client`，证明当前客户端Txn映射、CAS竞态和未知结果分类契约；它不提供etcd Raft/Quorum、磁盘耐久性、跨主机故障或真实RBAC保证。namespace虽然限定为isolated路径，但真实部署仍须用一次性临时集群及服务端最小权限RBAC。SQLite ledger仍只适用于同机参考，生产多实例需真实etcd验证；Provider实际对象/multipart写路径是否真正冻结仍未验证，授权输出继续全部为false。
