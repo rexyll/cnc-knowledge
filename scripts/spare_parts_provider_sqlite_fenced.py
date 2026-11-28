@@ -322,9 +322,6 @@ class SQLiteFencedObjectStorageProvider:
             row = connection.execute(
                 "SELECT value FROM provider_meta WHERE key='provider_grant_receipt_signing_required'"
             ).fetchone()
-            existing_commands = int(connection.execute(
-                "SELECT COUNT(*) FROM provider_grant_commands"
-            ).fetchone()[0])
             requested = "1" if self.require_provider_signed_grant_receipts else "0"
             if row is None:
                 # Existing legacy command rows remain unverified. Enabling strict
@@ -1456,6 +1453,8 @@ class SQLiteFencedObjectStorageProvider:
                     raise SQLiteProviderGrantRejectedError(
                         "historical Provider Grant command lacks a durable signed Provider receipt; re-fence is required"
                     )
+                if self.require_provider_signed_grant_receipts:
+                    self._verify_provider_native_receipt_row(receipt)
                 if (
                     receipt["envelope_json"] is None
                     or receipt["signer_public_key_base64"] is None
