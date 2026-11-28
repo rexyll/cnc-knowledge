@@ -1612,6 +1612,8 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertIn("provider_write_freeze_commands", tables)
         self.assertIn("provider_write_freeze_leader_floors", tables)
         self.assertIn("provider_write_freeze_command_leaders", tables)
+        self.assertIn("provider_scope_grants", tables)
+        self.assertIn("provider_grant_commands", tables)
 
     def test_schema_v3_provider_database_adds_leader_epoch_floors(self):
         with sqlite3.connect(self.database) as connection:
@@ -1634,9 +1636,11 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "4")
+        self.assertEqual(version, "5")
         self.assertIn("provider_write_freeze_leader_floors", tables)
         self.assertIn("provider_write_freeze_command_leaders", tables)
+        self.assertIn("provider_scope_grants", tables)
+        self.assertIn("provider_grant_commands", tables)
 
     def test_write_transaction_and_freeze_command_have_one_sqlite_order(self):
         checked = threading.Event()
