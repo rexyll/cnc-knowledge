@@ -539,7 +539,7 @@ Provider SQLite schema升级到v5，新增：
 - `provider_scope_grants`：每个tenant/scope保存Coordinator Leader身份、Provider grant generation、grant ID、FENCED/ACTIVE状态、grant expiry、FENCE digest和ACTIVATE digest。
 - `provider_grant_commands`：保存完整命令digest、issuer/key、Provider/tenant/scope、动作、代次、Leader/Lease绑定、FENCE引用、结果和提交时间。
 
-FENCE必须使用比该scope当前记录更高的Leader epoch，并将状态推进到FENCED；若无历史grant，首个FENCE可从代次1开始。ACTIVATE只能在当前状态FENCED时执行，必须匹配完整pending Leader/Lease/grant身份，引用当前FENCE digest，并验证数据库中存在相同scope/Provider/tenant/epoch且结果为FENCED的持久receipt。FENCE与ACTIVATE各自消耗一个单调grant generation。
+FENCE若更换Leader/Lease身份，必须使用比该scope当前记录更高的Leader epoch；同epoch只允许完全相同Leader/Lease主动撤销当前ACTIVE grant，已FENCED状态不得重复推进。若无历史grant，首个FENCE可从代次1开始。ACTIVATE只能在当前状态FENCED时执行，必须匹配完整pending Leader/Lease/grant身份，引用当前FENCE digest，并验证数据库中存在相同scope/Provider/tenant/epoch且结果为FENCED的持久receipt。FENCE与ACTIVATE各自消耗一个单调grant generation。
 
 可选`require_revocable_grant=True`开启Provider写入门禁。写入证明必须包含成对的`provider_grant_id`和`provider_grant_generation` claims；四种Provider实际mutation（对象PUT、multipart begin、part、complete）均在现有`_authorized_transaction`/BEGIN IMMEDIATE内部读取grant状态，要求ACTIVE、ID/generation精确匹配且未过期。FENCE使用同一数据库的BEGIN IMMEDIATE事务，因此不能越过已持有写锁的mutation；若mutation先获得锁并提交，则它在线性化顺序上先于FENCE；FENCE先提交后旧grant不能再写。
 
