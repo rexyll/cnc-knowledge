@@ -1642,5 +1642,6 @@
 - 明确隔离演练namespace、键命名、事务容量预算、不可拆分写集合、bootstrap迁移以及未来测试矩阵。
 - **交付：** provider-grant-floor-etcd-native-atomicity-design.md；本轮只冻结设计，不连真实Etcd、不改生产Unified authority / RBAC，不运行Restore或Cutover。
 - **设计进展（2026-11-29）：** 已审计现有Etcd KV/Txn primitive与SQLite业务服务边界，新增 Etcd-native Floor 原子权威设计文档及逐笔域外Witness严格耐久模式。明确Etcd Txn内状态/operation/trust/event/state-root原子推进、验签trust row Compare、unknown-outcome exact readback，以及Etcd整群snapshot rollback必须由域外witness检测。
+- **审查补强：** 已补充Witness PREPARE/Etcd PREPARE超时后不得仅凭一次空Range就ABORT、Etcd COMMIT与ABORT的同intent Compare竞争、COMMIT后只能完成Witness COMMIT/Etcd FINALIZE；也明确域外root witness只能检测整体回滚，不能凭摘要重建数据，必须有可信事件正文/备份或进入人工逐scope重建。v1全局meta序列化会形成吞吐热点。
 - **限制：** 本轮仅架构设计；Etcd-native Provider Grant Floor业务服务、生产witness adapter、Etcd实际多节点/RBAC/快照恢复演练均未实现或验证。
 - **状态：** IN_PROGRESS。
