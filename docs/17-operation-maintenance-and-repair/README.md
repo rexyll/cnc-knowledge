@@ -608,7 +608,7 @@ Provider schema升级至v6，新增`provider_scope_grants`与`provider_grant_com
 
 Provider Grant 外部 Floor 本地参考适配器见 [外部单调 Floor 与 Grant-aware Restore 对账设计](provider-grant-external-floor-and-restore-reconciliation-design.md)：实现文件为 [spare_parts_provider_grant_floor.py](../../scripts/spare_parts_provider_grant_floor.py)，专项测试为 [test_spare_parts_provider_grant_floor.py](../../tests/test_spare_parts_provider_grant_floor.py)。本地 SQLite 适配器仅接受 `/cnc/migration/isolated/{single-id}/` namespace，是单机事务/CAS参考模型，不是 etcd quorum、线性一致生产 authority 或自身防回滚存储。Provider Receipt 签名协议和外部 Floor 验签已在第九十五轮实现；第九十六轮又将 Provider 本地 FENCE/ACTIVATE 同事务 Receipt 持久化和按 command digest 查询接入 SQLite 参考实现。生产 Provider、KMS/HSM、外部 trust control plane 与专用 Grant-aware Restore 仍未实现。
 
-Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执来源认证与签名证据设计](provider-grant-receipt-authentication-design.md)；本地实现见 [Receipt 协议模块](../../scripts/spare_parts_provider_grant_receipt.py)、[外部 Floor schema v4 与验签门禁](../../scripts/spare_parts_provider_grant_floor.py) 及其 [Floor 测试](../../tests/test_spare_parts_provider_grant_floor.py) / [协议测试](../../tests/test_spare_parts_provider_grant_receipt.py)。Floor 本地验签仍依赖独立 Provider key registry；Provider SQLite 本地实现会在 FENCE/ACTIVATE 同一写事务内生成并持久化 signed Receipt，并提供按 exact command digest 查询。但两者仍是单机 SQLite 参考模型：Provider 回执公钥副本只用于本地自洽校验，外部 Floor registry 才是签名者信任锚；真实 Provider/KMS/HSM/production trust plane 与 Grant-aware Restore 尚未实现。
+Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执来源认证与签名证据设计](provider-grant-receipt-authentication-design.md)；本地实现见 [Receipt 协议模块](../../scripts/spare_parts_provider_grant_receipt.py)、[外部 Floor schema v5、Coordinator/Provider 双签名验签门禁](../../scripts/spare_parts_provider_grant_floor.py) 及其 [Floor 测试](../../tests/test_spare_parts_provider_grant_floor.py) / [协议测试](../../tests/test_spare_parts_provider_grant_receipt.py)。Floor 本地验签仍依赖独立 Provider key registry；Provider SQLite 本地实现会在 FENCE/ACTIVATE 同一写事务内生成并持久化 signed Receipt，并提供按 exact command digest 查询。但两者仍是单机 SQLite 参考模型：Provider 回执公钥副本只用于本地自洽校验，外部 Floor registry 才是签名者信任锚；真实 Provider/KMS/HSM/production trust plane 与 Grant-aware Restore 尚未实现。
 
 ### 第九十五轮：Provider Grant Receipt 协议模块与 Floor schema v4
 
@@ -632,5 +632,19 @@ Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执
 - Provider→Floor 端到端测试使用实际本地 Provider 签名输出 FENCE 和 ACTIVATE receipt，由 Round95 外部 Floor 独立 Provider key registry 验签并推进 FENCED/ACTIVE；同时覆盖事务提交前故障全回滚、response loss、重启/幂等、精确 lookup、schema v6→v7、strict policy 不可降级、receipt digest 及伪造 signature 篡改和备份拒绝。
 - **验证：** [Knowledge Quality Run 46157250066](https://github.com/rexyll/cnc-knowledge/actions/runs/46157250066) 两个必需 Job 均 success；全库 745 项测试运行、40 项按环境跳过；CH12 数值资源 143 项通过；knowledge lint 0 errors / 5 warnings，结构/数据检查 0 errors。
 
-**剩余信任缺口：** 外部 Floor 的 reserve API 仍接受调用方传入的 Coordinator command digest 和 claims；Floor 尚未自行验签/验证 Coordinator 命令来源。该缺口进入第九十七轮。另：Provider Receipt 公钥副本只用于 Provider 本地自洽签名检查，独立 Floor key registry 才承担 Provider signer 信任；当前仍没有生产密钥管理、KMS/HSM、独立多节点 authority 或 Grant-aware Restore。
+**第九十六轮结束时的信任缺口（已由第九十七轮本地实现补齐）：** 当时外部 Floor reserve API 仍接受调用方传入的 Coordinator command digest 和 claims。第九十七轮现已让 Floor 直接接收并验证 Coordinator signed command envelope。剩余生产边界仍包括：Provider Receipt 公钥副本只用于 Provider 本地自洽签名检查，独立 Floor key registry 才承担 Provider signer 信任；当前仍没有生产密钥管理、KMS/HSM、独立多节点 authority 或 Grant-aware Restore。
+
+
+### 第九十七轮：External Floor Coordinator Signed Command Trust（schema v5）
+
+- 外部 Floor `scripts/spare_parts_provider_grant_floor.py` 升级至 SQLite schema v5，新增独立 Coordinator Ed25519 command key registry，按 issuer/key ID保存public key、SHA-256 fingerprint、ACTIVE/RETIRING/REVOKED、not_before/not_after、retiring/revocation effective time、reason及trust revision。
+- 新Floor默认启用 `coordinator_command_auth_required=1`；v1–v4历史数据库迁移到v5后也默认strict。只有显式创建的本地测试/兼容库可配置 `allow_legacy_unsigned_reservations=True` 使用原始digest/claims参数式API；严格Floor不可降级。
+- 新增显式本地owner key注册/退役/撤销管理API。新reservation只接受ACTIVE Coordinator key；RETIRING/REVOKED key不能创建新reservation。已受信任的operation保存Coordinator signer key ID、key fingerprint和trust revision，作为不可伪造补写的审计字段。
+- 新增 `reserve_fence_from_command(operation_id, key, command_envelope, expected_revision)` 和 `reserve_activate_from_command(...)`。调用方必须显式传入预期 `ProviderGrantScopeKey`；Floor把签名claims内Provider/Tenant/scope与调用方目标逐字段匹配，不允许signed command自行切换scope。
+- Floor在同一SQLite `BEGIN IMMEDIATE`事务内拒绝重复JSON key/非有限常量，使用Coordinator原签名canonicalization重新计算完整command digest，独立查询Coordinator trust registry并验Ed25519签名；校验issuer、Provider/Tenant/scope、FENCE/ACTIVATE action、Grant ID、generation、Coordinator namespace、Leader epoch/native Lease、issued/expiry时间和FENCE digest。command generation必须等于Floor下一generation，ACTIVATE必须引用最近一次已确认FENCE。
+- 所有签名/identity/lifecycle/time/generation/CAS校验完成前，不推进scope revision或authority revision，不创建scope、不写pending operation。`confirm_provider_receipt()`仍要求Round95 Provider signed Receipt；严格模式下旧迁移PENDING operation若无Coordinator signer ID/fingerprint/trust revision，不能只凭Provider Receipt被补认证并确认。
+- Provider→Floor集成测试改为先注册独立Coordinator command public key及Provider receipt public key，再将真实Provider输出的FENCE/ACTIVATE command envelope传入Floor signed-command API；Floor验签后再通过Provider signed Receipt确认状态。专项测试覆盖命令签名篡改、未知/撤销key、key rotation、重复JSON key、跨Provider/Tenant/scope、wrong generation、时间/native Lease上限、裸claims拒绝、strict no-downgrade、v1→v5迁移、legacy PENDING fail-closed和失败不推进revision。
+- **验证：** [Knowledge Quality Run 46159157703](https://github.com/rexyll/cnc-knowledge/actions/runs/46159157703) 两个必需Job均success；全库757项测试运行、40项按环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings；结构/数据检查0 errors。该Run覆盖Floor Coordinator trust实现、专项测试和legacy pending门禁。后续README/设计文档/TaskHistory完整同步以最终文档提交CI为准。
+
+**保留限制：** 当前只证明单机SQLite Floor和合成Ed25519 key。Coordinator key注册表是本地数据库owner管理入口，不含生产审批/远程KMS/HSM、多节点发布或外部防回滚checkpoint；Floor SQLite文件和trust registry自身仍可被旧快照覆盖。没有接入真实Coordinator/etcd/Provider/object storage/IAM/RBAC，不实现Grant-aware Restore，不解除含Grant历史备份的通用Restore fail-closed门禁。Production Unified schema-v2仍为唯一authority。
 
