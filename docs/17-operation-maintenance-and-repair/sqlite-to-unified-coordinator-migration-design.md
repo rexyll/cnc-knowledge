@@ -358,3 +358,20 @@ Checkpoint key位于`{prefix}/staging/sqlite-import/{candidate_digest}/checkpoin
 
 Quality Run [46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/46029534619) success：全库594 unittest（40 skipped）、CH12数值资源143项通过、knowledge lint 0 errors/5 warnings、结构检查0 errors。该结果仅验证只读协议模型、恢复分类和仓库质量门禁，不构成真实etcd写入、故障注入或生产迁移证据。
 
+### 15.6 第七十九轮：精确checkpoint链与内存事务执行验证
+
+第七十八轮的batch未知结果分类曾允许根据plan digest、完成数量下限和当前batch request值匹配来认定COMMITTED。此判据不足以证明读回checkpoint确实由该计划生成：具有相同plan digest但被伪造或损坏的游标/progress digest，可能被误认为合法的后续checkpoint。
+
+现要求调用方提供该批次及其所有后续批次由不可变计划生成的精确checkpoint字节值集合。只有线性一致读回值逐字节命中该集合、checkpoint结构字段有效、完成数量覆盖目标批次且目标request值全部逐字节匹配，才允许分类COMMITTED。仍处于精确前驱checkpoint且本批所有key均不存在时，才允许分类NOT_COMMITTED_RETRY_SAME_TXN；其他情况一律QUARANTINE。此规则同时允许进程在后续批次已经完成后，恢复判定先前批次的响应丢失。
+
+新增 `tests/test_spare_parts_sqlite_staged_import_execution.py`，通过 `EtcdV3CoordinatorAuthorityStore` 和 `InMemoryEtcdV3Client` 执行实际的adapter Txn请求映射。测试覆盖：
+
+- 模拟进程在首批完成后退出，新的store adapter读取checkpoint并从下一批继续；所有request索引仅创建一次，`scheduler/state`直到所有批次完成后才出现。
+- Txn提交后模拟丢失响应，线性一致读回checkpoint与本批值后判定COMMITTED，不盲目重放。
+- Txn提交前模拟连接中断，读回精确前驱checkpoint且所有目标值不存在后，允许重试完全相同Txn。
+- 竞争writer在导入Txn评估比较前先写入一个目标request key；导入CAS失败，其他request目标保持不存在，checkpoint不推进，并进入QUARANTINE。
+- 最终发布Txn提交后响应丢失，通过精确state、最终checkpoint与Leader key读回判定COMMITTED。
+
+新增的严格判据单元测试还证明：即使plan digest和request值匹配，只要progress digest被篡改、checkpoint不属于本计划的预期后继链，就不能判定COMMITTED。
+
+**证据边界：** `InMemoryEtcdV3Client`是单进程测试替身，不提供Raft、Quorum、磁盘耐久性、真正多客户端网络并发、节点故障或服务端配置约束。新store adapter重建只模拟进程对象重建，并不等同真实OS进程重启后的服务器持久性验证。本轮没有etcd真实Range/Txn/Lease写入、RBAC修改、应用启停、生产namespace访问或cutover。真实临时三节点etcd故障注入仍属于MIG-06后续门禁。
