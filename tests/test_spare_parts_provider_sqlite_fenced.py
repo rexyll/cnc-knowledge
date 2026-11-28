@@ -1212,6 +1212,67 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             )
         self.assertEqual(provider.provider_grant_state(SCOPE)["state"], "FENCED")
 
+    def test_same_leader_can_fence_and_rotate_its_own_grant(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        lease_expiry = now + 180.0
+        fence1 = self.grant_command(
+            "FENCE", 1, "grant-rotation-a",
+            issued_at=now, lease_expires=lease_expiry,
+        )
+        digest1 = hashlib.sha256(
+            __import__("json").dumps(fence1, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence1)
+        provider.apply_provider_grant_command(self.grant_command(
+            "ACTIVATE", 2, "grant-rotation-a",
+            issued_at=now + 1.0, lease_expires=lease_expiry,
+            expires=now + 120.0, fence_digest=digest1,
+        ))
+
+        old_key = SCOPE + "/grant/rotation-old.bin"
+        old_proof = self.proof(
+            old_key, 50, "object:put_if_absent", "rotation-old",
+            grant_id="grant-rotation-a", grant_generation=2,
+        )
+        fence2 = self.grant_command(
+            "FENCE", 3, "grant-rotation-b",
+            leader_epoch=1, leader_id="coordinator-leader-1",
+            leader_lease_id=101, issued_at=now + 2.0,
+            lease_expires=lease_expiry,
+        )
+        digest2 = hashlib.sha256(
+            __import__("json").dumps(fence2, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        self.assertEqual(provider.apply_provider_grant_command(fence2)["state"], "FENCED")
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            provider.put_if_absent_fenced(
+                old_key, b"old-grant", fencing_scope=SCOPE,
+                fencing_token=50, idempotency_key="rotation-old",
+                fencing_attestation=old_proof,
+            )
+
+        provider.apply_provider_grant_command(self.grant_command(
+            "ACTIVATE", 4, "grant-rotation-b",
+            leader_epoch=1, leader_id="coordinator-leader-1",
+            leader_lease_id=101, issued_at=now + 3.0,
+            lease_expires=lease_expiry, expires=now + 120.0,
+            fence_digest=digest2,
+        ))
+        new_key = SCOPE + "/grant/rotation-new.bin"
+        new_proof = self.proof(
+            new_key, 51, "object:put_if_absent", "rotation-new",
+            grant_id="grant-rotation-b", grant_generation=4,
+        )
+        stored = provider.put_if_absent_fenced(
+            new_key, b"rotated", fencing_scope=SCOPE,
+            fencing_token=51, idempotency_key="rotation-new",
+            fencing_attestation=new_proof,
+        )
+        self.assertEqual(stored.data, b"rotated")
+        self.assertEqual(provider.provider_grant_state(SCOPE)["leader_epoch"], 1)
+        self.assertEqual(provider.provider_grant_state(SCOPE)["grant_generation"], 4)
+
     def test_grant_receipt_recovers_lost_fence_response(self):
         import json
         provider = self.enable_revocable_grants()
