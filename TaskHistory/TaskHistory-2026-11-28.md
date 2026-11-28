@@ -452,3 +452,40 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Validation: get_commit_combined_status returned no status entries; the available commit-workflow lookup returned no workflow runs for the test commit. No local checkout/test execution was performed. Do not mark Round 92 or Round 90 DONE from source inventory.
 - Safety boundary: this is a single-host SQLite reference, not etcd linearizable/quorum authority or production integration. The adapter stores Provider receipt digests but does not authenticate the receipt; a future Coordinator must verify an authenticated Provider status response. No Provider command path, Unified schema-v2 authority, real etcd/Provider/KMS/HSM, IAM/RBAC, production namespace, Restore, candidate import, application activation or Cutover was touched.
 - Status: MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority; ASSET-000092 remains PROPOSED_NOT_APPROVED / NOT_RUN.
+
+## CNC Knowledge Base — Round 93（Provider Grant Floor namespace 收敛与CI验收完成）
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: Restrict the local Provider Grant Floor reference adapter to isolated Coordinator namespaces and close the remaining test/receipt-validation defects found during full-suite CI.
+
+### Code and test changes
+
+- Restricted `SQLiteProviderGrantFloorAuthority._namespace()` to exactly `/cnc/migration/isolated/{single-id}/`; the single ID segment follows `[A-Za-z0-9][A-Za-z0-9._:-]{0,127}`. Validation occurs before a write transaction, scope creation, generation reservation or revision change.
+- Added negative tests for Unified/production namespace prefixes, the isolated root without an ID, additional path levels, dot traversal, percent-encoded traversal and backslashes. Rejected inputs leave the scope IDLE and both scope/authority revisions unchanged.
+- Updated namespace immutability coverage to use a second syntactically valid isolated ID; the established scope still rejects namespace replacement.
+- Corrected the Floor test module import to the actual `ProviderGrantScopeKey` class. The pending-FENCE ACTIVATE case now asserts that pending operation state blocks a second reservation before confirmation.
+- Fixed Provider ACTIVATE receipt lookup to select its durable command digest. Aligned persisted receipt and backup validation with the verifier's bounded five-second command clock-skew allowance while retaining signed-expiry enforcement.
+- Adjusted the synthetic test command helper so its default grant expiry never exceeds the Coordinator native Lease expiry. The receipt-chain corruption test now removes the referenced FENCE receipt instead of editing a field covered by the ACTIVATE signature.
+
+### Documentation and plans
+
+- Added Round 93 namespace and receipt-validation details to `provider-grant-external-floor-and-restore-reconciliation-design.md`.
+- Indexed the design document, adapter module and focused tests in CH17 README.
+- Updated root TaskPlan and CH17 TaskPlan with Round 93 completion and Round 94 receipt-authentication design tasks.
+- Added this Round 93 result record.
+
+### Validation
+
+- [GitHub Actions Knowledge Quality Run 46152883043](https://github.com/rexyll/cnc-knowledge/actions/runs/46152883043): both required jobs succeeded.
+- Full repository unittest: 707 tests run, 40 skipped by environment guards; all non-skipped tests passed.
+- CH12 numerical resource tests: 143 passed.
+- Repository knowledge lint: 0 errors / 5 warnings; additional repository structure/data checks: 0 errors.
+
+### Safety boundary / remaining gaps
+
+- The SQLite adapter remains a same-host reference, not etcd linearizable KV/Txn, Raft quorum, multi-host HA or rollback-resistant storage. It cannot detect rollback of its own SQLite snapshot without a trusted checkpoint outside that database/backup domain.
+- The adapter stores a Provider receipt digest but does not yet authenticate the receipt's origin. Round 94 will design a signed Provider receipt evidence contract and verifier trust model.
+- FENCE_PENDING is only an external reservation; the Provider Grant remains usable until the Provider-native FENCE transaction commits. The Provider FENCE remains the mutation revocation linearization point.
+- No real etcd, remote Provider, KMS/HSM, cloud object storage or IAM/RBAC was contacted; no production authority/namespace, candidate import, restore, application activation or Cutover was changed or executed. Generic Restore for any Provider Grant history remains fail-closed.
+- MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
