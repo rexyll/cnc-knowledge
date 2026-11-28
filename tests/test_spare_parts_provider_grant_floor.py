@@ -3,8 +3,18 @@ from __future__ import annotations
 import hashlib
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+from scripts.spare_parts_provider_grant_receipt import (
+    CLAIMS_FORMAT as RECEIPT_CLAIMS_FORMAT,
+    canonical_receipt_json,
+    sign_provider_grant_receipt,
+)
 
 from scripts.spare_parts_provider_grant_floor import (
     ProviderGrantFloorConflict,
