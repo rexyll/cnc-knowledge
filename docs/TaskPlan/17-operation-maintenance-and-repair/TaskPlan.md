@@ -1647,3 +1647,4 @@
 - **最终设计审查：** 补充未知Etcd PREPARE的intent取消保护、COMMIT/ABORT同intent compare竞争、COMMIT后禁止ABORT、snapshot rollback后的数据重建材料要求，以及单一全局meta序列化的吞吐限制。
 - **最终验证：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663) 两个必需Job均success；全库776项unittest运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings；结构/data检查0 errors。
 - **状态：** DONE（2026-11-29；本轮设计任务通过主分支CI；Etcd-native服务和生产witness仍待后续实现）。
+- **最终文档同步CI：** [Knowledge Quality Run 46164006077](https://github.com/rexyll/cnc-knowledge/actions/runs/46164006077) 两个必需Job均success，覆盖最终TaskPlan/README/TaskHistory同步。
