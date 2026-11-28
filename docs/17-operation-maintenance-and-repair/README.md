@@ -552,3 +552,12 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 - 追加防回退：Coordinator namespace必须为规范绝对前缀；同一epoch/Lease ID的Lease expiry不得低于Provider已观察值。
 
 - v4备份校验强制要求freeze scope、command receipt、Leader floor和command-Leader审计四类表全部存在；备份恢复保留Leader epoch/Lease绑定。
+
+
+## CH17-T004 Provider Freeze 在线 Leader 校验（第八十八轮）
+
+- 新增[Provider Freeze 在线 Coordinator Leader / Native Lease 校验](provider-online-coordinator-leader-verification.md)。
+- 新增在线只读校验器：通过单次线性一致前缀Range同时读取Scheduler aggregate和Leader TTL key，验证Leader ID、epoch、native Lease ID、key的Lease attachment与expiry。
+- Provider增加可选 `require_online_leader_status=True`。新命令在线校验失败或store不可用时fail closed；精确历史receipt重放仍优先返回历史结果。
+- **重要限制：** etcd Range与Provider SQLite commit没有共同事务，仍存在检查后撤销的TOCTOU窗口。本轮不是跨系统原子fencing，不代表生产接入或stale-Leader风险彻底消除。
+- 测试使用合成store/fake checker；真实三节点etcd、真实Provider和网络分区联合验证仍未执行。
