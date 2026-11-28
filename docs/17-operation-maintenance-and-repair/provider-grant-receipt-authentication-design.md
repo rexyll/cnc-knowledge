@@ -353,3 +353,76 @@ Registry 不得仅从待验签 receipt 自身下载 public key 并自动信任�
 Provider signer key 仍只是测试用内存 Ed25519 key；没有接入 KMS/HSM、生产 secret store、Provider 集群 key identity 或独立 trust-registry 控制平面。签名的 `applied_at_unix` 是 Provider 声明并签名的时间，不是独立可信时间戳；若受信私钥被攻陷，攻击者仍可能回填历史时间，生产部署需要不可变 Provider 事件/可信计时或其他审计机制。SQLite Floor 和 trust registry 也仍可能被旧快照覆盖，不能声称自身防回滚。
 
 本轮不连接真实 etcd、Provider、KMS/HSM、object storage 或 IAM/RBAC；不修改 Unified schema-v2 生产 authority；不执行导入、Restore、应用激活或 Cutover。任何含 Provider Grant 历史的通用 Restore 继续 fail-closed。
+
+
+## 15. 第九十六轮：Provider SQLite 原子签名回执实现
+
+第九十六轮已将本设计从纯协议/Floor验签推进至本地 Provider SQLite 数据面参考实现。该实现仍只证明同机 SQLite 事务语义，不代表远程对象存储或生产 Provider 集群能力。
+
+### 15.1 Provider schema 与 signer 注入
+
+$scripts/spare_parts_provider_sqlite_fenced.py$ 已升级至 schema v7。原 $provider_grant_commands.envelope_json$ 与 $signer_public_key_base64$ 继续表示 Coordinator signed command，不与 Provider Receipt 混用；新增独立列：
+
+- $provider_receipt_envelope_json$
+- $provider_receipt_digest$
+- $provider_receipt_key_id$
+- $provider_receipt_public_key_base64$
+
+构造器通过 $provider_receipt_signing_key$、$provider_receipt_key_id$ 和 $require_provider_signed_grant_receipts$ 注入独立 Provider Ed25519 private key。严格模式只接受真实 Ed25519 private-key 对象；拒绝与Coordinator command signer使用同一key ID或相同公钥。private key只留在进程内，绝不写入Provider SQLite/Floor SQLite或备份。
+
+Provider meta持久化 $provider_grant_receipt_signing_required$。一旦strict mode启用，之后Provider实例不能通过关闭配置降级。迁移进来的历史命令/receipt字段为空时继续保留为legacy history，不补签、不伪造可信证据，也不能进入strict active grant链。
+
+### 15.2 同事务FENCE/ACTIVATE和精确查询
+
+FENCE/ACTIVATE在Provider既有 $BEGIN IMMEDIATE$ 事务中完成：
+
+1. 验证Coordinator签名命令、Provider/Tenant、Coordinator Leader/native Lease及当前Grant状态；
+2. 更新Provider scope Grant状态；
+3. 持久化原Coordinator command envelope和签名公钥副本；
+4. 构造本设计第3节的Provider receipt claims，绑定精确command digest、FENCE digest、命令issue/expiry、Leader/Lease及Provider applied time；
+5. 使用独立Provider private key签名、生成JCS canonical envelope并计算完整SHA-256；
+6. 在同一事务中保存Provider Receipt envelope、digest、key ID和public-key副本后提交。
+
+签名/序列化/SQL写入或commit前故障都会使Grant state、Coordinator command receipt和Provider Receipt一起回滚。事务提交前不会有可查询的成功Receipt。
+
+新增精确查询API：
+
+`get_provider_grant_receipt(provider_id, tenant_id, command_sha256)`
+
+查询必须匹配当前Provider身份和tenant，并只按原始Coordinator command digest精确匹配。查询会重新验证Coordinator command signature、Provider Receipt signature、完整canonical digest和字段绑定；不存在返回NOT_FOUND（Python $null$），历史command缺少Provider Receipt则拒绝而不是构造替代回执。相同command的幂等重放也必须重新验证原持久化Receipt并返回ALREADY_APPLIED；响应丢失时按原command digest可以读取同一Envelope/digest，不重新分配generation。
+
+### 15.3 Mutation和Backup门禁
+
+strict mode下，每个当前ACTIVE Grant的FENCE和ACTIVATE Provider Receipt均必须存在；Provider在object/multipart mutation事务中重新验证两条Provider Receipt，且检查它们与Coordinator command、Provider scope Grant和FENCE/ACTIVATE chronology一致后才放行。
+
+Provider backup validation会对有Provider Receipt字段的命令逐条执行：
+- Provider Receipt envelope必须是RFC 8785 canonical JSON；
+- 重算完整envelope SHA-256必须等于持久化digest；
+- Provider Ed25519签名必须通过验证，且签名key/public key不得与Coordinator command signer复用；
+- receipt claims必须与原Coordinator signed command及Provider command row逐字段一致；
+- 当前strict ACTIVE Grant必须有完整FENCE/ACTIVATE Provider Receipt链；缺失、伪造、篡改或断链时拒绝备份。
+
+历史未签名命令允许作为历史记录保留，但不会被自动补签，也不能作为当前strict ACTIVE授权链。Provider中保存的Provider receipt public-key副本只用于本地自洽验签，不是独立信任锚；外部Floor的Provider key trust registry仍是签名者信任来源。
+
+### 15.4 端到端验证
+
+Round96端到端测试由真实本地Provider签名模块生成FENCE和ACTIVATE Receipt，并将Envelope提供给Round95的外部Floor，由Floor独立Provider key registry验证后推进FENCED/ACTIVE。专项测试另覆盖：
+- 事务提交前注入故障，Grant state、command receipt、Provider Receipt一起回滚；
+- commit后响应丢失、同command重放、Provider重启后精确digest查询；
+- Provider/Tenant/command digest精确匹配；
+- strict signing policy不可降级；
+- schema v6→v7迁移；
+- Coordinator/Provider signer key分离；
+- Provider Receipt digest篡改，以及重新计算digest但伪造Ed25519 signature仍被拒绝；
+- Provider backup validation拒绝缺失或无效的当前Grant签名回执。
+
+Knowledge Quality Run 46157250066两个必需Job均通过；全库745项测试运行、40项按环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings，结构/数据检查0 errors。
+
+### 15.5 仍未解决的信任与部署边界
+
+1. **Coordinator命令来源认证仍是关键缺口。** 外部Floor reserve API仍可由调用方传入command digest和claims；Floor目前不独立验证Coordinator Grant command signature。若上游Coordinator调用方或其到Floor的边界被攻陷，攻击者可能伪造reservation claims，再提交一个与这些claims绑定但在Provider侧有效的command/Receipt链。下一轮必须让Floor直接接收并验证原Coordinator signed command envelope，并用Floor自己的Coordinator public-key registry建立信任。
+2. Provider与Floor仍是单机SQLite参考实现，没有etcd quorum、multi-host linearizability或独立灾备authority；两份SQLite文件及其trust registry仍可被旧快照回滚，必须依赖各自数据库/备份域之外的可信checkpoint。
+3. Provider public key副本存放在Provider数据库中只用于本地自检；真正的Provider signer trust仍由独立Floor registry决定。当前管理API不是生产密钥管理控制面。
+4. Provider Receipt private key仍以内存合成Ed25519 key注入；没有真实KMS/HSM、secret rotation、Provider cluster identity或硬件安全边界。Receipt applied time是Provider签名声明，不是独立可信时间戳。
+5. 没有连接真实Provider、object storage、etcd、KMS/HSM或IAM/RBAC；没有实现Grant-aware Restore。任何包含Provider Grant历史的通用Restore继续fail-closed，不执行候选导入、应用激活或Cutover。
+
