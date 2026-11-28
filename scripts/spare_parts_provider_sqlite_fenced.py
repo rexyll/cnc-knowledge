@@ -955,7 +955,7 @@ class SQLiteFencedObjectStorageProvider:
         return self._capabilities
 
     def apply_write_freeze_command(
-        self, envelope: dict[str, Any], *, now_unix: float | None = None
+        self, envelope: dict[str, Any]
     ) -> dict[str, Any]:
         """Atomically apply a signed command and persist its durable receipt.
 
@@ -966,7 +966,7 @@ class SQLiteFencedObjectStorageProvider:
             raise BackupStorageError(
                 "Provider identity must be configured before applying freeze commands"
             )
-        now = time.time() if now_unix is None else now_unix
+        now = time.time()
         try:
             claims, key_id, command_digest = verify_provider_write_freeze_command(
                 envelope, self._trusted_ed25519_public_keys,
@@ -978,6 +978,19 @@ class SQLiteFencedObjectStorageProvider:
         scope = _safe_key(claims["scope"])
         issuer_id = claims["issuer_id"]
         with self._transaction() as c:
+            # The local write lock may be queued. Revalidate after acquiring it
+            # so command expiry is measured against the serialized mutation.
+            now = time.time()
+            try:
+                claims, key_id, command_digest = verify_provider_write_freeze_command(
+                    envelope, self._trusted_ed25519_public_keys,
+                    expected_provider_id=self.provider_id,
+                    expected_tenant_id=self.tenant_id, now_unix=now,
+                )
+            except ProviderWriteFreezeCommandError as exc:
+                raise FencingAttestationRejectedError(str(exc)) from exc
+            scope = _safe_key(claims["scope"])
+            issuer_id = claims["issuer_id"]
             trusted = c.execute(
                 """SELECT algorithm,public_key_sha256,status,not_before,not_after
                    FROM trusted_ed25519_keys WHERE issuer_id=? AND key_id=?""",
@@ -1052,6 +1065,42 @@ class SQLiteFencedObjectStorageProvider:
                     raise FencingAttestationRejectedError(
                         "Coordinator Leader is absent, expired, revoked or does not match the signed command"
                     )
+
+            # A linearizable Leader read is remote and may take time. Recheck
+            # the signed command and signer validity window before persistence.
+            now = time.time()
+            try:
+                claims, key_id, command_digest = verify_provider_write_freeze_command(
+                    envelope, self._trusted_ed25519_public_keys,
+                    expected_provider_id=self.provider_id,
+                    expected_tenant_id=self.tenant_id, now_unix=now,
+                )
+            except ProviderWriteFreezeCommandError as exc:
+                raise FencingAttestationRejectedError(str(exc)) from exc
+            trusted = c.execute(
+                """SELECT algorithm,public_key_sha256,status,not_before,not_after
+                   FROM trusted_ed25519_keys WHERE issuer_id=? AND key_id=?""",
+                (claims["issuer_id"], key_id),
+            ).fetchone()
+            public_key = self._trusted_ed25519_public_keys.get(key_id)
+            if (
+                trusted is None or trusted["algorithm"] != "ED25519"
+                or trusted["status"] not in {"ACTIVE", "RETIRING"}
+                or public_key is None
+                or self._ed25519_public_key_fingerprint(public_key) != trusted["public_key_sha256"]
+                or now < float(trusted["not_before"])
+                or (trusted["not_after"] is not None and now >= float(trusted["not_after"]))
+                or float(claims["issued_at_unix"]) < float(trusted["not_before"])
+                or (
+                    trusted["not_after"] is not None
+                    and float(claims["issued_at_unix"]) >= float(trusted["not_after"])
+                )
+            ):
+                raise FencingAttestationRejectedError(
+                    "freeze command issuer/key is outside its trusted time window at commit"
+                )
+            scope = _safe_key(claims["scope"])
+            issuer_id = claims["issuer_id"]
 
             leader = {
                 "coordinator_namespace": claims["coordinator_namespace"],
