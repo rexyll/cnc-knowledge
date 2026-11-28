@@ -1627,4 +1627,5 @@
 - 首次bootstrap必须显式执行，且只接受无任何scope、operation、Provider receipt key和Coordinator command key的空白Floor。禁止为已有未锚定历史自动生成checkpoint。
 - 测试使用独立于Floor文件的in-memory CAS fake，并通过SQLite backup/restore模拟旧快照覆盖；同时验证同revision内容变化、trust registry变化、幂等重放、并发CAS及失败时不推进checkpoint。
 - **限制：** in-memory fake只验证协议与本地故障语义，不是生产持久化锚。wrapper只覆盖单进程单实例；跨进程/多节点仍需要共享线性一致的外部authority，最好把Floor记录和checkpoint放在同一Txn。checkpoint推进失败时不自动恢复；含Grant历史的通用Restore仍保持fail-closed。
-- **状态：** IN_PROGRESS。
+- **实现进展（2026-11-28）：** 已实现完整逻辑摘要、独立CAS端口、单进程保护wrapper、严格bootstrap及13项专项测试；设计文档/README已同步。代码和文档已提交main。
+- **验证状态：** main push会触发Knowledge Quality CI；当前尚无可核验的完整CI结果，故保持IN_PROGRESS，不提前标记DONE。
