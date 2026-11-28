@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import math
 import os
 import re
@@ -25,8 +26,12 @@ from scripts.spare_parts_provider_grant_receipt import (
     parse_receipt_envelope,
     verify_provider_grant_receipt,
 )
+from scripts.spare_parts_provider_revocable_grant import (
+    ProviderGrantCommandError,
+    verify_provider_grant_command,
+)
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 MAX_SQLITE_INTEGER = (1 << 63) - 1
 _DIGEST_RE = re.compile(r"[0-9a-f]{64}\Z")
 _ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
@@ -137,6 +142,9 @@ class ProviderGrantFloorOperation:
     receipt_key_fingerprint: str | None = None
     receipt_trust_revision: int | None = None
     provider_applied_at_unix: float | None = None
+    coordinator_signer_key_id: str | None = None
+    coordinator_key_fingerprint: str | None = None
+    coordinator_trust_revision: int | None = None
 
 
 class ProviderGrantFloorAuthority:
@@ -151,6 +159,12 @@ class ProviderGrantFloorAuthority:
         raise NotImplementedError
 
     def reserve_activate(self, **kwargs) -> ProviderGrantFloorReservation:
+        raise NotImplementedError
+
+    def reserve_fence_from_command(self, **kwargs) -> ProviderGrantFloorReservation:
+        raise NotImplementedError
+
+    def reserve_activate_from_command(self, **kwargs) -> ProviderGrantFloorReservation:
         raise NotImplementedError
 
     def confirm_provider_receipt(self, **kwargs) -> ProviderGrantFloorSnapshot:
@@ -169,7 +183,9 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
     """
 
     def __init__(
-        self, database_path: str | os.PathLike[str], *, busy_timeout_seconds: float = 5.0
+        self, database_path: str | os.PathLike[str], *,
+        busy_timeout_seconds: float = 5.0,
+        allow_legacy_unsigned_reservations: bool = False,
     ) -> None:
         if not isinstance(database_path, (str, os.PathLike)) or not str(database_path).strip():
             raise ProviderGrantFloorError("external Grant floor database path is required")
@@ -183,8 +199,13 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         if raw.is_symlink():
             raise ProviderGrantFloorError("external Grant floor database cannot be a symlink")
         raw.parent.mkdir(parents=True, exist_ok=True)
+        if not isinstance(allow_legacy_unsigned_reservations, bool):
+            raise ProviderGrantFloorError(
+                "allow_legacy_unsigned_reservations must be boolean"
+            )
         self.database_path = raw.resolve()
         self.busy_timeout_seconds = float(busy_timeout_seconds)
+        self.allow_legacy_unsigned_reservations = allow_legacy_unsigned_reservations
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
@@ -209,7 +230,9 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                     singleton INTEGER PRIMARY KEY CHECK(singleton=1),
                     schema_version INTEGER NOT NULL,
                     authority_revision INTEGER NOT NULL,
-                    trust_revision INTEGER NOT NULL DEFAULT 0
+                    trust_revision INTEGER NOT NULL DEFAULT 0,
+                    coordinator_command_auth_required INTEGER NOT NULL DEFAULT 1
+                      CHECK(coordinator_command_auth_required IN (0,1))
                 );
                 CREATE TABLE IF NOT EXISTS provider_grant_floor_scopes (
                     provider_id TEXT NOT NULL,
@@ -282,6 +305,22 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                     created_at REAL NOT NULL,
                     PRIMARY KEY(provider_id,key_id)
                 );
+                CREATE TABLE IF NOT EXISTS provider_grant_floor_coordinator_keys (
+                    issuer_id TEXT NOT NULL,
+                    key_id TEXT NOT NULL,
+                    algorithm TEXT NOT NULL CHECK(algorithm='ED25519'),
+                    public_key_base64 TEXT NOT NULL,
+                    public_key_sha256 TEXT NOT NULL CHECK(length(public_key_sha256)=64),
+                    status TEXT NOT NULL CHECK(status IN ('ACTIVE','RETIRING','REVOKED')),
+                    not_before REAL NOT NULL,
+                    not_after REAL,
+                    retiring_effective_at REAL,
+                    revocation_effective_at REAL,
+                    revocation_reason TEXT,
+                    trust_revision INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    PRIMARY KEY(issuer_id,key_id)
+                );
                 """
             )
             row = connection.execute(
@@ -290,9 +329,13 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             if row is None:
                 connection.execute(
                     """INSERT INTO provider_grant_floor_meta
-                       (singleton, schema_version, authority_revision, trust_revision)
-                       VALUES (1, ?, 0, 0)""",
-                    (SCHEMA_VERSION,),
+                       (singleton, schema_version, authority_revision, trust_revision,
+                        coordinator_command_auth_required)
+                       VALUES (1, ?, 0, 0, ?)""",
+                    (
+                        SCHEMA_VERSION,
+                        0 if self.allow_legacy_unsigned_reservations else 1,
+                    ),
                 )
             else:
                 version = int(row["schema_version"])
@@ -353,6 +396,34 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                                 f"ADD COLUMN {column} REAL"
                             )
                     version = 4
+                if version < 5:
+                    meta_columns = {
+                        item[1] for item in connection.execute(
+                            "PRAGMA table_info(provider_grant_floor_meta)"
+                        ).fetchall()
+                    }
+                    if "coordinator_command_auth_required" not in meta_columns:
+                        connection.execute(
+                            "ALTER TABLE provider_grant_floor_meta "
+                            "ADD COLUMN coordinator_command_auth_required INTEGER NOT NULL DEFAULT 1 "
+                            "CHECK(coordinator_command_auth_required IN (0,1))"
+                        )
+                    operation_columns = {
+                        item[1] for item in connection.execute(
+                            "PRAGMA table_info(provider_grant_floor_operations)"
+                        ).fetchall()
+                    }
+                    for column, declaration in (
+                        ("coordinator_signer_key_id", "TEXT"),
+                        ("coordinator_key_fingerprint", "TEXT"),
+                        ("coordinator_trust_revision", "INTEGER"),
+                    ):
+                        if column not in operation_columns:
+                            connection.execute(
+                                f"ALTER TABLE provider_grant_floor_operations "
+                                f"ADD COLUMN {column} {declaration}"
+                            )
+                    version = 5
                 connection.execute(
                     "UPDATE provider_grant_floor_meta SET schema_version=? WHERE singleton=1",
                     (version,),
@@ -361,6 +432,22 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                     raise ProviderGrantFloorError(
                         "unsupported external Grant floor schema version"
                     )
+            policy = connection.execute(
+                "SELECT coordinator_command_auth_required "
+                "FROM provider_grant_floor_meta WHERE singleton=1"
+            ).fetchone()
+            if policy is None or policy["coordinator_command_auth_required"] not in (0, 1):
+                raise ProviderGrantFloorError("Coordinator command authentication policy is invalid")
+            if self.allow_legacy_unsigned_reservations:
+                if int(policy["coordinator_command_auth_required"]) != 0:
+                    raise ProviderGrantFloorConflict(
+                        "legacy unsigned reservation mode cannot downgrade a strict Floor database"
+                    )
+            elif int(policy["coordinator_command_auth_required"]) == 0:
+                connection.execute(
+                    "UPDATE provider_grant_floor_meta SET coordinator_command_auth_required=1 "
+                    "WHERE singleton=1"
+                )
         finally:
             connection.close()
         os.chmod(self.database_path, 0o600)
