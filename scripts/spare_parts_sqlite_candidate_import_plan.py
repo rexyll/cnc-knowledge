@@ -201,6 +201,9 @@ def _validate_candidate(candidate: Any) -> tuple[dict[str, Any], list[tuple[byte
     leader_epoch_floor = _required_int(
         recovery.get("leader_epoch_floor"), "leader_epoch_floor"
     )
+    # The old leader identity and native TTL key are never restored. Unified
+    # schema-v2 retains only a canonical expired marker so claim_leadership()
+    # derives its next epoch from the legacy floor instead of restarting at 1.
     leader_floor_record = coordinator.get("leader")
     expected_leader_floor_record = {
         "leader_id": "migration-epoch-floor",
