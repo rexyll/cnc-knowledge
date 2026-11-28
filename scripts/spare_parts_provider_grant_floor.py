@@ -26,7 +26,7 @@ from scripts.spare_parts_provider_grant_receipt import (
     verify_provider_grant_receipt,
 )
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 MAX_SQLITE_INTEGER = (1 << 63) - 1
 _DIGEST_RE = re.compile(r"[0-9a-f]{64}\Z")
 _ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
@@ -111,6 +111,8 @@ class ProviderGrantFloorReservation:
     leader_epoch: int
     native_lease_id: int
     lease_expires_at_unix: float
+    command_issued_at_unix: float
+    command_expires_at_unix: float
     reserved_scope_revision: int
     authority_revision: int
 
@@ -129,6 +131,8 @@ class ProviderGrantFloorOperation:
     reserved_scope_revision: int
     confirmed_scope_revision: int | None
     authority_revision: int
+    command_issued_at_unix: float | None = None
+    command_expires_at_unix: float | None = None
     receipt_signer_key_id: str | None = None
     receipt_key_fingerprint: str | None = None
     receipt_trust_revision: int | None = None
@@ -258,7 +262,9 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                     receipt_signer_key_id TEXT,
                     receipt_key_fingerprint TEXT,
                     receipt_trust_revision INTEGER,
-                    provider_applied_at_unix REAL
+                    provider_applied_at_unix REAL,
+                    command_issued_at_unix REAL,
+                    command_expires_at_unix REAL
                 );
                 CREATE TABLE IF NOT EXISTS provider_grant_floor_receipt_keys (
                     provider_id TEXT NOT NULL,
@@ -334,6 +340,19 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                             "ADD COLUMN retiring_effective_at REAL"
                         )
                     version = 3
+                if version < 4:
+                    operation_columns = {
+                        item[1] for item in connection.execute(
+                            "PRAGMA table_info(provider_grant_floor_operations)"
+                        ).fetchall()
+                    }
+                    for column in ("command_issued_at_unix", "command_expires_at_unix"):
+                        if column not in operation_columns:
+                            connection.execute(
+                                "ALTER TABLE provider_grant_floor_operations "
+                                f"ADD COLUMN {column} REAL"
+                            )
+                    version = 4
                 connection.execute(
                     "UPDATE provider_grant_floor_meta SET schema_version=? WHERE singleton=1",
                     (version,),
@@ -505,6 +524,14 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 float(row["provider_applied_at_unix"])
                 if row["provider_applied_at_unix"] is not None else None
             ),
+            command_issued_at_unix=(
+                float(row["command_issued_at_unix"])
+                if row["command_issued_at_unix"] is not None else None
+            ),
+            command_expires_at_unix=(
+                float(row["command_expires_at_unix"])
+                if row["command_expires_at_unix"] is not None else None
+            ),
         )
 
     def operation_status(self, operation_id: str) -> ProviderGrantFloorOperation | None:
@@ -533,7 +560,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         key: ProviderGrantScopeKey, grant_id: str, command_digest: str,
         fence_command_digest: str | None, coordinator_namespace: str,
         leader_id: str, leader_epoch: int, native_lease_id: int,
-        lease_expires_at_unix: float,
+        lease_expires_at_unix: float, command_issued_at_unix: float,
+        command_expires_at_unix: float,
     ) -> ProviderGrantFloorReservation | None:
         row = connection.execute(
             "SELECT * FROM provider_grant_floor_operations WHERE operation_id=?",
@@ -546,11 +574,13 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             row["grant_id"], row["command_digest"], row["fence_command_digest"],
             row["coordinator_namespace"], row["leader_id"], int(row["leader_epoch"]),
             int(row["native_lease_id"]), float(row["lease_expires_at_unix"]),
+            row["command_issued_at_unix"], row["command_expires_at_unix"],
         )
         supplied = (
             action, key.provider_id, key.tenant_id, key.scope, grant_id,
             command_digest, fence_command_digest, coordinator_namespace, leader_id,
             leader_epoch, native_lease_id, lease_expires_at_unix,
+            command_issued_at_unix, command_expires_at_unix,
         )
         if expected != supplied:
             raise ProviderGrantFloorConflict(
@@ -563,6 +593,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             coordinator_namespace=coordinator_namespace, leader_id=leader_id,
             leader_epoch=leader_epoch, native_lease_id=native_lease_id,
             lease_expires_at_unix=lease_expires_at_unix,
+            command_issued_at_unix=command_issued_at_unix,
+            command_expires_at_unix=command_expires_at_unix,
             reserved_scope_revision=int(row["reserved_scope_revision"]),
             authority_revision=int(row["authority_revision"]),
         )
@@ -572,6 +604,7 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         grant_id: str, command_digest: str, fence_command_digest: str | None,
         coordinator_namespace: str, leader_id: str, leader_epoch: int,
         native_lease_id: int, lease_expires_at_unix: float,
+        command_issued_at_unix: float, command_expires_at_unix: float,
         expected_revision: int,
     ) -> ProviderGrantFloorReservation:
         self._identifier(operation_id, "operation_id")
@@ -585,6 +618,15 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         leader_epoch = self._integer(leader_epoch, "leader_epoch")
         native_lease_id = self._integer(native_lease_id, "native_lease_id")
         lease_expires_at_unix = self._lease_expiry(lease_expires_at_unix)
+        command_issued_at_unix = self._lease_expiry(command_issued_at_unix)
+        command_expires_at_unix = self._lease_expiry(command_expires_at_unix)
+        if (
+            command_expires_at_unix <= command_issued_at_unix
+            or command_expires_at_unix > lease_expires_at_unix
+        ):
+            raise ProviderGrantFloorError(
+                "Coordinator command validity must be positive and not exceed its native Lease"
+            )
         expected_revision = self._integer(expected_revision, "expected_revision", minimum=0)
         if action == "FENCE" and fence_command_digest is not None:
             raise ProviderGrantFloorError("FENCE reservation cannot reference a previous FENCE command")
@@ -600,6 +642,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 coordinator_namespace=coordinator_namespace, leader_id=leader_id,
                 leader_epoch=leader_epoch, native_lease_id=native_lease_id,
                 lease_expires_at_unix=lease_expires_at_unix,
+                command_issued_at_unix=command_issued_at_unix,
+                command_expires_at_unix=command_expires_at_unix,
             )
             if existing is not None:
                 connection.commit()
@@ -697,13 +741,14 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 """INSERT INTO provider_grant_floor_operations
                    (operation_id,provider_id,tenant_id,scope,action,grant_id,generation,
                     command_digest,fence_command_digest,coordinator_namespace,leader_id,
-                    leader_epoch,native_lease_id,lease_expires_at_unix,state,
-                    reserved_scope_revision,authority_revision)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PENDING',?,?)""",
+                    leader_epoch,native_lease_id,lease_expires_at_unix,command_issued_at_unix,
+                    command_expires_at_unix,state,reserved_scope_revision,authority_revision)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PENDING',?,?)""",
                 (
                     operation_id, *key_values, action, grant_id, next_generation,
                     command_digest, fence_command_digest, coordinator_namespace,
                     leader_id, leader_epoch, native_lease_id, lease_expires_at_unix,
+                    command_issued_at_unix, command_expires_at_unix,
                     next_revision, authority_revision,
                 ),
             )
@@ -715,6 +760,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 coordinator_namespace=coordinator_namespace, leader_id=leader_id,
                 leader_epoch=leader_epoch, native_lease_id=native_lease_id,
                 lease_expires_at_unix=lease_expires_at_unix,
+                command_issued_at_unix=command_issued_at_unix,
+                command_expires_at_unix=command_expires_at_unix,
                 reserved_scope_revision=next_revision,
                 authority_revision=authority_revision,
             )
@@ -728,6 +775,7 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         self, *, operation_id: str, key: ProviderGrantScopeKey, grant_id: str,
         command_digest: str, coordinator_namespace: str, leader_id: str,
         leader_epoch: int, native_lease_id: int, lease_expires_at_unix: float,
+        command_issued_at_unix: float, command_expires_at_unix: float,
         expected_revision: int,
     ) -> ProviderGrantFloorReservation:
         return self._reserve(
@@ -736,6 +784,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             coordinator_namespace=coordinator_namespace, leader_id=leader_id,
             leader_epoch=leader_epoch, native_lease_id=native_lease_id,
             lease_expires_at_unix=lease_expires_at_unix,
+            command_issued_at_unix=command_issued_at_unix,
+            command_expires_at_unix=command_expires_at_unix,
             expected_revision=expected_revision,
         )
 
@@ -743,7 +793,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
         self, *, operation_id: str, key: ProviderGrantScopeKey, grant_id: str,
         command_digest: str, fence_command_digest: str, coordinator_namespace: str,
         leader_id: str, leader_epoch: int, native_lease_id: int,
-        lease_expires_at_unix: float, expected_revision: int,
+        lease_expires_at_unix: float, command_issued_at_unix: float,
+        command_expires_at_unix: float, expected_revision: int,
     ) -> ProviderGrantFloorReservation:
         return self._reserve(
             "ACTIVATE", operation_id=operation_id, key=key, grant_id=grant_id,
@@ -751,6 +802,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             coordinator_namespace=coordinator_namespace, leader_id=leader_id,
             leader_epoch=leader_epoch, native_lease_id=native_lease_id,
             lease_expires_at_unix=lease_expires_at_unix,
+            command_issued_at_unix=command_issued_at_unix,
+            command_expires_at_unix=command_expires_at_unix,
             expected_revision=expected_revision,
         )
 
@@ -989,6 +1042,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 "leader_epoch": int(operation["leader_epoch"]),
                 "native_lease_id": int(operation["native_lease_id"]),
                 "native_lease_expires_at_unix": float(operation["lease_expires_at_unix"]),
+                "command_issued_at_unix": float(operation["command_issued_at_unix"]),
+                "command_expires_at_unix": float(operation["command_expires_at_unix"]),
             }
             try:
                 verified = verify_provider_grant_receipt(
