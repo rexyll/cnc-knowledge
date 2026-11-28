@@ -20,7 +20,6 @@ from scripts.spare_parts_provider_grant_floor import (
 from scripts.spare_parts_provider_grant_floor_checkpoint import (
     CheckpointedSQLiteProviderGrantFloorAuthority,
     InMemoryProviderGrantFloorCheckpointStore,
-    ProviderGrantFloorCheckpoint,
     ProviderGrantFloorCheckpointBootstrapDenied,
     ProviderGrantFloorCheckpointMismatch,
     ProviderGrantFloorCheckpointMissing,
@@ -337,11 +336,7 @@ class CheckpointedProviderGrantFloorTests(unittest.TestCase):
 
     def test_external_checkpoint_rollback_is_detected(self):
         current = self.floor.verify_checkpoint()
-        self.store._checkpoint = ProviderGrantFloorCheckpoint(
-            sequence=current.sequence - 1,
-            authority_revision=current.authority_revision,
-            state_sha256=current.state_sha256,
-        )
+        self.store._checkpoint = self.initial
         with self.assertRaises(ProviderGrantFloorCheckpointMismatch):
             self.floor.snapshot(self.key)
 
