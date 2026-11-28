@@ -1338,3 +1338,15 @@
 - 明确SQLite ledger只适用于单机参考/演练；生产多实例必须迁移至同一线性一致etcd事务或其他具备耐久性、CAS和防回滚治理的共享账本，并从认证的Coordinator读取当前Leader快照。
 - 测试覆盖有效证明、同证据重放、nonce复用、freeze generation复用、challenge mismatch、stale/不匹配Coordinator、scope floor不一致、Lease期限不足、窗口非法、验证失败不消费、权限位和文件权限。
 - 不连接真实Provider/KMS/etcd，不修改Provider控制记录或RBAC，不开放应用访问，不执行候选导入或生产cutover。
+
+
+
+### 第八十四轮任务计划：MIG-05 共享 etcd Provider freeze replay ledger
+
+- 新增 etcd CAS/Txn 实现，将防重放从单机 SQLite 推进到共享CoordinatorAuthorityStore接口；目标前缀必须严格限制为 `/cnc/migration/isolated/{single-id}/`，拒绝默认生产 Unified namespace。
+- 为每个Provider一次性原子创建四个永久键：evidence ID、challenge nonce、freeze generation、freeze ID。四个VERSION=0比较与四个Put必须处于同一个Txn，所有值绑定同一签名claim与Coordinator snapshot摘要。
+- 同一Txn必须额外比较隔离namespace中的 `scheduler/state` 和 `coordinator/leader` 精确VALUE及MOD revision；写入前线性一致读取二者，核对Leader ID/epoch/native Lease ID、Lease到期时间、scope floors及Leader KV的实际Lease attachment。
+- 将共享replay ledger接入冻结声明验证器；旧SQLite本机实现保留作单机参考，不作为多实例authority。
+- Txn响应未知时只允许通过四个键全量逐字节读回确认，或在全部键均不存在且Coordinator binding仍一致时重试完全相同Txn；部分键、冲突值和无法确定结果一律隔离，不自动补写。
+- 测试覆盖成功消费、并发竞争仅一个成功、证据重放、Txn提交后响应丢失、提交前超时及相同Txn重试、Coordinator aggregate竞态、scope drift、部分ledger状态和生产namespace拒绝。
+- InMemoryEtcdV3Client仅为API/事务契约替身；本轮不连接真实etcd、不执行真实RBAC或多节点故障演练，也不证明Provider写冻结真正生效。
