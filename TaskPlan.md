@@ -1380,3 +1380,5 @@
 - **限制：** 这是签名声明和已观察epoch的单调性保护，不是实时etcd Lease有效性证明。Provider尚未观察新epoch时，提前撤销的旧Lease仍存在有限但真实的接受窗口；生产必须增加在线线性一致Leader/Lease验证或等价可撤销机制。
 
 - **补充防回退：** namespace要求规范绝对前缀；同一epoch/Lease ID下Lease expiry不得回退，拒绝陈旧续租快照。
+
+- **备份完整性：** v4备份必须包含freeze scope、命令receipt、Leader floor和命令Leader审计表；恢复后验证Leader epoch/native Lease绑定不丢失。
