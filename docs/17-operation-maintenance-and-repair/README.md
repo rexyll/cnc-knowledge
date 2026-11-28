@@ -619,3 +619,4 @@ Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执
 **严格边界：** 当前签名只由合成测试 Provider key 产生；Provider SQLite 的 FENCE/ACTIVATE 数据事务尚未实际持久化 Receipt envelope，故这不是端到端 Provider 回执认证实现。Floor 不独立验证 Coordinator command signature；Reservation 中的 command digest/claims 可信来源仍由上游 Coordinator 调用链负责。真实 Provider/KMS/HSM/etcd/生产 trust registry 未连接，Grant-aware Restore 未实现，通用 Restore 仍 fail-closed。
 
 - **第九十五轮当前代码验收：** [Knowledge Quality Run 46155354641](https://github.com/rexyll/cnc-knowledge/actions/runs/46155354641) 两个必需 Job 均 success；全库 737 项测试运行、40 项按环境跳过；CH12 数值资源 143 项通过；knowledge lint 0 errors / 5 warnings，结构/数据检查 0 errors。此Run验证的是代码与专项测试提交；随后计划/README/TaskHistory最终同步仍需以其自身CI为准。
+- **第九十五轮最终文档同步验收：** [Knowledge Quality Run 46155719334](https://github.com/rexyll/cnc-knowledge/actions/runs/46155719334) 两个必需 Job 均 success，覆盖根/CH17 TaskPlan、设计文档、README、TaskHistory和代码；无测试失败。
