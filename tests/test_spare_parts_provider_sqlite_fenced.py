@@ -1427,6 +1427,186 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         )
         self.assertEqual(stored.data, b"allowed")
 
+
+    def test_provider_signed_fence_and_activate_receipts_drive_external_floor(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        lease_expiry = now + 180.0
+        fence_command = self.grant_command(
+            "FENCE", 1, "grant-provider-signed-e2e",
+            issued_at=now, lease_expires=lease_expiry,
+        )
+        fence_digest = hashlib.sha256(
+            json.dumps(fence_command, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        self.assertEqual(provider.apply_provider_grant_command(fence_command)["state"], "FENCED")
+        fence_receipt = provider.get_provider_grant_receipt(
+            "provider-test-a", "tenant-a", fence_digest
+        )
+        self.assertIsNotNone(fence_receipt)
+        self.assertEqual(fence_receipt["signer_key_id"], PROVIDER_RECEIPT_KEY_ID)
+        self.assertNotEqual(PROVIDER_RECEIPT_PUBLIC, ED_PUBLIC)
+
+        floor = SQLiteProviderGrantFloorAuthority(self.base / "provider-receipt-floor.sqlite")
+        floor.admin_register_provider_receipt_key(
+            provider_id="provider-test-a",
+            key_id=PROVIDER_RECEIPT_KEY_ID,
+            public_key=PROVIDER_RECEIPT_PUBLIC,
+            not_before=now - 60.0,
+        )
+        scope_key = ProviderGrantScopeKey(
+            provider_id="provider-test-a",
+            tenant_id="tenant-a",
+            scope=SCOPE,
+        )
+        claims = fence_command["command"]
+        fence_reservation = floor.reserve_fence(
+            operation_id="provider-fence-operation",
+            key=scope_key,
+            grant_id="grant-provider-signed-e2e",
+            command_digest=fence_digest,
+            coordinator_namespace=claims["coordinator_namespace"],
+            leader_id=claims["leader_id"],
+            leader_epoch=claims["leader_epoch"],
+            native_lease_id=claims["leader_lease_id"],
+            lease_expires_at_unix=claims["leader_lease_expires_at_unix"],
+            command_issued_at_unix=claims["issued_at_unix"],
+            command_expires_at_unix=claims["expires_at_unix"],
+            expected_revision=0,
+        )
+        fenced_floor = floor.confirm_provider_receipt(
+            operation_id=fence_reservation.operation_id,
+            receipt_envelope=fence_receipt["receipt_envelope"],
+            expected_revision=fence_reservation.reserved_scope_revision,
+        )
+        self.assertEqual(fenced_floor.state, "FENCED")
+        self.assertEqual(fenced_floor.last_fence_receipt_digest, fence_receipt["receipt_digest"])
+
+        activate_issued = fence_receipt["applied_at_unix"] + 0.05
+        activate_command = self.grant_command(
+            "ACTIVATE", 2, "grant-provider-signed-e2e",
+            issued_at=activate_issued,
+            lease_expires=lease_expiry,
+            expires=activate_issued + 60.0,
+            fence_digest=fence_digest,
+        )
+        activate_digest = hashlib.sha256(
+            json.dumps(activate_command, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        self.assertEqual(provider.apply_provider_grant_command(activate_command)["state"], "ACTIVE")
+        activate_receipt = provider.get_provider_grant_receipt(
+            "provider-test-a", "tenant-a", activate_digest
+        )
+        self.assertIsNotNone(activate_receipt)
+        self.assertEqual(activate_receipt["receipt_envelope"]["receipt"]["fence_command_sha256"], fence_digest)
+
+        activate_claims = activate_command["command"]
+        current_floor = floor.snapshot(scope_key)
+        activate_reservation = floor.reserve_activate(
+            operation_id="provider-activate-operation",
+            key=scope_key,
+            grant_id="grant-provider-signed-e2e",
+            command_digest=activate_digest,
+            fence_command_digest=fence_digest,
+            coordinator_namespace=activate_claims["coordinator_namespace"],
+            leader_id=activate_claims["leader_id"],
+            leader_epoch=activate_claims["leader_epoch"],
+            native_lease_id=activate_claims["leader_lease_id"],
+            lease_expires_at_unix=activate_claims["leader_lease_expires_at_unix"],
+            command_issued_at_unix=activate_claims["issued_at_unix"],
+            command_expires_at_unix=activate_claims["expires_at_unix"],
+            expected_revision=current_floor.revision,
+        )
+        active_floor = floor.confirm_provider_receipt(
+            operation_id=activate_reservation.operation_id,
+            receipt_envelope=activate_receipt["receipt_envelope"],
+            expected_revision=activate_reservation.reserved_scope_revision,
+        )
+        self.assertEqual(active_floor.state, "ACTIVE")
+        self.assertEqual(
+            active_floor.last_activation_receipt_digest,
+            activate_receipt["receipt_digest"],
+        )
+        backup = self.base / "provider-signed-receipt-chain.sqlite"
+        provider.backup_to(backup)
+        self.assertEqual(
+            SQLiteFencedObjectStorageProvider.validate_backup(backup)["provider_grant_command_count"],
+            2,
+        )
+
+    def test_provider_receipt_transaction_rolls_back_with_grant_state_and_command(self):
+        def fail_before_commit(stage):
+            if stage == "before_provider_grant_commit":
+                raise RuntimeError("synthetic Provider Receipt persistence failure")
+
+        provider = _new_provider(
+            self.database,
+            provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            require_revocable_grant=True,
+            fault_hook=fail_before_commit,
+        )
+        command = self.grant_command("FENCE", 1, "grant-receipt-rollback")
+        digest = hashlib.sha256(
+            json.dumps(command, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        with self.assertRaisesRegex(RuntimeError, "Receipt persistence failure"):
+            provider.apply_provider_grant_command(command)
+        self.assertIsNone(provider.provider_grant_state(SCOPE))
+        self.assertIsNone(provider.provider_grant_command_status(digest))
+        self.assertIsNone(
+            provider.get_provider_grant_receipt("provider-test-a", "tenant-a", digest)
+        )
+
+    def test_provider_receipt_lookup_is_exact_provider_tenant_and_command(self):
+        provider = self.enable_revocable_grants()
+        command = self.grant_command("FENCE", 1, "grant-receipt-exact-lookup")
+        digest = hashlib.sha256(
+            json.dumps(command, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(command)
+        receipt = provider.get_provider_grant_receipt("provider-test-a", "tenant-a", digest)
+        self.assertEqual(receipt["command_sha256"], digest)
+        with self.assertRaises(SQLiteProviderAuthorizationError):
+            provider.get_provider_grant_receipt("provider-test-b", "tenant-a", digest)
+        with self.assertRaises(SQLiteProviderAuthorizationError):
+            provider.get_provider_grant_receipt("provider-test-a", "tenant-b", digest)
+        self.assertIsNone(provider.get_provider_grant_receipt("provider-test-a", "tenant-a", "0" * 64))
+
+    def test_provider_signed_receipt_tampering_is_rejected_by_backup_validation(self):
+        provider = self.enable_revocable_grants()
+        command = self.grant_command("FENCE", 1, "grant-receipt-backup-tamper")
+        digest = hashlib.sha256(
+            json.dumps(command, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(command)
+        backup = self.base / "provider-signed-receipt-tampered.sqlite"
+        provider.backup_to(backup)
+        with sqlite3.connect(backup) as connection:
+            connection.execute(
+                "UPDATE provider_grant_commands SET provider_receipt_digest=? WHERE command_sha256=?",
+                ("0" * 64, digest),
+            )
+        with self.assertRaisesRegex(BackupStorageError, "signed Provider Grant receipt cannot be verified"):
+            SQLiteFencedObjectStorageProvider.validate_backup(backup)
+
+    def test_provider_receipt_signer_cannot_reuse_coordinator_key(self):
+        with self.assertRaisesRegex(BackupStorageError, "must not reuse a Coordinator"):
+            SQLiteFencedObjectStorageProvider(
+                self.database,
+                principal_id="writer-a",
+                principal_secret=SECRET_A,
+                provider_id="provider-test-a",
+                trusted_attestation_keys={KEY_ID: ATTESTATION_SECRET},
+                trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+                leader_status_checker=MutableLeaderStatusChecker(active=True),
+                require_online_leader_status=True,
+                require_revocable_grant=True,
+                provider_receipt_signing_key=ED_PRIVATE,
+                provider_receipt_key_id="provider-receipt-not-coordinator",
+                require_provider_signed_grant_receipts=True,
+            )
+
     def test_activation_command_must_be_issued_after_fence_receipt(self):
         provider = self.enable_revocable_grants()
         now = time.time()
