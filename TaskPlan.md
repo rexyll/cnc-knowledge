@@ -1436,3 +1436,12 @@
 - **测试矩阵：** 正常FENCE/ACTIVATE、并发CAS单赢家、旧revision冲突、pending阻断、operation ID精确重放/冲突、错误Provider receipt拒绝、响应未知重启查询、Leader epoch与namespace/Lease expiry回退、scope隔离、trusted minimum revision和数据库权限。
 - **严格限制：** 本地SQLite适配器不是etcd/quorum或生产authority；SQLite数据库自身无法识别自身快照回滚，必须依赖数据库之外可信revision checkpoint；适配器只存储Provider receipt digest，不验证回执真实性。FENCE_PENDING只代表外部预留，旧Grant直到Provider FENCE提交前仍可能被接受，外部预留不是数据面撤销。没有接入Coordinator/Provider生产路径或Grant-aware Restore。通用Restore含Grant历史备份仍保持fail-closed。
 - **状态：** 代码和20个测试方法定义已提交；尚无测试执行结果，必须等待本地/CI验证后才能继续推进。MIG-04/MIG-05保持IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
+
+### 第九十三轮任务计划：Provider Grant Floor Coordinator Namespace fail-closed 收敛
+
+- **背景：** 第九十二轮本地 Floor 参考适配器当前只检查 Coordinator namespace 是规范绝对路径；这仍允许 Unified/生产命名空间或多层任意前缀进入本地模型，与迁移演练必须使用隔离 namespace 的边界不够一致。
+- **目标：** 将本地参考适配器的 Coordinator namespace 收敛为唯一形状 `/cnc/migration/isolated/{single-id}/`；其中 single-id 必须是单一合法标识段。除该隔离前缀之外的路径一律 fail-closed。
+- **验证：** 保留合法隔离 namespace 正向路径；新增测试拒绝生产/Unified namespace、isolated 根路径、额外路径层级、空段及路径穿越。验证拒绝输入不会推进任何scope或authority revision。
+- **同步：** 更新CH17外部Floor设计文档、README、章节任务计划、根任务计划和TaskHistory；知识质量CI通过后才记录完成。
+- **边界：** 只加强本地参考模型的输入边界；不修改Unified schema-v2生产authority，不连接真实etcd/Provider/KMS/HSM，不修改IAM/RBAC，不执行Restore、候选导入、应用激活或Cutover。MIG-04/MIG-05保持IN_PROGRESS，MIG-06保持TODO，MIG-07保持BLOCKED。
+- **状态：** TODO。
