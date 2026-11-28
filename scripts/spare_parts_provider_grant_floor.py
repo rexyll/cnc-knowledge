@@ -26,7 +26,7 @@ from scripts.spare_parts_provider_grant_receipt import (
     verify_provider_grant_receipt,
 )
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 MAX_SQLITE_INTEGER = (1 << 63) - 1
 _DIGEST_RE = re.compile(r"[0-9a-f]{64}\Z")
 _ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
@@ -269,6 +269,7 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                     status TEXT NOT NULL CHECK(status IN ('ACTIVE','RETIRING','REVOKED')),
                     not_before REAL NOT NULL,
                     not_after REAL,
+                    retiring_effective_at REAL,
                     revocation_effective_at REAL,
                     revocation_reason TEXT,
                     trust_revision INTEGER NOT NULL,
@@ -289,7 +290,11 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 )
             else:
                 version = int(row["schema_version"])
-                if version == 1:
+                if version < 1 or version > SCHEMA_VERSION:
+                    raise ProviderGrantFloorError(
+                        "unsupported external Grant floor schema version"
+                    )
+                if version < 2:
                     meta_columns = {
                         item[1] for item in connection.execute(
                             "PRAGMA table_info(provider_grant_floor_meta)"
@@ -316,11 +321,24 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                                 f"ALTER TABLE provider_grant_floor_operations "
                                 f"ADD COLUMN {column} {declaration}"
                             )
-                    connection.execute(
-                        "UPDATE provider_grant_floor_meta SET schema_version=? WHERE singleton=1",
-                        (SCHEMA_VERSION,),
-                    )
-                elif version != SCHEMA_VERSION:
+                    version = 2
+                if version < 3:
+                    key_columns = {
+                        item[1] for item in connection.execute(
+                            "PRAGMA table_info(provider_grant_floor_receipt_keys)"
+                        ).fetchall()
+                    }
+                    if "retiring_effective_at" not in key_columns:
+                        connection.execute(
+                            "ALTER TABLE provider_grant_floor_receipt_keys "
+                            "ADD COLUMN retiring_effective_at REAL"
+                        )
+                    version = 3
+                connection.execute(
+                    "UPDATE provider_grant_floor_meta SET schema_version=? WHERE singleton=1",
+                    (version,),
+                )
+                if version != SCHEMA_VERSION:
                     raise ProviderGrantFloorError(
                         "unsupported external Grant floor schema version"
                     )
@@ -752,6 +770,10 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             status=row["status"],
             not_before=float(row["not_before"]),
             not_after=(float(row["not_after"]) if row["not_after"] is not None else None),
+            retiring_effective_at=(
+                float(row["retiring_effective_at"])
+                if row["retiring_effective_at"] is not None else None
+            ),
             revocation_effective_at=(
                 float(row["revocation_effective_at"])
                 if row["revocation_effective_at"] is not None else None
@@ -807,9 +829,9 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
             connection.execute(
                 """INSERT INTO provider_grant_floor_receipt_keys(
                     provider_id,key_id,algorithm,public_key_base64,public_key_sha256,
-                    status,not_before,not_after,revocation_effective_at,revocation_reason,
-                    trust_revision,created_at
-                ) VALUES(?,?,'ED25519',?,?, 'ACTIVE',?,?,NULL,NULL,?,?)""",
+                    status,not_before,not_after,retiring_effective_at,revocation_effective_at,
+                    revocation_reason,trust_revision,created_at
+                ) VALUES(?,?,'ED25519',?,?, 'ACTIVE',?,?,NULL,NULL,NULL,?,?)""",
                 (provider_id,key_id,encoded,fingerprint,before,after,trust_revision,created_at),
             )
             result = dict(connection.execute(
@@ -869,8 +891,14 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 result = dict(row)
                 connection.commit()
                 return result
-            if old_status != "ACTIVE" or status not in {"RETIRING","REVOKED"}:
+            if old_status not in {"ACTIVE", "RETIRING"} or status not in {"RETIRING","REVOKED"}:
                 raise ProviderGrantFloorConflict("Provider receipt key lifecycle transition is invalid")
+            if old_status == "RETIRING" and status != "REVOKED":
+                raise ProviderGrantFloorConflict("Provider receipt key lifecycle transition is invalid")
+            retiring_effective = (
+                float(row["retiring_effective_at"])
+                if row["retiring_effective_at"] is not None else time.time()
+            )
             connection.execute(
                 "UPDATE provider_grant_floor_meta SET trust_revision=trust_revision+1 WHERE singleton=1"
             )
@@ -878,9 +906,10 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 "SELECT trust_revision FROM provider_grant_floor_meta WHERE singleton=1"
             ).fetchone()["trust_revision"])
             connection.execute(
-                """UPDATE provider_grant_floor_receipt_keys SET status=?,revocation_effective_at=?,
-                   revocation_reason=?,trust_revision=? WHERE provider_id=? AND key_id=?""",
-                (status,effective,reason,trust_revision,provider_id,key_id),
+                """UPDATE provider_grant_floor_receipt_keys SET status=?,retiring_effective_at=?,
+                   revocation_effective_at=?,revocation_reason=?,trust_revision=?
+                   WHERE provider_id=? AND key_id=?""",
+                (status,retiring_effective,effective,reason,trust_revision,provider_id,key_id),
             )
             result = dict(connection.execute(
                 "SELECT * FROM provider_grant_floor_receipt_keys WHERE provider_id=? AND key_id=?",
