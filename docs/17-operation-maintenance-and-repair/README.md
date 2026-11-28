@@ -582,7 +582,7 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 1. **FENCE：** 更换Leader/Lease身份时必须由更高Coordinator Leader epoch发起；同epoch仅允许完全相同Leader/Lease主动撤销其ACTIVE grant。FENCE将scope推进至FENCED，旧grant立即不能再通过Provider本地mutation gate。
 2. **ACTIVATE：** 必须引用已提交FENCE命令的精确SHA-256 receipt，并保持Coordinator namespace、Leader ID/epoch、native Lease和grant ID完全一致，才能创建ACTIVE grant。
 
-Provider schema升级至v5，新增`provider_scope_grants`与`provider_grant_commands`，并要求备份验证包含这两张表。配置`require_revocable_grant=True`时，Provider必须同时配置Provider ID、Ed25519命令信任公钥和在线Coordinator Leader checker；缺少任一项即初始化失败；在线checker返回inactive或抛出异常时，FENCE/ACTIVATE fail-closed且不得创建/推进grant状态。proof必须签署Grant ID与generation，Provider在object PUT、multipart begin、part、complete各自实际写事务内校验ACTIVE、期限和代次。在线Leader检查只作为FENCE/ACTIVATE命令的前置门禁，不能被描述为跨系统原子授权。FENCE与mutation共用同一SQLite `BEGIN IMMEDIATE`事务，因此本地参考实现中的两个操作具有可观察的串行顺序。
+Provider schema升级至v5，新增`provider_scope_grants`与`provider_grant_commands`，并要求备份验证包含这两张表及`trusted_ed25519_keys`。备份校验会检查每条ACTIVATE都引用同一Provider/tenant/scope/grant的FENCE回执、代次连续、回执时间顺序正确，并检查当前scope行与最新FENCE/ACTIVATE链一致；断链或信任表缺失时拒绝备份。配置`require_revocable_grant=True`时，Provider必须同时配置Provider ID、Ed25519命令信任公钥和在线Coordinator Leader checker；缺少任一项即初始化失败；在线checker返回inactive或抛出异常时，FENCE/ACTIVATE fail-closed且不得创建/推进grant状态。proof必须签署Grant ID与generation，Provider在object PUT、multipart begin、part、complete各自实际写事务内校验ACTIVE、期限和代次，并通过FENCE receipt核对Provider ID，防止同一SQLite文件跨Provider身份复用。Grant命令不接受调用方注入时间；获得SQLite写锁后和在线Leader读取后再次校验签名命令时间窗，避免等待锁期间过期命令落库。在线Leader检查只作为FENCE/ACTIVATE命令的前置门禁，不能被描述为跨系统原子授权。FENCE与mutation共用同一SQLite `BEGIN IMMEDIATE`事务，因此本地参考实现中的两个操作具有可观察的串行顺序。
 
 命令收据按完整envelope digest持久化；ACTIVATE签发时间不得早于FENCE回执的Provider本地提交时间。提交后模拟响应丢失时可按原digest读回并判定ALREADY_APPLIED，回执可经backup/restore保留；不能通过新命令猜测重试。
 
