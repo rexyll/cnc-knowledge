@@ -184,7 +184,10 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
 
     def test_reservation_is_idempotent_by_exact_operation_identity(self):
         first = self.reserve_fence()
-        replay = self.reserve_fence()
+        replay = self.reserve_fence(
+            command_issued_at_unix=first.command_issued_at_unix,
+            command_expires_at_unix=first.command_expires_at_unix,
+        )
         self.assertEqual(first, replay)
         self.assertEqual(self.authority.snapshot(self.key).provider_generation_floor, 1)
         self.assertEqual(self.authority.operation_status(first.operation_id).state, "PENDING")
@@ -254,7 +257,9 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         replay = self.confirm_receipt(reservation, receipt)
         self.assertEqual(replay.state, first.state)
         self.assertEqual(replay.revision, first.revision)
-        different_receipt = self.receipt_envelope(reservation)
+        different_receipt = self.receipt_envelope(
+            reservation, applied_at_unix=reservation.command_issued_at_unix + 0.2
+        )
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "cannot be replaced"):
             self.confirm_receipt(reservation, different_receipt)
 
@@ -285,7 +290,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         )
 
     def test_activate_requires_confirmed_fence_and_exact_fence_digest(self):
-        self.reserve_fence()
+        pending = self.reserve_fence()
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "pending or recovery-required"):
             self.activate(
                 operation_id="activate-before-fence",
@@ -294,7 +299,10 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         fence = self.authority.operation_status("fence-op-1")
         self.assertEqual(fence.state, "PENDING")
 
-        self.confirm_fence(self.reserve_fence())
+        self.confirm_fence(self.reserve_fence(
+            command_issued_at_unix=pending.command_issued_at_unix,
+            command_expires_at_unix=pending.command_expires_at_unix,
+        ))
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "latest confirmed FENCE"):
             self.activate(
                 operation_id="activate-wrong-fence",
@@ -525,7 +533,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         new_receipt = self.receipt_envelope(next_reservation)
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "stopped issuing"):
             self.confirm_receipt(next_reservation, new_receipt)
-        self.assertEqual(self.authority.snapshot(self.key).state, "FENCE_PENDING")
+        self.assertEqual(self.authority.snapshot(self.key).state, "ACTIVATE_PENDING")
 
     def test_revoked_provider_key_rejects_post_revocation_receipt_without_floor_advance(self):
         reservation = self.reserve_fence()
