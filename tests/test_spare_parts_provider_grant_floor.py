@@ -35,6 +35,18 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.base = Path(self.temp.name)
         self.database = self.base / "external-floor.sqlite"
         self.authority = SQLiteProviderGrantFloorAuthority(self.database)
+        self.receipt_signer = Ed25519PrivateKey.generate()
+        self.receipt_public_key = self.receipt_signer.public_key().public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
+        )
+        self.authority.admin_register_provider_receipt_key(
+            provider_id="provider-a",
+            key_id="provider-receipt-a",
+            public_key=self.receipt_public_key,
+            not_before=time.time() - 60.0,
+        )
+        self._receipt_tick = 0.0
+        self.last_receipts = {}
         self.key = ProviderGrantScopeKey(
             provider_id="provider-a", tenant_id="tenant-a",
             scope="cnc/ch17/backup-reference-001",
