@@ -74,6 +74,26 @@ class _FailNextCheckpointWrite(InMemoryProviderGrantFloorCheckpointStore):
         return super().compare_and_set(**kwargs)
 
 
+class _ConflictNextCheckpointWrite(InMemoryProviderGrantFloorCheckpointStore):
+    def __init__(self) -> None:
+        super().__init__()
+        self.conflict_next_write = False
+
+    def compare_and_set(self, **kwargs) -> ProviderGrantFloorCheckpoint:
+        if self.conflict_next_write:
+            self.conflict_next_write = False
+            current = self.read_checkpoint()
+            if current is None:
+                raise OSError("simulated unexpected empty checkpoint")
+            self._checkpoint = ProviderGrantFloorCheckpoint(
+                sequence=current.sequence + 1,
+                authority_revision=current.authority_revision,
+                state_sha256="f" * 64,
+            )
+            raise OSError("simulated competing checkpoint CAS writer")
+        return super().compare_and_set(**kwargs)
+
+
 class CheckpointedProviderGrantFloorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory(prefix="ch17-floor-checkpoint-")
@@ -328,6 +348,22 @@ class CheckpointedProviderGrantFloorTests(unittest.TestCase):
             guard.admin_register_coordinator_command_key(
                 issuer_id="unconfirmed-issuer",
                 key_id="unconfirmed-key",
+                public_key=_raw_public_key(Ed25519PrivateKey.generate()),
+                not_before=time.time() - 60.0,
+            )
+        with self.assertRaises(ProviderGrantFloorCheckpointMismatch):
+            guard.snapshot(self.key)
+
+    def test_checkpoint_cas_conflict_leaves_floor_fail_closed(self):
+        store = _ConflictNextCheckpointWrite()
+        raw = SQLiteProviderGrantFloorAuthority(self.root / "cas-conflict.sqlite")
+        guard = CheckpointedSQLiteProviderGrantFloorAuthority(raw, store)
+        guard.bootstrap_empty_floor()
+        store.conflict_next_write = True
+        with self.assertRaises(ProviderGrantFloorCheckpointUncertain):
+            guard.admin_register_coordinator_command_key(
+                issuer_id="cas-conflict-issuer",
+                key_id="cas-conflict-key",
                 public_key=_raw_public_key(Ed25519PrivateKey.generate()),
                 not_before=time.time() - 60.0,
             )
