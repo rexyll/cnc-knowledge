@@ -558,3 +558,46 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - No actual etcd, Provider, KMS/HSM, object storage, IAM/RBAC or production authority integration occurred. No candidate import, Restore, application activation or Cutover occurred. Generic Restore with Provider Grant history stays fail-closed.
 - MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
 - **Status:** DONE for the local protocol module and external Floor verification gate only. Round96 is required for Provider durable receipt emission.
+
+
+## CNC Knowledge Base — Round 95（Provider Grant Receipt 协议模块与外部 Floor 验签门禁）
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: Implement local Provider-native signed Receipt verification and migrate the separate SQLite Floor reference from naked digest confirmation to authenticated evidence. No Provider mutation integration or production external service integration.
+
+### Implementation
+
+- Added `scripts/spare_parts_provider_grant_receipt.py` and `tests/test_spare_parts_provider_grant_receipt.py`.
+  - RFC 8785 JCS canonical UTF-8 encoding for new Receipt claims and envelopes.
+  - Independent domain-separated Ed25519 Provider receipt signing/verifying; Coordinator command signing key is not reused.
+  - Strict envelope/claims/signature schema, duplicate JSON-key rejection, unknown-field rejection, strict Base64 and 64-byte signature validation, type/range/time/digest/isolated-namespace/action-result checks.
+  - `VerifiedProviderGrantReceipt` carries a complete canonical-envelope digest, signer key/fingerprint, trust revision and bound receipt claims.
+- Upgraded `scripts/spare_parts_provider_grant_floor.py` to SQLite schema v4.
+  - Added an explicit Provider receipt public-key trust registry keyed by Provider ID + key ID, including SHA-256 fingerprint, validity window, ACTIVE/RETIRING/REVOKED lifecycle, retirement/revocation effective timestamps and trust revision.
+  - Added local database-owner management methods for key registration, retirement and revocation. Receipt-supplied public keys never auto-register or establish trust.
+  - FENCE/ACTIVATE reservations now persist Coordinator command `issued_at` and `expires_at`; command expiry must be positive and no later than the native Lease expiry. Exact operation replay includes exact command time fields.
+  - `confirm_provider_receipt()` now accepts only a signed Receipt envelope. Signature verification, trust-key lookup, Provider/tenant/scope/action/Grant/generation/command/FENCE digest/isolated namespace/Leader/native Lease/command time/result binding, ACTIVATE chronology, scope revision CAS and Floor state advancement occur under the same `BEGIN IMMEDIATE` transaction.
+  - Floor computes the full canonical-envelope SHA-256 itself and stores signer key ID, key fingerprint, trust revision and Provider applied time. Confirmed Receipt replacement with a different digest is rejected; exact replay is idempotent.
+  - Schema migration is sequential v1→v2→v3→v4. Historical naked digests and operations remain present, but new signer/fingerprint/trust/applied-time/command-time fields remain NULL for legacy rows; they are not forged or automatically upgraded to authenticated evidence. Legacy PENDING rows with no pinned command times cannot use the new confirmation path.
+- Updated `requirements-ch17-security.txt` with pinned `rfc8785==0.1.4`.
+- Updated CH17 README and the Round 95 section of root/CH17 TaskPlans to describe the actual schema v4 behavior and the distinction between local receipt verification and Provider data-plane integration.
+
+### Tests and validation
+
+- Current code implementation validation: [Knowledge Quality Run 46155354641](https://github.com/rexyll/cnc-knowledge/actions/runs/46155354641), both required jobs succeeded.
+- Full repository unittest: 737 tests run, 40 skipped by environment guards; all non-skipped tests passed.
+- CH12 numerical resource tests: 143 passed.
+- Knowledge lint: 0 errors / 5 warnings; additional structure/data checks: 0 errors.
+- The 737-test suite includes the Receipt protocol, Floor trust lifecycle, v1→v4 migration, naked-digest rejection, exact reservation claims, command-time/Lease bounds, FENCE/ACTIVATE chronology, idempotency/replacement and no-revision-advance-on-invalid-receipt tests.
+- The run above validates the code/test head before the final README/TaskPlan/TaskHistory synchronization. A final-main CI run is required for the complete documentation state.
+
+### Safety boundary / remaining work
+
+- Receipt signing in the current tests uses synthetic Provider Ed25519 keys. The real `spare_parts_provider_sqlite_fenced.py` FENCE/ACTIVATE transaction still does not atomically persist the grant state, command receipt and signed Receipt envelope together; no durable signed-receipt lookup API by command digest exists yet.
+- The Floor does not independently verify the Coordinator command signature in this round. The pinned command digest/claims in each reservation are supplied by the upstream Coordinator call path; production integration must authenticate that source and prevent callers from manufacturing reservation claims.
+- The local key registry management methods are not a production key-management plane. No real Provider, KMS/HSM, etcd, object storage, IAM/RBAC or production trust-registry control plane was contacted.
+- Provider receipt authenticity, external Floor consistency and Provider mutation atomicity remain separate guarantees. SQLite Floor/trust registry snapshot rollback still requires an independently trusted checkpoint outside its own backup domain.
+- No Grant-aware Restore, candidate import, application activation or Cutover was implemented or executed. Generic Restore for any Provider Grant history remains fail-closed.
+- MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
+- **Status:** Implementation code and tests passed; final documentation synchronization CI pending.
