@@ -1456,4 +1456,4 @@
 - **边界：** 本轮先设计协议和测试规格，不连接生产 Provider/KMS/HSM/etcd，不修改 Unified schema-v2 authority、IAM/RBAC，不实现 Grant-aware Restore，不解除通用 Restore 对 Grant 历史备份的 fail-closed 门禁，不执行候选导入、应用激活或 Cutover。
 - **交付：** 新增 Provider Grant receipt 认证设计文档；同步根 TaskPlan、CH17 TaskPlan、README 和 TaskHistory。设计评审完成后再决定独立实现轮次。
 - **设计文档：** [Provider Grant Floor 回执来源认证与签名证据设计](docs/17-operation-maintenance-and-repair/provider-grant-receipt-authentication-design.md)。
-- **状态：** TODO。
+- **状态：** DONE（2026-11-28；Knowledge Quality Run 46153427280 两个必需 Job 均 success）。
