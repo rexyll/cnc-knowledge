@@ -381,3 +381,21 @@ Quality Run [46029534619](https://github.com/rexyll/cnc-knowledge/actions/runs/4
 Quality Run [46092128612](https://github.com/rexyll/cnc-knowledge/actions/runs/46092128612) success：全库600 unittest（40 skipped，560 passed）、CH12数值资源测试143项通过、knowledge lint 0 errors/5 warnings、结构/data检查0 errors。新增执行测试走现有Etcd adapter与InMemory fake，覆盖批次原子性、checkpoint未知结果恢复、竞争writer CAS冲突、重启续跑和最终state发布。MIG-05因此进入IN_PROGRESS，但只完成本轮涉及的一部分事务恢复测试；完整状态映射、fencing、幂等/TTL、外部Provider fencing和真实etcd故障注入仍未完成。
 
 本轮没有连接真实etcd、执行Lease Grant/Revoke、修改RBAC、启动应用、写生产namespace或进行生产cutover。MIG-04仍IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
+
+### 15.8 第八十轮：Leader epoch floor持久化及Unified runtime互操作
+
+此前候选映射只把旧Leader epoch作为顶层恢复说明，而 \`state_template.coordinator.leader\` 置为 \`None\`。现有标准 \`claim_leadership()\` 的默认计算以aggregate当前Leader epoch为基准；若导入后忘记显式传入外部reconciliation floor，标准claim会从epoch 1开始，导致历史epoch floor未被运行时强制保留。这是迁移连续性缺口。
+
+现将旧epoch floor持久化为Unified schema-v2 aggregate内部的固定失效历史marker（仅旧epoch大于0时）：
+- \`leader_id = "migration-epoch-floor"\`
+- \`epoch = legacy leader epoch\`
+- \`expires_at = 0.0\`
+- \`backend_lease_id = 0\`（etcd no-Lease sentinel，不引用任何cluster-global真实Lease ID）
+
+此marker不代表旧Leader，不包含旧leader_id，不具备有效TTL，也没有对应的 \`coordinator/leader\` TTL key；导入时不创建原生Lease。它只承载单调epoch下限。标准 \`leader_snapshot()\` 应将其识别为inactive；标准 \`claim_leadership()\` 随后会生成epoch \`legacy floor + 1\` 的全新Leader，并为其正常申请正数Lease。旧epoch为0时不写marker，保持 \`leader=None\`，新claim的首个epoch仍为1。
+
+为避免该特殊值扩大到普通Leader记录，Planner只允许字段和值全部精确匹配的marker；Coordinator runtime只对 \`leader_id="migration-epoch-floor"\` 且 \`expires_at=0.0\` 的记录接受 \`backend_lease_id=0\`。其他真实Leader仍要求正数Lease ID。旧Leader身份、非零backend Lease哨兵、非零过期时间或其他非规范记录均不得通过导入校验。
+
+候选bundle的数据语义发生了不兼容变化，因此格式从 \`ch17-sqlite-unified-candidate-v1\` 升级为 \`ch17-sqlite-unified-candidate-v2\`。旧v1候选包必须拒绝；需从新的只读Inventory/Export重新构建manifest、records、policy与candidate。Planner单独有测试确认v1不再被接受。
+
+新增的内存互操作测试在模拟完成分批request导入及最终state publish后，使用标准Admission/Coordinator runtime重新构造对象，验证scope high-water/operation sequence、COMMITTED operation、终态request拒绝重放，以及旧epoch 8后的新Leader epoch 9。另验证epoch-zero来源不生成marker。该测试只说明候选aggregate与当前客户端运行时结构契约兼容；不等价于真实etcd导入演练、Lease TTL验证、Provider外部fencing验收或生产cutover。MIG-05仍为IN_PROGRESS，MIG-06仍为TODO。
