@@ -255,7 +255,13 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 
 ### Validation
 
-- Final quality CI results will be added after docs/history synchronization completes.
+- [Code quality Run 46133032641](https://github.com/rexyll/cnc-knowledge/actions/runs/46133032641): both required jobs succeeded after the test fixture's expected restore-preparation result was corrected.
+- [Final documentation quality Run 46133257782](https://github.com/rexyll/cnc-knowledge/actions/runs/46133257782): both required jobs succeeded on the complete code, plan, README, migration-design and TaskHistory state.
+- Full unittest suite: 645 tests run, 40 skipped (605 passed).
+- CH12 numerical resource tests: 143 passed.
+- Knowledge lint: 0 errors; fixture lint: 0 errors / 5 warnings.
+- Synthetic scenario replay: 30 simulated, 0 failed; external connections and writes were disabled.
+- Provider freeze tests additionally cover all four mutation entrypoints, signed command replay/monotonicity, old proof rejection after unfreeze, SQLite transaction race ordering, v2-to-v3 additive migration, restart, and backup/restore persistence.
 
 ### Safety boundary
 
