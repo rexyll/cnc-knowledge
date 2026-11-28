@@ -265,11 +265,8 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         # Simulate a lost Provider response: the exact receipt is looked up later.
         recovered = self.confirm_fence(reservation)
         generation_before_replay = recovered.provider_generation_floor
-        self.authority.confirm_provider_receipt(
-            operation_id=reservation.operation_id,
-            command_digest=reservation.command_digest,
-            provider_receipt_digest=_digest(reservation.operation_id + "-provider-receipt"),
-            expected_revision=reservation.reserved_scope_revision,
+        self.confirm_receipt(
+            reservation, self.last_receipts[reservation.operation_id]
         )
         self.assertEqual(
             self.authority.snapshot(self.key).provider_generation_floor,
@@ -298,12 +295,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         fence = self.reserve_fence()
         self.confirm_fence(fence)
         activate = self.activate()
-        self.authority.confirm_provider_receipt(
-            operation_id=activate.operation_id,
-            command_digest=activate.command_digest,
-            provider_receipt_digest=_digest("activate-receipt"),
-            expected_revision=activate.reserved_scope_revision,
-        )
+        self.confirm_receipt(activate)
         active = self.authority.snapshot(self.key)
         newer_fence = self.reserve_fence(
             operation_id="newer-epoch-fence-for-regression",
@@ -328,12 +320,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             lease_expires_at_unix=self.lease_expiry + 100.0,
             expected_revision=fenced.revision,
         )
-        self.authority.confirm_provider_receipt(
-            operation_id=newer_activate.operation_id,
-            command_digest=newer_activate.command_digest,
-            provider_receipt_digest=_digest("newer-epoch-activate-receipt"),
-            expected_revision=newer_activate.reserved_scope_revision,
-        )
+        self.confirm_receipt(newer_activate)
         current = self.authority.snapshot(self.key)
 
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "below the external floor"):
@@ -359,12 +346,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         fence = self.reserve_fence()
         self.confirm_fence(fence)
         activate = self.activate()
-        active = self.authority.confirm_provider_receipt(
-            operation_id=activate.operation_id,
-            command_digest=activate.command_digest,
-            provider_receipt_digest=_digest("activate-receipt"),
-            expected_revision=activate.reserved_scope_revision,
-        )
+        active = self.confirm_receipt(activate)
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "namespace is immutable"):
             self.authority.reserve_fence(
                 operation_id="namespace-change",
@@ -402,12 +384,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         fence = self.reserve_fence()
         self.confirm_fence(fence)
         activate = self.activate()
-        self.authority.confirm_provider_receipt(
-            operation_id=activate.operation_id,
-            command_digest=activate.command_digest,
-            provider_receipt_digest=_digest("activate-receipt"),
-            expected_revision=activate.reserved_scope_revision,
-        )
+        self.confirm_receipt(activate)
         active = self.authority.snapshot(self.key)
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "expiry cannot regress"):
             self.reserve_fence(
@@ -420,12 +397,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         first = self.reserve_fence()
         self.confirm_fence(first)
         activate = self.activate()
-        self.authority.confirm_provider_receipt(
-            operation_id=activate.operation_id,
-            command_digest=activate.command_digest,
-            provider_receipt_digest=_digest("activate-receipt"),
-            expected_revision=activate.reserved_scope_revision,
-        )
+        self.confirm_receipt(activate)
         active = self.authority.snapshot(self.key)
         newer = self.reserve_fence(
             operation_id="new-epoch-fence",
