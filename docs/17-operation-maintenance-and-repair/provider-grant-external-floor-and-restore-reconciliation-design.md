@@ -109,3 +109,37 @@
 - 本文不实现 ProviderGrantFloorAuthority adapter，不修改 Unified schema-v2 生产 authority，不连接真实 etcd/Provider/KMS/HSM，不修改 IAM/RBAC，不执行生产迁移或 Cutover。
 - FENCE/ACTIVATE command 与 ACTIVE Grant 的有效期上限在本地参考实现中为300秒，且不能晚于Coordinator native Lease expiry。提前撤销Lease而Provider未及时收到FENCE时，旧Grant仍可能在剩余有效期内被接受；该残余窗口有上限但非零，不能宣称瞬时撤销。
 - 当前无真实多主机、远程对象存储或跨系统联合故障证据；MIG-05 继续 IN_PROGRESS，MIG-06 和 MIG-07 不因此解锁。
+
+
+## 9. 第九十二轮：独立 Floor 本地参考适配器与状态机
+
+新增 scripts/spare_parts_provider_grant_floor.py，实现 ProviderGrantFloorAuthority 端口基类及 SQLiteProviderGrantFloorAuthority 独立文件参考适配器。该文件必须与 Provider SQLite 数据库及其备份/恢复域分离；它只模拟外部 authority 的事务契约，不是 etcd、quorum 或生产级防回滚存储。
+
+### 9.1 持久化记录
+
+- provider_grant_floor_scopes：按 (provider_id, tenant_id, scope) 保存 generation floor、Leader epoch floor、Coordinator namespace/Leader/native Lease 绑定、当前 Grant ID、pending operation、FENCE/ACTIVATE command digest、Provider receipt digest及scope revision。
+- provider_grant_floor_operations：按全局唯一 operation ID 保存精确作用域、动作、Grant ID、generation、命令摘要、FENCE引用、Coordinator/Lease身份、预留revision、Provider回执摘要及PENDING/CONFIRMED状态。
+- provider_grant_floor_meta：记录本地schema版本和本地authority revision。该revision只用于本地参考审计，不构成独立防回滚锚点。
+
+### 9.2 状态推进与并发语义
+
+1. FENCE reserve通过 BEGIN IMMEDIATE 对scope revision执行CAS，分配下一个generation并进入 FENCE_PENDING；pending未确认或scope已FENCED时不允许分配下一操作。
+2. 新Leader/Lease身份必须使用更高Leader epoch；同一epoch不能改变namespace、Leader ID或native Lease ID。scope namespace一经建立不可改变；同epoch同Lease的expiry不能回退。
+3. Provider确认FENCE后，Coordinator必须先持有可认证的Provider精确回执，再将其摘要写入外部状态并推进为 FENCED。
+4. ACTIVATE reserve只接受 FENCED scope，必须匹配当前Grant、同一Coordinator/Leader/native Lease身份及最近一次已确认FENCE command digest；它分配下一个generation并进入 ACTIVATE_PENDING。
+5. Provider精确ACTIVATE回执被确认后才进入 ACTIVE。相同receipt的确认重放幂等；同一operation ID替换命令或替换已确认receipt均拒绝。
+6. Coordinator结果未知时可通过 operation_status(operation_id) 在进程重启后读取原操作状态；必须沿用原operation ID和command digest，不可猜测新generation。
+
+Floor状态先预留、Provider本地事务再提交、最后外部确认，是两个系统间的双边协议而不是分布式原子事务。这里不通过跨机器 issued_at/applied_at 比较决定状态先后；协议顺序由外部revision、operation identity、精确命令摘要和Provider回执摘要表示。Lease expiry仍作为签名/Leader校验材料保存，但当前时刻的Leader/Lease有效性必须由真实Coordinator authority单独线性一致验证。
+
+### 9.3 新增测试与当前限制
+
+新增 tests/test_spare_parts_provider_grant_floor.py，包含20个独立测试方法定义，覆盖正常FENCE→ACTIVATE、generation递增、CAS竞争、相同operation重试、operation ID冲突、pending阻断、精确Provider receipt确认、响应未知后的重启查询、Leader epoch/namespace/Lease expiry单调性、Provider/tenant/scope隔离、trusted minimum revision和文件权限。
+
+**必须保留的限制：**
+
+- 当前SQLite floor只能证明同机单文件事务和CAS参考语义；它不是etcd linearizable KV/Txn，不提供Raft quorum、跨主机线性一致读写或远程故障恢复。
+- SQLite文件自身无法识别自己被恢复到旧快照。minimum_revision 只有在调用方持有来自该数据库备份域之外的可信revision checkpoint时，才可检测低于该checkpoint的回滚。
+- 适配器只保存Provider receipt digest；调用者仍须通过认证的Provider状态接口核实回执的真实性、Provider身份、scope和command digest，不能把未认证字符串直接确认成有效回执。
+- 当前没有连接该适配器与 SQLiteFencedObjectStorageProvider.apply_provider_grant_command()、Coordinator命令签发或Unified schema-v2 authority；没有Grant-aware Restore，也没有解除通用Restore对Grant历史备份的拒绝。
+- 本轮测试方法数量只是源代码清单，尚不代表测试已执行或通过。Round 90、Round 92均不得因此标记DONE；生产 Unified schema-v2仍为唯一authority，MIG-04/MIG-05继续IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
