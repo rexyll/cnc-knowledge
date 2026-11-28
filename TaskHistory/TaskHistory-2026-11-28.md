@@ -350,7 +350,7 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 
 ### Validation
 
-- CI status: pending; this round is not accepted until both required main-branch jobs complete successfully.
+- [Final main-branch CI Run 46139767853](https://github.com/rexyll/cnc-knowledge/actions/runs/46139767853): both required jobs succeeded. Full unittest suite: 663 run, 40 skipped (623 passed); CH12 numerical resource tests: 143 passed; knowledge lint: 0 errors / 5 warnings; repository structure/data checks: 0 errors.
 - Test doubles are synthetic. No live etcd or remote Provider was contacted.
 
 ### Safety boundary and remaining gap
