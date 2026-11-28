@@ -269,3 +269,29 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - No real Provider, KMS/HSM, etcd, cloud object store or IAM/RBAC service was contacted; no production control object or authority was changed.
 - The offline freeze attestation verifier still reports `provider_write_freeze_enforced=false`; it does not inspect this local fixture or establish production freeze status.
 - No candidate import, application activation or production cutover occurred. ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`; production Unified schema-v2 remains the sole authority.
+
+
+## CNC Knowledge Base — Round 86
+
+- Repository: rexyll/cnc-knowledge
+- Branch: main only; no branch created.
+- Scope: Provider-native freeze command durable receipts and lost-response recovery in the same-host SQLite reference.
+
+### Code changes
+
+- Freeze command digest now covers the complete canonical signed envelope, including key ID and signature, rather than claims alone.
+- Added provider_write_freeze_commands, keyed by the full-envelope SHA-256 and recording issuer/key, Provider/tenant/scope, action, freeze ID, generation, historical result state and applied timestamp.
+- Command receipt insertion and provider_write_freeze_scopes generation/state update occur in the same BEGIN IMMEDIATE transaction.
+- apply_write_freeze_command() checks the trusted key registry and then resolves a historical receipt before checking current generation. Replaying any previously committed exact envelope returns ALREADY_APPLIED with its historical result and current scope state; it never re-applies an old FREEZE/UNFREEZE.
+- Added read-only write_freeze_command_status() to query historical receipt and current scope state by exact envelope digest. Receipts persist across restart and backup/restore.
+- Added tests for FREEZE→UNFREEZE→historical FREEZE replay (current state remains OPEN), history/current-state distinction, unknown and malformed digests, and receipt persistence through restart and backup/restore.
+
+### Validation
+
+- CI validation pending; do not treat this round as accepted until required main-branch workflows complete successfully.
+
+### Safety boundary
+
+- This remains a same-host SQLite reference implementation. A missing local receipt does not prove that an unknown remote network request never committed.
+- Production Coordinator recovery still requires an authenticated, linearizable Provider receipt-query endpoint and defined retry/quarantine rules; this change does not provide remote multi-replica consistency.
+- No real Provider, KMS/HSM, etcd, cloud object store or IAM/RBAC service was contacted. No production control object, application access, candidate import or cutover was changed. ASSET-000092 remains PROPOSED_NOT_APPROVED / NOT_RUN; production Unified schema-v2 remains the sole authority.
