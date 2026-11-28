@@ -1390,4 +1390,4 @@
 - **实现：** 新增 `scripts/spare_parts_provider_live_leader_status.py`，使用现有 `linearizable_range(prefix)` 在同一revision读取Scheduler aggregate和Leader TTL key，核对Leader ID、epoch、native Lease ID、KV Lease attachment及expiry。
 - **Provider门禁：** 新增可选 `leader_status_checker` 与 `require_online_leader_status=True`；新FREEZE/UNFREEZE命令在线校验失败或Coordinator不可用时拒绝。精确历史命令receipt仍优先返回ALREADY_APPLIED。
 - **限制：** etcd线性一致Range与Provider SQLite commit不能跨系统原子提交；Lease可能在Range成功后、SQLite commit前被撤销。本轮不宣称消除TOCTOU或实现跨系统原子fencing。详见 `docs/17-operation-maintenance-and-repair/provider-online-coordinator-leader-verification.md`。
-- **状态：** 代码、测试与文档已提交至main；必需CI完成前保持验收待定。无真实etcd/Provider/KMS连接，无生产namespace写入、候选导入、应用激活或cutover。
+- **状态：** DONE（在线Leader状态校验参考实现与文档/测试交付）。最终主分支CI Run 46139767853 success：全库663项测试运行、40项跳过、623项通过；CH12数值资源143项通过；知识lint 0 errors/5 warnings，结构与数据检查0 errors。无真实etcd/Provider/KMS连接，无生产namespace写入、候选导入、应用激活或cutover。
