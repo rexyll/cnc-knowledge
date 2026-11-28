@@ -267,8 +267,6 @@ class SQLiteFencedObjectStorageProvider:
             connection.execute(
                 """CREATE TABLE IF NOT EXISTS provider_write_freeze_commands (
                     command_sha256 TEXT PRIMARY KEY CHECK(length(command_sha256)=64),
-                    envelope_json TEXT NOT NULL,
-                    signer_public_key_base64 TEXT NOT NULL,
                     issuer_id TEXT NOT NULL,
                     key_id TEXT NOT NULL,
                     provider_id TEXT NOT NULL,
@@ -326,6 +324,8 @@ class SQLiteFencedObjectStorageProvider:
             connection.execute(
                 """CREATE TABLE IF NOT EXISTS provider_grant_commands (
                     command_sha256 TEXT PRIMARY KEY CHECK(length(command_sha256)=64),
+                    envelope_json TEXT NOT NULL,
+                    signer_public_key_base64 TEXT NOT NULL,
                     issuer_id TEXT NOT NULL,
                     key_id TEXT NOT NULL,
                     provider_id TEXT NOT NULL,
