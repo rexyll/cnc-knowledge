@@ -1585,6 +1585,8 @@ class SQLiteFencedObjectStorageProvider:
             if receipt is None:
                 return None
             result = dict(receipt)
+            result.pop("envelope_json", None)
+            result.pop("signer_public_key_base64", None)
             current = c.execute(
                 """SELECT * FROM provider_scope_grants
                    WHERE tenant_id=? AND fencing_scope=?""",
