@@ -1233,6 +1233,54 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(BackupStorageError, "broken FENCE/ACTIVATE receipt chain"):
             SQLiteFencedObjectStorageProvider.validate_backup(backup)
 
+    def test_backup_validation_reverifies_persisted_grant_ed25519_signature(self):
+        import json
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-signature-backup",
+            issued_at=now, lease_expires=now + 90.0,
+        )
+        fence_digest = hashlib.sha256(
+            json.dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence)
+        fence_receipt = provider.provider_grant_command_status(fence_digest)
+        activate = self.grant_command(
+            "ACTIVATE", 2, "grant-signature-backup",
+            issued_at=float(fence_receipt["applied_at"]) + 0.01,
+            lease_expires=now + 90.0, expires=time.time() + 45.0,
+            fence_digest=fence_digest,
+        )
+        provider.apply_provider_grant_command(activate)
+
+        backup = self.base / "provider-grant-tampered-signature.sqlite"
+        provider.backup_to(backup)
+        with sqlite3.connect(backup) as connection:
+            receipt = connection.execute(
+                "SELECT command_sha256,envelope_json FROM provider_grant_commands WHERE action='ACTIVATE'"
+            ).fetchone()
+            old_digest, envelope_json = receipt
+            envelope = json.loads(envelope_json)
+            signature = envelope["signature"]["value_base64"]
+            replacement = ("A" if signature[0] != "A" else "B") + signature[1:]
+            envelope["signature"]["value_base64"] = replacement
+            tampered_json = json.dumps(
+                envelope, sort_keys=True, separators=(",", ":"), allow_nan=False
+            )
+            tampered_digest = hashlib.sha256(tampered_json.encode()).hexdigest()
+            connection.execute(
+                """UPDATE provider_grant_commands
+                   SET command_sha256=?,envelope_json=? WHERE command_sha256=?""",
+                (tampered_digest, tampered_json, old_digest),
+            )
+            connection.execute(
+                "UPDATE provider_scope_grants SET activation_command_sha256=?",
+                (tampered_digest,),
+            )
+        with self.assertRaisesRegex(BackupStorageError, "signature or claims cannot be verified"):
+            SQLiteFencedObjectStorageProvider.validate_backup(backup)
+
     def test_backup_validation_requires_ed25519_grant_trust_registry(self):
         backup = self.base / "provider-grant-trust-backup.sqlite"
         self.provider.backup_to(backup)
