@@ -938,7 +938,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             lease_expires_at=issued + 30.0,
         )
         before = self.authority.snapshot(self.key)
-        with self.assertRaisesRegex(ProviderGrantFloorConflict, "verification failed"):
+        with self.assertRaisesRegex(ProviderGrantFloorError, "not exceed its native Lease"):
             self.authority.reserve_fence_from_command(
                 operation_id="command-outlives-native-lease",
                 key=self.key,
