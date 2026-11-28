@@ -41,3 +41,10 @@
 - **主要提交：** TaskPlan登记 963106fa606db1a10c478205768b45fa91a315ed / 266b4408bf9d4af6fa1b4bf69e2abd40e8a27299；设计文档 ac7cb81b5992fb7d2793894fd9d736583dcde090；Witness严格提交协议补充 0ff3dc613e3ec001cc9afd6054b95fbabf0c9026。
 - **边界：** 本轮只交付架构设计，不实现Etcd-native Grant Floor service或生产witness adapter，不连接真实Etcd/Coordinator/Provider/KMS/HSM，不配置RBAC，不执行SQLite迁移、候选导入、Restore、应用激活或Cutover。Production Unified schema-v2仍为唯一authority；Grant历史通用Restore继续fail-closed。
 - **状态：** IN_PROGRESS；待README/TaskHistory同步、全库质量CI和设计审查通过后再结项。
+### Round 99 设计审查补充（2026-11-29）
+
+- 新增设计细化提交：c9ccad04ea93a5fcb1df033ad2f286fdebdf6630。
+- 补充Witness PREPARE的取消语义：Etcd PREPARE响应未知时，不可仅凭一次线性一致Range尚未发现pending intent就把Witness记录标记ABORTED；必须精确恢复原Txn，或在Etcd明确Compare失败/ABORT事务精确成功后结束intent。Etcd COMMIT确定完成后只能继续Witness COMMIT与Etcd FINALIZE，不允许再ABORT。
+- 补充整体Etcd snapshot rollback后的数据恢复边界：witness sequence/root只能检测回滚，不能重建scope/operation/key/event正文；完整事件日志或受信备份/补齐日志缺失时，保持写隔离并逐scope受控重建。
+- 明确单一namespace全局meta/event sequence会序列化各scope写入，形成吞吐热点；本轮接受作为v1正确性基线，未来分片必须另行证明root与全序关系。
+- Round99仍为架构设计，不实现Etcd-native Floor service，不连接真实Etcd或配置RBAC，不执行迁移/Restore/Cutover；等待全库质量CI通过后再标记DONE。
