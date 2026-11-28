@@ -1501,3 +1501,16 @@
 - **边界：** 仅本地单文件 SQLite Floor 与合成 Coordinator/Provider Ed25519 key；不连接生产 Coordinator/etcd/Provider/KMS/HSM/object storage/IAM/RBAC，不修改 Unified schema-v2 production authority，不实现 Grant-aware Restore，不解除含 Grant 历史备份的通用 Restore fail-closed 门禁，不执行候选导入/应用激活/Cutover。SQLite/Floor trust registry 不具备自身快照回滚检测能力，仍需备份域外可信 checkpoint。
 - **交付：** Floor schema/API、Coordinator public-key trust registry/lifecycle、signed-envelope strict reservation、历史迁移门禁、测试、CH17 README/设计文档/TaskHistory 与 main CI。
 - **状态：** DONE（2026-11-28；代码/测试验证 [Knowledge Quality Run 46159590900](https://github.com/rexyll/cnc-knowledge/actions/runs/46159590900) 两个必需 Job 均 success；完整文档同步由当前主分支 CI 再次复核）。
+
+
+### 第九十八轮任务计划：Provider Grant Floor 外部单调检查点与快照回滚检测
+
+- **背景：** 第九十七轮完成 Coordinator signed command 来源认证，但 SQLite Floor 与其 Provider/Coordinator trust registry 仍无法识别自身被恢复到旧快照。现有 `minimum_revision` 仅由调用方临时传入，没有持久、独立的可信检查点协议；仅依靠同一数据库中的 revision 无法证明数据库没有回滚。
+- **目标：** 建立独立于 Floor SQLite 文件及其备份域的单调检查点端口，并提供本地可执行的受检查点保护的 SQLite Floor wrapper。每次读取/写入前核对外部检查点；写事务提交后通过外部 CAS 记录新的完整状态摘要。检查点缺失、回退、状态摘要不一致、数据库领先/落后于检查点或更新结果不确定时必须 fail-closed。
+- **状态摘要：** 对 Floor schema、metadata、scopes、operations、Provider receipt key registry、Coordinator command key registry的逻辑内容进行确定性规范化和SHA-256摘要；不得只摘要可回滚的authority_revision，也不得把数据库内部revision当作独立信任锚。
+- **接口与适配器：** 定义 `ProviderGrantFloorCheckpointStore` 与不可变 checkpoint record；实现仅供单进程测试使用的内存CAS fake，以及 `CheckpointedSQLiteProviderGrantFloorAuthority` 包装层。包装层覆盖所有公开读/写方法，包括 reservation、receipt confirm、trust-key管理、snapshot和operation status。每次受保护操作均在成功前/后执行检查点验证/推进。
+- **初始化与失败恢复：** 外部检查点首次建立只允许显式bootstrap一个完全空白、无scope/operation/trust-key历史的Floor数据库；已有非空但无检查点的Floor禁止自动接管。SQLite事务成功而外部检查点推进失败/结果未知时，不自动猜测或补写，后续操作保持拒绝，需外部权威/人工审计恢复。
+- **并发与诚实边界：** 本地wrapper仅在单进程单实例内串行化并用checkpoint CAS检测竞争；不得声称解决跨进程原子性。测试fake不属于生产可信存储。生产部署必须由Floor数据与检查点共同受同一线性一致事务权威保护，或采用等价的独立、不可回滚CAS服务；本轮不连接真实etcd/KMS/HSM/Provider，不执行Restore或Cutover。
+- **测试与验收：** 覆盖显式空库bootstrap、非空无锚拒绝、正常FENCE/ACTIVATE生命周期、trust registry变更锚定、完全旧快照回滚、同revision内容篡改、外部检查点缺失/回退、checkpoint CAS冲突/响应未知、失败操作不推进checkpoint、精确幂等重放不虚增revision；全库质量CI和CH17专项测试通过。
+- **交付：** Floor状态摘要/检查点端口与包装器、独立测试、CH17外部Floor设计文档、CH17 README、根/章节TaskPlan和TaskHistory。通用Restore对含Grant历史的备份继续fail-closed。
+- **状态：** IN_PROGRESS（先完成计划登记，再实施；通过主分支CI后方可标记DONE）。
