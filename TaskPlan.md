@@ -1313,3 +1313,15 @@
 - 输出 evidence SHA-256 与逐scope对账结果，但永远不授予 application activation 或 Provider operation 权限；该结果不是签名证明、生产审批或切换授权。
 - 增加正反向单元测试，CI通过后再考虑将只读对账结果接入后续 MIG-06 演练runbook。
 - 本轮不连接Provider、不读取真实外部对象存储、不写入fencing control record、不修改RBAC、不执行生产切换。
+
+
+
+### 第八十二轮任务计划：MIG-05 Provider fencing 证据 Ed25519 验签
+
+- 新增离线签名证据验证入口，严格验证签名信封、Ed25519算法、key_id及固定信任库schema；签名采用域分离前缀并覆盖规范化完整证据JSON。
+- 公钥信任库由调用方显式提供；未知key、格式/长度错误、签名不匹配和未知字段必须fail-closed。信任库来源、审批、密钥轮换与安全分发仍需独立治理。
+- 验签通过后复用现有300秒新鲜度、scope集合、generation及Provider fencing/sequence floor对账；不能因签名有效绕过任何原有检查。
+- 输出签名验证状态、签名key ID和信任库摘要；application activation与Provider operation授权仍永久为false。
+- 明确签名只认证快照内容，不证明持续冻结；离线验证不提供持久化nonce/replay ledger，不能防止有效旧快照在有效期内重放。
+- 增加有效签名、篡改、未知key、错误签名/算法、非法编码、未知字段、过期及floor超限测试。
+- 本轮不连接真实Provider、不访问KMS、不写Provider控制记录、不修改RBAC、不执行生产迁移或cutover。
