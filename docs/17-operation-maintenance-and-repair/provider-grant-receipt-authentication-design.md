@@ -68,6 +68,7 @@ Coordinator command key 与 Provider receipt key 必须是两个独立信任域�
         "grant_id": "grant-001",
         "generation": 11,
         "command_sha256": "<64 lowercase hex>",
+        "fence_command_sha256": null,
         "result_state": "FENCED",
         "coordinator_namespace": "/cnc/migration/isolated/provider-grant-test/",
         "leader_id": "coordinator-leader-a",
