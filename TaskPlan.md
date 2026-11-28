@@ -1470,7 +1470,7 @@
 - **测试：** JCS向量、FENCE/ACTIVATE、签名/claims篡改、重复JSON键、未知字段/类型、所有 reservation claims 精确绑定、unknown/wrong Provider key、fingerprint、key有效期/retirement/revocation、命令时间和Lease边界、ACTIVATE/FENCE applied-time chronology、裸摘要拒绝、v1→v4迁移、旧历史不提升、幂等/替换、失败 revision 不变、并发 CAS。
 - **验证边界：** 合成 Provider Ed25519 key + 本地 SQLite only。尚未让 `spare_parts_provider_sqlite_fenced.py` 在 Provider FENCE/ACTIVATE 与 mutation 相同写事务内生成并持久化 Receipt envelope，也未提供 durable signed-receipt lookup API；因此不是端到端 Provider 回执认证，不是 Grant-aware Restore。通用 Restore 对 Grant 历史继续 fail-closed；不连接真实 etcd/Provider/KMS/HSM/IAM/RBAC，不执行候选导入、应用激活或 Cutover。
 - **交付：** 新增协议模块与专项测试；升级 Floor schema/API；更新安全依赖、设计文档、CH17 README、根/章节 TaskPlan 和 TaskHistory。
-- **状态：** IN_PROGRESS；以完整文档同步后的 main 分支 Knowledge Quality CI 两个必需 Job 均成功为完成条件。
+- **状态：** DONE（2026-11-28；代码验证 Run 46155354641 和完整文档同步 Run 46155719334 的两个必需 Job 均 success）。
 
 ### 第九十六轮任务计划：Provider SQLite FENCE/ACTIVATE durable signed Receipt 集成
 
