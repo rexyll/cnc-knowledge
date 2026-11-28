@@ -162,3 +162,33 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Full unittest suite: 618 tests run, 40 skipped (578 passed).
 - Both required jobs completed successfully, including CH12 numerical resource tests and Knowledge structure/data quality.
 - The run's tested commit predates the final documentation synchronization commits; a final-main validation is being triggered separately.
+
+
+
+## CNC Knowledge Base — Round 83
+
+- Repository: \`rexyll/cnc-knowledge\`
+- Branch: \`main\` only; no branch created.
+- Scope: MIG-05 Provider freeze attestation binding and single-host durable replay prevention reference.
+
+### Code changes
+
+- Added \`scripts/spare_parts_sqlite_provider_freeze_attestation.py\` and its dedicated unittest module.
+- Added a reusable Ed25519 signed-payload verifier and retained the existing signed-snapshot validation behavior.
+- Freeze claims bind Provider ID, freeze ID/generation, UUID evidence ID, one-time Coordinator challenge nonce, freeze/signature time window, Coordinator Leader ID/epoch/native Lease ID/expiry and the full Provider scope floors.
+- Validation compares claims to a fresh caller-supplied Coordinator snapshot (default maximum age 5 seconds), requires exact per-scope floor equality with Coordinator authority, and still enforces the 300-second Provider evidence freshness and candidate floor limits.
+- Added \`SQLiteProviderFreezeEvidenceReplayLedger\`: mode-0600 single-host SQLite reference ledger, FULL synchronous durability, BEGIN IMMEDIATE atomic consumption and uniqueness constraints for Provider/evidence ID, challenge nonce and freeze ID/generation. Evidence is consumed only after all validation succeeds.
+- Failed validation does not consume evidence IDs. Ledger errors fail closed.
+- Explicit output flags remain false for actual Provider write-freeze enforcement, application activation and Provider operations.
+
+### Validation
+
+- Code/test CI and final documentation synchronization CI results will be recorded after main workflows complete.
+
+### Safety boundary
+
+- The freeze assertion is signed, but this offline tool does not inspect or block the real Provider write paths; it does not prove that all mutation routes honor the asserted native gate.
+- The Coordinator snapshot is caller-supplied; real integration must read it from an authenticated, fresh, linearizable Coordinator authority.
+- SQLite ledger is single-host only; it provides no multi-host consensus and can be reset by restoring a trusted old database backup. Production must use a shared durable linearizable replay ledger, such as an isolated etcd CAS/Txn design, with nonce issuance and consumption tied to the same authority lifecycle.
+- No real Provider/KMS/etcd was contacted, no Provider control object, RBAC, Lease or production namespace was changed, no application access was enabled, and no candidate import/cutover occurred.
+- ASSET-000092 remains \`PROPOSED_NOT_APPROVED / NOT_RUN\`; production Unified schema-v2 remains the sole authority.
