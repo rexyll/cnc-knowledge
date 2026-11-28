@@ -1407,7 +1407,7 @@
 ### 第九十轮任务计划：Provider-native Revocable Grant / FENCE Barrier 本地参考实现
 
 - **目标：** 将第八十九轮架构决策推进为可执行的同机Provider参考状态机，证明FENCE与实际对象/multipart mutation共享Provider SQLite事务顺序。
-- **协议：** 新增独立Ed25519签名命令FENCE/ACTIVATE。FENCE必须推进到更高Coordinator Leader epoch并将scope置为FENCED；ACTIVATE必须绑定完全匹配的Leader/Lease/grant身份以及已持久化的FENCE command digest。
+- **协议：** 新增独立Ed25519签名命令FENCE/ACTIVATE。不同Leader/Lease身份发起FENCE时必须推进到更高Coordinator Leader epoch；同epoch仅允许完全相同的Leader/Lease主动撤销其当前ACTIVE grant。FENCE将scope置为FENCED；ACTIVATE必须绑定完全匹配的Leader/Lease/grant身份以及已持久化的FENCE command digest。
 - **状态存储：** Provider schema升级v4→v5；新增逐tenant/scope Provider grant状态和完整命令receipt表。升级必须是加法迁移，backup验证要求新表存在。
 - **Mutation Gate：** 新增可选`require_revocable_grant`；启用时，object PUT、multipart begin/part/complete均必须携带签名proof中的Grant ID与代次，并在实际写入事务内核对ACTIVE状态、代次和期限。FENCE与mutation都使用同一SQLite BEGIN IMMEDIATE事务域。
 - **故障恢复：** 对精确envelope digest提供只读receipt查询；提交后响应丢失只能确认历史receipt，不得重做generation推进。FENCE未提交则不得允许ACTIVATE。
