@@ -2097,7 +2097,8 @@ class SQLiteFencedObjectStorageProvider:
             required = {
                 "provider_principals", "trusted_fencing_keys", "fencing_scopes", "fenced_operations",
                 "provider_objects", "multipart_sessions", "multipart_parts", "provider_audit",
-                "provider_write_freeze_scopes",
+                "provider_write_freeze_scopes", "provider_write_freeze_commands",
+                "provider_write_freeze_leader_floors", "provider_write_freeze_command_leaders",
             }
             tables = {
                 row["name"] for row in connection.execute(
