@@ -10,6 +10,15 @@ from scripts.spare_parts_provider_authority_store import (
     EtcdV3CoordinatorAuthorityStore,
     InMemoryEtcdV3Client,
 )
+from scripts.spare_parts_provider_unified_admission_store import (
+    ProviderAdmissionIdempotencyConflictError,
+    ProviderAdmissionRequestFinalizedError,
+    ProviderTaskContext,
+    StoreBackedProviderAdmissionCoordinator,
+)
+from scripts.spare_parts_provider_unified_coordinator_authority import (
+    StoreBackedCoordinatorAuthority,
+)
 from scripts.spare_parts_sqlite_staged_import_protocol import (
     UNKNOWN_COMMITTED,
     UNKNOWN_QUARANTINE,
@@ -287,6 +296,72 @@ class StagedImportInMemoryExecutionTests(unittest.TestCase):
         leader, _ = self.store.linearizable_get(self.leader_key)
         self.assertIsNone(state)
         self.assertIsNone(leader)
+
+    def test_published_candidate_is_readable_by_unified_runtime_and_preserves_leader_epoch_floor(self):
+        self._initialize()
+        self._finish_all_batches(self.store)
+        self.assertTrue(self._publish(self.store).succeeded)
+
+        state_template = self.candidate["state_template"]
+        scheduler = StoreBackedProviderAdmissionCoordinator(
+            self.store,
+            global_limits=state_template["global_limits"],
+            tenant_limits=state_template["tenant_limits"],
+            max_waiters=state_template["max_waiters"],
+            aging_interval_seconds=state_template["aging_interval_seconds"],
+            clock_fn=lambda: 1000.0,
+            namespace_prefix=PREFIX,
+        )
+        authority = StoreBackedCoordinatorAuthority(
+            scheduler, clock_fn=lambda: 1000.0
+        )
+
+        # The legacy leader identity and TTL key are not restored. Only an
+        # expired sentinel record remains so the runtime's normal claim path
+        # cannot reset the epoch to one after import.
+        before = authority.leader_snapshot()
+        self.assertEqual(before["leader_id"], "migration-epoch-floor")
+        self.assertEqual(before["epoch"], 8)
+        self.assertFalse(before["active"])
+        self.assertIsNone(self.store.linearizable_get(self.leader_key)[0])
+        self.assertEqual(self.client._leases, {})
+
+        scope_name = "tenants/tenant-A/cnc/ch17/spares/pkg-001"
+        scope = authority.snapshot(scope_name)
+        self.assertEqual(scope["high_water_token"], 9)
+        self.assertEqual(scope["latest_operation_sequence"], 3)
+        self.assertEqual(scope["lease_state"], "IDLE")
+
+        operation_key = authority._op_key(scope_name, "publish-1")
+        state_entry, _ = self.store.linearizable_get(self.state_key)
+        imported_state = scheduler._decode(state_entry)
+        operation = imported_state["coordinator"]["operations"][operation_key]
+        self.assertEqual(operation["state"], "COMMITTED")
+        self.assertEqual(operation["manifest_sha256"], "b" * 64)
+
+        request_id = self.candidate["terminal_request_indexes"][0]["record"]["request_id"]
+        identity = {
+            "task": ProviderTaskContext(task_id="task-A", tenant_id="tenant-A"),
+            "domain": "read",
+            "lease_ttl_seconds": 30,
+            "timeout_seconds": 0,
+            "check_task": lambda _: None,
+            "request_id": request_id,
+        }
+        lease_count_before_replay = len(self.client._leases)
+        with self.assertRaises(ProviderAdmissionRequestFinalizedError):
+            scheduler.acquire(owner_id="owner-A", **identity)
+        with self.assertRaises(ProviderAdmissionIdempotencyConflictError):
+            scheduler.acquire(owner_id="different-owner", **identity)
+        self.assertEqual(len(self.client._leases), lease_count_before_replay)
+
+        # The standard runtime claim path uses the imported historical floor.
+        claimed = authority.claim_leadership("new-leader-after-import", ttl_seconds=30)
+        self.assertEqual(claimed.epoch, 9)
+        after = authority.leader_snapshot()
+        self.assertEqual(after["leader_id"], "new-leader-after-import")
+        self.assertEqual(after["epoch"], 9)
+        self.assertTrue(after["active"])
 
     def test_lost_publish_response_is_resolved_by_exact_state_and_checkpoint(self):
         self._initialize()
