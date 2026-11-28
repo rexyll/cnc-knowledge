@@ -1617,4 +1617,4 @@
 - Provider Receipt confirm 仍必须验证 Round95 独立 Provider signed Receipt；Provider→Floor 端到端测试现已先注册两套独立 Coordinator/Provider 公钥，再使用 Provider 真实 FENCE/ACTIVATE signed Receipt 推进 Floor。
 - 测试覆盖 Coordinator 签名、未知/撤销 key、key rotation、重复 JSON key、跨 Provider/Tenant/scope、wrong generation、命令时间/native Lease、裸 claims 拒绝、strict no-downgrade、v1→v5 migration、legacy PENDING fail-closed、CAS/revision 不前进及 Provider→Floor E2E。
 - 仅本地 SQLite 和合成 Ed25519 key；没有生产 Coordinator/etcd/Provider/KMS/HSM/IAM/RBAC 或多节点 trust plane。Grant-aware Restore 仍未实现，通用 Restore 含 Grant 历史继续 fail-closed。
-- **状态：** IN_PROGRESS；等待代码与完整文档同步的主分支 Knowledge Quality CI 两个必需 Job 均成功后 DONE。
+- **状态：** DONE（2026-11-28；代码/测试验证 [Knowledge Quality Run 46159590900](https://github.com/rexyll/cnc-knowledge/actions/runs/46159590900) 两个必需 Job 均 success；完整文档同步由当前主分支 CI 再次复核）。
