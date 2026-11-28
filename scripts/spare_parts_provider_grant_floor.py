@@ -519,6 +519,13 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 and row["leader_id"] == leader_id
                 and row["native_lease_id"] == native_lease_id
             )
+            if (
+                row["coordinator_namespace"] is not None
+                and row["coordinator_namespace"] != coordinator_namespace
+            ):
+                raise ProviderGrantFloorConflict(
+                    "Coordinator namespace is immutable for an established Provider scope"
+                )
             current_epoch = int(row["coordinator_epoch_floor"])
             if action == "FENCE":
                 if row["state"] == "FENCED":
@@ -545,6 +552,8 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                     raise ProviderGrantFloorConflict("ACTIVATE requires a confirmed FENCED scope")
                 if leader_epoch != current_epoch or not same_identity:
                     raise ProviderGrantFloorConflict("ACTIVATE Coordinator Leader/native Lease identity mismatch")
+                if lease_expires_at_unix < float(row["lease_expires_at_unix"]):
+                    raise ProviderGrantFloorConflict("ACTIVATE native Lease expiry cannot regress")
                 if grant_id != row["current_grant_id"]:
                     raise ProviderGrantFloorConflict("ACTIVATE grant ID does not match the FENCED grant")
                 if fence_command_digest != row["last_fence_command_digest"]:
