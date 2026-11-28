@@ -609,3 +609,11 @@ Provider schema升级至v6，新增`provider_scope_grants`与`provider_grant_com
 Provider Grant 外部 Floor 本地参考适配器见 [外部单调 Floor 与 Grant-aware Restore 对账设计](provider-grant-external-floor-and-restore-reconciliation-design.md)：实现文件为 [spare_parts_provider_grant_floor.py](../../scripts/spare_parts_provider_grant_floor.py)，专项测试为 [test_spare_parts_provider_grant_floor.py](../../tests/test_spare_parts_provider_grant_floor.py)。本地 SQLite 适配器仅接受 `/cnc/migration/isolated/{single-id}/` namespace，是单机事务/CAS参考模型，不是 etcd quorum、线性一致生产 authority 或自身防回滚存储；Provider 回执来源认证与专用 Grant-aware Restore 仍未实现。
 
 Provider Grant 回执来源认证与签名证据协议设计见 [Provider Grant Floor 回执来源认证与签名证据设计](provider-grant-receipt-authentication-design.md)。该文档冻结 Provider 独立 Ed25519 回执签名、规范化 envelope、Provider key trust registry、FENCE/ACTIVATE 精确 command digest 绑定、回执幂等及响应丢失恢复要求；当前仍是协议设计，尚未实现签名回执或解除 Grant-aware Restore 门禁。
+
+### 第九十五轮：Provider Grant Receipt 协议模块与 Floor schema v4
+
+新增 [Provider Grant Receipt 协议模块](../../scripts/spare_parts_provider_grant_receipt.py) 与 [专项协议测试](../../tests/test_spare_parts_provider_grant_receipt.py)，将外部 Floor 从接收裸摘要改为校验独立 Provider Ed25519 signed envelope；Floor 保存完整 canonical Receipt digest、signer fingerprint/trust revision，并将 Provider applied time 与 Coordinator command issue/expiry 固定到 reservation。
+
+外部 Floor schema 由 v1 迁移至 v4，提供 Provider receipt key 显式注册、RETIRING/REVOKED 生命周期与历史记录兼容迁移；旧裸摘要保留为未认证历史，不自动升级。完整设计和限制见 [Provider Grant Floor 回执来源认证与签名证据设计](provider-grant-receipt-authentication-design.md)。
+
+**严格边界：** 当前签名只由合成测试 Provider key 产生；Provider SQLite 的 FENCE/ACTIVATE 数据事务尚未实际持久化 Receipt envelope，故这不是端到端 Provider 回执认证实现。真实 Provider/KMS/HSM/etcd/生产 trust registry 未连接，Grant-aware Restore 未实现，通用 Restore 仍 fail-closed。
