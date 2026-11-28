@@ -511,3 +511,12 @@ v3 Provider数据库升级到v4时以加法方式创建Leader floor及命令审�
 补充校验：Coordinator namespace必须是规范绝对前缀（以/开头和结尾，拒绝空段、双斜线、. / ..路径段及空白字符）。同一Leader epoch及同一native Lease ID下，Provider还拒绝Lease expiry相对已观察floor回退，避免旧Lease快照覆盖较新的续租观察。
 
 v4备份校验进一步要求Leader floor与command-Leader审计两张表必须存在；备份/恢复测试验证Leader epoch和native Lease绑定随receipt持久保留。
+
+
+### 第八十八轮：Provider Freeze 在线 Leader / Native Lease 校验
+
+详见[Provider Freeze 在线 Coordinator Leader / Native Lease 校验](provider-online-coordinator-leader-verification.md)。
+
+- 通过现有 `CoordinatorAuthorityStore.linearizable_range` 在同一revision读取Scheduler aggregate和Leader TTL key；校验Leader ID、epoch、Lease ID、Lease attachment与expiry。
+- Provider新增可选 `require_online_leader_status` 门禁。开启后，在线校验失败或etcd不可用均拒绝新的Freeze/Unfreeze命令；历史receipt重放不重新执行命令。
+- **不能过度宣称：** etcd Range与Provider SQLite commit不能原子提交，Lease可能在检查成功后、Provider commit前被撤销。TOCTOU仍然存在，需要下一阶段设计共同线性化的Provider可撤销授权/屏障协议。
