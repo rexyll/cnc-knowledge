@@ -51,7 +51,7 @@
 ### Round 99 最终CI与结项（2026-11-29）
 
 - **设计版本CI：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663)，两个必需Job均success，验证Etcd-native设计文档、witness恢复语义和阶段性记录。
-- **最终文档同步验收：** [Knowledge Quality Run 46164006077](https://github.com/rexyll/cnc-knowledge/actions/runs/46164006077)，对应最终main文档提交 head SHA df6c807f495b805f71ad351594c0a87c265f606f，两个必需Job均completed/success。
+- **最终文档同步验收：** [Knowledge Quality Run 46164190439](https://github.com/rexyll/cnc-knowledge/actions/runs/46164190439)，对应最新Round99文档/历史同步提交 head SHA f02f21b4b1da32f4b9b4c4a40c4a9c93043f1d94，两个必需Job均completed/success。
 - Knowledge structure and data quality：全库776项unittest运行，40项环境跳过，其余736项通过；knowledge lint 0 errors / 5 warnings；结构/data检查0 errors；CH17离线场景模拟30项、failed=0，明确business_test_status=NOT_RUN、external_connections=NO、writes=NO。
 - CH12 numerical resource tests：143项通过。
 - **结论：** Round99 Etcd-native Provider Grant Floor原子权威与域外Witness架构设计完成（DONE）。Etcd-native业务状态机、生产Witness持久服务、实际Etcd/RBAC/KMS/HSM、真实多节点和快照恢复演练均未实施；Production Unified schema-v2仍为唯一authority；Grant-aware Restore/Cutover仍不允许执行。
