@@ -62,7 +62,10 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
 
     def reserve_fence(self, *, operation_id="fence-op-1", expected_revision=0,
                       grant_id="grant-a", command_digest=None, leader_epoch=1,
-                      leader_id=None, lease_id=None, lease_expiry=None):
+                      leader_id=None, lease_id=None, lease_expiry=None,
+                      command_issued_at_unix=None, command_expires_at_unix=None):
+        issued = time.time() - 1.0 if command_issued_at_unix is None else command_issued_at_unix
+        expires = issued + 30.0 if command_expires_at_unix is None else command_expires_at_unix
         return self.authority.reserve_fence(
             operation_id=operation_id,
             key=self.key,
@@ -75,6 +78,8 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             lease_expires_at_unix=(
                 self.lease_expiry if lease_expiry is None else lease_expiry
             ),
+            command_issued_at_unix=issued,
+            command_expires_at_unix=expires,
             expected_revision=expected_revision,
         )
 
@@ -98,9 +103,9 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             "leader_epoch": reservation.leader_epoch,
             "native_lease_id": reservation.native_lease_id,
             "native_lease_expires_at_unix": reservation.lease_expires_at_unix,
-            "command_issued_at_unix": issued,
-            "command_expires_at_unix": issued + 30.0,
-            "applied_at_unix": issued + 0.1,
+            "command_issued_at_unix": reservation.command_issued_at_unix,
+            "command_expires_at_unix": reservation.command_expires_at_unix,
+            "applied_at_unix": reservation.command_issued_at_unix + 0.1,
         }
         claims.update(overrides)
         return sign_provider_grant_receipt(
@@ -123,8 +128,11 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         return self.confirm_receipt(reservation)
 
     def activate(self, *, operation_id="activate-op-1", expected_revision=None,
-                 fence_command_digest=None, grant_id="grant-a"):
+                 fence_command_digest=None, grant_id="grant-a",
+                 command_issued_at_unix=None, command_expires_at_unix=None):
         snapshot = self.authority.snapshot(self.key)
+        issued = time.time() - 1.0 if command_issued_at_unix is None else command_issued_at_unix
+        expires = issued + 30.0 if command_expires_at_unix is None else command_expires_at_unix
         return self.authority.reserve_activate(
             operation_id=operation_id,
             key=self.key,
@@ -138,6 +146,8 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             leader_epoch=1,
             native_lease_id=self.lease_id,
             lease_expires_at_unix=self.lease_expiry,
+            command_issued_at_unix=issued,
+            command_expires_at_unix=expires,
             expected_revision=(
                 snapshot.revision if expected_revision is None else expected_revision
             ),
@@ -319,6 +329,8 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             leader_epoch=2,
             native_lease_id=2002,
             lease_expires_at_unix=self.lease_expiry + 100.0,
+            command_issued_at_unix=time.time() - 1.0,
+            command_expires_at_unix=time.time() + 29.0,
             expected_revision=fenced.revision,
         )
         self.confirm_receipt(newer_activate)
@@ -492,6 +504,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         next_reservation = self.activate(
             operation_id="retiring-key-new-receipt",
             expected_revision=self.authority.snapshot(self.key).revision,
+            command_issued_at_unix=time.time(),
         )
         retirement_time = retired["retiring_effective_at"]
         after_retirement = max(time.time(), retirement_time + 0.1)
@@ -511,14 +524,12 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             provider_id="provider-a",
             key_id="provider-receipt-a",
             status="REVOKED",
-            revocation_effective_at=time.time() - 1.0,
+            revocation_effective_at=reservation.command_issued_at_unix + 0.1,
             revocation_reason="synthetic key compromise test",
         )
         receipt = self.receipt_envelope(
             reservation,
-            command_issued_at_unix=revoked["revocation_effective_at"] + 0.1,
-            command_expires_at_unix=revoked["revocation_effective_at"] + 30.0,
-            applied_at_unix=revoked["revocation_effective_at"] + 0.2,
+            applied_at_unix=reservation.command_issued_at_unix + 0.2,
         )
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "revoked"):
             self.confirm_receipt(reservation, receipt)
