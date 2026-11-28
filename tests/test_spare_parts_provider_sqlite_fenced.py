@@ -34,9 +34,14 @@ from scripts.spare_parts_provider_sqlite_fenced import (
     SQLiteProviderAuthorizationError,
     SQLiteProviderObjectNotFoundError,
     SQLiteProviderWriteFrozenError,
+    SQLiteProviderGrantRejectedError,
 )
 from scripts.spare_parts_provider_write_freeze_gate import (
     sign_provider_write_freeze_command,
+)
+from scripts.spare_parts_provider_revocable_grant import (
+    CLAIMS_FORMAT as PROVIDER_GRANT_CLAIMS_FORMAT,
+    sign_provider_grant_command,
 )
 
 
@@ -59,6 +64,8 @@ def _proof(
     idempotency_key: str, operation: str, key_id: str = KEY_ID,
     secret: str = ATTESTATION_SECRET, ttl_seconds: float = 30.0,
     provider_freeze_generation: int | None = None,
+    provider_grant_id: str | None = None,
+    provider_grant_generation: int | None = None,
 ) -> str:
     issued = time.time()
     domain = "write" if operation == "object:put_if_absent" else "multipart"
@@ -75,6 +82,13 @@ def _proof(
             {"provider_freeze_generation": provider_freeze_generation}
             if provider_freeze_generation is not None else {}
         ),
+        **(
+            {
+                "provider_grant_id": provider_grant_id,
+                "provider_grant_generation": provider_grant_generation,
+            }
+            if provider_grant_id is not None and provider_grant_generation is not None else {}
+        ),
     }, key_id=key_id, secret=secret)
 
 
@@ -87,21 +101,27 @@ def _wrap_test_attestations(provider):
     }
     provider._raw_fenced_methods = raw
 
-    def put(key, data, *, fencing_scope, fencing_token, idempotency_key, fencing_attestation=None):
+    def put(key, data, *, fencing_scope, fencing_token, idempotency_key, fencing_attestation=None,
+            provider_grant_id=None, provider_grant_generation=None):
         proof = fencing_attestation or _proof(
             tenant_id=provider.tenant_id, key=key, scope=fencing_scope,
             token=fencing_token, idempotency_key=idempotency_key,
             operation="object:put_if_absent",
+            provider_grant_id=provider_grant_id,
+            provider_grant_generation=provider_grant_generation,
         )
         return raw["put"](
             key, data, fencing_scope=fencing_scope, fencing_token=fencing_token,
             idempotency_key=idempotency_key, fencing_attestation=proof,
         )
 
-    def begin(key, upload_id, *, fencing_scope, fencing_token, idempotency_key, fencing_attestation=None):
+    def begin(key, upload_id, *, fencing_scope, fencing_token, idempotency_key, fencing_attestation=None,
+              provider_grant_id=None, provider_grant_generation=None):
         proof = fencing_attestation or _proof(
             tenant_id=provider.tenant_id, key=key, scope=fencing_scope,
             token=fencing_token, idempotency_key=idempotency_key, operation="multipart:begin",
+            provider_grant_id=provider_grant_id,
+            provider_grant_generation=provider_grant_generation,
         )
         return raw["begin"](
             key, upload_id, fencing_scope=fencing_scope, fencing_token=fencing_token,
@@ -109,10 +129,13 @@ def _wrap_test_attestations(provider):
         )
 
     def part(key, upload_id, part_number, data, expected_sha256, *, fencing_scope,
-             fencing_token, idempotency_key, fencing_attestation=None):
+             fencing_token, idempotency_key, fencing_attestation=None,
+             provider_grant_id=None, provider_grant_generation=None):
         proof = fencing_attestation or _proof(
             tenant_id=provider.tenant_id, key=key, scope=fencing_scope,
             token=fencing_token, idempotency_key=idempotency_key, operation="multipart:put_part",
+            provider_grant_id=provider_grant_id,
+            provider_grant_generation=provider_grant_generation,
         )
         return raw["part"](
             key, upload_id, part_number, data, expected_sha256,
@@ -122,11 +145,14 @@ def _wrap_test_attestations(provider):
 
     def complete(key, upload_id, *, expected_part_count, expected_size_bytes,
                  expected_sha256, fencing_scope, fencing_token, idempotency_key,
-                 fencing_attestation=None):
+                 fencing_attestation=None, provider_grant_id=None,
+                 provider_grant_generation=None):
         proof = fencing_attestation or _proof(
             tenant_id=provider.tenant_id, key=key, scope=fencing_scope,
             token=fencing_token, idempotency_key=idempotency_key,
             operation="multipart:complete",
+            provider_grant_id=provider_grant_id,
+            provider_grant_generation=provider_grant_generation,
         )
         return raw["complete"](
             key, upload_id, expected_part_count=expected_part_count,
@@ -148,6 +174,7 @@ def _new_provider(
     attestation_status_checker=None, require_online_attestation_status=False,
     require_atomic_online_attestation_status=False, trusted_hmac_keys=None,
     provider_id=None, leader_status_checker=None, require_online_leader_status=False,
+    require_revocable_grant=False,
 ):
     provider = SQLiteFencedObjectStorageProvider(
         database, principal_id=principal_id, principal_secret=secret,
@@ -164,6 +191,7 @@ def _new_provider(
         require_atomic_online_attestation_status=require_atomic_online_attestation_status,
         leader_status_checker=leader_status_checker,
         require_online_leader_status=require_online_leader_status,
+        require_revocable_grant=require_revocable_grant,
         fault_hook=fault_hook,
     )
     return _wrap_test_attestations(provider)
@@ -970,12 +998,272 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
         )
 
-    def proof(self, key, token, operation, idempotency_key, generation=None):
+    def proof(
+        self, key, token, operation, idempotency_key, generation=None,
+        grant_id=None, grant_generation=None,
+    ):
         return _proof(
             tenant_id="tenant-a", key=key, scope=SCOPE, token=token,
             idempotency_key=idempotency_key, operation=operation,
             provider_freeze_generation=generation,
+            provider_grant_id=grant_id,
+            provider_grant_generation=grant_generation,
         )
+
+    def grant_command(
+        self, action, generation, grant_id, *, leader_epoch=1,
+        leader_id=None, leader_lease_id=None, issued_at=None,
+        lease_expires=None, expires=None, fence_digest=None,
+    ):
+        issued = time.time() if issued_at is None else issued_at
+        lease_expiry = issued + 120.0 if lease_expires is None else lease_expires
+        grant_expiry = issued + 60.0 if expires is None else expires
+        claims = {
+            "format": PROVIDER_GRANT_CLAIMS_FORMAT,
+            "issuer_id": ISSUER_ID,
+            "provider_id": "provider-test-a",
+            "tenant_id": "tenant-a",
+            "scope": SCOPE,
+            "action": action,
+            "grant_id": grant_id,
+            "generation": generation,
+            "issued_at_unix": issued,
+            "expires_at_unix": grant_expiry,
+            "coordinator_namespace": "/cnc/migration/isolated/provider-grant-test/",
+            "leader_id": leader_id or ("coordinator-leader-" + str(leader_epoch)),
+            "leader_epoch": leader_epoch,
+            "leader_lease_id": leader_lease_id or (100 + leader_epoch),
+            "leader_lease_expires_at_unix": lease_expiry,
+            "fence_command_sha256": fence_digest,
+        }
+        return sign_provider_grant_command(
+            claims, key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+
+    def enable_revocable_grants(self, *, fault_hook=None):
+        self.provider = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            require_revocable_grant=True, fault_hook=fault_hook,
+        )
+        return self.provider
+
+    def test_provider_grant_requires_durable_fence_receipt_before_activation(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-a", issued_at=now, lease_expires=now + 120.0
+        )
+        import json
+        fence_digest = hashlib.sha256(
+            json.dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        activation_without_fence = self.grant_command(
+            "ACTIVATE", 1, "grant-a", issued_at=now,
+            lease_expires=now + 120.0, fence_digest="f" * 64,
+        )
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            provider.apply_provider_grant_command(activation_without_fence)
+
+        result = provider.apply_provider_grant_command(fence)
+        self.assertEqual(result["state"], "FENCED")
+        self.assertEqual(provider.provider_grant_state(SCOPE)["state"], "FENCED")
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            provider.put_if_absent_fenced(
+                SCOPE + "/grant/before-activation.bin", b"denied",
+                fencing_scope=SCOPE, fencing_token=1,
+                idempotency_key="before-activation",
+            )
+
+        activate = self.grant_command(
+            "ACTIVATE", 2, "grant-a", issued_at=now + 1.0,
+            lease_expires=now + 120.0, expires=now + 60.0,
+            fence_digest=fence_digest,
+        )
+        activated = provider.apply_provider_grant_command(activate)
+        self.assertEqual(activated["state"], "ACTIVE")
+        proof = self.proof(
+            SCOPE + "/grant/active.bin", 2, "object:put_if_absent", "grant-active",
+            grant_id="grant-a", grant_generation=2,
+        )
+        stored = provider.put_if_absent_fenced(
+            SCOPE + "/grant/active.bin", b"allowed", fencing_scope=SCOPE,
+            fencing_token=2, idempotency_key="grant-active", fencing_attestation=proof,
+        )
+        self.assertEqual(stored.data, b"allowed")
+
+    def test_newer_fence_revokes_old_grant_and_old_proofs(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence1 = self.grant_command(
+            "FENCE", 1, "grant-a", issued_at=now, lease_expires=now + 180.0
+        )
+        fence1_digest = hashlib.sha256(
+            __import__("json").dumps(fence1, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence1)
+        activate1 = self.grant_command(
+            "ACTIVATE", 2, "grant-a", issued_at=now + 1.0,
+            lease_expires=now + 180.0, expires=now + 120.0,
+            fence_digest=fence1_digest,
+        )
+        provider.apply_provider_grant_command(activate1)
+
+        old_key = SCOPE + "/grant/old-epoch.bin"
+        old_proof = self.proof(
+            old_key, 10, "object:put_if_absent", "old-epoch",
+            grant_id="grant-a", grant_generation=2,
+        )
+        new_fence = self.grant_command(
+            "FENCE", 3, "grant-b", leader_epoch=2,
+            issued_at=now + 2.0, lease_expires=now + 180.0,
+        )
+        new_fence_digest = hashlib.sha256(
+            __import__("json").dumps(new_fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(new_fence)
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            provider.put_if_absent_fenced(
+                old_key, b"old-leader", fencing_scope=SCOPE,
+                fencing_token=10, idempotency_key="old-epoch",
+                fencing_attestation=old_proof,
+            )
+
+        activate2 = self.grant_command(
+            "ACTIVATE", 4, "grant-b", leader_epoch=2,
+            issued_at=now + 3.0, lease_expires=now + 180.0,
+            expires=now + 120.0, fence_digest=new_fence_digest,
+        )
+        provider.apply_provider_grant_command(activate2)
+        new_proof = self.proof(
+            SCOPE + "/grant/new-epoch.bin", 11, "object:put_if_absent",
+            "new-epoch", grant_id="grant-b", grant_generation=4,
+        )
+        stored = provider.put_if_absent_fenced(
+            SCOPE + "/grant/new-epoch.bin", b"new-leader",
+            fencing_scope=SCOPE, fencing_token=11, idempotency_key="new-epoch",
+            fencing_attestation=new_proof,
+        )
+        self.assertEqual(stored.data, b"new-leader")
+        state = provider.provider_grant_state(SCOPE)
+        self.assertEqual(state["leader_epoch"], 2)
+        self.assertEqual(state["grant_generation"], 4)
+        self.assertEqual(state["state"], "ACTIVE")
+
+    def test_grant_receipt_recovers_lost_fence_response(self):
+        import json
+        provider = self.enable_revocable_grants()
+        command = self.grant_command("FENCE", 1, "grant-lost-response")
+        digest = hashlib.sha256(
+            json.dumps(command, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+
+        def lose_response(stage):
+            if stage == "after_provider_grant_commit":
+                raise RuntimeError("simulated response loss after commit")
+
+        provider = self.enable_revocable_grants(fault_hook=lose_response)
+        with self.assertRaisesRegex(RuntimeError, "response loss"):
+            provider.apply_provider_grant_command(command)
+        receipt = provider.provider_grant_command_status(digest)
+        self.assertEqual(receipt["action"], "FENCE")
+        self.assertEqual(receipt["result_state"], "FENCED")
+        replay = provider.apply_provider_grant_command(command)
+        self.assertEqual(replay["result"], "ALREADY_APPLIED")
+        self.assertEqual(replay["generation"], 1)
+        self.assertEqual(provider.provider_grant_state(SCOPE)["state"], "FENCED")
+
+    def test_provider_grant_fence_and_inflight_mutation_share_one_sqlite_order(self):
+        checked = threading.Event()
+        allow_write_commit = threading.Event()
+        fence_finished = threading.Event()
+        write_results = []
+        fence_results = []
+        errors = []
+        control = self.enable_revocable_grants()
+        now = time.time()
+        fence1 = self.grant_command(
+            "FENCE", 1, "grant-race-a", issued_at=now, lease_expires=now + 180.0
+        )
+        digest1 = hashlib.sha256(
+            __import__("json").dumps(fence1, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        control.apply_provider_grant_command(fence1)
+        control.apply_provider_grant_command(self.grant_command(
+            "ACTIVATE", 2, "grant-race-a", issued_at=now + 1.0,
+            lease_expires=now + 180.0, expires=now + 120.0,
+            fence_digest=digest1,
+        ))
+
+        def hook(stage):
+            if stage == "after_provider_grant_check":
+                checked.set()
+                if not allow_write_commit.wait(timeout=4):
+                    raise TimeoutError("test did not release Provider grant mutation")
+
+        writer = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            require_revocable_grant=True, fault_hook=hook,
+        )
+        key = SCOPE + "/grant/ordered.bin"
+        proof = self.proof(
+            key, 30, "object:put_if_absent", "grant-race-write",
+            grant_id="grant-race-a", grant_generation=2,
+        )
+
+        def write():
+            try:
+                write_results.append(writer.put_if_absent_fenced(
+                    key, b"commit-before-fence", fencing_scope=SCOPE,
+                    fencing_token=30, idempotency_key="grant-race-write",
+                    fencing_attestation=proof,
+                ))
+            except Exception as exc:
+                errors.append(("write", type(exc).__name__, str(exc)))
+
+        def apply_fence():
+            try:
+                fence_results.append(control.apply_provider_grant_command(
+                    self.grant_command(
+                        "FENCE", 3, "grant-race-b", leader_epoch=2,
+                        issued_at=now + 2.0, lease_expires=now + 180.0,
+                    )
+                ))
+            except Exception as exc:
+                errors.append(("fence", type(exc).__name__, str(exc)))
+            finally:
+                fence_finished.set()
+
+        writer_thread = threading.Thread(target=write)
+        writer_thread.start()
+        self.assertTrue(checked.wait(timeout=2), "Provider did not reach in-transaction grant check")
+        fence_thread = threading.Thread(target=apply_fence)
+        fence_thread.start()
+        try:
+            self.assertFalse(
+                fence_finished.wait(timeout=0.15),
+                "FENCE must wait for the in-flight Provider mutation transaction",
+            )
+        finally:
+            allow_write_commit.set()
+        writer_thread.join(timeout=4)
+        fence_thread.join(timeout=4)
+        self.assertFalse(writer_thread.is_alive())
+        self.assertFalse(fence_thread.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(write_results[0].data, b"commit-before-fence")
+        self.assertEqual(fence_results[0]["state"], "FENCED")
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            control.put_if_absent_fenced(
+                SCOPE + "/grant/after-fence.bin", b"old-grant",
+                fencing_scope=SCOPE, fencing_token=31,
+                idempotency_key="after-fence",
+                fencing_attestation=self.proof(
+                    SCOPE + "/grant/after-fence.bin", 31, "object:put_if_absent",
+                    "after-fence", grant_id="grant-race-a", grant_generation=2,
+                ),
+            )
 
     def test_online_leader_status_is_required_and_fail_closed_for_new_commands(self):
         with self.assertRaisesRegex(BackupStorageError, "online Coordinator Leader status"):
@@ -1282,7 +1570,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
 
         backup = self.base / "provider-freeze-backup.sqlite"
         report = reopened.backup_to(backup)
-        self.assertEqual(report["schema_version"], 4)
+        self.assertEqual(report["schema_version"], 5)
         restored_path = self.base / "provider-freeze-restored.sqlite"
         restore_report = reopened.restore_to_new_database(
             backup, restored_path, external_fencing_floor=0,
@@ -1319,7 +1607,7 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 )
             }
-        self.assertEqual(version, "4")
+        self.assertEqual(version, "5")
         self.assertIn("provider_write_freeze_scopes", tables)
         self.assertIn("provider_write_freeze_commands", tables)
         self.assertIn("provider_write_freeze_leader_floors", tables)
