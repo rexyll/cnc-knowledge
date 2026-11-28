@@ -526,3 +526,35 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - SQLite Floor snapshot rollback protection still requires an independently trusted checkpoint outside that backup domain.
 - MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
 - **Status:** DONE for the Round 94 protocol/design deliverable only. A separate implementation round is required before any claim of authenticated Provider receipt functionality.
+
+## CNC Knowledge Base — Round 95（Provider Receipt 签名协议与 Floor schema v4 验签门禁）
+
+- Repository: \`rexyll/cnc-knowledge\`
+- Branch: \`main\` only; no new branch created.
+- Scope: Implement a local Provider receipt protocol module and move the external Provider Grant Floor from naked caller-supplied receipt digests to signed-envelope verification. Provider mutation transaction integration remains a separate Round96 task.
+
+### Implementation
+
+- Added \`scripts/spare_parts_provider_grant_receipt.py\`: RFC 8785 JCS canonicalization, Provider-owned Ed25519 domain-separated signing/verifying, strict JSON envelope parsing, duplicate-key rejection, claims validation, key lifecycle checks and immutable Verified Receipt output.
+- Pinned \`rfc8785==0.1.4\` in \`requirements-ch17-security.txt\`.
+- Upgraded \`SQLiteProviderGrantFloorAuthority\` to schema v4 with \`provider_grant_floor_receipt_keys\` trust registry. Explicit local owner APIs register key material and advance ACTIVE→RETIRING/REVOKED lifecycle; retirement and revocation timestamps constrain historical receipt verification. A retiring key may not issue receipts after the retirement boundary; a revoked key may not validate receipts at/after revocation.
+- Changed \`confirm_provider_receipt\` to accept signed envelope only. It verifies Provider/key identity, fingerprint, claims and reservation binding inside the existing BEGIN IMMEDIATE / scope-revision CAS transaction, recomputes SHA-256 over the complete JCS envelope including signature, stores signer/key/trust/applied metadata, and rejects receipt replacement.
+- Persisted the original Coordinator command issue/expiry timestamps in Floor Reservation. Signed receipt claims must match these exact values; command expiry cannot exceed the native Lease expiry. ACTIVATE applied time cannot predate the confirmed FENCE receipt.
+- Schema migrations are sequential v1→v4. Historical naked digests remain unchanged with null signer/fingerprint/trust/applied/command-time metadata; legacy operations are not forged or silently promoted. Legacy pending reservations without authenticated command time fail closed on new confirmation.
+- Added protocol test suite \`tests/test_spare_parts_provider_grant_receipt.py\` and extended \`tests/test_spare_parts_provider_grant_floor.py\` with synthetic Provider signers.
+
+### Validation
+
+- [GitHub Actions Knowledge Quality Run 46155354641](https://github.com/rexyll/cnc-knowledge/actions/runs/46155354641): both required jobs succeeded.
+- Full repository unittest: 737 tests run, 40 skipped by environment guards; all remaining tests passed.
+- CH12 numerical resource tests: 143 passed.
+- This run validates code and focused tests. The implementation/plan documentation and TaskHistory synchronization commits are being followed by a fresh main-branch Knowledge Quality run.
+
+### Safety boundary / remaining work
+
+- Provider SQLite FENCE/ACTIVATE mutation path does not yet create and persist the signed receipt inside the same database transaction. Floor tests use synthetic Provider Ed25519 keys; this is not yet an end-to-end Provider→Floor proof.
+- Local Floor owner key-management methods are not a production authenticated management plane. The Floor does not independently verify the Coordinator command signature; it binds the Provider receipt to the command digest and issue/expiry fields recorded in the reservation.
+- Signed \`applied_at_unix\` is a Provider assertion, not an independent trusted timestamp. A compromised key can backdate claims; production requires additional immutable audit/time evidence.
+- No actual etcd, Provider, KMS/HSM, object storage, IAM/RBAC or production authority integration occurred. No candidate import, Restore, application activation or Cutover occurred. Generic Restore with Provider Grant history stays fail-closed.
+- MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
+- **Status:** DONE for the local protocol module and external Floor verification gate only. Round96 is required for Provider durable receipt emission.
