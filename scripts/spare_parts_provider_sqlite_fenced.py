@@ -2732,6 +2732,8 @@ class SQLiteFencedObjectStorageProvider:
                 "minimum_fencing_token": int(meta.get("minimum_fencing_token", "0")),
                 "principal_count": int(connection.execute("SELECT COUNT(*) FROM provider_principals").fetchone()[0]),
                 "fencing_scope_count": int(connection.execute("SELECT COUNT(*) FROM fencing_scopes").fetchone()[0]),
+                "provider_grant_scope_count": int(connection.execute("SELECT COUNT(*) FROM provider_scope_grants").fetchone()[0]),
+                "provider_grant_command_count": int(connection.execute("SELECT COUNT(*) FROM provider_grant_commands").fetchone()[0]),
                 "object_count": int(connection.execute("SELECT COUNT(*) FROM provider_objects").fetchone()[0]),
                 "audit_record_count": int(connection.execute("SELECT COUNT(*) FROM provider_audit").fetchone()[0]),
                 "integrity_check": integrity,
@@ -2771,6 +2773,14 @@ class SQLiteFencedObjectStorageProvider:
         if destination.exists():
             raise BackupStorageError("restore destination exists; in-place overwrite is prohibited")
         report = self.validate_backup(backup)
+        if (
+            report["provider_grant_scope_count"] > 0
+            or report["provider_grant_command_count"] > 0
+        ):
+            raise BackupStorageError(
+                "Provider restore is blocked for backups with Grant history until an independent "
+                "Provider grant-generation and Leader-epoch reconciliation workflow is available"
+            )
         destination.parent.mkdir(parents=True, exist_ok=True)
         staging = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.restore")
         source = target = None
