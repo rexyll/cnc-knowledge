@@ -1664,6 +1664,12 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
                 ),
             )
 
+    def test_freeze_apply_does_not_accept_caller_supplied_clock(self):
+        command = self.command("FREEZE", 1, "freeze-no-clock-override")
+        with self.assertRaises(TypeError):
+            self.provider.apply_write_freeze_command(command, now_unix=0.0)
+        self.assertIsNone(self.provider.write_freeze_state(SCOPE))
+
     def test_online_leader_status_is_required_and_fail_closed_for_new_commands(self):
         with self.assertRaisesRegex(BackupStorageError, "online Coordinator Leader status"):
             _new_provider(
