@@ -15,6 +15,7 @@ ENVELOPE_FORMAT = "ch17-provider-revocable-grant-envelope-v1"
 CLAIMS_FORMAT = "ch17-provider-revocable-grant-command-v1"
 SIGNING_DOMAIN = b"cnc-knowledge-provider-revocable-grant-command-v1\x00"
 MAX_SQLITE_INTEGER = (1 << 63) - 1
+MAX_GRANT_LIFETIME_SECONDS = 300.0
 CLAIM_FIELDS = {
     "format", "issuer_id", "provider_id", "tenant_id", "scope", "action",
     "grant_id", "generation", "issued_at_unix", "expires_at_unix",
@@ -141,7 +142,7 @@ def verify_provider_grant_command(
     if (
         issued > now + 5.0 or expires <= now or expires <= issued
         or expires > lease_expires or lease_expires <= now
-        or expires - issued > 86400.0
+        or expires - issued > MAX_GRANT_LIFETIME_SECONDS
     ):
         raise ProviderGrantCommandError("Provider grant is expired or exceeds its Coordinator Lease")
     fence_digest = claims["fence_command_sha256"]
