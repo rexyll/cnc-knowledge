@@ -428,6 +428,11 @@ class CheckpointedSQLiteProviderGrantFloorAuthority:
                 raise ProviderGrantFloorCheckpointBootstrapDenied(
                     "only a completely empty strict Floor database may be bootstrapped"
                 )
+            expected = ProviderGrantFloorCheckpoint(
+                sequence=1,
+                authority_revision=state.authority_revision,
+                state_sha256=state.state_sha256,
+            )
             try:
                 checkpoint = self._checkpoint_store.compare_and_set(
                     expected_sequence=None,
@@ -435,30 +440,35 @@ class CheckpointedSQLiteProviderGrantFloorAuthority:
                     state_sha256=state.state_sha256,
                 )
             except Exception as exc:
-                try:
-                    observed = self._checkpoint_store.read_checkpoint()
-                except Exception:
-                    observed = None
-                if (
-                    isinstance(observed, ProviderGrantFloorCheckpoint)
-                    and observed.sequence == 1
-                    and observed.authority_revision == state.authority_revision
-                    and observed.state_sha256 == state.state_sha256
-                ):
-                    return observed
-                raise ProviderGrantFloorCheckpointUncertain(
-                    "empty Floor bootstrap checkpoint outcome is unknown"
-                ) from exc
-            expected = ProviderGrantFloorCheckpoint(
-                sequence=1,
-                authority_revision=state.authority_revision,
-                state_sha256=state.state_sha256,
-            )
+                return self._confirm_checkpoint_readback(
+                    expected,
+                    "empty Floor bootstrap checkpoint outcome is unknown",
+                    cause=exc,
+                )
             if checkpoint != expected:
-                raise ProviderGrantFloorCheckpointUncertain(
-                    "checkpoint store returned an unexpected bootstrap record"
+                return self._confirm_checkpoint_readback(
+                    expected,
+                    "empty Floor bootstrap returned an unexpected checkpoint",
                 )
             return checkpoint
+
+    def _confirm_checkpoint_readback(
+        self,
+        expected: ProviderGrantFloorCheckpoint,
+        message: str,
+        *,
+        cause: Exception | None = None,
+    ) -> ProviderGrantFloorCheckpoint:
+        try:
+            observed = self._checkpoint_store.read_checkpoint()
+        except Exception as read_exc:
+            raise ProviderGrantFloorCheckpointUncertain(message) from read_exc
+        if observed == expected:
+            return observed
+        error = ProviderGrantFloorCheckpointUncertain(message)
+        if cause is not None:
+            raise error from cause
+        raise error
 
     def verify_checkpoint(self) -> ProviderGrantFloorCheckpoint:
         with self._lock:
@@ -482,18 +492,15 @@ class CheckpointedSQLiteProviderGrantFloorAuthority:
                 state_sha256=state.state_sha256,
             )
         except Exception as exc:
-            try:
-                observed = self._checkpoint_store.read_checkpoint()
-            except Exception:
-                observed = None
-            if observed == expected:
-                return observed
-            raise ProviderGrantFloorCheckpointUncertain(
-                "Floor mutation committed but external checkpoint advance is unconfirmed"
-            ) from exc
+            return self._confirm_checkpoint_readback(
+                expected,
+                "Floor mutation committed but external checkpoint advance is unconfirmed",
+                cause=exc,
+            )
         if actual != expected:
-            raise ProviderGrantFloorCheckpointUncertain(
-                "checkpoint store returned an unexpected checkpoint after Floor mutation"
+            return self._confirm_checkpoint_readback(
+                expected,
+                "checkpoint store returned an unexpected checkpoint after Floor mutation",
             )
         return actual
 
