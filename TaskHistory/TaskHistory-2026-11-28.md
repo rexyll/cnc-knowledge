@@ -295,3 +295,30 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - This remains a same-host SQLite reference implementation. A missing local receipt does not prove that an unknown remote network request never committed.
 - Production Coordinator recovery still requires an authenticated, linearizable Provider receipt-query endpoint and defined retry/quarantine rules; this change does not provide remote multi-replica consistency.
 - No real Provider, KMS/HSM, etcd, cloud object store or IAM/RBAC service was contacted. No production control object, application access, candidate import or cutover was changed. ASSET-000092 remains PROPOSED_NOT_APPROVED / NOT_RUN; production Unified schema-v2 remains the sole authority.
+
+## CNC Knowledge Base — Round 87
+
+- Repository: rexyll/cnc-knowledge
+- Branch: main only; no branch created.
+- Scope: bind Provider-native freeze commands to signed Coordinator Leader identity, epoch, native Lease ID and Lease expiry.
+
+### Code changes
+
+- Upgraded freeze command envelope/claims/signature domain to v2. Claims strictly require coordinator_namespace, leader_id, positive leader_epoch, positive leader_lease_id, and leader_lease_expires_at_unix.
+- Provider rejects expired Leader Lease declarations and commands whose expiry exceeds the declared Leader Lease expiry.
+- Upgraded SQLite Provider schema to v4 with additive provider_write_freeze_leader_floors and provider_write_freeze_command_leaders tables.
+- Provider persists a per-tenant/scope Coordinator namespace and highest observed Leader epoch. Lower epochs are rejected; same-epoch Leader ID or native Lease changes are rejected; namespace changes are rejected.
+- A higher epoch can take over the next freeze generation, including matching UNFREEZE of the active freeze ID.
+- Freeze scope update, durable command receipt, Leader epoch floor and command-Leader audit row are written in one BEGIN IMMEDIATE transaction. Rejected commands do not advance floors.
+- Exact historical command receipt lookup remains ahead of Leader epoch checks; replay returns the historical result without reapplying the old command.
+- Added tests for stale epoch rejection after observing a new Leader, same-epoch identity/Lease mutation, namespace drift, command expiry beyond Lease expiry, already-expired Lease, and v3-to-v4 additive migration. Updated v2 migration and backup/restore expectations.
+
+### Validation
+
+- CI validation pending; do not treat this round as accepted until required main-branch workflows complete successfully.
+
+### Safety boundary
+
+- The Provider validates a signed Lease-expiry assertion; it does not query live etcd Lease existence, Leader-key attachment, or early revocation.
+- Before the Provider observes a higher epoch, an old Leader can still be accepted within the signed command/Lease validity window if its Lease was revoked early. Production requires a linearizable online Leader/Lease status check at the Provider or an equivalent independently revocable authorization mechanism.
+- Same-host SQLite tests do not establish etcd consensus, remote Provider behavior or multi-host consistency. No real etcd, Provider, KMS/HSM, cloud object store or IAM/RBAC service was contacted; no production application access, candidate import or cutover occurred. ASSET-000092 remains PROPOSED_NOT_APPROVED / NOT_RUN; production Unified schema-v2 remains the sole authority.
