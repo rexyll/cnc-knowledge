@@ -596,3 +596,12 @@ Provider schema升级至v6，新增`provider_scope_grants`与`provider_grant_com
 设计提出独立 ProviderGrantFloorAuthority，按Provider/tenant/scope保存单调generation、Leader epoch、FENCE/ACTIVATE pending operation、command digest和Provider receipt digest；FENCE/ACTIVATE采用外部预留、Provider本地提交、外部精确回执确认的双边协议。专用Restore必须在线性一致外部floor上对账，pending或unknown状态不能靠猜测重试。
 
 **当前强制门禁：** 通用 restore_to_new_database() 仍拒绝任何包含Grant scope或command history的备份。只有独立floor authority及专用Restore对账实现并验收后，才可设计恢复放行；本轮文档不是放行依据。
+
+
+### 15.17 第九十二轮：Provider Grant 外部 Floor 本地参考适配器
+
+新增 scripts/spare_parts_provider_grant_floor.py，提供独立文件 SQLiteProviderGrantFloorAuthority 参考适配器和 ProviderGrantFloorAuthority 端口基类；新增 tests/test_spare_parts_provider_grant_floor.py，包含20个测试方法定义，覆盖FENCE/ACTIVATE外部预留和回执确认、scope revision CAS、operation ID幂等、未知结果重启查询、Leader epoch/namespace/native Lease expiry单调性及scope隔离。
+
+该适配器使用独立SQLite文件，按Provider/tenant/scope保存generation与Leader epoch floor、pending operation、命令摘要和Provider回执摘要。FENCE/ACTIVATE分别通过reserve→Provider commit→confirm推进；同一operation ID只能绑定完全相同的命令，未知结果只能查回或重试原operation。
+
+**边界：** 这是单机SQLite事务参考，不是etcd线性一致/多节点/quorum实现；SQLite自身不能证明数据库文件未从旧快照回滚，只有与该数据库独立保存的可信revision checkpoint才能用于检测回退。适配器不验证Provider回执签名/真实性，也尚未接入Provider命令应用路径或Unified schema-v2 authority。当前没有Grant-aware Restore；通用Restore对任何Grant历史备份仍必须拒绝。测试方法定义数量不是测试执行结果。
