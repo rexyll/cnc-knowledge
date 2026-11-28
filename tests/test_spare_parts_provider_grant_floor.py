@@ -226,46 +226,26 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
 
     def test_provider_receipt_requires_exact_operation_command_and_revision(self):
         reservation = self.reserve_fence()
+        wrong_command_receipt = self.receipt_envelope(
+            reservation, command_sha256=_digest("wrong-command")
+        )
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "command digest"):
-            self.authority.confirm_provider_receipt(
-                operation_id=reservation.operation_id,
-                command_digest=_digest("wrong-command"),
-                provider_receipt_digest=_digest("receipt"),
-                expected_revision=reservation.reserved_scope_revision,
-            )
+            self.confirm_receipt(reservation, wrong_command_receipt)
+        valid_receipt = self.receipt_envelope(reservation)
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "revision CAS failed"):
-            self.authority.confirm_provider_receipt(
-                operation_id=reservation.operation_id,
-                command_digest=reservation.command_digest,
-                provider_receipt_digest=_digest("receipt"),
-                expected_revision=0,
-            )
+            self.confirm_receipt(reservation, valid_receipt, expected_revision=0)
         self.assertEqual(self.authority.snapshot(self.key).state, "FENCE_PENDING")
 
     def test_confirm_is_idempotent_only_for_the_same_provider_receipt(self):
         reservation = self.reserve_fence()
-        receipt = _digest("provider-receipt")
-        first = self.authority.confirm_provider_receipt(
-            operation_id=reservation.operation_id,
-            command_digest=reservation.command_digest,
-            provider_receipt_digest=receipt,
-            expected_revision=reservation.reserved_scope_revision,
-        )
-        replay = self.authority.confirm_provider_receipt(
-            operation_id=reservation.operation_id,
-            command_digest=reservation.command_digest,
-            provider_receipt_digest=receipt,
-            expected_revision=reservation.reserved_scope_revision,
-        )
+        receipt = self.receipt_envelope(reservation)
+        first = self.confirm_receipt(reservation, receipt)
+        replay = self.confirm_receipt(reservation, receipt)
         self.assertEqual(replay.state, first.state)
         self.assertEqual(replay.revision, first.revision)
+        different_receipt = self.receipt_envelope(reservation)
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "cannot be replaced"):
-            self.authority.confirm_provider_receipt(
-                operation_id=reservation.operation_id,
-                command_digest=reservation.command_digest,
-                provider_receipt_digest=_digest("different-receipt"),
-                expected_revision=reservation.reserved_scope_revision,
-            )
+            self.confirm_receipt(reservation, different_receipt)
 
     def test_unknown_reservation_outcome_is_recovered_by_operation_id_after_restart(self):
         reservation = self.reserve_fence()
