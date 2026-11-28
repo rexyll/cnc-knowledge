@@ -1019,6 +1019,13 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
                 operation["provider_id"], operation["tenant_id"], operation["scope"]
             )
             key_values = self._key_tuple(key)
+            if (
+                operation["command_issued_at_unix"] is None
+                or operation["command_expires_at_unix"] is None
+            ):
+                raise ProviderGrantFloorConflict(
+                    "legacy Grant floor operation lacks an authenticated Coordinator command time window"
+                )
             signature_key_id = parsed["signature"]["key_id"]
             trust_row = connection.execute(
                 """SELECT * FROM provider_grant_floor_receipt_keys
