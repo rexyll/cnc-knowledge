@@ -1534,4 +1534,7 @@
 - **设计交付：** 新增 docs/17-operation-maintenance-and-repair/provider-grant-floor-etcd-native-atomicity-design.md。定义Etcd-native meta/scope/operation/trust/event键布局、同Txn Compare+Put、验签trust row并发固定、FENCE/ACTIVATE/Receipt确认、exact unknown-outcome readback、txn预算、隔离namespace和迁移边界。
 - **回滚与耐久模式：** 明确Etcd内部revision/state-root无法检测整个Etcd集群恢复旧snapshot；设计域外witness checkpoint，并增加每笔写入PREPARE → Etcd PREPARE/COMMIT → Witness COMMIT → Etcd FINALIZE的严格耐久模式及故障恢复矩阵。该模式尚未实现，不能表述为当前运行保证。
 - **提交：** 根/章节计划登记 963106fa606db1a10c478205768b45fa91a315ed / 266b4408bf9d4af6fa1b4bf69e2abd40e8a27299；Etcd-native架构文档 ac7cb81b5992fb7d2793894fd9d736583dcde090；外部witness严格提交协议补充 0ff3dc613e3ec001cc9afd6054b95fbabf0c9026。
+
+- **设计审查补强（2026-11-29）：** 进一步定义Witness PREPARE取消语义：Etcd PREPARE响应未知时不能仅凭一次Range未发现pending就ABORT；Etcd PREPARE之后通过与COMMIT竞争的精确Compare/Txn取消，只有明确ABORT成功后才能Witness ABORTED。Etcd COMMIT确定后禁止再ABORT，只能完成Witness COMMIT/Etcd FINALIZE。
+- **恢复边界补强：** Witness sequence/root只能检测Etcd整群snapshot回滚，不能仅凭摘要重建丢失数据；重建必须依赖域外完整事件日志/可信备份加事件补齐，缺少材料时只能保持隔离并逐scope人工/受控重建。v1全局meta root采用全namespace写序列，明确存在吞吐热点，未来分片需重新证明root/顺序语义。
 - **状态：** IN_PROGRESS（架构设计初稿已交付，待README/TaskHistory/全库质量CI和设计审查完成；未实现Etcd-native服务，未连接真实Etcd/配置RBAC，不执行Restore/Cutover）。
