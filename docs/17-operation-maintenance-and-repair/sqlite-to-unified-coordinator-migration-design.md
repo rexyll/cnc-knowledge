@@ -520,3 +520,12 @@ v4备份校验进一步要求Leader floor与command-Leader审计两张表必须�
 - 通过现有 `CoordinatorAuthorityStore.linearizable_range` 在同一revision读取Scheduler aggregate和Leader TTL key；校验Leader ID、epoch、Lease ID、Lease attachment与expiry。
 - Provider新增可选 `require_online_leader_status` 门禁。开启后，在线校验失败或etcd不可用均拒绝新的Freeze/Unfreeze命令；历史receipt重放不重新执行命令。
 - **不能过度宣称：** etcd Range与Provider SQLite commit不能原子提交，Lease可能在检查成功后、Provider commit前被撤销。TOCTOU仍然存在，需要下一阶段设计共同线性化的Provider可撤销授权/屏障协议。
+
+
+### 15.14 第八十九轮：Provider 可撤销授权与撤销屏障架构决策
+
+第八十八轮在线Leader检查仅能证明某一线性一致Range revision上的Coordinator状态，无法与后续Provider SQLite commit原子化。把Range调用移入Provider的BEGIN IMMEDIATE事务并不能锁定etcd Lease，因此仍有TOCTOU窗口。
+
+第八十九轮新增独立设计文档[Provider可撤销授权与撤销屏障架构设计](provider-revocation-barrier-architecture.md)。其建议将Provider-native grant/epoch作为实际Provider mutation的最终授权门禁，并把Leader handoff拆为停止旧授权签发、Provider FENCE、持久化receipt、新grant激活和mutation事务内校验。FENCE必须与所有受保护对象/multipart mutation共享同一Provider事务或原生条件写域；否则不能声称旧epoch在屏障后被可靠拒绝。
+
+**语义必须准确：** Provider侧撤销以FENCE提交为线性化点，不等于etcd Lease物理过期瞬间撤销。若业务要求两个独立系统之间零窗口同步撤销，必须提供共享事务权威或Provider原生原子条件写；仅在线Range、签名Lease expiry、短TTL或异步Watch都不能满足。本文不实现该协议，也不改变MIG-04/05/06/07状态。
