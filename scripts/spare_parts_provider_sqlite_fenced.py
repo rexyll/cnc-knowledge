@@ -110,6 +110,8 @@ class SQLiteFencedObjectStorageProvider:
         attestation_status_checker: Any | None = None,
         require_online_attestation_status: bool = False,
         require_atomic_online_attestation_status: bool = False,
+        leader_status_checker: Any | None = None,
+        require_online_leader_status: bool = False,
         busy_timeout_seconds: float = 5.0,
         fault_hook: Callable[[str], None] | None = None,
     ):
@@ -183,9 +185,19 @@ class SQLiteFencedObjectStorageProvider:
                 raise BackupStorageError(
                     "atomic online status requires an online checker sharing the exact Provider SQLite database"
                 )
+        if not isinstance(require_online_leader_status, bool):
+            raise BackupStorageError("require_online_leader_status must be boolean")
+        if require_online_leader_status and not callable(
+            getattr(leader_status_checker, "is_leader_active", None)
+        ):
+            raise BackupStorageError(
+                "online Coordinator Leader status is required but no checker is configured"
+            )
         self.attestation_status_checker = attestation_status_checker
         self.require_online_attestation_status = require_online_attestation_status
         self.require_atomic_online_attestation_status = require_atomic_online_attestation_status
+        self.leader_status_checker = leader_status_checker
+        self.require_online_leader_status = require_online_leader_status
         self.busy_timeout_seconds = float(busy_timeout_seconds)
         self.fault_hook = fault_hook
         self._ensure_ed25519_registry_schema()
@@ -955,6 +967,26 @@ class SQLiteFencedObjectStorageProvider:
                     "current_generation": int(current["generation"]) if current else None,
                     "current_state": current["state"] if current else None,
                 }
+
+            # This is a fresh linearizable etcd snapshot, but it cannot be
+            # atomically committed with the following local SQLite transaction.
+            # Keep the check fail-closed and document the remaining cross-system
+            # check-to-commit race; do not describe it as an atomic Lease guard.
+            if self.require_online_leader_status:
+                try:
+                    active = bool(
+                        self.leader_status_checker.is_leader_active(
+                            claims, now_unix=now
+                        )
+                    )
+                except Exception as exc:
+                    raise FencingAttestationStatusUnavailableError(
+                        "Coordinator online Leader status is unavailable; freeze command refused"
+                    ) from exc
+                if not active:
+                    raise FencingAttestationRejectedError(
+                        "Coordinator Leader is absent, expired, revoked or does not match the signed command"
+                    )
 
             leader = {
                 "coordinator_namespace": claims["coordinator_namespace"],
