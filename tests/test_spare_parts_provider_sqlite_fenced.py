@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import multiprocessing
 import os
 import sqlite3
@@ -42,6 +43,11 @@ from scripts.spare_parts_provider_write_freeze_gate import (
 from scripts.spare_parts_provider_revocable_grant import (
     CLAIMS_FORMAT as PROVIDER_GRANT_CLAIMS_FORMAT,
     sign_provider_grant_command,
+    verify_provider_grant_command,
+)
+from scripts.spare_parts_provider_grant_floor import (
+    ProviderGrantScopeKey,
+    SQLiteProviderGrantFloorAuthority,
 )
 
 
@@ -57,6 +63,14 @@ ED_KEY_ID = "ci-ed25519-v1"
 ED_PRIVATE = Ed25519PrivateKey.from_private_bytes(hashlib.sha256(b"CH17 synthetic Ed25519 signer seed").digest())
 ED_SIGNER = Ed25519PrivateKeySigner(key_id=ED_KEY_ID, private_key=ED_PRIVATE)
 ED_PUBLIC = ED_SIGNER.public_key_raw()
+PROVIDER_RECEIPT_KEY_ID = "ci-provider-receipt-v1"
+PROVIDER_RECEIPT_PRIVATE = Ed25519PrivateKey.from_private_bytes(
+    hashlib.sha256(b"CH17 synthetic Provider receipt signer seed").digest()
+)
+PROVIDER_RECEIPT_PUBLIC = PROVIDER_RECEIPT_PRIVATE.public_key().public_bytes(
+    __import__("cryptography.hazmat.primitives.serialization", fromlist=["Encoding"]).Encoding.Raw,
+    __import__("cryptography.hazmat.primitives.serialization", fromlist=["PublicFormat"]).PublicFormat.Raw,
+)
 
 
 def _proof(
@@ -174,11 +188,27 @@ def _new_provider(
     attestation_status_checker=None, require_online_attestation_status=False,
     require_atomic_online_attestation_status=False, trusted_hmac_keys=None,
     provider_id=None, leader_status_checker=None, require_online_leader_status=False,
-    require_revocable_grant=False,
+    require_revocable_grant=False, provider_receipt_signing_key=None,
+    provider_receipt_key_id=None,
 ):
-    if require_revocable_grant:
+    persisted_receipt_mode = False
+    try:
+        with sqlite3.connect(database) as connection:
+            row = connection.execute(
+                "SELECT value FROM provider_meta WHERE key='provider_grant_receipt_signing_required'"
+            ).fetchone()
+            persisted_receipt_mode = bool(row and row[0] == "1")
+    except sqlite3.Error:
+        pass
+    strict_receipt_mode = bool(require_revocable_grant or persisted_receipt_mode)
+    if strict_receipt_mode:
+        require_revocable_grant = True
         leader_status_checker = leader_status_checker or MutableLeaderStatusChecker(active=True)
         require_online_leader_status = True
+        provider_receipt_signing_key = (
+            provider_receipt_signing_key or PROVIDER_RECEIPT_PRIVATE
+        )
+        provider_receipt_key_id = provider_receipt_key_id or PROVIDER_RECEIPT_KEY_ID
     provider = SQLiteFencedObjectStorageProvider(
         database, principal_id=principal_id, principal_secret=secret,
         provider_id=provider_id,
@@ -195,6 +225,9 @@ def _new_provider(
         leader_status_checker=leader_status_checker,
         require_online_leader_status=require_online_leader_status,
         require_revocable_grant=require_revocable_grant,
+        provider_receipt_signing_key=provider_receipt_signing_key,
+        provider_receipt_key_id=provider_receipt_key_id,
+        require_provider_signed_grant_receipts=strict_receipt_mode,
         fault_hook=fault_hook,
     )
     return _wrap_test_attestations(provider)
