@@ -494,3 +494,15 @@ Etcd3gwV3Client现支持显式auth_token并对每个endpoint session注入Author
 验签后仍执行原有300秒新鲜度、完整scope集合、provider_generation、fencing high-water token及operation sequence floor检查。输出增加签名验证状态、签名key ID和信任库SHA-256；application activation与Provider operation授权仍为false。
 
 **安全边界：** 信任库本身的来源、审批、保护和轮换必须由外部可信流程负责；工具不连接KMS或Provider、不做真实采样、不写控制记录。签名只证明证据快照由对应私钥签署，不证明Provider在采样后持续冻结。当前离线工具没有持久化nonce/replay ledger，不能阻止有效旧快照在有效期内被重放。此功能不构成生产切换或应用启用授权。
+
+
+
+## CH17-T006 Provider 冻结声明与防重放参考门禁（第八十三轮）
+
+新增 `scripts/spare_parts_sqlite_provider_freeze_attestation.py`。签名声明必须绑定Provider ID、freeze ID/generation、UUID evidence ID、Coordinator challenge nonce、freeze时间窗、Coordinator Leader ID/epoch/native Lease ID及其期限，并携带逐scope Provider generation、fencing high-water token和operation sequence。
+
+验证器还要求调用方提供近期Coordinator快照（默认最大年龄5秒）。签名声明中的Leader/epoch/Lease身份和有效期必须与该快照精确一致；快照scope floors必须与冻结证据逐scope相同；证据仍必须满足原有300秒新鲜度和候选floor上限。签名和所有绑定检查通过后，才将证据一次性写入replay ledger。
+
+新增 `SQLiteProviderFreezeEvidenceReplayLedger` 作为单机参考实现：数据库文件权限0600，SQLite FULL同步，使用 `BEGIN IMMEDIATE` 原子插入，并通过唯一约束阻止同一Provider下的 evidence ID、challenge nonce 或 freeze ID/generation 再次消费。校验失败不消耗标识；ledger写入异常必须fail-closed。
+
+**关键安全边界：** 此模块只验证Provider签名声明，不连接Provider或确认实际对象/数据写入路径已被锁住。因此 `provider_write_freeze_enforced` 仍为false，应用启用和Provider操作权限也始终为false。Coordinator快照当前是调用方输入，生产接入必须改为认证的线性一致权威读取。SQLite replay ledger仅适合同机演练，不具备跨主机共识，也无法防止可信管理员回滚数据库备份；生产多实例需使用共享线性一致、具备耐久性与CAS语义的账本（例如隔离etcd Txn），并将challenge nonce的签发与消费绑定在同一权威生命周期内。此轮未触碰真实Provider/KMS/etcd、生产数据或RBAC。
