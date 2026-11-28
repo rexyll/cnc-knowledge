@@ -145,3 +145,39 @@ Floor状态先预留、Provider本地事务再提交、最后外部确认，是�
 - 适配器只保存Provider receipt digest；调用者仍须通过认证的Provider状态接口核实回执的真实性、Provider身份、scope和command digest，不能把未认证字符串直接确认成有效回执。
 - 当前没有连接该适配器与 SQLiteFencedObjectStorageProvider.apply_provider_grant_command()、Coordinator命令签发或Unified schema-v2 authority；没有Grant-aware Restore，也没有解除通用Restore对Grant历史备份的拒绝。
 - 本轮测试方法数量只是源代码清单，尚不代表测试已执行或通过。Round 90、Round 92均不得因此标记DONE；生产 Unified schema-v2仍为唯一authority，MIG-04/MIG-05继续IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
+
+## 10. 第九十三轮：Coordinator Namespace 严格隔离
+
+第九十二轮 SQLite 参考 Floor adapter 不再接受任意绝对路径作为 Coordinator namespace，只接受唯一形状：
+
+`/cnc/migration/isolated/{single-id}/`
+
+其中 `single-id` 是单一标识段，规则与代码中的 `[A-Za-z0-9][A-Za-z0-9._:-]{0,127}` 一致：首字符必须为 ASCII 字母或数字，后续最多127个字符且只允许字母、数字、点、下划线、冒号和连字符。路径必须有且只有四个非空段，必须以斜线开头和结尾；不接受额外层级、重复分隔符、点段、路径穿越、百分号编码、反斜线或空白字符。
+
+校验发生在写事务/修订号推进之前。非法 namespace 必须直接 fail-closed，不创建 scope 记录，不分配 generation，不增加 scope revision 或 authority revision。一个 scope 首次绑定隔离 namespace 后仍不可更换；更换为另一个格式合法的 isolated ID 也必须被既有不可变性门禁拒绝。
+
+这是一项本地合成迁移参考模型的输入限制，不是通用 Coordinator namespace 解析器，也不是生产 Unified schema-v2 namespace 的迁移或授权变更。它不连接真实 etcd 或 Provider；生产 authority 仍须通过独立的权限、租约和 namespace 策略验证。
+
+新增测试覆盖合法隔离 namespace、Unified/生产前缀、隔离根路径、额外层级、空段/点段、百分号编码及反斜线。拒绝路径后同时核对 scope 仍为 IDLE，scope revision 与 authority revision 均未变化。测试还确认在隔离前缀内更换单一 ID 仍违反既有 scope namespace 不可变约束。
+
+### 10.1 与本轮共同完成的 Provider 回执校验修复
+
+主分支 Quality Run 同时暴露并修复了第九十轮 Provider 参考实现中的几处验收缺陷：
+
+- ACTIVATE mutation gate 查询现在显式读取 ACTIVATE receipt 的 `command_sha256`，使后续持久化签名验证使用真实回执摘要，不再访问缺失的查询列。
+- 命令验证本身允许签发时间最多领先 Provider 当前时间5秒；运行时回执验证和备份验证现统一允许 Provider 应用时间相对签发时间最多早5秒，但仍要求应用时间不得晚于签名命令到期时间。超出该偏差范围仍 fail-closed。
+- 测试命令的默认到期时间不得超过 Coordinator native Lease expiry。
+- 备份断链测试改为删除被 ACTIVATE 引用的 FENCE 回执，以验证确切的 FENCE/ACTIVATE 缺失链拒绝，而不是通过改写已签名字段提前触发通用签名声明不匹配错误。
+- Floor 单元测试的 namespace 不可变场景改用另一个语法合法的 isolated ID；pending FENCE 阶段发起 ACTIVATE 的断言明确验证 pending operation 阻断。
+
+这些变化修正了本地参考实现/测试的内部一致性，不构成真实 Provider、etcd 或跨系统事务验收。
+
+### 10.2 验证记录
+
+- GitHub Actions Knowledge Quality Run 46152883043：两个必需 Job 均成功。
+- 全库 unittest：707项运行，40项按环境条件跳过，其余667项通过。
+- CH12 numerical resource tests：143项通过。
+- repository knowledge lint：0 errors、5 warnings；附加结构/数据检查结果为0 errors。
+- 测试运行链接：[Knowledge Quality Run 46152883043](https://github.com/rexyll/cnc-knowledge/actions/runs/46152883043)。
+
+本地 SQLite Floor 依然不能识别自身数据库被恢复到旧快照；`minimum_revision` 只有在调用者持有该数据库备份域外的可信 revision checkpoint 时才有回滚检测意义。Provider 回执仍仅以摘要存入 Floor adapter，adapter 本身尚未验证回执签名或来源。该缺口列入下一轮设计任务。
