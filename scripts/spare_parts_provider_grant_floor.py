@@ -283,11 +283,24 @@ class SQLiteProviderGrantFloorAuthority(ProviderGrantFloorAuthority):
     @staticmethod
     def _namespace(value: str) -> str:
         if (
-            not isinstance(value, str) or not value.startswith("/") or not value.endswith("/")
-            or "//" in value or any(ch.isspace() for ch in value)
-            or any(part in {"", ".", ".."} for part in value.strip("/").split("/"))
+            not isinstance(value, str)
+            or not value.startswith("/")
+            or not value.endswith("/")
+            or "//" in value
+            or any(ch.isspace() for ch in value)
         ):
-            raise ProviderGrantFloorError("Coordinator namespace is not a canonical absolute prefix")
+            raise ProviderGrantFloorError(
+                "Coordinator namespace must match /cnc/migration/isolated/{single-id}/"
+            )
+        parts = value.strip("/").split("/")
+        if (
+            len(parts) != 4
+            or parts[:3] != ["cnc", "migration", "isolated"]
+            or not _ID_RE.fullmatch(parts[3])
+        ):
+            raise ProviderGrantFloorError(
+                "Coordinator namespace must match /cnc/migration/isolated/{single-id}/"
+            )
         return value
 
     @staticmethod
