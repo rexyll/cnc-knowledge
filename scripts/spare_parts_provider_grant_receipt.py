@@ -309,16 +309,16 @@ def verify_provider_grant_receipt(
         raise ProviderGrantReceiptError("Provider receipt was signed before the key validity window")
     if trust_key.not_after is not None and applied >= float(trust_key.not_after):
         raise ProviderGrantReceiptError("Provider receipt was signed after the key validity window")
+    if trust_key.status == "REVOKED":
+        effective = trust_key.revocation_effective_at
+        if effective is None or applied >= float(effective):
+            raise ProviderGrantReceiptError("Provider receipt signing key was revoked at the applied time")
     if trust_key.status in {"RETIRING", "REVOKED"}:
         retirement = trust_key.retiring_effective_at
         if retirement is None or applied >= float(retirement):
             raise ProviderGrantReceiptError(
                 "Provider receipt was applied after the key stopped issuing new receipts"
             )
-    if trust_key.status == "REVOKED":
-        effective = trust_key.revocation_effective_at
-        if effective is None or applied >= float(effective):
-            raise ProviderGrantReceiptError("Provider receipt signing key was revoked at the applied time")
 
     expected = dict(expected_claims)
     if not expected or any(field not in _CLAIM_FIELDS for field in expected):
