@@ -33,7 +33,7 @@ class ImportPlanError(RuntimeError):
 
 
 FORMAT = "ch17-sqlite-unified-import-plan-v1"
-CANDIDATE_FORMAT = "ch17-sqlite-unified-candidate-v1"
+CANDIDATE_FORMAT = "ch17-sqlite-unified-candidate-v2"
 PRODUCTION_PREFIX = b"/cnc/admission/unified/v2/"
 
 
