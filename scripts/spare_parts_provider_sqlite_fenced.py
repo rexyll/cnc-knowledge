@@ -1338,7 +1338,7 @@ class SQLiteFencedObjectStorageProvider:
                 fence_receipt = c.execute(
                     """SELECT result_state,action,provider_id,tenant_id,fencing_scope,
                               grant_id,generation,coordinator_namespace,leader_id,
-                              leader_epoch,leader_lease_id
+                              leader_epoch,leader_lease_id,applied_at
                        FROM provider_grant_commands WHERE command_sha256=?""",
                     (claims["fence_command_sha256"],),
                 ).fetchone()
@@ -1354,6 +1354,7 @@ class SQLiteFencedObjectStorageProvider:
                     or fence_receipt["leader_id"] != leader_id
                     or int(fence_receipt["leader_epoch"]) != leader_epoch
                     or int(fence_receipt["leader_lease_id"]) != lease_id
+                    or float(claims["issued_at_unix"]) < float(fence_receipt["applied_at"])
                 ):
                     raise SQLiteProviderGrantRejectedError(
                         "ACTIVATE is missing an exact durable FENCE receipt"
