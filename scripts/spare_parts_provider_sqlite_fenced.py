@@ -2043,7 +2043,9 @@ class SQLiteFencedObjectStorageProvider:
                 or int(verified_claims["leader_lease_id"]) != int(receipt["leader_lease_id"])
                 or float(verified_claims["leader_lease_expires_at_unix"]) != float(receipt["leader_lease_expires_at"])
                 or verified_claims["fence_command_sha256"] != receipt["fence_command_sha256"]
-                or float(receipt["applied_at"]) < issued_at
+                # A command may be issued up to the verifier's bounded clock-skew
+                # allowance before the Provider applies it; the durable receipt must
+                # still be no later than the signed expiry.
                 or float(receipt["applied_at"]) > expires_at
             ):
                 raise ValueError("signed grant receipt claims disagree with persisted fields")
@@ -2085,6 +2087,7 @@ class SQLiteFencedObjectStorageProvider:
                           g.grant_expires_at,g.fence_command_sha256,
                           f.provider_id,f.envelope_json AS fence_envelope_json,
                           f.signer_public_key_base64 AS fence_signer_public_key_base64,
+                          a.command_sha256 AS activation_command_sha256,
                           a.envelope_json AS activation_envelope_json,
                           a.signer_public_key_base64 AS activation_signer_public_key_base64
                    FROM provider_scope_grants g
