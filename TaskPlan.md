@@ -1474,14 +1474,27 @@
 
 ### 第九十六轮任务计划：Provider SQLite FENCE/ACTIVATE durable signed Receipt 集成
 
-- **背景：** 第九十五轮完成了 Provider Receipt signer/verifier 和外部 Floor signed-envelope 门禁。当前 `provider_grant_commands.envelope_json` 保存的是 Coordinator 签名的 Grant command，`provider_grant_command_status()` 提供其 durable command/result 查询；它不是 Provider 独立私钥签发的 Receipt。Provider 仍未在 FENCE/ACTIVATE 状态变更事务中生成并保存 Provider-native signed Receipt。
-- **目标：** 在本地 Provider SQLite 参考实现内，把 Grant 状态转换、原 command receipt 与 Provider signed Receipt envelope 绑定为同一持久化事务，并提供按 Provider/tenant/exact command digest 查询 immutable receipt 的接口。
-- **实施前检查：** 先审查 `spare_parts_provider_sqlite_fenced.py` 的 FENCE/ACTIVATE mutation、command idempotency、SQLite transaction/rollback 边界和现有 schema migration；不假设当前方法/事务结构，按代码事实设计最小变更。
-- **Signer 注入：** 使用独立的 Provider Ed25519 private key 与 key ID，通过依赖注入提供给本地参考 Provider；不得复用 Coordinator command signing key，不把私钥写入 Provider/Floor SQLite 数据库或备份。KMS/HSM 只记录接口需求，本轮不接真实服务。
-- **原子性要求：** Provider 在验证 Coordinator command、确认 Provider/tenant/scope/Grant/generation/Leader/native Lease 约束后，在同一个 Provider 写事务中更新 Grant state、写 command receipt、形成 claims 并签名、持久化完整 canonical envelope 与 digest；事务未提交不得对外返回成功 Receipt。任何中途故障回滚时不得残留成功回执。
-- **查询与未知结果：** 提供 `get_provider_grant_receipt(provider_id, tenant_id, command_sha256)` 精确查询；同一已提交 command 重放返回相同 envelope/digest；响应丢失后按原 command digest 查回，不重新分配 generation。签名完成但提交未知时保持原事务结果查询/恢复语义。
-- **端到端测试：** 使用真实本地 Provider signer 输出的 FENCE 与 ACTIVATE Envelope 驱动 Round95 Floor confirm；验证 Floor signer key/trust binding、FENCE→ACTIVATE receipt chain、签名/字段篡改拒绝、相同 command 幂等、不同 digest 拒绝；注入写入中途故障确保 Grant state/command receipt/Receipt 全部回滚；模拟 commit 后响应丢失并按 digest 查回同一 Receipt。
-- **边界：** 仅本地合成 SQLite Provider 与内存测试 Ed25519 key；不连接真实 Provider/KMS/HSM/etcd/object storage，不改 Unified schema-v2 production authority、IAM/RBAC，不解除 Restore fail-closed，不执行候选导入、应用激活或 Cutover。
-- **交付：** Provider SQLite schema/API、receipt signer injection、exact receipt lookup、跨 Provider→Floor 集成测试、CH17 README/设计文档/TaskPlan/TaskHistory 与主分支 Knowledge Quality CI。
-- **状态：** TODO。
+- **背景：** 第九十五轮完成 Provider Receipt signer/verifier 和外部 Floor signed-envelope 门禁。`provider_grant_commands.envelope_json` 保存 Coordinator 签名的 Grant command，不能替代 Provider 独立 Receipt。
+- **目标与实现：** 本地 Provider SQLite 在FENCE/ACTIVATE mutation事务内，完成Grant状态更新、原Coordinator command receipt持久化、Provider独立Ed25519 Receipt签名和canonical envelope/digest落库；所有内容同属一个 `BEGIN IMMEDIATE`事务。
+- **Schema/API：** Provider schema升级为v7；`provider_grant_commands`新增 `provider_receipt_envelope_json`、`provider_receipt_digest`、`provider_receipt_key_id`、`provider_receipt_public_key_base64`。新增显式严格模式 `provider_grant_receipt_signing_required`，开启后不可降级；严格模式要求依赖注入独立Ed25519私钥和key ID，必须与Coordinator命令key ID/公钥不同，私钥不写入数据库/备份。
+- **原子性与幂等：** Receipt只在Provider同一事务提交后才可读；签名失败或提交前故障必须与Grant状态及command receipt一起回滚。精确command重放验证已存Receipt签名并返回 `ALREADY_APPLIED`，不能更换Envelope或重复推进generation。
+- **未知结果与查询：** 新增 `get_provider_grant_receipt(provider_id, tenant_id, command_sha256)`，仅按精确Provider/Tenant/command digest查回不可变Receipt；Provider重启后和commit后响应丢失均可取回同一Envelope/digest。
+- **严格写入/备份门禁：** strict模式下每个当前ACTIVE Grant的FENCE与ACTIVATE Receipt都必须存在并通过Provider本地签名/claims核验后，才允许受保护mutation；备份会校验Receipt完整canonical digest、独立签名、与Coordinator原命令的逐字段绑定及FENCE/ACTIVATE链。历史旧命令可保留为未认证历史，但不能成为当前strict ACTIVE授权链；旧记录不自动补签。
+- **Floor端到端：** 本地Provider产出的FENCE和ACTIVATE Receipt已驱动Round95外部Floor确认，验证独立Provider key registry、精确command/FENCE绑定及状态推进。
+- **测试：** 覆盖Provider→Floor FENCE/ACTIVATE、schema v6→v7、strict模式不可降级、私钥/命令key分离、重启/相同命令重放、按Provider/Tenant精确查询、事务提交前失败全回滚、commit后响应丢失、Receipt digest篡改、重算digest但伪造签名、备份校验与历史未签名记录fail-closed。
+- **验证边界：** 只证明本地SQLite Provider与合成内存Ed25519 key。Provider数据库保存的是Receipt公钥副本，生产信任仍由独立Floor key registry决定；Floor本轮仍不独立验证Coordinator command signature，reservation命令claims可信来源依赖上游调用链。没有接入真实Provider/KMS/HSM/etcd/object storage/IAM/RBAC，不解除Grant历史Restore fail-closed，不执行导入/激活/Cutover。
+- **交付：** Provider schema/API、Receipt signer injection、精确Receipt lookup、Provider→Floor测试、备份校验、CH17 README/设计文档/TaskHistory及CI。
+- **状态：** DONE（2026-11-28；最终代码/测试提交 `e534c84` 对应 Knowledge Quality Run 46157250066 两个必需Job均 success）。
 
+
+### 第九十七轮任务计划：外部 Floor Coordinator Grant Command 来源认证
+
+- **背景：** Round95/96已认证Provider签名Receipt，但SQLite Floor的reserve API仍由调用方分别传入 `command_digest`、Provider/tenant/scope、action、Grant/generation、namespace、Leader/Lease和command时间；Floor本身并不验证Coordinator签名命令。当前安全边界依赖上游Coordinator调用链提供可信reservation claims。
+- **目标：** 将Coordinator Grant command envelope纳入外部Floor的信任域：Floor必须从原始signed command envelope提取并验证claims，不能只接受调用方声明的摘要和身份字段。
+- **Coordinator trust registry：** 为Floor增加独立Coordinator Ed25519 public-key registry，按issuer/key ID保存public key/fingerprint、ACTIVE/RETIRING/REVOKED、有效期、退役/撤销生效时间和trust revision；只允许显式本地owner管理入口，不从命令Envelope自动信任key。
+- **Reservation API：** 增加或迁移到 `reserve_fence_from_command()` / `reserve_activate_from_command()`，直接接收Coordinator signed envelope与operation ID；Floor自行验证签名、issuer/key trust、Provider/Tenant绑定、scope/action/Grant ID/generation、namespace、Leader epoch/native Lease、issued/expiry和FENCE digest，并以原签名Envelope字节规则重算command digest。generation必须与当前Floor下一代精确一致，ACTIVATE必须绑定最近确认FENCE。
+- **不可绕过：** 原有裸digest/调用方claims reservation入口应在strict模式下拒绝或仅保留明确标注的测试辅助路径；生产候选API不允许通过任意caller-supplied fields绕过Coordinator签名验证。Receipt confirm仍要求Round95签名Provider Envelope。
+- **测试：** 正常FENCE/ACTIVATE命令、Coordinator签名/字段篡改、未知/错误Provider key、跨Provider/tenant/scope、issuer/key lifecycle、时间窗/Lease上限、generation/epoch回退、command digest不一致、ACTIVATE错误FENCE digest、并发CAS、失败后scope/authority revision不前进、旧schema迁移和历史命令处理。
+- **边界：** 本轮只做本地SQLite Floor/合成Coordinator key参考实现，不连接生产etcd/Coordinator/Provider/KMS/HSM，不改Unified schema-v2 authority、IAM/RBAC，不实现Grant-aware Restore，不解除Restore fail-closed，不执行候选导入/激活/Cutover。
+- **交付：** Floor schema/API和Coordinator trust registry、专项测试、CH17设计文档/README、TaskHistory与主分支Knowledge Quality CI。
+- **状态：** TODO。
