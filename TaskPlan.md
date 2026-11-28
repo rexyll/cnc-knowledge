@@ -1500,4 +1500,4 @@
 - **测试：** 正常 FENCE/ACTIVATE、Coordinator 签名篡改、重复 JSON key、未知 key、错误 Provider/Tenant/scope、wrong generation、命令时间及 native Lease 上限、RETIRING/REVOKED key、key rotation、同 operation 精确幂等、strict mode 默认拒绝裸 claims、strict 不可降级、v1→v5 迁移、legacy PENDING 不提升、失败时 scope/authority revision 不变化、Provider→Floor 真实签名回执端到端。
 - **边界：** 仅本地单文件 SQLite Floor 与合成 Coordinator/Provider Ed25519 key；不连接生产 Coordinator/etcd/Provider/KMS/HSM/object storage/IAM/RBAC，不修改 Unified schema-v2 production authority，不实现 Grant-aware Restore，不解除含 Grant 历史备份的通用 Restore fail-closed 门禁，不执行候选导入/应用激活/Cutover。SQLite/Floor trust registry 不具备自身快照回滚检测能力，仍需备份域外可信 checkpoint。
 - **交付：** Floor schema/API、Coordinator public-key trust registry/lifecycle、signed-envelope strict reservation、历史迁移门禁、测试、CH17 README/设计文档/TaskHistory 与 main CI。
-- **状态：** IN_PROGRESS；代码/回归测试与文档同步的最终主分支 Knowledge Quality CI 两个必需 Job 均成功后 DONE。
+- **状态：** DONE（2026-11-28；代码/测试验证 [Knowledge Quality Run 46159590900](https://github.com/rexyll/cnc-knowledge/actions/runs/46159590900) 两个必需 Job 均 success；完整文档同步由当前主分支 CI 再次复核）。
