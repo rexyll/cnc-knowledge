@@ -1424,3 +1424,14 @@
 - 证据限定Provider ID、采样时间和固定schema；拒绝超过300秒的陈旧证据、未来时间、缺失/多余scope和未知字段。
 - 输出证据摘要与逐scope对账结果，但明确不授予应用访问或Provider写操作权限。
 - 全部通过内存构造数据进行测试；真实Provider对账、签名来源认证及MIG-06真实etcd演练仍未完成。
+
+
+
+### 第八十二轮：MIG-05 Provider fencing 证据 Ed25519 验签
+
+- 新增 `scripts/spare_parts_sqlite_provider_fencing_signed_evidence.py`，定义严格签名信封与调用方提供的Ed25519公钥信任库。
+- 使用域分离前缀签署规范化完整证据JSON；验签成功后才调用第八十一轮只读reconciliation validator，原有freshness、scope、generation、token和operation sequence门禁全部保留。
+- 输出包含签名验证标志、signer key ID及trust-store SHA-256；不改变两个授权字段恒为false的约束。
+- 测试覆盖合法签名、证据篡改、未知key、错误签名/算法、非法Base64、未知schema、过期证据及Provider floor超限。
+- 信任库必须通过独立可信渠道配置；本工具不验证信任库来源、不执行密钥轮换，也不提供持久化nonce/replay ledger。有效签名仅认证快照，不能证明采样后Provider持续冻结。
+- 本轮不连接真实Provider、不调用KMS、不写控制记录、不修改RBAC、不执行生产导入或cutover；MIG-05继续IN_PROGRESS，MIG-06仍需真实隔离etcd演练。
