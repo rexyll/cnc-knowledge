@@ -371,6 +371,8 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
                 leader_epoch=2,
                 native_lease_id=2002,
                 lease_expires_at_unix=self.lease_expiry + 100.0,
+                command_issued_at_unix=time.time() - 1.0,
+                command_expires_at_unix=time.time() + 29.0,
                 expected_revision=active.revision,
             )
 
@@ -390,6 +392,8 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
                 leader_epoch=1,
                 native_lease_id=self.lease_id,
                 lease_expires_at_unix=self.lease_expiry - 1.0,
+                command_issued_at_unix=time.time() - 1.0,
+                command_expires_at_unix=time.time() + 29.0,
                 expected_revision=snapshot.revision,
             )
 
@@ -648,6 +652,8 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
                         leader_epoch=1,
                         native_lease_id=self.lease_id,
                         lease_expires_at_unix=self.lease_expiry,
+                        command_issued_at_unix=time.time() - 1.0,
+                        command_expires_at_unix=time.time() + 29.0,
                         expected_revision=0,
                     )
                 snapshot = self.authority.snapshot(self.key)
