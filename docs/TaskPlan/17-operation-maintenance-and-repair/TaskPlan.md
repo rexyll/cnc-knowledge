@@ -1631,3 +1631,14 @@
 - **验证：** [Knowledge Quality Run 46162907743](https://github.com/rexyll/cnc-knowledge/actions/runs/46162907743) 两个必需Job均success；全库776项unittest运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings。
 - **边界：** 仅证明本地单进程SQLite wrapper和内存CAS fake，不是生产checkpoint持久化服务、跨进程锁或分布式原子事务；生产external checkpoint authority、Grant-aware Restore及Cutover仍未实现。
 - **状态：** DONE（2026-11-29；最终主分支CI通过）。
+
+### 第九十九轮：Provider Grant Floor Etcd-native 单事务权威设计
+
+- 先审计现有 CoordinatorAuthorityStore、EtcdV3CoordinatorAuthorityStore、Etcd3gwV3Client 和 DurableCoordinatorAuthorityBackend 的真实职责；不得将KV primitive adapter误称为Floor业务状态机。
+- 设计直接基于Etcd Txn的Grant Floor服务：FENCE/ACTIVATE reserve、Provider Receipt confirm、Coordinator/Provider trust key lifecycle、scope/operation/meta revision、append-only event和state-root checkpoint必须在一个Txn内Compare+Put。
+- 所有验签前读取到的Coordinator/Provider trust row必须被Txn Compare精确固定；command/receipt签名验证后若trust key或scope/operation revision发生变化，则Txn失败并重新读取完整状态，不能沿用旧验签结论。
+- 统一未知结果处理：Etcd Txn timeout为OUTCOME_UNKNOWN；精确读回所有预期键和值及meta root完全匹配才确认；无写入时只能以原operation ID/原signed envelope重试；部分或冲突结果进入隔离。
+- 单独说明Etcd snapshot整体回滚无法靠Etcd内部revision/root自证；定义域外witness checkpoint、RPO与恢复前门禁，不制造零丢失或零窗口假设。
+- 明确隔离演练namespace、键命名、事务容量预算、不可拆分写集合、bootstrap迁移以及未来测试矩阵。
+- **交付：** provider-grant-floor-etcd-native-atomicity-design.md；本轮只冻结设计，不连真实Etcd、不改生产Unified authority / RBAC，不运行Restore或Cutover。
+- **状态：** IN_PROGRESS。
