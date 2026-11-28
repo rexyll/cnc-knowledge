@@ -1425,3 +1425,14 @@
 - **验收：** 覆盖外部预留后Provider提交/响应丢失、旧备份floor低于外部记录、外部authority不可达、FENCE_PENDING/ACTIVATE_PENDING恢复、旧epoch/旧Grant proof拒绝及floor snapshot回滚拒绝。
 - **边界：** 本轮先冻结端口、状态机、事务顺序和恢复算法；不擅自修改生产 Unified schema-v2 authority，不连接生产Provider/etcd/KMS，不修改RBAC，不执行Restore cutover。
 - **交付：** docs/17-operation-maintenance-and-repair/provider-grant-external-floor-and-restore-reconciliation-design.md；同步CH17 TaskPlan、README、迁移设计和TaskHistory。
+
+
+### 第九十二轮任务计划：Provider Grant 外部 Floor 本地参考适配器
+
+- **目标：** 把第九十一轮ProviderGrantFloorAuthority设计推进为一个可执行、可持久化、可并发测试的本地参考适配器；独立于Provider SQLite数据库及其备份/恢复域。
+- **端口与记录：** 定义ProviderGrantFloorAuthority端口基类、ProviderGrantScopeKey、不可变FloorSnapshot/Reservation/Operation记录；按Provider/tenant/scope持久化generation floor、Leader epoch floor、Coordinator身份、Lease expiry、state、pending operation、command digest、Provider receipt digest及revision。
+- **状态协议：** FENCE和ACTIVATE分别实现外部reserve→Provider实际提交→精确receipt confirm；每步使用scope revision CAS，operation ID全局唯一且只绑定单一精确命令；响应未知后只可通过operation ID查询或按原命令重试。
+- **安全约束：** Leader epoch单调；同epoch Leader/native Lease不可变；Coordinator namespace固定；同一Lease的expiry不可回退；ACTIVATE只允许在FENCED后，并绑定最近确认的FENCE command digest；不同Provider/tenant/scope互相隔离。
+- **测试矩阵：** 正常FENCE/ACTIVATE、并发CAS单赢家、旧revision冲突、pending阻断、operation ID精确重放/冲突、错误Provider receipt拒绝、响应未知重启查询、Leader epoch与namespace/Lease expiry回退、scope隔离、trusted minimum revision和数据库权限。
+- **严格限制：** 本地SQLite适配器不是etcd/quorum或生产authority；SQLite数据库自身无法识别自身快照回滚，必须依赖数据库之外可信revision checkpoint；适配器只存储Provider receipt digest，不验证回执真实性。没有接入Coordinator/Provider生产路径或Grant-aware Restore。通用Restore含Grant历史备份仍保持fail-closed。
+- **状态：** 代码和20个测试方法定义已提交；尚无测试执行结果，必须等待本地/CI验证后才能继续推进。MIG-04/MIG-05保持IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
