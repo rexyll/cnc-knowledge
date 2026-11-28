@@ -1496,3 +1496,5 @@
 - 精确历史receipt重放先于epoch检查，只返回历史结果，不重新执行。新Leader可用更高epoch按下一freeze generation接管当前freeze，UNFREEZE仍匹配原freeze ID。
 - 测试覆盖过期Lease、命令期限超过Lease、epoch回退、相同epoch身份/Lease变更、namespace漂移、v3→v4迁移、历史receipt优先级及持久化。
 - 安全边界：签名的Lease expiry声明不等于实时Lease存在性/附着性证明。Provider尚未观察更高epoch时，旧Leader在声明窗口内仍可能被接受。生产需要线性一致在线Leader/Lease状态检查或等价的可撤销授权。仅做本地SQLite参考，不连接真实etcd/KMS，不执行生产切换。
+
+- 追加测试：拒绝非规范Coordinator namespace及同一epoch/native Lease ID下Lease expiry回退。
