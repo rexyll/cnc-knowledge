@@ -507,3 +507,5 @@ Provider schema升级到v4，新增：
 **关键限制：** 该协议只能证明签名者声明了Leader epoch/Lease信息，且命令声明期限不晚于Lease expiry；Provider没有在线查询etcd Lease是否仍存在/仍附着于Leader key，也无法仅凭签名获知Lease是否提前撤销。因此，旧Leader在Provider尚未观察到新epoch时，仍可能在已签命令和Lease声明有效窗口内被接受。生产环境必须增加Provider侧线性一致Leader/Lease状态检查，或等价的不可伪造、可撤销授权机制；不能把本轮本地SQLite验证称为实时Lease有效性证明。
 
 v3 Provider数据库升级到v4时以加法方式创建Leader floor及命令审计表；旧freeze scopes与receipt保留。此实现仍是同机SQLite参考，不连接真实etcd。
+
+补充校验：Coordinator namespace必须是规范绝对前缀（以/开头和结尾，拒绝空段、双斜线、. / ..路径段及空白字符）。同一Leader epoch及同一native Lease ID下，Provider还拒绝Lease expiry相对已观察floor回退，避免旧Lease快照覆盖较新的续租观察。
