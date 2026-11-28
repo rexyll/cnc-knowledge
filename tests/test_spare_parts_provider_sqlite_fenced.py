@@ -1590,6 +1590,88 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         with self.assertRaisesRegex(BackupStorageError, "signed Provider Grant receipt cannot be verified"):
             SQLiteFencedObjectStorageProvider.validate_backup(backup)
 
+
+    def test_provider_receipt_policy_cannot_be_downgraded_after_enablement(self):
+        provider = self.enable_revocable_grants()
+        self.assertTrue(provider.require_provider_signed_grant_receipts)
+        with self.assertRaisesRegex(BackupStorageError, "cannot be downgraded"):
+            SQLiteFencedObjectStorageProvider(
+                self.database,
+                principal_id="writer-a",
+                principal_secret=SECRET_A,
+                provider_id="provider-test-a",
+                trusted_attestation_keys={KEY_ID: ATTESTATION_SECRET},
+                trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+                require_provider_signed_grant_receipts=False,
+            )
+
+    def test_provider_schema_v6_migrates_receipt_columns_without_forging_history(self):
+        with sqlite3.connect(self.database) as connection:
+            for column in (
+                "provider_receipt_envelope_json",
+                "provider_receipt_digest",
+                "provider_receipt_key_id",
+                "provider_receipt_public_key_base64",
+            ):
+                connection.execute(
+                    f"ALTER TABLE provider_grant_commands DROP COLUMN {column}"
+                )
+            connection.execute(
+                "UPDATE provider_meta SET value='6' WHERE key='schema_version'"
+            )
+        migrated = _new_provider(
+            self.database,
+            provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertIsNone(migrated.provider_grant_state(SCOPE))
+        with sqlite3.connect(self.database) as connection:
+            version = connection.execute(
+                "SELECT value FROM provider_meta WHERE key='schema_version'"
+            ).fetchone()[0]
+            columns = {
+                row[1] for row in connection.execute(
+                    "PRAGMA table_info(provider_grant_commands)"
+                )
+            }
+            policy = connection.execute(
+                "SELECT value FROM provider_meta WHERE key='provider_grant_receipt_signing_required'"
+            ).fetchone()[0]
+        self.assertEqual(version, "7")
+        self.assertEqual(policy, "0")
+        self.assertTrue({
+            "provider_receipt_envelope_json",
+            "provider_receipt_digest",
+            "provider_receipt_key_id",
+            "provider_receipt_public_key_base64",
+        }.issubset(columns))
+
+    def test_provider_receipt_survives_restart_and_exact_command_replay(self):
+        provider = self.enable_revocable_grants()
+        command = self.grant_command("FENCE", 1, "grant-provider-receipt-restart")
+        digest = hashlib.sha256(
+            json.dumps(command, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        first_apply = provider.apply_provider_grant_command(command)
+        self.assertEqual(first_apply["result"], "APPLIED")
+        first_receipt = provider.get_provider_grant_receipt(
+            "provider-test-a", "tenant-a", digest
+        )
+        replay = provider.apply_provider_grant_command(command)
+        self.assertEqual(replay["result"], "ALREADY_APPLIED")
+        self.assertEqual(replay["generation"], first_apply["generation"])
+
+        reopened = _new_provider(
+            self.database,
+            provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        recovered = reopened.get_provider_grant_receipt(
+            "provider-test-a", "tenant-a", digest
+        )
+        self.assertEqual(recovered["receipt_digest"], first_receipt["receipt_digest"])
+        self.assertEqual(recovered["receipt_envelope"], first_receipt["receipt_envelope"])
+
     def test_provider_receipt_signer_cannot_reuse_coordinator_key(self):
         with self.assertRaisesRegex(BackupStorageError, "must not reuse a Coordinator"):
             SQLiteFencedObjectStorageProvider(
