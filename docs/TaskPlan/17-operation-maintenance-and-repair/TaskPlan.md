@@ -1644,4 +1644,6 @@
 - **设计进展（2026-11-29）：** 已审计现有Etcd KV/Txn primitive与SQLite业务服务边界，新增 Etcd-native Floor 原子权威设计文档及逐笔域外Witness严格耐久模式。明确Etcd Txn内状态/operation/trust/event/state-root原子推进、验签trust row Compare、unknown-outcome exact readback，以及Etcd整群snapshot rollback必须由域外witness检测。
 - **审查补强：** 已补充Witness PREPARE/Etcd PREPARE超时后不得仅凭一次空Range就ABORT、Etcd COMMIT与ABORT的同intent Compare竞争、COMMIT后只能完成Witness COMMIT/Etcd FINALIZE；也明确域外root witness只能检测整体回滚，不能凭摘要重建数据，必须有可信事件正文/备份或进入人工逐scope重建。v1全局meta序列化会形成吞吐热点。
 - **限制：** 本轮仅架构设计；Etcd-native Provider Grant Floor业务服务、生产witness adapter、Etcd实际多节点/RBAC/快照恢复演练均未实现或验证。
-- **状态：** IN_PROGRESS。
+- **最终设计审查：** 补充未知Etcd PREPARE的intent取消保护、COMMIT/ABORT同intent compare竞争、COMMIT后禁止ABORT、snapshot rollback后的数据重建材料要求，以及单一全局meta序列化的吞吐限制。
+- **最终验证：** [Knowledge Quality Run 46163880663](https://github.com/rexyll/cnc-knowledge/actions/runs/46163880663) 两个必需Job均success；全库776项unittest运行、40项环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings；结构/data检查0 errors。
+- **状态：** DONE（2026-11-29；本轮设计任务通过主分支CI；Etcd-native服务和生产witness仍待后续实现）。
