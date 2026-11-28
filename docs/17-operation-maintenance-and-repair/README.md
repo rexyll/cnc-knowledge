@@ -587,3 +587,12 @@ Provider schema升级至v5，新增`provider_scope_grants`与`provider_grant_com
 命令收据按完整envelope digest持久化；ACTIVATE签发时间不得早于FENCE回执的Provider本地提交时间。提交后模拟响应丢失时可按原digest读回并判定ALREADY_APPLIED。备份会验证并保留完整FENCE/ACTIVATE回执链，但只要备份包含Grant状态或命令历史，通用Restore会fail-closed拒绝执行，因为当前恢复接口没有独立Provider Grant generation/Leader epoch floor；不能通过恢复旧备份或新命令猜测重试。
 
 **证据边界：** 这是同机SQLite参考模型，不是远程对象存储/Provider写路径证明，不证明跨主机一致性或etcd与Provider跨系统原子fencing。Provider FENCE提交是Provider侧撤销屏障的线性化点；它不等于独立etcd Lease物理过期的同一瞬间。当前实现没有连接真实etcd、Provider、KMS/HSM或IAM/RBAC，也未启用生产授权。
+
+
+## CH17-T006 Provider Grant 外部单调 Floor 与 Restore 对账（第九十一轮）
+
+新增 Provider Grant 外部单调 Floor 与 Restore 对账设计，补足第九十轮暴露的备份回滚边界：Provider Grant generation、Leader epoch 和 receipt 当前只存在 Provider SQLite 备份域内，旧备份无法证明自身是最新版本。
+
+设计提出独立 ProviderGrantFloorAuthority，按Provider/tenant/scope保存单调generation、Leader epoch、FENCE/ACTIVATE pending operation、command digest和Provider receipt digest；FENCE/ACTIVATE采用外部预留、Provider本地提交、外部精确回执确认的双边协议。专用Restore必须在线性一致外部floor上对账，pending或unknown状态不能靠猜测重试。
+
+**当前强制门禁：** 通用 restore_to_new_database() 仍拒绝任何包含Grant scope或command history的备份。只有独立floor authority及专用Restore对账实现并验收后，才可设计恢复放行；本轮文档不是放行依据。
