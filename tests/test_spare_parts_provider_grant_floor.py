@@ -531,7 +531,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             operation.receipt_key_fingerprint,
             hashlib.sha256(self.receipt_public_key).hexdigest(),
         )
-        self.assertEqual(operation.receipt_trust_revision, 1)
+        self.assertEqual(operation.receipt_trust_revision, 2)
         self.assertEqual(operation.provider_applied_at_unix, applied_at)
         self.assertEqual(operation.command_issued_at_unix, reservation.command_issued_at_unix)
         self.assertEqual(operation.command_expires_at_unix, reservation.command_expires_at_unix)
@@ -727,7 +727,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             trust_revision = check.execute(
                 "SELECT trust_revision FROM provider_grant_floor_meta WHERE singleton=1"
             ).fetchone()[0]
-        self.assertEqual(version, 4)
+        self.assertEqual(version, 5)
         self.assertEqual(trust_revision, 0)
 
 
@@ -735,6 +735,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         fence_command = self.coordinator_command("FENCE", 1)
         fence = self.authority.reserve_fence_from_command(
             operation_id="signed-fence-op",
+            key=self.key,
             command_envelope=fence_command,
             expected_revision=0,
         )
@@ -747,7 +748,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             operation.coordinator_key_fingerprint,
             hashlib.sha256(self.coordinator_public_key).hexdigest(),
         )
-        self.assertEqual(operation.coordinator_trust_revision, 2)
+        self.assertEqual(operation.coordinator_trust_revision, 1)
 
         self.confirm_fence(fence)
         fence_applied = self.authority.operation_status(fence.operation_id).provider_applied_at_unix
@@ -760,6 +761,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         )
         activate = self.authority.reserve_activate_from_command(
             operation_id="signed-activate-op",
+            key=self.key,
             command_envelope=activate_command,
             expected_revision=self.authority.snapshot(self.key).revision,
         )
@@ -810,6 +812,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "not trusted"):
             self.authority.reserve_fence_from_command(
                 operation_id="unknown-coordinator-key-op",
+            key=self.key,
                 command_envelope=envelope,
                 expected_revision=0,
             )
@@ -828,6 +831,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "signature is invalid"):
             self.authority.reserve_fence_from_command(
                 operation_id="tampered-coordinator-command",
+            key=self.key,
                 command_envelope=envelope,
                 expected_revision=0,
             )
@@ -842,6 +846,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "generation"):
             self.authority.reserve_fence_from_command(
                 operation_id="wrong-generation-command",
+            key=self.key,
                 command_envelope=envelope,
                 expected_revision=0,
             )
@@ -856,6 +861,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "binding mismatch"):
             self.authority.reserve_fence_from_command(
                 operation_id="wrong-tenant-command",
+            key=self.key,
                 command_envelope=envelope,
                 expected_revision=0,
             )
@@ -874,6 +880,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "inactive, retired, revoked"):
             self.authority.reserve_fence_from_command(
                 operation_id="retired-coordinator-key",
+            key=self.key,
                 command_envelope=envelope,
                 expected_revision=0,
             )
@@ -882,9 +889,20 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.assertEqual(after.authority_revision, before.authority_revision)
 
     def test_coordinator_key_rotation_keeps_old_key_historical_but_accepts_new_active_key(self):
-        old = self.coordinator_command("FENCE", 1)
+        old_scope = ProviderGrantScopeKey(
+            provider_id=self.key.provider_id,
+            tenant_id=self.key.tenant_id,
+            scope="cnc/ch17/rotation-old-key",
+        )
+        new_scope = ProviderGrantScopeKey(
+            provider_id=self.key.provider_id,
+            tenant_id=self.key.tenant_id,
+            scope="cnc/ch17/rotation-new-key",
+        )
+        old = self.coordinator_command("FENCE", 1, scope=old_scope.scope)
         old_op = self.authority.reserve_fence_from_command(
             operation_id="pre-rotation-op",
+            key=old_scope,
             command_envelope=old,
             expected_revision=0,
         )
@@ -904,26 +922,32 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             public_key=new_public,
             not_before=time.time() - 1.0,
         )
-        new_command = self.coordinator_command(
-            "FENCE", 1,
-            key_id="coordinator-command-b",
-            signer=new_signer,
+        retired_command = self.coordinator_command(
+            "FENCE", 1, scope=old_scope.scope
         )
         with self.assertRaisesRegex(ProviderGrantFloorConflict, "inactive, retired, revoked"):
             self.authority.reserve_fence_from_command(
                 operation_id="post-rotation-old-key",
-                command_envelope=old,
-                expected_revision=0,
+                key=old_scope,
+                command_envelope=retired_command,
+                expected_revision=old_op.reserved_scope_revision,
             )
         self.assertEqual(self.authority.operation_status(old_op.operation_id).state, "PENDING")
-        before = self.authority.snapshot(self.key)
-        with self.assertRaises(ProviderGrantFloorConflict):
-            self.authority.reserve_fence_from_command(
-                operation_id="new-key-same-scope-pending",
-                command_envelope=new_command,
-                expected_revision=before.revision,
-            )
-        self.assertEqual(self.authority.snapshot(self.key).revision, before.revision)
+
+        new_command = self.coordinator_command(
+            "FENCE", 1,
+            scope=new_scope.scope,
+            key_id="coordinator-command-b",
+            signer=new_signer,
+        )
+        new_operation = self.authority.reserve_fence_from_command(
+            operation_id="new-key-after-rotation",
+            key=new_scope,
+            command_envelope=new_command,
+            expected_revision=0,
+        )
+        self.assertEqual(new_operation.coordinator_signer_key_id, "coordinator-command-b")
+        self.assertEqual(self.authority.snapshot(new_scope).state, "FENCE_PENDING")
 
     def test_duplicate_json_object_keys_are_rejected_before_reservation(self):
         command = self.coordinator_command("FENCE", 1)
@@ -933,6 +957,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderGrantFloorError, "duplicate JSON"):
             self.authority.reserve_fence_from_command(
                 operation_id="duplicate-json-key-command",
+            key=self.key,
                 command_envelope=raw,
                 expected_revision=0,
             )
