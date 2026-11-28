@@ -1593,11 +1593,24 @@
 
 ### 第九十六轮：Provider SQLite FENCE/ACTIVATE durable signed Receipt 集成
 
-- 当前 `provider_grant_commands.envelope_json` 保存的是 Coordinator 签名的 Grant command；`provider_grant_command_status()` 是现有精确 command/result 恢复查询，不是 Provider 独立签发的 Receipt。Round96 必须保留该命令验签/幂等链，另行增加 Provider-native Receipt。先审查 `spare_parts_provider_sqlite_fenced.py` 当前 FENCE/ACTIVATE mutation 和 SQLite 原子事务边界，再设计最小 schema/API 变更；不预设当前函数/事务布局。
-- 为本地 Provider 注入与 Coordinator command signer 分离的 Ed25519 receipt signer/key ID；私钥不能写入 Provider/Floor SQLite 或备份。
-- 在同一 Provider 写事务内更新 Grant state、command receipt、生成签名 claims，并持久化完整 canonical signed Receipt envelope/digest；事务回滚时不得留下成功 Receipt。
-- 新增按 Provider/tenant/exact command SHA-256 查回不可变 Receipt 的 API；同一 command 的重复执行/响应丢失后查询必须返回同一 envelope/digest，不重新推进 generation。
-- 使用本地真实 Provider signer 输出的 FENCE/ACTIVATE Envelope 驱动 Round95 Floor confirm，覆盖签名/绑定/回执链、幂等、commit失败回滚、commit后响应丢失和精确查询。
-- 只用合成 SQLite Provider 和内存 Ed25519 key；不连接真实 Provider/KMS/HSM/etcd/object storage，不修改Unified schema-v2、IAM/RBAC，不解除Restore fail-closed，不执行Cutover。
-- **状态：** TODO；需 Provider→Floor 端到端集成测试和主分支 Knowledge Quality CI 通过后完成。
+- Provider SQLite schema从v6升级为v7；`provider_grant_commands`增加Provider signed Receipt envelope、完整digest、key ID和public key副本字段，保持原 `envelope_json` / `signer_public_key_base64` 仍专门表示Coordinator签名命令。
+- Provider构造器增加 `provider_receipt_signing_key`、`provider_receipt_key_id`、`require_provider_signed_grant_receipts`；仅接受独立Ed25519 private key，拒绝与Coordinator命令key重复的key ID或相同公钥。private key只在进程内注入，不存入SQLite/备份。
+- 持久化 `provider_grant_receipt_signing_required` policy。strict模式启用后不能由后续Provider实例静默降级；升级数据库内既有的裸命令/无Provider Receipt历史仍保留为legacy-unverified，严格写门禁不会将其自动升级为ACTIVE可信链。
+- FENCE/ACTIVATE写入在同一Provider `BEGIN IMMEDIATE`事务中完成Grant state、Coordinator command receipt和Provider signed Receipt；Receipt claims绑定Provider/tenant/scope/action/Grant/generation/command digest/FENCE digest/namespace/Leader/native Lease/command issue-expiry/Provider applied time。任何签名或提交前故障均回滚全部状态。
+- 新增 `get_provider_grant_receipt(provider_id, tenant_id, command_sha256)` 精确查询；会重验Provider签名及command绑定，只返回同一immutable Envelope/digest。同一command幂等重放前也会再次验证已存Receipt，响应丢失后可按原digest查回。
+- strict模式下每个当前ACTIVE Grant的FENCE与ACTIVATE Receipt均需完整存在且签名/claims验证通过，object/multipart受保护mutation才允许继续。Provider备份验证逐条检查canonical完整digest、Provider Receipt独立签名、Coordinator command claims与Provider数据库字段、FENCE/ACTIVATE链；当前Grant链若缺少Receipt或signature错误则拒绝备份。历史未签名旧命令可作为历史保留，但不能作为当前strict ACTIVE授权链。
+- 使用Provider真实本地签名输出驱动Round95 Floor：FENCE/ACTIVATE Receipt均经独立Floor Provider key registry验签并推进到FENCED/ACTIVE；测试另覆盖签名和digest篡改、重算digest后的伪签名拒绝、提交前回滚、commit后响应丢失、重启查询、Provider/Tenant精确匹配、strict policy不可降级、schema v6→v7。
+- **实现边界：** 只证明同机SQLite与合成内存Ed25519 key；Provider内Receipt公钥副本仅用于本地自洽核验，独立外部Floor trust registry才提供Signer信任锚。Floor仍未在reserve端独立验证Coordinator命令签名，reservation claims可信来源依赖上游Coordinator调用链；Provider数据/签名及Floor本身也仍不能防自身数据库快照回滚。未接入真实Provider/KMS/HSM/etcd/object storage/IAM/RBAC，不实现Grant-aware Restore；Grant历史备份通用Restore继续fail-closed。
+- **CI：** [Knowledge Quality Run 46157250066](https://github.com/rexyll/cnc-knowledge/actions/runs/46157250066) 两个必需Job成功；全库745项unittest运行、40项按环境跳过；CH12数值资源143项通过；knowledge lint 0 errors / 5 warnings，结构/数据检查0 errors。
+- **状态：** DONE（2026-11-28；代码、专项测试和现有文档范围由Run 46157250066验证）。
 
+
+### 第九十七轮：外部 Floor Coordinator Grant Command 来源认证
+
+- Floor reserve API目前仍接受调用方传入的command digest和独立claims字段；虽然Provider Receipt可证明Provider对该digest执行了操作，但Floor自身尚未证明该Reservation claims来自受信Coordinator签名命令。
+- 新增Coordinator Ed25519 key trust registry，绑定issuer/key ID/public-key fingerprint、有效期、ACTIVE/RETIRING/REVOKED及trust revision；不可从command envelope自动信任其自带key。
+- reserve API迁移为接收原始Coordinator Grant command envelope；Floor自行验签并提取Provider/tenant/scope/action/Grant/generation/namespace/Leader/native Lease/issue-expiry/FENCE digest，按原Coordinator canonical bytes重算command digest。
+- 对generation/epoch、native Lease、namespace和ACTIVATE→FENCE chain做与当前Floor状态的精确比较；裸摘要和caller-supplied claims不再作为strict路径。
+- 覆盖命令签名篡改、身份错配、未知/撤销key、命令时间窗/Lease、generation/epoch回退、错误FENCE digest、并发CAS、失败revision不前进和旧schema迁移。
+- 仅本地SQLite和合成Coordinator Ed25519 key；不连接生产etcd/Coordinator/Provider/KMS/HSM，不改变Unified authority/RBAC，不解除Grant历史Restore fail-closed，不执行Cutover。
+- **状态：** TODO。
