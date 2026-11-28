@@ -239,7 +239,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
 
     def test_activate_requires_confirmed_fence_and_exact_fence_digest(self):
         self.reserve_fence()
-        with self.assertRaisesRegex(ProviderGrantFloorConflict, "requires a confirmed FENCED"):
+        with self.assertRaisesRegex(ProviderGrantFloorConflict, "pending or recovery-required"):
             self.activate(
                 operation_id="activate-before-fence",
                 fence_command_digest=_digest("unconfirmed-fence"),
@@ -332,7 +332,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
                 key=self.key,
                 grant_id="grant-a",
                 command_digest=_digest("namespace-change-command"),
-                coordinator_namespace="/cnc/migration/other-namespace/",
+                coordinator_namespace="/cnc/migration/isolated/other-namespace/",
                 leader_id="leader-b",
                 leader_epoch=2,
                 native_lease_id=2002,
