@@ -1087,6 +1087,13 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertEqual(len(checker.calls), 1)
         self.assertIsNone(provider.provider_grant_state(SCOPE))
 
+    def test_grant_apply_does_not_accept_caller_supplied_clock(self):
+        provider = self.enable_revocable_grants()
+        command = self.grant_command("FENCE", 1, "grant-no-clock-override")
+        with self.assertRaises(TypeError):
+            provider.apply_provider_grant_command(command, now_unix=0.0)
+        self.assertIsNone(provider.provider_grant_state(SCOPE))
+
     def test_grant_integer_claims_must_fit_sqlite_signed_integer(self):
         claims = {
             "format": PROVIDER_GRANT_CLAIMS_FORMAT,
