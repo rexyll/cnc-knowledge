@@ -579,7 +579,7 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 第九十轮新增`scripts/spare_parts_provider_revocable_grant.py`，定义独立Ed25519签名的FENCE/ACTIVATE命令；扩展`scripts/spare_parts_provider_sqlite_fenced.py`，增加按tenant/scope隔离的Provider grant状态与完整命令receipt。
 
 状态转换采用两步：
-1. **FENCE：** 必须由比当前记录更高的Coordinator Leader epoch发起，将scope推进至FENCED；旧grant立即不能再通过Provider本地mutation gate。
+1. **FENCE：** 更换Leader/Lease身份时必须由更高Coordinator Leader epoch发起；同epoch仅允许完全相同Leader/Lease主动撤销其ACTIVE grant。FENCE将scope推进至FENCED，旧grant立即不能再通过Provider本地mutation gate。
 2. **ACTIVATE：** 必须引用已提交FENCE命令的精确SHA-256 receipt，并保持Coordinator namespace、Leader ID/epoch、native Lease和grant ID完全一致，才能创建ACTIVE grant。
 
 Provider schema升级至v5，新增`provider_scope_grants`与`provider_grant_commands`，并要求备份验证包含这两张表。可选配置`require_revocable_grant=True`启用写入门禁；proof必须签署Grant ID与generation，Provider在object PUT、multipart begin、part、complete各自实际写事务内校验ACTIVE、期限和代次。FENCE与mutation共用同一SQLite `BEGIN IMMEDIATE`事务，因此本地参考实现中的两个操作具有可观察的串行顺序。
