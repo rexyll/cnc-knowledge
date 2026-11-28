@@ -1303,3 +1303,13 @@
 - **候选格式：** 因候选bundle语义变化升级为\`ch17-sqlite-unified-candidate-v2\`；旧v1候选包必须拒绝，要求重新执行只读Inventory/Export后生成新候选。
 - **互操作验收：** 执行模拟分阶段导入和最终发布，再由标准Unified runtime构造函数读入；验证scope fencing/sequence、已提交operation及终态request幂等行为，确保终态重放不会grant Admission Lease，并验证新Leader自动epoch递增。
 - **边界：** 仅使用InMemoryEtcdV3Client；不连接真实etcd、不Grant/Revoke真实Lease、不改RBAC、不启动生产应用、不写生产namespace、不执行cutover。
+
+
+### 第八十一轮任务计划：MIG-05 外部 Provider fencing floor 只读对账门禁
+
+- 新增只读 Provider fencing reconciliation validator，要求外部证据覆盖候选中的全部 scope，逐 scope 比较 provider_generation、fencing high-water token 和 operation sequence。
+- Provider generation 必须与候选记录精确匹配；Provider 已观察到的 token/sequence floor 必须不高于候选 floor。若 Provider floor 更高，必须停止并重新构建候选，禁止静默降低 Provider floor 或直接激活。
+- 证据必须具备明确 Provider identity、观察时间及固定 schema；默认只接受最近 300 秒内的证据，拒绝未来时间、过期、缺失scope、多余scope及格式未知的数据。
+- 输出 evidence SHA-256 与逐scope对账结果，但永远不授予 application activation 或 Provider operation 权限；该结果不是签名证明、生产审批或切换授权。
+- 增加正反向单元测试，CI通过后再考虑将只读对账结果接入后续 MIG-06 演练runbook。
+- 本轮不连接Provider、不读取真实外部对象存储、不写入fencing control record、不修改RBAC、不执行生产切换。
