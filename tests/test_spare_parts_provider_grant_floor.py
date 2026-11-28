@@ -9,7 +9,7 @@ from pathlib import Path
 from scripts.spare_parts_provider_grant_floor import (
     ProviderGrantFloorConflict,
     ProviderGrantFloorRevisionRegression,
-    ProviderGrantFloorScopeKey,
+    ProviderGrantScopeKey,
     ProviderGrantFloorError,
     SQLiteProviderGrantFloorAuthority,
 )
@@ -25,7 +25,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
         self.base = Path(self.temp.name)
         self.database = self.base / "external-floor.sqlite"
         self.authority = SQLiteProviderGrantFloorAuthority(self.database)
-        self.key = ProviderGrantFloorScopeKey(
+        self.key = ProviderGrantScopeKey(
             provider_id="provider-a", tenant_id="tenant-a",
             scope="cnc/ch17/backup-reference-001",
         )
@@ -428,7 +428,7 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
 
     def test_invalid_scope_namespace_and_digest_are_rejected(self):
         with self.assertRaises(ProviderGrantFloorError):
-            ProviderGrantFloorScopeKey("provider-a", "tenant-a", "cnc/../scope")
+            ProviderGrantScopeKey("provider-a", "tenant-a", "cnc/../scope")
         with self.assertRaisesRegex(ProviderGrantFloorError, "namespace"):
             self.authority.reserve_fence(
                 operation_id="bad-namespace", key=self.key, grant_id="grant-a",
