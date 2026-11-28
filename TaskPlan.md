@@ -1513,6 +1513,8 @@
 - **并发与诚实边界：** 本地wrapper仅在单进程单实例内串行化并用checkpoint CAS检测竞争；不得声称解决跨进程原子性。测试fake不属于生产可信存储。生产部署必须由Floor数据与检查点共同受同一线性一致事务权威保护，或采用等价的独立、不可回滚CAS服务；本轮不连接真实etcd/KMS/HSM/Provider，不执行Restore或Cutover。
 - **测试与验收：** 覆盖显式空库bootstrap、非空无锚拒绝、正常FENCE/ACTIVATE生命周期、trust registry变更锚定、完全旧快照回滚、同revision内容篡改、外部检查点缺失/回退、checkpoint CAS冲突/响应未知、失败操作不推进checkpoint、精确幂等重放不虚增revision；全库质量CI和CH17专项测试通过。
 - **交付：** Floor状态摘要/检查点端口与包装器、独立测试、CH17外部Floor设计文档、CH17 README、根/章节TaskPlan和TaskHistory。通用Restore对含Grant历史的备份继续fail-closed。
-- **实现进展（2026-11-28T23:54:41+08:00）：** 已新增 scripts/spare_parts_provider_grant_floor_checkpoint.py 与 tests/test_spare_parts_provider_grant_floor_checkpoint.py；完成完整五表/Schema SHA-256摘要、独立 checkpoint Store/CAS接口、测试专用内存CAS fake、严格空库bootstrap、读写前后保护及未知结果fail-closed。专项测试现有13项，覆盖FENCE/ACTIVATE、trust registry变化、幂等重放、数据库快照回滚、同revision内容篡改、外部checkpoint回退、CAS冲突/响应丢失与故障隔离。
-- **文档同步：** 已更新CH17外部Floor恢复设计第12节及章节README；代码、测试和文档均已提交main。
-- **验证状态：** .github/workflows/knowledge-quality.yml 对main分支push自动运行；当前尚未取得对应完整CI的两个必需Job结果。当前无本地仓库执行环境可运行全量测试，因此本轮保持IN_PROGRESS，不登记为DONE；待专项/全库测试、CH12资源测试、strict lint和结构/data检查全部通过后再结项。
+- **最终实现（2026-11-29）：** 新增 scripts/spare_parts_provider_grant_floor_checkpoint.py 与 tests/test_spare_parts_provider_grant_floor_checkpoint.py；完整覆盖五张业务表及Schema对象的确定性SHA-256摘要、独立 checkpoint Store/CAS接口、测试专用内存CAS fake、严格空库bootstrap、公开读写操作保护、异常/未知结果精确读回及fail-closed。专项测试共14项。
+- **CI修复：** 首轮 Run 46162469651 的775项全库测试中仅1项检查点测试断言错误：setUp在bootstrap后注册两把信任密钥，checkpoint sequence按设计从1推进到3。修正测试预期，并增加CAS返回值与预期不一致时必须精确read-back的实现和专项回归测试。
+- **最终验收：** [Knowledge Quality Run 46162907743](https://github.com/rexyll/cnc-knowledge/actions/runs/46162907743) 两个必需Job均success：全库776项unittest运行、40项按环境跳过（其余736项通过）；CH12数值资源测试143项通过；knowledge lint 0 errors / 5 warnings；CH17场景校验自检30项模拟、failed=0、business_test_status=NOT_RUN、external_connections=NO、writes=NO。
+- **交付同步：** CH17外部Floor恢复设计第12节、章节README、根/章节TaskPlan和Asia/Shanghai日期为2026-11-29的TaskHistory均已同步。实现与验收仅证明单进程SQLite wrapper及内存CAS测试fake；生产独立持久线性一致checkpoint backend仍未实现。
+- **状态：** DONE（2026-11-29；以最终主分支完整CI Run 46162907743为验收证据；生产外部权威、Grant-aware Restore及Cutover不在本轮范围内）。
