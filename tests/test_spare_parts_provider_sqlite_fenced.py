@@ -1092,6 +1092,26 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         )
         self.assertEqual(stored.data, b"allowed")
 
+    def test_activation_command_must_be_issued_after_fence_receipt(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-early-activation",
+            issued_at=now, lease_expires=now + 180.0,
+        )
+        digest = hashlib.sha256(
+            __import__("json").dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence)
+        early_activate = self.grant_command(
+            "ACTIVATE", 2, "grant-early-activation",
+            issued_at=now - 0.5, lease_expires=now + 180.0,
+            expires=now + 60.0, fence_digest=digest,
+        )
+        with self.assertRaisesRegex(SQLiteProviderGrantRejectedError, "FENCE receipt"):
+            provider.apply_provider_grant_command(early_activate)
+        self.assertEqual(provider.provider_grant_state(SCOPE)["state"], "FENCED")
+
     def test_newer_fence_revokes_old_grant_and_old_proofs(self):
         provider = self.enable_revocable_grants()
         now = time.time()
@@ -1778,6 +1798,31 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertEqual(version, "5")
         self.assertIn("provider_write_freeze_leader_floors", tables)
         self.assertIn("provider_write_freeze_command_leaders", tables)
+        self.assertIn("provider_scope_grants", tables)
+        self.assertIn("provider_grant_commands", tables)
+
+    def test_schema_v4_provider_database_adds_revocable_grant_tables(self):
+        with sqlite3.connect(self.database) as connection:
+            connection.execute("DROP TABLE provider_scope_grants")
+            connection.execute("DROP TABLE provider_grant_commands")
+            connection.execute(
+                "UPDATE provider_meta SET value='4' WHERE key='schema_version'"
+            )
+        migrated = _new_provider(
+            self.database, provider_id="provider-test-a",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+        )
+        self.assertIsNone(migrated.provider_grant_state(SCOPE))
+        with sqlite3.connect(self.database) as connection:
+            version = connection.execute(
+                "SELECT value FROM provider_meta WHERE key='schema_version'"
+            ).fetchone()[0]
+            tables = {
+                row[0] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            }
+        self.assertEqual(version, "5")
         self.assertIn("provider_scope_grants", tables)
         self.assertIn("provider_grant_commands", tables)
 
