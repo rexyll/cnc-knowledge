@@ -1165,6 +1165,43 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
         self.assertIn("expired", str(errors[0]))
         self.assertIsNone(provider.provider_grant_state(SCOPE))
 
+    def test_activated_grant_expires_and_blocks_mutations(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-short-lived",
+            issued_at=now, lease_expires=now + 30.0,
+        )
+        digest = hashlib.sha256(
+            __import__("json").dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence)
+        provider.apply_provider_grant_command(self.grant_command(
+            "ACTIVATE", 2, "grant-short-lived",
+            issued_at=now + 0.01, lease_expires=now + 30.0,
+            expires=now + 0.45, fence_digest=digest,
+        ))
+        key = SCOPE + "/grant/expired.bin"
+        proof = self.proof(
+            key, 60, "object:put_if_absent", "expired-grant-write",
+            grant_id="grant-short-lived", grant_generation=2,
+        )
+        time.sleep(0.55)
+        with self.assertRaisesRegex(SQLiteProviderGrantRejectedError, "expired"):
+            provider.put_if_absent_fenced(
+                key, b"expired", fencing_scope=SCOPE, fencing_token=60,
+                idempotency_key="expired-grant-write", fencing_attestation=proof,
+            )
+        self.assertIsNone(provider.get_object(key))
+
+    def test_backup_validation_requires_ed25519_grant_trust_registry(self):
+        backup = self.base / "provider-grant-trust-backup.sqlite"
+        self.provider.backup_to(backup)
+        with sqlite3.connect(backup) as connection:
+            connection.execute("DROP TABLE trusted_ed25519_keys")
+        with self.assertRaisesRegex(BackupStorageError, "missing required tables"):
+            SQLiteFencedObjectStorageProvider.validate_backup(backup)
+
     def test_provider_grant_requires_durable_fence_receipt_before_activation(self):
         provider = self.enable_revocable_grants()
         now = time.time()
