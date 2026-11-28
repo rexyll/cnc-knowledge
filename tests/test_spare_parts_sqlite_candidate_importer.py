@@ -150,6 +150,36 @@ class CandidateImporterTests(unittest.TestCase):
         again = build_candidate(manifest, records, policy, generated_at=1000.0)
         self.assertEqual(result, again)
 
+    def test_zero_legacy_leader_epoch_does_not_create_inactive_floor_record(self):
+        manifest, records, policy = fixture()
+        leader = records["tables"]["coordinator_authority_leader"][0]
+        leader["epoch"] = 0
+        leader["state"] = "NONE"
+
+        # Rebuild the inventory digests so this exercises the valid epoch-zero
+        # semantic mapping rather than the source-integrity rejection path.
+        for table, rows in records["tables"].items():
+            digest = hashlib.sha256()
+            for row in rows:
+                digest.update(_json_bytes(row))
+                digest.update(b"\\n")
+            manifest["table_summaries"][table]["records_sha256"] = digest.hexdigest()
+        manifest["derived"]["leader"] = leader
+        material = {
+            "schema": manifest["schema"],
+            "table_summaries": manifest["table_summaries"],
+            "admission_meta": manifest["admission_meta"],
+            "authority_meta": manifest["coordinator_authority_meta"],
+            "leader": leader,
+        }
+        snapshot = hashlib.sha256(_json_bytes(material)).hexdigest()
+        manifest["snapshot_digest_sha256"] = snapshot
+        records["snapshot_digest_sha256"] = snapshot
+
+        candidate = build_candidate(manifest, records, policy, generated_at=1000.0)
+        self.assertIsNone(candidate["state_template"]["coordinator"]["leader"])
+        self.assertEqual(candidate["recovery_requirements"]["leader_epoch_floor"], 0)
+
     def test_rejects_manifest_records_digest_mismatch(self):
         manifest, records, policy = fixture()
         records["tables"]["admission_requests"][0]["owner_id"] = "tampered"
