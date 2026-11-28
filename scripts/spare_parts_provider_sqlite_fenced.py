@@ -1458,6 +1458,10 @@ class SQLiteFencedObjectStorageProvider:
             action=action, object_key=normalized_key, fencing_scope=scope
         ) as (c, tenant_id):
             self._authorize_fencing_attestation(c, claims=claims, tenant_id=tenant_id)
+            self._authorize_provider_write_freeze(
+                c, tenant_id=tenant_id, fencing_scope=claims["fencing_scope"],
+                claims=claims,
+            )
             prior = self._prepare_fenced_operation(
                 c, tenant_id=tenant_id, fencing_scope=scope,
                 fencing_token=fencing_token, idempotency_key=idempotency_key,
@@ -1522,6 +1526,10 @@ class SQLiteFencedObjectStorageProvider:
             action=action, object_key=normalized_key, fencing_scope=scope
         ) as (c, tenant_id):
             self._authorize_fencing_attestation(c, claims=claims, tenant_id=tenant_id)
+            self._authorize_provider_write_freeze(
+                c, tenant_id=tenant_id, fencing_scope=claims["fencing_scope"],
+                claims=claims,
+            )
             prior = self._prepare_fenced_operation(
                 c, tenant_id=tenant_id, fencing_scope=scope,
                 fencing_token=fencing_token, idempotency_key=idempotency_key,
@@ -1612,6 +1620,10 @@ class SQLiteFencedObjectStorageProvider:
             action=action, object_key=normalized_key, fencing_scope=scope
         ) as (c, tenant_id):
             self._authorize_fencing_attestation(c, claims=claims, tenant_id=tenant_id)
+            self._authorize_provider_write_freeze(
+                c, tenant_id=tenant_id, fencing_scope=claims["fencing_scope"],
+                claims=claims,
+            )
             prior = self._prepare_fenced_operation(
                 c, tenant_id=tenant_id, fencing_scope=scope,
                 fencing_token=fencing_token, idempotency_key=idempotency_key,
