@@ -532,3 +532,11 @@ Txn响应未知时先线性一致读回全部唯一键：四个值全部逐字�
 - Provider备份校验要求v3 schema和冻结表，备份/恢复准备会保留freeze generation和状态；缺少冻结表的旧v2备份不被当作可验证恢复输入。
 
 **边界：** 这证明的是同机SQLite写事务中的Provider参考门禁与事务排序，不是云对象存储或远程Provider服务的冻结保证。签名控制命令目前由本地Provider类接收，尚无远程Gateway、KMS/HSM、服务端RBAC或跨主机CAS。独立的Provider freeze attestation验证器仍将 `provider_write_freeze_enforced=false`，因为它没有查询真实Provider部署状态。
+
+
+#### 第八十六轮补充：Freeze命令未知结果恢复
+
+- 新增 provider_write_freeze_commands 持久化命令收据表，完整签名envelope digest为主键；收据与scope generation/state变更在同一个 BEGIN IMMEDIATE 事务中写入。
+- 任意历史精确命令重放都返回 ALREADY_APPLIED，包括scope已经经历后续UNFREEZE/新generation的情况；返回历史结果与当前scope状态，重放不产生任何状态迁移。
+- 新增只读 write_freeze_command_status()，Coordinator可按原envelope digest查询历史提交收据；收据随SQLite backup/restore保留。
+- 未查到收据不是跨网络未知请求的最终“未提交”证明；远程Provider必须提供等价的线性一致receipt查询与幂等控制端点。
