@@ -655,6 +655,32 @@ class SQLiteProviderGrantFloorAuthorityTests(unittest.TestCase):
             self.confirm_receipt(reservation, receipt)
         self.assertEqual(self.authority.snapshot(self.key).state, "FENCE_PENDING")
 
+
+    def test_legacy_pending_operation_cannot_be_confirmed_after_strict_schema_upgrade(self):
+        legacy_reservation = self.reserve_fence(
+            operation_id="legacy-unsigned-pending-before-strict-upgrade"
+        )
+        before_upgrade = self.authority.snapshot(self.key)
+        legacy_status = self.authority.operation_status(legacy_reservation.operation_id)
+        self.assertIsNone(legacy_status.coordinator_signer_key_id)
+        strict = SQLiteProviderGrantFloorAuthority(self.database)
+        before_confirm = strict.snapshot(self.key)
+        receipt = self.receipt_envelope(legacy_reservation)
+        with self.assertRaisesRegex(
+            ProviderGrantFloorConflict,
+            "lacks a verified Coordinator command reservation",
+        ):
+            strict.confirm_provider_receipt(
+                operation_id=legacy_reservation.operation_id,
+                receipt_envelope=receipt,
+                expected_revision=legacy_reservation.reserved_scope_revision,
+            )
+        after_confirm = strict.snapshot(self.key)
+        self.assertEqual(after_confirm.state, "FENCE_PENDING")
+        self.assertEqual(after_confirm.revision, before_confirm.revision)
+        self.assertEqual(after_confirm.authority_revision, before_confirm.authority_revision)
+        self.assertEqual(before_upgrade.revision, before_confirm.revision)
+
     def test_schema_v1_migration_preserves_unverified_legacy_digest_without_trusting_it(self):
         legacy_path = self.base / "legacy-floor-v1.sqlite"
         connection = sqlite3.connect(legacy_path)
