@@ -1391,3 +1391,14 @@
 - **Provider门禁：** 新增可选 `leader_status_checker` 与 `require_online_leader_status=True`；新FREEZE/UNFREEZE命令在线校验失败或Coordinator不可用时拒绝。精确历史命令receipt仍优先返回ALREADY_APPLIED。
 - **限制：** etcd线性一致Range与Provider SQLite commit不能跨系统原子提交；Lease可能在Range成功后、SQLite commit前被撤销。本轮不宣称消除TOCTOU或实现跨系统原子fencing。详见 `docs/17-operation-maintenance-and-repair/provider-online-coordinator-leader-verification.md`。
 - **状态：** DONE（在线Leader状态校验参考实现与文档/测试交付）。最终主分支CI Run 46139767853 success：全库663项测试运行、40项跳过、623项通过；CH12数值资源143项通过；知识lint 0 errors/5 warnings，结构与数据检查0 errors。无真实etcd/Provider/KMS连接，无生产namespace写入、候选导入、应用激活或cutover。
+
+
+### 第八十九轮任务计划：Provider 可撤销授权与撤销屏障架构决策
+
+- **背景：** 第八十八轮在线 etcd Range 与 Provider SQLite commit 之间仍有跨系统 TOCTOU；将 Range 放入 SQLite BEGIN IMMEDIATE 事务不能形成共同线性化点。
+- **目标：** 明确区分 Coordinator Leader validity 与 Provider mutation authorization；评估单一事务权威、Provider 原生条件写、Provider 参与的撤销屏障和单纯在线 Range 四类方案。
+- **推荐方向：** 以 Provider 侧可撤销 grant / epoch floor 作为最终 mutation 门禁；FENCE 命令必须与所有受保护 mutation 在同一 Provider 事务或 Provider 原生条件写域内串行化；持久化不可变 command receipt；只有 FENCE receipt 可验证后才允许新 epoch grant 激活。
+- **语义约束：** Provider 侧撤销在线性化顺序中以 Provider FENCE 提交为准，不得声称它与 etcd Lease 物理过期瞬间原子同步。若业务要求跨独立系统零窗口撤销，则必须使用共享事务权威或 Provider 原生原子条件写；否则明确记录TTL/时钟假设和残余风险。
+- **交付：** 新增 `docs/17-operation-maintenance-and-repair/provider-revocation-barrier-architecture.md`；同步CH17章节计划、README和TaskHistory。
+- **验收：** 状态机、授权语义、未知结果恢复、Provider mutation覆盖范围、时钟/重启/备份风险及不可实现边界均有明确描述；文档链接和知识质量CI通过。
+- **边界：** 本轮只做架构设计，不实现grant/FENCE writer，不连接真实etcd/Provider/KMS/HSM，不修改RBAC，不触达生产namespace，不执行候选导入、应用激活或cutover。MIG-04继续IN_PROGRESS，MIG-05继续IN_PROGRESS，MIG-06 TODO，MIG-07 BLOCKED。
