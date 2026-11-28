@@ -1589,7 +1589,7 @@
 - 专项测试覆盖 JCS、合法 FENCE/ACTIVATE、签名/字段篡改、所有 Reservation 身份字段错配、未知 key/fingerprint、key有效期/退休/撤销、命令时窗/native Lease、ACTIVATE/FENCE时间顺序、裸digest拒绝、v1→v4迁移、旧记录不提升、幂等与替换、失败后revision不前进和并发CAS。
 - 目前仅使用合成 Ed25519 Provider key 和独立本地 SQLite；Floor 不独立验证 Coordinator command signature，Reservation command digest/claims 的可信来源仍由上游调用方与 Coordinator authority 提供。Provider SQLite 的 FENCE/ACTIVATE mutation 事务尚未实际生成/持久化 signed Receipt，也没有 durable receipt lookup API；本轮不是端到端 Provider 签名回执集成。
 - 不连接真实 Provider/KMS/HSM/etcd/IAM/RBAC，不执行候选导入、Restore、应用激活或 Cutover；Grant-aware Restore 仍未实现，含 Grant 历史备份的通用 Restore 继续 fail-closed。
-- **状态：** IN_PROGRESS；需完整文档同步后的主分支 Knowledge Quality CI 两个必需 Job 均 success 后完成。
+- **状态：** DONE（2026-11-28；代码验证 Run 46155354641 和完整文档同步 Run 46155719334 的两个必需 Job 均 success）。
 
 ### 第九十六轮：Provider SQLite FENCE/ACTIVATE durable signed Receipt 集成
 
