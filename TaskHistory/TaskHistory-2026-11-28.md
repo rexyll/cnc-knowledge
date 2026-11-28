@@ -489,3 +489,40 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - FENCE_PENDING is only an external reservation; the Provider Grant remains usable until the Provider-native FENCE transaction commits. The Provider FENCE remains the mutation revocation linearization point.
 - No real etcd, remote Provider, KMS/HSM, cloud object storage or IAM/RBAC was contacted; no production authority/namespace, candidate import, restore, application activation or Cutover was changed or executed. Generic Restore for any Provider Grant history remains fail-closed.
 - MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
+
+
+## CNC Knowledge Base — Round 94（Provider Grant 回执来源认证与签名证据设计完成）
+
+- Repository: \`rexyll/cnc-knowledge\`
+- Branch: \`main\` only; no branch created.
+- Scope: Define a verifiable Provider-native signed receipt contract for external Provider Grant Floor FENCE/ACTIVATE reconciliation. This round is design-only; no runtime signer/verifier or production integration was implemented.
+
+### Design deliverable
+
+- Added \`docs/17-operation-maintenance-and-repair/provider-grant-receipt-authentication-design.md\` and indexed it in CH17 README and both TaskPlans.
+- Defined a versioned Provider receipt envelope with strict claims for Provider ID, tenant, scope, FENCE/ACTIVATE action, Grant ID/generation, exact Coordinator command digest, result state, isolated namespace, Leader ID/epoch, native Lease ID/expiry, command issue/expiry and Provider applied time.
+- FENCE receipt binds \`fence_command_sha256=null\`; ACTIVATE receipt must bind the exact latest confirmed FENCE command digest.
+- Separated Coordinator command signing trust from Provider receipt signing trust. Proposed a Provider-controlled independent Ed25519 receipt key and an externally managed Provider/key trust registry with ACTIVE/RETIRING/REVOKED lifecycle, validity windows, fingerprint binding and trust revision.
+- Specified domain-separated signature input and RFC 8785 JSON Canonicalization Scheme (JCS) for the new receipt envelope. The existing Coordinator command digest must continue to use the exact versioned canonicalization bytes that its current signature verifier accepts; implementations must not silently reserialize signed commands under a different canonicalizer.
+- Defined receipt digest as SHA-256 of the complete verified canonical receipt envelope including signature. Naked caller-supplied digest must not be sufficient to promote a production Floor reservation.
+- Described Provider same-transaction persistence of grant state, command receipt and signed receipt; remote KMS/HSM signing may use a durable RECEIPT_SIGNING_PENDING state, but unsigned success is never externally confirmable.
+- Defined exact command-digest receipt lookup for lost-response recovery, immutable historical receipts, duplicate confirmation rules, FENCE/ACTIVATE state and chronology checks, fail-closed key revocation behavior, and the required receipt tamper/replay/cross-identity test matrix.
+- Explicitly retained generic Restore fail-closed for any Provider Grant scope or command history. Receipt authentication alone is necessary but not sufficient for Grant-aware Restore.
+
+### Validation
+
+- [GitHub Actions Knowledge Quality Run 46153427280](https://github.com/rexyll/cnc-knowledge/actions/runs/46153427280): both required jobs succeeded on the design/plan commit \`8431d434f485a60ba2c94c25f617173930d96b10\`.
+- Full repository unittest: 707 tests run, 40 skipped by environment guards; all non-skipped tests passed.
+- CH12 numerical resource tests: 143 passed.
+- Repository knowledge lint: 0 errors / 5 warnings.
+- Additional structure/data checks: 0 errors.
+- This CI validates repository consistency and existing code/tests; it does not execute a Provider receipt signer or verifier, since those remain unimplemented.
+
+### Safety boundary / next work
+
+- No real etcd, remote Provider, KMS/HSM, cloud object storage or IAM/RBAC was contacted. No production Unified schema-v2 authority, namespace, candidate import, Restore, application activation or Cutover was modified or executed.
+- The proposed receipt signature proves that a trusted Provider key signed the receipt claims; it does not prove that the Provider implementation is correct or that the signing host/key is uncompromised.
+- Provider receipt authenticity, external Floor consistency and Provider mutation atomicity remain separate guarantees and must be implemented/validated independently.
+- SQLite Floor snapshot rollback protection still requires an independently trusted checkpoint outside that backup domain.
+- MIG-04 IN_PROGRESS; MIG-05 IN_PROGRESS; MIG-06 TODO; MIG-07 BLOCKED. Production Unified schema-v2 remains the sole authority.
+- **Status:** DONE for the Round 94 protocol/design deliverable only. A separate implementation round is required before any claim of authenticated Provider receipt functionality.
