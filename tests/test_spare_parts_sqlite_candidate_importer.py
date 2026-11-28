@@ -162,7 +162,7 @@ class CandidateImporterTests(unittest.TestCase):
             digest = hashlib.sha256()
             for row in rows:
                 digest.update(_json_bytes(row))
-                digest.update(b"\\n")
+                digest.update(b"\n")
             manifest["table_summaries"][table]["records_sha256"] = digest.hexdigest()
         manifest["derived"]["leader"] = leader
         material = {
