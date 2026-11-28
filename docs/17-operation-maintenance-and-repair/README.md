@@ -606,9 +606,9 @@ Provider schema升级至v6，新增`provider_scope_grants`与`provider_grant_com
 
 **边界：** 这是单机SQLite事务参考，不是etcd线性一致/多节点/quorum实现；SQLite自身不能证明数据库文件未从旧快照回滚，只有与该数据库独立保存的可信revision checkpoint才能用于检测回退。适配器不验证Provider回执签名/真实性，也尚未接入Provider命令应用路径或Unified schema-v2 authority。当前没有Grant-aware Restore；通用Restore对任何Grant历史备份仍必须拒绝。测试方法定义数量不是测试执行结果。
 
-Provider Grant 外部 Floor 本地参考适配器见 [外部单调 Floor 与 Grant-aware Restore 对账设计](provider-grant-external-floor-and-restore-reconciliation-design.md)：实现文件为 [spare_parts_provider_grant_floor.py](../../scripts/spare_parts_provider_grant_floor.py)，专项测试为 [test_spare_parts_provider_grant_floor.py](../../tests/test_spare_parts_provider_grant_floor.py)。本地 SQLite 适配器仅接受 `/cnc/migration/isolated/{single-id}/` namespace，是单机事务/CAS参考模型，不是 etcd quorum、线性一致生产 authority 或自身防回滚存储。Provider Receipt 来源认证已在第九十五轮实现为本地参考协议模块与 Floor 验签门禁；Provider 数据面事务原子生成回执、生产信任注册表和专用 Grant-aware Restore 仍未实现。
+Provider Grant 外部 Floor 本地参考适配器见 [外部单调 Floor 与 Grant-aware Restore 对账设计](provider-grant-external-floor-and-restore-reconciliation-design.md)：实现文件为 [spare_parts_provider_grant_floor.py](../../scripts/spare_parts_provider_grant_floor.py)，专项测试为 [test_spare_parts_provider_grant_floor.py](../../tests/test_spare_parts_provider_grant_floor.py)。本地 SQLite 适配器仅接受 `/cnc/migration/isolated/{single-id}/` namespace，是单机事务/CAS参考模型，不是 etcd quorum、线性一致生产 authority 或自身防回滚存储。Provider Receipt 签名协议和外部 Floor 验签已在第九十五轮实现；第九十六轮又将 Provider 本地 FENCE/ACTIVATE 同事务 Receipt 持久化和按 command digest 查询接入 SQLite 参考实现。生产 Provider、KMS/HSM、外部 trust control plane 与专用 Grant-aware Restore 仍未实现。
 
-Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执来源认证与签名证据设计](provider-grant-receipt-authentication-design.md)；本地实现见 [Receipt 协议模块](../../scripts/spare_parts_provider_grant_receipt.py)、[外部 Floor schema v4 与验签门禁](../../scripts/spare_parts_provider_grant_floor.py) 及其 [Floor 测试](../../tests/test_spare_parts_provider_grant_floor.py) / [协议测试](../../tests/test_spare_parts_provider_grant_receipt.py)。这只证明合成 Provider key 和本地 SQLite 参考模型的验签流程；真实 Provider 的 grant state/command receipt/signed receipt 同事务持久化、durable receipt lookup、生产 key trust plane 与 Grant-aware Restore 尚未实现。
+Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执来源认证与签名证据设计](provider-grant-receipt-authentication-design.md)；本地实现见 [Receipt 协议模块](../../scripts/spare_parts_provider_grant_receipt.py)、[外部 Floor schema v4 与验签门禁](../../scripts/spare_parts_provider_grant_floor.py) 及其 [Floor 测试](../../tests/test_spare_parts_provider_grant_floor.py) / [协议测试](../../tests/test_spare_parts_provider_grant_receipt.py)。Floor 本地验签仍依赖独立 Provider key registry；Provider SQLite 本地实现会在 FENCE/ACTIVATE 同一写事务内生成并持久化 signed Receipt，并提供按 exact command digest 查询。但两者仍是单机 SQLite 参考模型：Provider 回执公钥副本只用于本地自洽校验，外部 Floor registry 才是签名者信任锚；真实 Provider/KMS/HSM/production trust plane 与 Grant-aware Restore 尚未实现。
 
 ### 第九十五轮：Provider Grant Receipt 协议模块与 Floor schema v4
 
@@ -616,7 +616,21 @@ Provider Grant 回执来源认证的协议设计见 [Provider Grant Floor 回执
 
 外部 Floor schema 由 v1 迁移至 v4，提供 Provider receipt key 显式注册、RETIRING/REVOKED 生命周期与历史记录兼容迁移；旧裸摘要保留为未认证历史，不自动升级。完整设计和限制见 [Provider Grant Floor 回执来源认证与签名证据设计](provider-grant-receipt-authentication-design.md)。
 
-**严格边界：** 当前签名只由合成测试 Provider key 产生；Provider SQLite 的 FENCE/ACTIVATE 数据事务尚未实际持久化 Receipt envelope，故这不是端到端 Provider 回执认证实现。Floor 不独立验证 Coordinator command signature；Reservation 中的 command digest/claims 可信来源仍由上游 Coordinator 调用链负责。真实 Provider/KMS/HSM/etcd/生产 trust registry 未连接，Grant-aware Restore 未实现，通用 Restore 仍 fail-closed。
+**严格边界：** Provider Receipt 在本地 SQLite FENCE/ACTIVATE 事务中原子生成并持久化，但签名私钥仍通过进程内合成 Ed25519 key 注入；这不是远程 Provider、KMS/HSM 或多主机安全证明。Floor 不独立验证 Coordinator command signature；Reservation 中的 command digest/claims 可信来源仍由上游 Coordinator 调用链负责。Provider 数据文件和 Floor/trust registry 都不能检测自身旧快照回滚，必须依赖备份域外可信 checkpoint。真实 Provider/KMS/HSM/etcd/生产 trust registry 未连接，Grant-aware Restore 未实现，通用 Restore 仍 fail-closed。
 
 - **第九十五轮当前代码验收：** [Knowledge Quality Run 46155354641](https://github.com/rexyll/cnc-knowledge/actions/runs/46155354641) 两个必需 Job 均 success；全库 737 项测试运行、40 项按环境跳过；CH12 数值资源 143 项通过；knowledge lint 0 errors / 5 warnings，结构/数据检查 0 errors。此Run验证的是代码与专项测试提交；随后计划/README/TaskHistory最终同步仍需以其自身CI为准。
 - **第九十五轮最终文档同步验收：** [Knowledge Quality Run 46155719334](https://github.com/rexyll/cnc-knowledge/actions/runs/46155719334) 两个必需 Job 均 success，覆盖根/CH17 TaskPlan、设计文档、README、TaskHistory和代码；无测试失败。
+
+
+### 第九十六轮：Provider SQLite 同事务 Signed Receipt 与 Floor 联调
+
+- Provider `spare_parts_provider_sqlite_fenced.py` 升级至 schema v7，保留 Coordinator 命令 envelope 字段并新增独立 Provider Receipt envelope、digest、signer key ID 和公钥副本字段。
+- FENCE/ACTIVATE 验证完 Coordinator 命令并获得 Provider SQLite 写锁后，在同一事务中更新 Grant state、保存 Coordinator command receipt、构造 Provider Receipt claims、使用与 Coordinator key 不同的 Ed25519 private key 签名并保存 canonical envelope/digest；事务提交前不对外可见。
+- `provider_grant_receipt_signing_required` policy 会被持久化，启用后后续 Provider 实例不能静默降级。strict 模式中当前 ACTIVE Grant 的 FENCE 和 ACTIVATE Receipt 必须存在且能独立验签，否则拒绝所有受保护 object/multipart mutation。
+- 新增 `get_provider_grant_receipt(provider_id, tenant_id, command_sha256)` 按 exact Provider/Tenant/command digest 查询；同一 command 重复执行会验证并返回已存 Receipt，不能改变 digest 或重复推进 generation；commit 后响应丢失可按原 digest 恢复。
+- Provider backup validation 现在验证 Provider Receipt 完整 canonical digest、签名、与原 Coordinator signed command 逐字段绑定、FENCE/ACTIVATE generation 与时间链；仅当前 strict Grant 链必须具备签名 Receipt。旧历史命令可保留但不会被自动补签或提升为当前授权证据。
+- Provider→Floor 端到端测试使用实际本地 Provider 签名输出 FENCE 和 ACTIVATE receipt，由 Round95 外部 Floor 独立 Provider key registry 验签并推进 FENCED/ACTIVE；同时覆盖事务提交前故障全回滚、response loss、重启/幂等、精确 lookup、schema v6→v7、strict policy 不可降级、receipt digest 及伪造 signature 篡改和备份拒绝。
+- **验证：** [Knowledge Quality Run 46157250066](https://github.com/rexyll/cnc-knowledge/actions/runs/46157250066) 两个必需 Job 均 success；全库 745 项测试运行、40 项按环境跳过；CH12 数值资源 143 项通过；knowledge lint 0 errors / 5 warnings，结构/数据检查 0 errors。
+
+**剩余信任缺口：** 外部 Floor 的 reserve API 仍接受调用方传入的 Coordinator command digest 和 claims；Floor 尚未自行验签/验证 Coordinator 命令来源。该缺口进入第九十七轮。另：Provider Receipt 公钥副本只用于 Provider 本地自洽签名检查，独立 Floor key registry 才承担 Provider signer 信任；当前仍没有生产密钥管理、KMS/HSM、独立多节点 authority 或 Grant-aware Restore。
+
