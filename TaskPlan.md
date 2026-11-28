@@ -1460,15 +1460,17 @@
 
 ### 第九十五轮任务计划：Provider Grant Receipt 签名协议模块与外部 Floor 验签门禁
 
-- **目标：** 将第九十四轮协议设计推进为本地可执行的纯协议模块和外部 Floor 验签门禁；本轮不改 Provider 写入事务，不连接生产 Provider/KMS/HSM。
-- **协议模块：** 新增 Provider Receipt envelope/claims schema、RFC 8785 JCS canonicalization、domain-separated Ed25519 签名与验签、严格字段/类型/数值/时间校验、不可变 Verified Receipt 结果对象；不复用 Coordinator command signing key。
-- **信任注册表：** 独立 SQLite Floor **schema v4** 增加 Provider receipt public-key registry；支持 provider/key 唯一绑定、fingerprint、ACTIVE/RETIRING/REVOKED、not_before/not_after、retiring_effective_at、revocation_effective_at 和 trust revision。公钥只能通过显式本地管理 API 注册，不从待验签 receipt 自动信任。
-- **确认门禁：** \`confirm_provider_receipt\` 从裸 digest 输入迁移为 signed receipt envelope；在同一 BEGIN IMMEDIATE + scope revision CAS 事务内验签，核对 Provider/tenant/scope/action/Grant/generation/command digest/FENCE digest/namespace/Leader/native Lease/result state 和 command issue/expiry。Floor 根据验证后的完整 canonical envelope 自行计算 digest，记录 signer key、fingerprint、trust revision 与 applied time。Reservation 持久化原命令 issue/expiry，且命令有效期不得超过 native Lease。
-- **测试：** JCS、FENCE/ACTIVATE、claims/签名篡改、预留字段精确绑定、未知/错误 Provider key、fingerprint、密钥有效期/退休/撤销、裸摘要拒绝、命令时间窗口/Lease 上限、跨 Provider/tenant/scope、错 generation/action/command/FENCE 链、幂等/替换、失败后 revision 不变、schema v1→v4 迁移及并发 CAS。
-- **兼容与边界：** v1 历史裸 digest 与 operation 保留，但新 signer/fingerprint/trust/applied/command-time 字段为 NULL；不补造签名/时间，不自动提升为可信证据，缺少命令时间的旧 PENDING operation 新确认路径 fail-closed。当前 Provider 仍未在 mutation transaction 中生成/保存此 Envelope；本轮 Floor 测试用合成 Provider key。Floor 不独立验 Coordinator command signature，仍依赖 Reservation 的受信写入边界。Grant-aware Restore 不可用，通用 Restore 继续 fail-closed。
-- **交付：** [Provider Receipt 协议模块](scripts/spare_parts_provider_grant_receipt.py)、[专项测试](tests/test_spare_parts_provider_grant_receipt.py)、Floor schema/API、依赖锁定、CH17 README 与设计文档均已更新。
-- **验证：** [Knowledge Quality Run 46155354641](https://github.com/rexyll/cnc-knowledge/actions/runs/46155354641) 两个必需 Job success；全库 737 tests / 40 skipped；CH12 数值资源 143 passed。
-- **状态：** DONE（2026-11-28；仅限本地 Receipt 协议与 Floor 验签门禁，不代表 Provider mutation 集成或生产能力）。
+- **目标：** 将第九十四轮协议设计推进为本地可执行的 Receipt 签名/验签模块与外部 Floor 验证门禁；本轮不改 Provider 数据面 mutation 事务，不连接生产 Provider/KMS/HSM/etcd。
+- **协议模块：** 新增 \`scripts/spare_parts_provider_grant_receipt.py\`，使用 RFC 8785 JCS 规范化 Receipt claims/envelope，采用独立 domain-separated Ed25519 Provider key 签名/验签；严格校验字段集合、类型、SQLite-safe整数、摘要、时间、namespace、FENCE/ACTIVATE action/result 关系；生成不可变 Verified Receipt 对象。不得复用 Coordinator command signing key。
+- **信任注册表：** 外部 SQLite Floor schema v4 新增 Provider receipt public-key registry，按 Provider ID + key ID 保存 Ed25519 public key/fingerprint、ACTIVE/RETIRING/REVOKED、not_before/not_after、retiring_effective_at、revocation_effective_at/reason、trust revision。公钥只能经显式本地 owner 管理 API 注册；回执自带公钥或未知 key 不建立信任。
+- **Reservation 绑定：** FENCE/ACTIVATE reserve 保存 Coordinator command issued_at/expires_at，并要求 expiry 不晚于 native Lease expiry；同一 operation 重放必须匹配全部身份、命令摘要和时间字段。Floor 不在本轮独立验 Coordinator command signature；command digest/claims 的可信来源仍是调用方与其上游 Coordinator authority 的责任，生产集成必须补齐此认证边界。
+- **确认门禁：** \`confirm_provider_receipt()\` 只接受 signed Receipt envelope，不再接受裸 digest；在同一个 BEGIN IMMEDIATE 事务内完成 signer trust lookup、Ed25519 验签、Provider/tenant/scope/action/Grant/generation/command/FENCE digest/namespace/Leader/native Lease/command-time/result 绑定、ACTIVATE chronology、scope revision CAS 与状态推进。Floor 自行计算完整 canonical envelope SHA-256，并保存 signer key ID、public-key fingerprint、trust revision 和 Provider applied time。
+- **密钥生命周期：** ACTIVE 接受有效期内回执；RETIRING 只接受 retirement 生效前已应用的历史回执；REVOKED 只接受 retirement 与 revocation 两个边界之前、且满足原有效期的历史回执。状态只允许向前转移，不支持重新激活。未知 key、指纹不匹配、时钟/命令窗口不合法、撤销/退役后回执、跨身份回执及不同摘要替换均 fail-closed。
+- **兼容迁移：** SQLite Floor schema v1 顺序升级至 v4。历史裸 digest、旧操作与原 revision 保留，但 signer/fingerprint/trust/applied-time/Coordinator command-time 新字段保持 NULL；不伪造历史签名，不自动把旧记录标为可信。缺少可信命令时间的历史 PENDING operation 不允许通过新的 signed-receipt confirm 路径。
+- **测试：** JCS向量、FENCE/ACTIVATE、签名/claims篡改、重复JSON键、未知字段/类型、所有 reservation claims 精确绑定、unknown/wrong Provider key、fingerprint、key有效期/retirement/revocation、命令时间和Lease边界、ACTIVATE/FENCE applied-time chronology、裸摘要拒绝、v1→v4迁移、旧历史不提升、幂等/替换、失败 revision 不变、并发 CAS。
+- **验证边界：** 合成 Provider Ed25519 key + 本地 SQLite only。尚未让 \`spare_parts_provider_sqlite_fenced.py\` 在 Provider FENCE/ACTIVATE 与 mutation 相同写事务内生成并持久化 Receipt envelope，也未提供 durable signed-receipt lookup API；因此不是端到端 Provider 回执认证，不是 Grant-aware Restore。通用 Restore 对 Grant 历史继续 fail-closed；不连接真实 etcd/Provider/KMS/HSM/IAM/RBAC，不执行候选导入、应用激活或 Cutover。
+- **交付：** 新增协议模块与专项测试；升级 Floor schema/API；更新安全依赖、设计文档、CH17 README、根/章节 TaskPlan 和 TaskHistory。
+- **状态：** IN_PROGRESS；以完整文档同步后的 main 分支 Knowledge Quality CI 两个必需 Job 均成功为完成条件。
 
 ### 第九十六轮任务计划：Provider SQLite FENCE/ACTIVATE durable signed Receipt 集成
 
