@@ -1298,6 +1298,53 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             provider.apply_provider_grant_command(early_activate)
         self.assertEqual(provider.provider_grant_state(SCOPE)["state"], "FENCED")
 
+    def test_persisted_grant_scope_cannot_be_reused_under_another_provider_identity(self):
+        provider = self.enable_revocable_grants()
+        now = time.time()
+        fence = self.grant_command(
+            "FENCE", 1, "grant-provider-identity",
+            issued_at=now, lease_expires=now + 60.0,
+        )
+        digest = hashlib.sha256(
+            __import__("json").dumps(fence, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+        provider.apply_provider_grant_command(fence)
+        fence_receipt = provider.provider_grant_command_status(digest)
+        provider.apply_provider_grant_command(self.grant_command(
+            "ACTIVATE", 2, "grant-provider-identity",
+            issued_at=float(fence_receipt["applied_at"]) + 0.01,
+            lease_expires=now + 60.0, expires=time.time() + 30.0,
+            fence_digest=digest,
+        ))
+
+        other = _new_provider(
+            self.database, provider_id="provider-test-b",
+            trusted_ed25519_public_keys={ED_KEY_ID: ED_PUBLIC},
+            require_revocable_grant=True,
+        )
+        key = SCOPE + "/grant/cross-provider.bin"
+        proof = self.proof(
+            key, 70, "object:put_if_absent", "cross-provider-grant",
+            grant_id="grant-provider-identity", grant_generation=2,
+        )
+        with self.assertRaises(SQLiteProviderGrantRejectedError):
+            other.put_if_absent_fenced(
+                key, b"cross-provider", fencing_scope=SCOPE,
+                fencing_token=70, idempotency_key="cross-provider-grant",
+                fencing_attestation=proof,
+            )
+
+        takeover = self.grant_command(
+            "FENCE", 3, "grant-other-provider", leader_epoch=2,
+            issued_at=time.time(), lease_expires=time.time() + 60.0,
+        )
+        takeover["command"]["provider_id"] = "provider-test-b"
+        takeover = sign_provider_grant_command(
+            takeover["command"], key_id=ED_KEY_ID, private_key=ED_PRIVATE
+        )
+        with self.assertRaisesRegex(SQLiteProviderGrantRejectedError, "Provider identity"):
+            other.apply_provider_grant_command(takeover)
+
     def test_newer_fence_revokes_old_grant_and_old_proofs(self):
         provider = self.enable_revocable_grants()
         now = time.time()
