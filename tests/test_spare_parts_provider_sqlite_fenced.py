@@ -50,6 +50,7 @@ from scripts.spare_parts_provider_grant_floor import (
     ProviderGrantScopeKey,
     SQLiteProviderGrantFloorAuthority,
 )
+from scripts.spare_parts_provider_grant_receipt import canonical_receipt_json
 
 
 SECRET_A = "synthetic-writer-secret-0000001"
@@ -1589,6 +1590,32 @@ class SQLiteProviderWriteFreezeGateTests(unittest.TestCase):
             )
         with self.assertRaisesRegex(BackupStorageError, "signed Provider Grant receipt cannot be verified"):
             SQLiteFencedObjectStorageProvider.validate_backup(backup)
+
+        signature_backup = self.base / "provider-signed-receipt-signature-tampered.sqlite"
+        provider.backup_to(signature_backup)
+        with sqlite3.connect(signature_backup) as connection:
+            row = connection.execute(
+                """SELECT provider_receipt_envelope_json FROM provider_grant_commands
+                   WHERE command_sha256=?""",
+                (digest,),
+            ).fetchone()
+            envelope = json.loads(row[0])
+            original_signature = envelope["signature"]["value_base64"]
+            envelope["signature"]["value_base64"] = (
+                ("A" if original_signature[0] != "A" else "B") + original_signature[1:]
+            )
+            canonical = canonical_receipt_json(envelope)
+            connection.execute(
+                """UPDATE provider_grant_commands SET provider_receipt_envelope_json=?,
+                   provider_receipt_digest=? WHERE command_sha256=?""",
+                (
+                    canonical.decode("utf-8"),
+                    hashlib.sha256(canonical).hexdigest(),
+                    digest,
+                ),
+            )
+        with self.assertRaisesRegex(BackupStorageError, "signed Provider Grant receipt cannot be verified"):
+            SQLiteFencedObjectStorageProvider.validate_backup(signature_backup)
 
 
     def test_provider_receipt_policy_cannot_be_downgraded_after_enablement(self):
