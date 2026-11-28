@@ -1455,4 +1455,5 @@
 - **验收规格：** 提供正常 FENCE/ACTIVATE 回执、篡改字段/签名、跨 Provider/tenant/scope、错 command/generation/action、过期/撤销密钥、同一回执幂等和不同回执替换等测试矩阵；确保未经认证回执不能将 PENDING 推进为 FENCED/ACTIVE。
 - **边界：** 本轮先设计协议和测试规格，不连接生产 Provider/KMS/HSM/etcd，不修改 Unified schema-v2 authority、IAM/RBAC，不实现 Grant-aware Restore，不解除通用 Restore 对 Grant 历史备份的 fail-closed 门禁，不执行候选导入、应用激活或 Cutover。
 - **交付：** 新增 Provider Grant receipt 认证设计文档；同步根 TaskPlan、CH17 TaskPlan、README 和 TaskHistory。设计评审完成后再决定独立实现轮次。
+- **设计文档：** [Provider Grant Floor 回执来源认证与签名证据设计](docs/17-operation-maintenance-and-repair/provider-grant-receipt-authentication-design.md)。
 - **状态：** TODO。
