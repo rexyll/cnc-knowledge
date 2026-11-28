@@ -331,3 +331,31 @@ The previous candidate bundle carried the legacy Coordinator Leader epoch only i
 - Additional hardening: Coordinator namespace must be a canonical absolute prefix; within the same Leader epoch and native Lease ID, a lower Lease-expiry snapshot is rejected. Tests cover both conditions.
 
 - Backup validation now requires all four freeze/receipt/Leader-floor/audit tables; backup/restore tests assert the persisted Leader epoch and native Lease binding survive restore.
+
+## CNC Knowledge Base — Round 88
+
+- Repository: `rexyll/cnc-knowledge`
+- Branch: `main` only; no branch created.
+- Scope: Provider Freeze online Coordinator Leader/native Lease verification.
+
+### Code changes
+
+- Added `scripts/spare_parts_provider_live_leader_status.py` with `EtcdCoordinatorLeaderStatusChecker`.
+- The checker uses one existing `linearizable_range(namespace_prefix)` call to observe Scheduler aggregate and Coordinator Leader TTL key at the same etcd revision.
+- It verifies exact aggregate/key agreement, Leader ID, epoch, native Lease ID, etcd KV Lease attachment, and matching non-expired Lease expiry.
+- Added Provider opt-in `leader_status_checker` and `require_online_leader_status=True`. New FREEZE/UNFREEZE commands fail closed when the online check reports inactive or unavailable. Missing checker configuration is rejected at Provider construction.
+- Exact historical command receipts are still resolved before online status checks; replay returns `ALREADY_APPLIED` without reapplying the historical command.
+- Added `tests/test_spare_parts_provider_live_leader_status.py` and Provider command-path tests for missing checker, revoked/unknown status, network failure and historical receipt precedence.
+- Added `docs/17-operation-maintenance-and-repair/provider-online-coordinator-leader-verification.md`.
+
+### Validation
+
+- CI status: pending; this round is not accepted until both required main-branch jobs complete successfully.
+- Test doubles are synthetic. No live etcd or remote Provider was contacted.
+
+### Safety boundary and remaining gap
+
+- The linearizable Range proves the Leader key and aggregate matched at the read revision, and verifies the key's native Lease attachment.
+- The etcd read and Provider SQLite commit are not one distributed transaction. A Lease can still be revoked after the Range and before the local SQLite commit. This change reduces the stale-command window but does not eliminate cross-system TOCTOU and must not be described as atomic fencing or real-time validity at commit.
+- No real etcd, Provider, KMS/HSM, cloud object store or IAM/RBAC was contacted; no production namespace or authority was changed, no candidate data was imported, no application activation or cutover occurred.
+- ASSET-000092 remains `PROPOSED_NOT_APPROVED / NOT_RUN`; production Unified schema-v2 remains the sole authority.
