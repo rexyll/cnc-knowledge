@@ -122,6 +122,6 @@ Provider 本地时钟是 TTL 方案的额外信任假设：若采用 expiry，�
 - Provider新增scope grant状态表和命令receipt表；FENCE推进到FENCED。更换Leader/Lease身份要求epoch严格增加；同epoch仅允许完全相同Leader/Lease身份主动撤销当前ACTIVE grant；ACTIVATE只有在FENCE receipt存在且全部identity绑定一致时才能开启新grant。
 - 可选`require_revocable_grant`令对象PUT及multipart begin/part/complete在各自Provider写事务中检查Grant ID/generation、ACTIVE状态和expiry。
 - FENCE与mutation使用同一Provider SQLite BEGIN IMMEDIATE事务，形成单机数据库内的可验证串行化边界。
-- 命令提交后响应丢失通过原始envelope digest读回receipt，不生成新代次。
+- 命令提交后响应丢失通过原始envelope digest读回receipt，不生成新代次；ACTIVATE签发时间必须不早于FENCE的Provider持久化回执时间，且receipt经backup/restore后仍可查询。
 
 **状态：** 已提交代码与专用测试初版，待必需CI完成后确认。该实现仍不是远程Provider/对象存储、跨主机或生产级证明；FENCE线性化点仍仅是Provider本地数据库提交，不与etcd Lease物理撤销瞬间原子同步。
